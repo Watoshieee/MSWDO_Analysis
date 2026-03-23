@@ -1,0 +1,53 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class Application extends Model
+{
+    // Disable timestamps since your table doesn't have created_at/updated_at
+    public $timestamps = false;
+    
+    // Define the table name (optional, but good practice)
+    protected $table = 'applications';
+    
+    // Define the primary key
+    protected $primaryKey = 'id';
+    
+    // Define which attributes are mass assignable
+    protected $fillable = [
+        'user_id',
+        'program_type',
+        'municipality',
+        'barangay',
+        'full_name',
+        'age',
+        'gender',
+        'contact_number',
+        'status',
+        'application_date'
+    ];
+    
+    // Define attribute casting
+    protected $casts = [
+        'application_date' => 'datetime',
+        'age' => 'integer'
+    ];
+    
+    // Relationships
+    public function user()
+    {
+        return $this->belongsTo(User::class, 'user_id');
+    }
+    
+    public function municipality()
+    {
+        return $this->belongsTo(Municipality::class, 'municipality', 'name');
+    }
+    
+    public function barangay()
+    {
+        return $this->belongsTo(Barangay::class, 'barangay', 'name');
+    }
+}
