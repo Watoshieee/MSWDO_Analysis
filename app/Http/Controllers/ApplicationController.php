@@ -115,118 +115,252 @@ class ApplicationController extends Controller
      * Show the form for creating a new application.
      */
     public function create()
-{
-    $user = Auth::user();
-    
-    // Get program types from enum
-    $programTypes = [
-        '4Ps' => '4Ps',
-        'Senior_Citizen_Pension' => 'Senior Citizen Pension',
-        'PWD_Assistance' => 'PWD Assistance',
-        'AICS' => 'AICS',
-        'SLP' => 'SLP',
-        'ESA' => 'ESA',
-        'Solo_Parent' => 'Solo Parent'
-    ];
-
-    // Get years (current year and next year)
-    $currentYear = date('Y');
-    $years = [
-        $currentYear => $currentYear,
-        $currentYear + 1 => $currentYear + 1
-    ];
-
-    // Get barangays based on user role
-    if ($user->isAdmin()) {
-        // Admin can only select barangays from their municipality
-        $barangays = Barangay::where('municipality', $user->municipality)
-            ->pluck('name', 'name');
-        $municipality = $user->municipality;
-        $municipalities = [$user->municipality => $user->municipality];
-    } elseif ($user->isSuperAdmin()) {
-        // Super admin can select any municipality and barangay
-        $barangays = Barangay::pluck('name', 'name');
-        $municipalities = [
-            'Magdalena' => 'Magdalena',
-            'Liliw' => 'Liliw',
-            'Majayjay' => 'Majayjay'
+    {
+        $user = Auth::user();
+        
+        // Get program types from enum
+        $programTypes = [
+            '4Ps' => '4Ps',
+            'Senior_Citizen_Pension' => 'Senior Citizen Pension',
+            'PWD_Assistance' => 'PWD Assistance',
+            'AICS' => 'AICS',
+            'SLP' => 'SLP',
+            'ESA' => 'ESA',
+            'Solo_Parent' => 'Solo Parent'
         ];
-    } else {
-        // Regular user can select any municipality and barangay
-        $barangays = Barangay::pluck('name', 'name');
-        $municipalities = [
-            'Magdalena' => 'Magdalena',
-            'Liliw' => 'Liliw',
-            'Majayjay' => 'Majayjay'
+
+        // Get years (current year and next year)
+        $currentYear = date('Y');
+        $years = [
+            $currentYear => $currentYear,
+            $currentYear + 1 => $currentYear + 1
         ];
+
+        // Get barangays based on user role
+        if ($user->isAdmin()) {
+            // Admin can only select barangays from their municipality
+            $barangays = Barangay::where('municipality', $user->municipality)
+                ->pluck('name', 'name');
+            $municipality = $user->municipality;
+            $municipalities = [$user->municipality => $user->municipality];
+        } elseif ($user->isSuperAdmin()) {
+            // Super admin can select any municipality and barangay
+            $barangays = Barangay::pluck('name', 'name');
+            $municipalities = [
+                'Magdalena' => 'Magdalena',
+                'Liliw' => 'Liliw',
+                'Majayjay' => 'Majayjay'
+            ];
+        } else {
+            // Regular user can select any municipality and barangay
+            $barangays = Barangay::pluck('name', 'name');
+            $municipalities = [
+                'Magdalena' => 'Magdalena',
+                'Liliw' => 'Liliw',
+                'Majayjay' => 'Majayjay'
+            ];
+        }
+
+        return view('applications.create', compact(
+            'programTypes', 
+            'barangays', 
+            'municipalities',
+            'years'
+        ));
     }
 
-    return view('applications.create', compact(
-        'programTypes', 
-        'barangays', 
-        'municipalities',
-        'years',
-        'municipality' ?? null
-    ));
-}
+    /**
+     * Show the solo parent application form
+     */
+    public function showSoloParentForm()
+    {
+        try {
+            // Log that we're entering this method
+            \Log::info('showSoloParentForm method called');
+            
+            $user = Auth::user();
+            
+            // Check if user is logged in
+            if (!$user) {
+                \Log::error('No authenticated user found');
+                return redirect()->route('login')->with('error', 'Please login to continue.');
+            }
+            
+            \Log::info('User ID: ' . $user->id);
+            
+            // Check if user already has pending application for Solo Parent
+            $existing = Application::where('user_id', $user->id)
+                ->where('program_type', 'Solo_Parent')
+                ->where('status', 'pending')
+                ->exists();
+                
+            if ($existing) {
+                \Log::info('User already has pending Solo Parent application');
+                return redirect()->route('user.my-applications')
+                    ->with('error', 'You already have a pending Solo Parent application.');
+            }
+            
+            // Get barangays from database
+            $barangays = Barangay::where('municipality', 'Majayjay')
+                ->pluck('name')
+                ->toArray();
+            
+            \Log::info('Barangays found: ' . count($barangays));
+            
+            // If no barangays found in database, use default list
+            if (empty($barangays)) {
+                $barangays = [
+                    'Alipit', 'Malaking Ambling', 'Munting Ambling', 'Baanan', 'Balanac',
+                    'Bucal', 'Buenavista', 'Bungkol', 'Buo', 'Burlungan', 'Cigaras',
+                    'Ibabang Atingay', 'Ibabang Butnong', 'Ilayang Atingay', 'Ilayang Butnong',
+                    'Ilog', 'Malinao', 'Maravilla', 'Poblacion', 'Sabang', 'Salasad',
+                    'Tanawan', 'Tipunan', 'Halayhayin'
+                ];
+                \Log::info('Using default barangays list');
+            }
+            
+            // Check if the view file exists
+            $viewPath = resource_path('views/applications/solo-parent-form.blade.php');
+            if (!file_exists($viewPath)) {
+                \Log::error('View file not found: ' . $viewPath);
+                return response()->json(['error' => 'View file not found'], 500);
+            }
+            
+            \Log::info('Returning view with ' . count($barangays) . ' barangays');
+            return view('applications.solo-parent-form', compact('barangays'));
+            
+        } catch (\Exception $e) {
+            \Log::error('Error in showSoloParentForm: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            return response()->json(['error' => $e->getMessage()], 500);
+        }
+    }
 
     /**
      * Store a newly created application in storage.
      */
     public function store(Request $request)
-{
-    $user = Auth::user();
+    {
+        $user = Auth::user();
 
-    $rules = [
-        'program_type' => 'required|in:4Ps,Senior_Citizen_Pension,PWD_Assistance,AICS,SLP,ESA,Solo_Parent',
-        'full_name' => 'required|string|max:100',
-        'age' => 'required|integer|min:0|max:120',
-        'gender' => 'required|in:Male,Female',
-        'contact_number' => 'nullable|string|max:20',
-        'barangay' => 'required|string|exists:barangays,name',
-        'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
-    ];
+        // Check if this is from the solo parent form (has additional_data)
+        if ($request->has('additional_data') && $request->program_type === 'Solo_Parent') {
+            return $this->storeSoloParentApplication($request);
+        }
 
-    // Add municipality validation based on role
-    if ($user->isSuperAdmin() || $user->isUser()) {
-        $rules['municipality'] = 'required|in:Magdalena,Liliw,Majayjay';
+        // Original validation for regular applications
+        $rules = [
+            'program_type' => 'required|in:4Ps,Senior_Citizen_Pension,PWD_Assistance,AICS,SLP,ESA,Solo_Parent',
+            'full_name' => 'required|string|max:100',
+            'age' => 'required|integer|min:0|max:120',
+            'gender' => 'required|in:Male,Female',
+            'contact_number' => 'nullable|string|max:20',
+            'barangay' => 'required|string|exists:barangays,name',
+            'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
+        ];
+
+        // Add municipality validation based on role
+        if ($user->isSuperAdmin() || $user->isUser()) {
+            $rules['municipality'] = 'required|in:Magdalena,Liliw,Majayjay';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
+
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        // Prepare data
+        $data = [
+            'user_id' => $user->id,
+            'program_type' => $request->program_type,
+            'full_name' => $request->full_name,
+            'age' => $request->age,
+            'gender' => $request->gender,
+            'contact_number' => $request->contact_number,
+            'barangay' => $request->barangay,
+            'status' => 'pending',
+            'application_date' => now(),
+            'year' => $request->year,
+        ];
+
+        // Set municipality based on role
+        if ($user->isAdmin()) {
+            $data['municipality'] = $user->municipality;
+        } else {
+            $data['municipality'] = $request->municipality;
+        }
+
+        // Create application
+        $application = Application::create($data);
+
+        return redirect()->route('applications.show', $application->id)
+            ->with('success', 'Application created successfully!');
     }
 
-    $validator = Validator::make($request->all(), $rules);
-
-    if ($validator->fails()) {
-        return redirect()->back()
-            ->withErrors($validator)
-            ->withInput();
+    /**
+     * Store solo parent application with additional data
+     */
+    protected function storeSoloParentApplication(Request $request)
+    {
+        try {
+            $user = Auth::user();
+            
+            \Log::info('Storing Solo Parent Application');
+            \Log::info($request->all());
+            
+            // Validate solo parent form data
+            $validator = Validator::make($request->all(), [
+                'program_type' => 'required|in:Solo_Parent',
+                'additional_data' => 'required|array',
+                'additional_data.pangalan' => 'required|string|max:100',
+                'additional_data.edad' => 'required|integer|min:0|max:120',
+                'additional_data.kasarian' => 'required|in:Male,Female',
+                'additional_data.barangay' => 'required|string',
+                'additional_data.contact_number' => 'required|string|max:20',
+            ]);
+            
+            if ($validator->fails()) {
+                \Log::error('Validation failed: ' . json_encode($validator->errors()));
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput();
+            }
+            
+            // Prepare data for applications table
+            $data = [
+                'user_id' => $user->id,
+                'program_type' => $request->program_type,
+                'full_name' => $request->additional_data['pangalan'],
+                'age' => $request->additional_data['edad'],
+                'gender' => $request->additional_data['kasarian'],
+                'contact_number' => $request->additional_data['contact_number'],
+                'barangay' => $request->additional_data['barangay'],
+                'municipality' => $request->municipality ?? 'Majayjay',
+                'status' => 'pending',
+                'application_date' => now(),
+                'year' => date('Y'),
+                'form_data' => json_encode($request->additional_data),
+            ];
+            
+            // Create application
+            $application = Application::create($data);
+            
+            \Log::info('Application created successfully with ID: ' . $application->id);
+            
+            return redirect()->route('applications.show', $application->id)
+                ->with('success', 'Your Solo Parent application has been submitted successfully!');
+                
+        } catch (\Exception $e) {
+            \Log::error('Error storing Solo Parent application: ' . $e->getMessage());
+            \Log::error($e->getTraceAsString());
+            return redirect()->back()
+                ->with('error', 'An error occurred: ' . $e->getMessage())
+                ->withInput();
+        }
     }
-
-    // Prepare data
-    $data = [
-        'user_id' => $user->id,
-        'program_type' => $request->program_type,
-        'full_name' => $request->full_name,
-        'age' => $request->age,
-        'gender' => $request->gender,
-        'contact_number' => $request->contact_number,
-        'barangay' => $request->barangay,
-        'status' => 'pending',
-        'application_date' => now(),
-        'year' => $request->year,
-    ];
-
-    // Set municipality based on role
-    if ($user->isAdmin()) {
-        $data['municipality'] = $user->municipality;
-    } else {
-        $data['municipality'] = $request->municipality;
-    }
-
-    // Create application
-    $application = Application::create($data);
-
-    return redirect()->route('applications.show', $application->id)
-        ->with('success', 'Application created successfully!');
-}
 
     /**
      * Display the specified application.
@@ -345,34 +479,37 @@ class ApplicationController extends Controller
     /**
      * Remove the specified application from storage.
      */
-    public function destroy($id)
-    {
-        $application = Application::findOrFail($id);
-        
-        // Check authorization
-        $user = Auth::user();
-        if ($user->isUser() && $application->user_id !== $user->id) {
-            abort(403, 'Unauthorized access.');
-        }
-        if ($user->isAdmin() && $application->municipality !== $user->municipality) {
-            abort(403, 'Unauthorized access.');
-        }
-
-        // Only pending applications can be deleted
-        if ($application->status !== 'pending') {
-            return redirect()->route('applications.index')
-                ->with('error', 'Only pending applications can be deleted.');
-        }
-
-        $application->delete();
-
-        return redirect()->route('applications.index')
-            ->with('success', 'Application deleted successfully!');
+/**
+ * Remove the specified application from storage.
+ */
+public function destroy($id)
+{
+    $application = Application::findOrFail($id);
+    
+    // Check authorization
+    $user = Auth::user();
+    if ($user->isUser() && $application->user_id !== $user->id) {
+        abort(403, 'Unauthorized access.');
     }
+    if ($user->isAdmin() && $application->municipality !== $user->municipality) {
+        abort(403, 'Unauthorized access.');
+    }
+
+    // Only pending applications can be deleted
+    if ($application->status !== 'pending') {
+        return redirect()->route('applications.index')
+            ->with('error', 'Only pending applications can be deleted.');
+    }
+
+    // Permanent delete (not soft delete)
+    $application->forceDelete();
+
+    return redirect()->route('applications.index')
+        ->with('success', 'Application deleted successfully!');
+}
 
     /**
      * Update application status (for admins only).
-     * FIXED VERSION - Returns proper JSON responses
      */
     public function updateStatus(Request $request, $id)
     {

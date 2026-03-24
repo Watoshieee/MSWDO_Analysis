@@ -7,6 +7,18 @@ use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AnalysisController;
 use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\ApplicationController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\AdminController;
+
+// User Routes (authenticated users with role 'user')
+Route::middleware(['auth'])->group(function () {
+    Route::get('/user/dashboard', [UserController::class, 'dashboard'])->name('user.dashboard');
+    Route::get('/user/programs', [UserController::class, 'programs'])->name('user.programs');
+    Route::get('/user/announcements', [UserController::class, 'announcements'])->name('user.announcements');
+    Route::get('/user/my-applications', [UserController::class, 'myApplications'])->name('user.my-applications');
+    Route::get('/user/apply/{program}', [ApplicationController::class, 'create'])->name('user.apply');
+});
 
 // PUBLIC ROUTES
 Route::get('/', function () {
@@ -115,16 +127,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     });
 });
 
-// Application Management Routes
-Route::middleware(['auth'])->prefix('applications')->name('applications.')->group(function () {
-    Route::get('/', [App\Http\Controllers\ApplicationController::class, 'index'])->name('index');
-    Route::get('/create', [App\Http\Controllers\ApplicationController::class, 'create'])->name('create');
-    Route::post('/', [App\Http\Controllers\ApplicationController::class, 'store'])->name('store');
-    Route::get('/{id}', [App\Http\Controllers\ApplicationController::class, 'show'])->name('show');
-    Route::get('/{id}/edit', [App\Http\Controllers\ApplicationController::class, 'edit'])->name('edit');
-    Route::put('/{id}', [App\Http\Controllers\ApplicationController::class, 'update'])->name('update');
-    Route::delete('/{id}', [App\Http\Controllers\ApplicationController::class, 'destroy'])->name('destroy');
-    Route::post('/{id}/status', [App\Http\Controllers\ApplicationController::class, 'updateStatus'])->name('status');
+// ============================================
+// SOLO PARENT APPLICATION ROUTE - MUST BE BEFORE THE GENERIC user.apply ROUTE
+// ============================================
+
+// Solo Parent Application Form - Specific route for Solo Parent
+Route::middleware(['auth'])->group(function () {
+    Route::get('/apply/solo-parent', [ApplicationController::class, 'showSoloParentForm'])->name('solo-parent.apply');
+    Route::post('/applications', [ApplicationController::class, 'store'])->name('applications.store');
+    Route::get('/applications/{id}', [ApplicationController::class, 'show'])->name('applications.show');
 });
 
 // Barangay Analysis Routes
@@ -204,29 +215,24 @@ Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
                 if ($record) {
                     $result[] = $record;
                 } else {
-                    // Get a template from any existing year to get the correct ID
-                    $template = App\Models\Barangay::where('municipality', $municipality)
-                        ->where('name', $barangayName)
-                        ->first();
-                    
- // Use updateOrCreate to prevent duplicates
-$newRecord = App\Models\Barangay::updateOrCreate(
-    [
-        'municipality' => $municipality,
-        'name' => $barangayName,
-        'year' => $year
-    ],
-    [
-        'male_population' => 0,
-        'female_population' => 0,
-        'population_0_19' => 0,
-        'population_20_59' => 0,
-        'population_60_100' => 0,
-        'single_parent_count' => 0,
-        'total_households' => 0,
-        'total_approved_applications' => 0,
-    ]
-);
+                    // Use updateOrCreate to prevent duplicates
+                    $newRecord = App\Models\Barangay::updateOrCreate(
+                        [
+                            'municipality' => $municipality,
+                            'name' => $barangayName,
+                            'year' => $year
+                        ],
+                        [
+                            'male_population' => 0,
+                            'female_population' => 0,
+                            'population_0_19' => 0,
+                            'population_20_59' => 0,
+                            'population_60_100' => 0,
+                            'single_parent_count' => 0,
+                            'total_households' => 0,
+                            'total_approved_applications' => 0,
+                        ]
+                    );
                     
                     $result[] = $newRecord;
                 }

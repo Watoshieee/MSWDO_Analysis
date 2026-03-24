@@ -9,7 +9,7 @@ class Application extends Model
     // Disable timestamps since your table doesn't have created_at/updated_at
     public $timestamps = false;
     
-    // Define the table name (optional, but good practice)
+    // Define the table name
     protected $table = 'applications';
     
     // Define the primary key
@@ -26,13 +26,14 @@ class Application extends Model
         'gender',
         'contact_number',
         'status',
-        'application_date'
+        'application_date',
+        'year',
+        'form_data'
     ];
     
-    // Define attribute casting
     protected $casts = [
-        'application_date' => 'datetime',
-        'age' => 'integer'
+        'form_data' => 'array',
+        'application_date' => 'datetime'
     ];
     
     // Relationships
