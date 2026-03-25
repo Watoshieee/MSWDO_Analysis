@@ -4,200 +4,140 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>My Requirements - MSWDO</title>
+    <title>My Requirements – MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-blue: #2C3E8F;
             --secondary-yellow: #FDB913;
+            --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
+            --bg-light: #F8FAFC; --bg-white: #FFFFFF; --bg-soft-blue: #F0F5FF;
+            --border-light: #E2E8F0; --text-dark: #1E293B;
+            --secondary-yellow-light: #FFF3D6;
         }
+        body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); display:flex; flex-direction:column; min-height:100vh; }
+        a { text-decoration: none; }
 
-        body {
-            background: #f8f9fa;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        }
+        /* ── NAVBAR ── */
+        .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
+        .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display:flex; align-items:center; gap:10px; }
+        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.95rem; }
+        .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
+        .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
+        .user-info { color:white; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.1); padding:9px 22px; border-radius:40px; font-size:0.92rem; font-weight:600; }
+        .logout-btn { background:transparent; border:2px solid rgba(255,255,255,0.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; transition:all 0.3s; font-size:0.88rem; cursor:pointer; }
+        .logout-btn:hover { background:var(--secondary-yellow); color:var(--primary-blue); border-color:var(--secondary-yellow); }
 
-        .navbar {
-            background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
-        }
+        /* ── HERO BANNER ── */
+        .hero-banner { background: var(--primary-gradient); color: white; padding: 54px 0 46px; position: relative; overflow: hidden; }
+        .hero-banner::before { content:''; position:absolute; top:-80px; right:-80px; width:320px; height:320px; border-radius:50%; background:rgba(253,185,19,0.10); }
+        .hero-banner::after  { content:''; position:absolute; bottom:-60px; left:-40px; width:220px; height:220px; border-radius:50%; background:rgba(255,255,255,0.05); }
+        .hero-inner { position:relative; z-index:2; }
+        .hero-badge { display:inline-block; background:rgba(253,185,19,0.18); color:var(--secondary-yellow); border:1px solid rgba(253,185,19,0.35); border-radius:30px; padding:5px 18px; font-size:0.75rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:16px; }
+        .hero-banner h1 { font-size:2.4rem; font-weight:900; margin-bottom:8px; line-height:1.15; }
+        .hero-divider { width:50px; height:4px; background:var(--secondary-yellow); border-radius:2px; margin:14px 0; }
+        .hero-banner p { opacity:0.84; font-size:0.97rem; margin:0; max-width:600px; line-height:1.7; }
 
-        .navbar-brand, .nav-link {
-            color: white !important;
-        }
+        /* ── MAIN CONTENT ── */
+        .main-content { flex:1; }
 
-        .page-header {
-            margin: 30px 0;
-        }
-
-        .page-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-blue);
-        }
-
+        /* ── APPLICATION CARD ── */
         .application-card {
-            background: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-            border-left: 5px solid #dee2e6;
+            background: var(--bg-white); border-radius: 18px;
+            border: 1px solid var(--border-light); margin-bottom: 24px;
+            overflow: hidden; box-shadow: 0 4px 15px rgba(0,0,0,0.04);
         }
-
-        .application-card.approved {
-            border-left-color: #28a745;
+        .app-card-header {
+            padding: 18px 24px;
+            display: flex; justify-content: space-between; align-items: center;
+            border-bottom: 1px solid var(--border-light);
+            background: var(--bg-soft-blue);
         }
-
-        .application-card.rejected {
-            border-left-color: #dc3545;
+        .app-type-tag {
+            font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em;
+            text-transform: uppercase; background: var(--primary-blue);
+            color: white; border-radius: 20px; padding: 3px 12px;
         }
+        .app-date { font-size: 0.82rem; color: #64748b; }
+        .app-card-body { padding: 22px 24px; }
 
-        .application-card.pending {
-            border-left-color: #ffc107;
-        }
+        /* Status badge */
+        .status-badge { padding: 5px 14px; border-radius: 20px; font-size: 0.8rem; font-weight: 700; display: inline-block; }
+        .status-approved  { background: #d4edda; color: #155724; }
+        .status-rejected  { background: #f8d7da; color: #721c24; }
+        .status-pending   { background: var(--secondary-yellow-light); color: #856404; }
+        .status-in_review { background: #d1ecf1; color: #0c5460; }
 
-        .application-card.in_review {
-            border-left-color: #17a2b8;
-        }
+        /* Progress */
+        .progress-track { height: 8px; border-radius: 4px; background: #E2E8F0; overflow: hidden; margin-bottom: 6px; }
+        .progress-fill  { height: 100%; background: var(--primary-gradient); border-radius: 4px; transition: width 0.4s ease; }
 
-        .program-badge {
-            background: var(--primary-blue);
-            color: white;
-            padding: 5px 15px;
-            border-radius: 20px;
-            font-size: 0.85rem;
-        }
+        /* Stat mini-row */
+        .stat-mini { text-align: center; }
+        .stat-mini .val { font-size: 1.4rem; font-weight: 800; color: var(--primary-blue); line-height:1; }
+        .stat-mini .lbl { font-size: 0.72rem; color: #94a3b8; text-transform: uppercase; letter-spacing:0.06em; margin-top: 2px; }
 
-        .status-badge {
-            padding: 5px 12px;
-            border-radius: 20px;
-            font-size: 0.8rem;
-            font-weight: 600;
-        }
-
-        .status-approved {
-            background: #d4edda;
-            color: #155724;
-        }
-
-        .status-rejected {
-            background: #f8d7da;
-            color: #721c24;
-        }
-
-        .status-pending {
-            background: #fff3cd;
-            color: #856404;
-        }
-
-        .status-in_review {
-            background: #d1ecf1;
-            color: #0c5460;
-        }
-
-        .progress-bar-custom {
-            height: 8px;
-            border-radius: 4px;
-            background: #e0e0e0;
-            overflow: hidden;
-        }
-
-        .progress-fill {
-            height: 100%;
-            background: linear-gradient(90deg, var(--primary-blue), var(--secondary-yellow));
-            transition: width 0.3s ease;
-        }
-
-        .requirement-item {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 12px;
+        /* Requirement items */
+        .req-item {
+            padding: 14px 16px; border-radius: 12px;
+            background: var(--bg-light); border-left: 4px solid var(--border-light);
             margin-bottom: 10px;
-            border-left: 3px solid #dee2e6;
         }
+        .req-item.approved   { border-left-color: #28a745; background: #f0fff8; }
+        .req-item.rejected   { border-left-color: #dc3545; background: #fff5f5; }
+        .req-item.in_review  { border-left-color: #17a2b8; background: #f0faff; }
+        .req-item.pending    { border-left-color: var(--secondary-yellow); }
+        .req-name { font-weight: 600; font-size: 0.9rem; color: var(--text-dark); }
+        .admin-remark { font-size: 0.82rem; color: #dc3545; margin-top: 6px; padding: 6px 10px; background: #fff5f5; border-radius: 8px; }
 
-        .requirement-item.approved {
-            border-left-color: #28a745;
-            background: #f0fff0;
-        }
+        /* File preview */
+        .file-preview { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; cursor: pointer; }
+        .btn-view { background: var(--primary-blue); color: white; border: none; padding: 5px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .btn-view:hover { background: #1A2A5C; color: white; }
 
-        .requirement-item.rejected {
-            border-left-color: #dc3545;
-            background: #fff0f0;
-        }
+        /* Alerts */
+        .alert { border-radius: 12px; border: none; font-size: 0.9rem; }
+        .alert-success-c { background: #d4edda; border-left: 5px solid #28a745; color: #155724; }
+        .alert-warning-c { background: var(--secondary-yellow-light); border-left: 5px solid var(--secondary-yellow); color: #856404; }
 
-        .requirement-item.pending {
-            border-left-color: #ffc107;
-        }
+        /* Empty state */
+        .empty-state { text-align:center; padding: 50px 0; }
+        .empty-num { font-size: 4rem; font-weight: 800; color: #E2E8F0; line-height:1; }
+        .empty-state p { color: #94a3b8; margin-bottom: 18px; }
 
-        .file-preview {
-            width: 50px;
-            height: 50px;
-            object-fit: cover;
-            border-radius: 8px;
-            cursor: pointer;
-        }
+        /* Reupload */
+        .reupload-form { background: #FFF3D6; border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
 
-        .btn-view {
-            background: var(--primary-blue);
-            color: white;
-            border: none;
-            padding: 5px 12px;
-            border-radius: 6px;
-            font-size: 0.8rem;
-        }
-
-        .btn-view:hover {
-            background: #1a2a5c;
-            color: white;
-        }
+        /* Footer */
+        .footer-strip { background: var(--primary-gradient); color: white; text-align: center; padding: 18px; font-size: 0.85rem; margin-top: 40px; }
     </style>
 </head>
 <body>
+
+    <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/user/dashboard">
-                <i class="bi bi-heart-fill"></i> MSWDO Analysis
+                <img src="/images/mswd-logo.png" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item">
-                        <a class="nav-link" href="/dashboard">
-                            <i class="bi bi-speedometer2"></i> Dashboard
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/user/programs">
-                            <i class="bi bi-list-check"></i> Programs
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/user/my-requirements">
-                            <i class="bi bi-file-earmark-check"></i> My Requirements
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/user/announcements">
-                            <i class="bi bi-megaphone"></i> Announcements
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/analysis">
-                            <i class="bi bi-bar-chart"></i> Public Analysis
-                        </a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="/user/dashboard">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/user/programs">Programs</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/user/announcements">Announcements</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
                 <div class="d-flex">
-                    <div class="user-info text-white d-flex align-items-center gap-3">
-                        <i class="bi bi-person-circle"></i>
+                    <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
                             @csrf
-                            <button type="submit" class="btn btn-sm btn-outline-light">Logout</button>
+                            <button type="submit" class="logout-btn">Logout</button>
                         </form>
                     </div>
                 </div>
@@ -205,213 +145,164 @@
         </div>
     </nav>
 
-    <div class="container mt-4">
-        <div class="page-header">
-            <h1 class="page-title">
-                <i class="bi bi-file-earmark-check" style="color: var(--secondary-yellow);"></i>
-                My Requirements
-            </h1>
-            <p class="text-muted">Track the status of your submitted requirements for each program</p>
+    <!-- ===== HERO BANNER ===== -->
+    <section class="hero-banner">
+        <div class="container">
+            <div class="hero-inner">
+                <div class="hero-badge">Member Portal</div>
+                <h1>My Requirements</h1>
+                <div class="hero-divider"></div>
+                <p>Track the status of your submitted documents for each MSWDO program application.</p>
+            </div>
         </div>
+    </section>
+
+    <div class="main-content">
+    <div class="container mt-4">
 
         @if(session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
+            <div class="alert alert-success-c alert-dismissible fade show mb-3">
+                {{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
         @endif
         @if(session('error'))
-            <div class="alert alert-danger">{{ session('error') }}</div>
+            <div class="alert alert-danger alert-dismissible fade show mb-3">
+                {{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
         @endif
 
+        @php
+            $hasPendingOrApproved = false; $hasCompleted = false;
+            foreach($requirementsData as $data) {
+                if (in_array($data['overallStatus'], ['pending', 'in_review'])) $hasPendingOrApproved = true;
+                if ($data['overallStatus'] == 'approved') $hasCompleted = true;
+            }
+        @endphp
 
-        <!-- ADD THIS BLOCK HERE -->
-@php
-    $hasPendingOrApproved = false;
-    $hasCompleted = false;
-    foreach($requirementsData as $data) {
-        if (in_array($data['overallStatus'], ['pending', 'in_review'])) {
-            $hasPendingOrApproved = true;
-        }
-        if ($data['overallStatus'] == 'approved') {
-            $hasCompleted = true;
-        }
-    }
-@endphp
-
-@if($hasCompleted)
-    <div class="alert alert-success alert-dismissible fade show mb-4" style="background: #d4edda; border-left: 5px solid #28a745;">
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        <div class="d-flex align-items-center">
-            <div class="me-3">
-                <i class="bi bi-trophy" style="font-size: 3rem; color: #28a745;"></i>
+        @if($hasCompleted)
+            <div class="alert alert-success-c alert-dismissible fade show mb-4">
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <strong>Congratulations, {{ Auth::user()->full_name }}!</strong> All your requirements have been approved.
+                Please proceed to the <strong>MSWDO Office</strong> (Municipal Social Welfare and Development Office, Municipal Hall) during office hours: <strong>Mon–Fri, 8:00 AM – 5:00 PM</strong>.
             </div>
-            <div>
-                <h4 class="mb-1">🎉 Congratulations, {{ Auth::user()->full_name }}!</h4>
-                <p class="mb-0">All your requirements have been <strong>APPROVED</strong>!</p>
-                <p class="mb-2">Please proceed to the <strong>MSWDO Office</strong> to complete your application.</p>
-                <hr class="my-2">
-                <div class="row mt-2">
-                    <div class="col-md-6">
-                        <i class="bi bi-geo-alt-fill"></i> <strong>Location:</strong> Municipal Social Welfare and Development Office, Majayjay Municipal Hall
-                    </div>
-                    <div class="col-md-6">
-                        <i class="bi bi-file-text-fill"></i> <strong>Bring:</strong> Your submitted requirements (printed copies)
-                    </div>
-                </div>
-                <div class="mt-2">
-                    <i class="bi bi-info-circle-fill"></i> <strong>Office Hours:</strong> Monday - Friday, 8:00 AM - 5:00 PM
-                </div>
+        @elseif($hasPendingOrApproved)
+            <div class="alert alert-warning-c alert-dismissible fade show mb-4">
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                <strong>Active Application.</strong> You cannot apply for another program until your current application is resolved.
             </div>
-        </div>
-    </div>
-@elseif($hasPendingOrApproved)
-    <div class="alert alert-warning alert-dismissible fade show mb-4">
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-        <i class="bi bi-info-circle"></i>
-        <strong>You have an active application.</strong> You cannot apply for another program until your current application is completed or rejected.
-    </div>
-@endif
-<!-- END OF ADDED BLOCK -->
+        @endif
 
         @if(count($requirementsData) > 0)
             @foreach($requirementsData as $data)
                 @php
-                    $app = $data['application'];
-                    $overallStatus = $data['overallStatus'];
-                    $totalReq = $data['totalRequirements'];
-                    $uploaded = $data['uploadedCount'];
-                    $approved = $data['approvedCount'];
-                    $rejected = $data['rejectedCount'];
-                    $pending = $data['pendingCount'];
+                    $app            = $data['application'];
+                    $overallStatus  = $data['overallStatus'];
+                    $totalReq       = $data['totalRequirements'];
+                    $uploaded       = $data['uploadedCount'];
+                    $approved       = $data['approvedCount'];
+                    $rejected       = $data['rejectedCount'];
                     $percentComplete = $totalReq > 0 ? ($approved / $totalReq) * 100 : 0;
                 @endphp
 
-                <div class="application-card {{ $overallStatus }}">
-                    <div class="row">
-                        <div class="col-md-12">
-                            <div class="d-flex justify-content-between align-items-center mb-3">
-                                <div>
-                                    <h4 class="mb-1">{{ str_replace('_', ' ', $app->program_type) }}</h4>
-                                    <span class="program-badge">Applied: {{ $app->application_date->format('M d, Y') }}</span>
-                                </div>
-                                <div>
-                                    <span class="status-badge status-{{ $overallStatus }}">
-                                        <i class="bi bi-{{ $overallStatus == 'approved' ? 'check-circle' : ($overallStatus == 'rejected' ? 'x-circle' : ($overallStatus == 'in_review' ? 'hourglass-split' : 'clock')) }}"></i>
-                                        {{ ucfirst(str_replace('_', ' ', $overallStatus)) }}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div class="row mb-3">
-                                <div class="col-md-3">
-                                    <small class="text-muted">Total Requirements</small>
-                                    <div><strong>{{ $totalReq }}</strong></div>
-                                </div>
-                                <div class="col-md-3">
-                                    <small class="text-muted">Uploaded</small>
-                                    <div><strong class="text-success">{{ $uploaded }}</strong></div>
-                                </div>
-                                <div class="col-md-3">
-                                    <small class="text-muted">Approved</small>
-                                    <div><strong class="text-success">{{ $approved }}</strong></div>
-                                </div>
-                                <div class="col-md-3">
-                                    <small class="text-muted">Rejected</small>
-                                    <div><strong class="text-danger">{{ $rejected }}</strong></div>
-                                </div>
-                            </div>
-
-                            <div class="progress-bar-custom mb-3">
-                                <div class="progress-fill" style="width: {{ $percentComplete }}%"></div>
-                            </div>
-                            <small class="text-muted">Overall Progress: {{ round($percentComplete) }}% Complete</small>
-
-                            <hr class="my-3">
-
-                            <h6 class="mb-3">Submitted Documents</h6>
-                            
-                            @foreach($data['fileUploads'] as $file)
-                                @php
-                                    $status = $file->status;
-                                    $hasFile = $file->file_path;
-                                @endphp
-<div class="requirement-item {{ $status }}">
-    <div class="row align-items-center">
-        <div class="col-md-5">
-            <strong>{{ $file->requirement_name }}</strong>
-        </div>
-        <div class="col-md-3">
-            <span class="status-badge status-{{ $status }}">
-                <i class="bi bi-{{ $status == 'approved' ? 'check-circle' : ($status == 'rejected' ? 'x-circle' : 'clock') }}"></i>
-                {{ ucfirst($status) }}
-            </span>
-        </div>
-        <div class="col-md-4 text-end">
-            @if($hasFile)
-                @php
-                    $ext = pathinfo($file->file_path, PATHINFO_EXTENSION);
-                @endphp
-                @if(in_array($ext, ['jpg', 'jpeg', 'png']))
-                    <img src="{{ asset('storage/' . $file->file_path) }}" class="file-preview" 
-                         onclick="window.open('{{ asset('storage/' . $file->file_path) }}')">
-                @else
-                    <i class="bi bi-file-pdf" style="font-size: 2rem; color: #dc3545; cursor: pointer;" 
-                       onclick="window.open('{{ asset('storage/' . $file->file_path) }}')"></i>
-                @endif
-                <a href="{{ asset('storage/' . $file->file_path) }}" target="_blank" class="btn-view ms-2">
-                    <i class="bi bi-eye"></i> View
-                </a>
-            @else
-                <span class="text-muted">
-                    <i class="bi bi-cloud-upload"></i> Not uploaded
-                </span>
-            @endif
-        </div>
-    </div>
-    
-    <!-- SHOW ADMIN REMARKS -->
-    @if($file->admin_remarks)
-        <div class="text-danger small mt-2">
-            <i class="bi bi-chat"></i> <strong>Admin Remarks:</strong> {{ $file->admin_remarks }}
-        </div>
-    @endif
-    
-    <!-- RE-UPLOAD SECTION (only for rejected files) -->
-    @if($status == 'rejected')
-        <div class="mt-3 pt-2 border-top">
-            <form action="{{ route('user.resubmit-requirement', $file->id) }}" method="POST" enctype="multipart/form-data" class="reupload-form">
-                @csrf
-                @method('PUT')
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <input type="file" name="file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf" required>
-                        <small class="text-muted">Max 5MB. Allowed: JPG, PNG, PDF</small>
-                    </div>
-                    <div class="col-md-4">
-                        <button type="submit" class="btn btn-sm btn-warning w-100">
-                            <i class="bi bi-arrow-repeat"></i> Re-upload Document
-                        </button>
-                    </div>
-                </div>
-            </form>
-        </div>
-    @endif
-</div>
-                            @endforeach
+                <div class="application-card">
+                    <!-- Card header -->
+                    <div class="app-card-header">
+                        <div class="d-flex align-items-center gap-3">
+                            <span class="app-type-tag">{{ str_replace('_', ' ', $app->program_type) }}</span>
+                            <span class="app-date">Applied: {{ $app->application_date->format('M d, Y') }}</span>
                         </div>
+                        <span class="status-badge status-{{ $overallStatus }}">
+                            {{ ucfirst(str_replace('_', ' ', $overallStatus)) }}
+                        </span>
+                    </div>
+
+                    <div class="app-card-body">
+                        <!-- Stats row -->
+                        <div class="row g-3 mb-4">
+                            <div class="col-3"><div class="stat-mini"><div class="val">{{ $totalReq }}</div><div class="lbl">Total</div></div></div>
+                            <div class="col-3"><div class="stat-mini"><div class="val">{{ $uploaded }}</div><div class="lbl">Uploaded</div></div></div>
+                            <div class="col-3"><div class="stat-mini"><div class="val" style="color:#28a745;">{{ $approved }}</div><div class="lbl">Approved</div></div></div>
+                            <div class="col-3"><div class="stat-mini"><div class="val" style="color:#dc3545;">{{ $rejected }}</div><div class="lbl">Rejected</div></div></div>
+                        </div>
+
+                        <!-- Progress bar -->
+                        <div class="progress-track">
+                            <div class="progress-fill" style="width: {{ $percentComplete }}%"></div>
+                        </div>
+                        <p class="text-muted" style="font-size:0.78rem; margin-bottom:20px;">
+                            Overall Progress — <strong>{{ round($percentComplete) }}% complete</strong>
+                        </p>
+
+                        <h6 style="font-weight:700;color:var(--primary-blue);margin-bottom:14px;font-size:0.88rem;text-transform:uppercase;letter-spacing:0.06em;">Submitted Documents</h6>
+
+                        @foreach($data['fileUploads'] as $file)
+                            @php $status = $file->status; $hasFile = $file->file_path; @endphp
+                            <div class="req-item {{ $status }}">
+                                <div class="row align-items-center g-2">
+                                    <div class="col-md-5">
+                                        <div class="req-name">{{ $file->requirement_name }}</div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <span class="status-badge status-{{ $status }}">{{ ucfirst($status) }}</span>
+                                    </div>
+                                    <div class="col-md-4 text-end">
+                                        @if($hasFile)
+                                            @php $ext = pathinfo($file->file_path, PATHINFO_EXTENSION); @endphp
+                                            @if(in_array($ext, ['jpg','jpeg','png']))
+                                                <img src="{{ asset('storage/' . $file->file_path) }}" class="file-preview" onclick="window.open('{{ asset('storage/' . $file->file_path) }}')">
+                                            @else
+                                                <span style="font-size:1.6rem;color:#dc3545;cursor:pointer;" onclick="window.open('{{ asset('storage/' . $file->file_path) }}')">PDF</span>
+                                            @endif
+                                            <a href="{{ asset('storage/' . $file->file_path) }}" target="_blank" class="btn-view ms-2">View</a>
+                                        @else
+                                            <span style="font-size:0.82rem;color:#94a3b8;">Not uploaded</span>
+                                        @endif
+                                    </div>
+                                </div>
+
+                                @if($file->admin_remarks)
+                                    <div class="admin-remark">
+                                        <strong>Remark:</strong> {{ $file->admin_remarks }}
+                                    </div>
+                                @endif
+
+                                @if($status == 'rejected')
+                                    <div class="reupload-form">
+                                        <p style="font-size:0.83rem;font-weight:600;margin-bottom:10px;color:#856404;">Re-upload Document</p>
+                                        <form action="{{ route('user.resubmit-requirement', $file->id) }}" method="POST" enctype="multipart/form-data">
+                                            @csrf @method('PUT')
+                                            <div class="row g-2 align-items-center">
+                                                <div class="col-md-8">
+                                                    <input type="file" name="file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf" required>
+                                                    <small class="text-muted">Max 5MB. JPG, PNG, PDF</small>
+                                                </div>
+                                                <div class="col-md-4">
+                                                    <button type="submit" class="btn btn-sm btn-warning w-100" style="font-weight:600;">Re-upload</button>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                @endif
+                            </div>
+                        @endforeach
                     </div>
                 </div>
             @endforeach
         @else
-            <div class="text-center py-5">
-                <i class="bi bi-inbox" style="font-size: 4rem; color: #ccc;"></i>
-                <h5 class="mt-3">No requirements submitted yet</h5>
-                <p class="text-muted">Click "Programs" to apply for a program and submit your requirements.</p>
-                <a href="{{ route('user.programs') }}" class="btn btn-primary mt-2">
-                    <i class="bi bi-grid-3x3-gap-fill"></i> Browse Programs
-                </a>
+            <div class="empty-state">
+                <div class="empty-num">00</div>
+                <h5 style="font-weight:700;color:var(--primary-blue);margin:12px 0 8px;">No requirements submitted yet</h5>
+                <p>Apply for a program first to view your document checklist here.</p>
+                <a href="{{ route('user.programs') }}" style="background:var(--primary-gradient);color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:600;font-size:0.9rem;">Browse Programs &rarr;</a>
             </div>
         @endif
+
+    </div>
     </div>
 
+    <div class="footer-strip">
+        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
+    </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

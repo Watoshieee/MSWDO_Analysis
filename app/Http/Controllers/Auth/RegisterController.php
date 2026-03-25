@@ -18,94 +18,65 @@ class RegisterController extends Controller
     public function showRegistrationForm()
     {
         $municipalities = Municipality::whereIn('name', ['Magdalena', 'Liliw', 'Majayjay'])->get();
-        $roles = [
-            'user' => 'Regular User',
-            'admin' => 'Municipality Admin',
-            'super_admin' => 'Super Admin'
-        ];
-        return view('auth.register', compact('municipalities', 'roles'));
+        return view('auth.register', compact('municipalities'));
     }
 
     public function register(Request $request)
     {
         try {
             $validated = $request->validate([
-                'username' => 'required|string|max:50|unique:users',
-                'email' => 'required|string|email|max:100|unique:users',
-                'password' => 'required|string|min:8|confirmed',
-                'full_name' => 'required|string|max:100',
-                'birthdate' => 'required|date|before:today',
-                'municipality' => 'nullable|string|max:50',
-                'role' => 'required|in:user,admin,super_admin',
+                'full_name'             => 'required|string|max:100',
+                'username'              => 'required|string|max:50|unique:users',
+                'email'                 => 'required|string|email|max:100|unique:users',
+                'mobile_number'         => 'nullable|string|max:20',
+                'birthdate'             => 'required|date|before:today',
+                'municipality'          => 'nullable|string|max:50',
+                'password'              => 'required|string|min:8|confirmed',
             ]);
 
             $birthdate = Carbon::parse($validated['birthdate']);
             $age = $birthdate->age;
 
             $userData = [
-                'username' => $validated['username'],
-                'email' => $validated['email'],
-                'password' => Hash::make($validated['password']),
-                'full_name' => $validated['full_name'],
-                'birthdate' => $validated['birthdate'],
-                'age' => $age,
-                'role' => $validated['role'],
-                'status' => 'active',
+                'username'       => $validated['username'],
+                'email'          => $validated['email'],
+                'mobile_number'  => $validated['mobile_number'] ?? null,
+                'password'       => Hash::make($validated['password']),
+                'full_name'      => $validated['full_name'],
+                'birthdate'      => $validated['birthdate'],
+                'age'            => $age,
+                'role'           => 'user',   // Always user — registration is public-facing only
+                'status'         => 'active',
+                'municipality'   => $validated['municipality'] ?? 'Majayjay',
             ];
-
-            if ($validated['role'] === 'admin' || $validated['role'] === 'super_admin') {
-                if (empty($validated['municipality'])) {
-                    throw new Exception('Municipality is required for admin accounts.');
-                }
-                $userData['municipality'] = $validated['municipality'];
-            } else {
-                $userData['municipality'] = $validated['municipality'] ?? 'Majayjay';
-            }
 
             $user = User::create($userData);
 
-            // For super_admin and admin, auto-verify (no OTP needed)
-            if (in_array($validated['role'], ['super_admin', 'admin'])) {
-                $user->email_verified_at = now();
-                $user->save();
-                
-                Auth::login($user);
-                
-                if ($user->role === 'super_admin') {
-                    return redirect()->route('superadmin.dashboard')
-                        ->with('success', 'Super Admin account created successfully!');
-                } else {
-                    return redirect()->route('admin.dashboard')
-                        ->with('success', 'Admin account created successfully!');
-                }
-            }
-
-            // For regular users, generate OTP and send email
+            // Send OTP for email verification
             try {
                 $otp = $user->generateOtp();
-                
+
                 Mail::send('emails.otp', ['user' => $user, 'otp' => $otp], function ($message) use ($user) {
                     $message->to($user->email, $user->full_name)
-                        ->subject('Email Verification OTP - MSWDO Analysis');
+                        ->subject('Email Verification – MSWDO Member Portal');
                 });
-                
+
                 session(['otp_user_id' => $user->id]);
-                
+
                 return redirect()->route('otp.verify.form')
-                    ->with('success', 'Registration successful! Please check your email for OTP.');
-                    
+                    ->with('success', 'Account created! Please check your email for your OTP verification code.');
+
             } catch (Exception $e) {
                 Log::error('Failed to send OTP email: ' . $e->getMessage());
-                
-                // If email fails, show OTP form anyway with warning
+
                 session(['otp_user_id' => $user->id]);
                 return redirect()->route('otp.verify.form')
-                    ->with('warning', 'Registration successful but email sending failed. Please contact admin for OTP.');
+                    ->with('warning', 'Account created but we could not send the verification email. Please contact the MSWDO office for your OTP.');
             }
 
         } catch (Exception $e) {
             Log::error('Registration failed: ' . $e->getMessage());
-            
+
             return back()
                 ->withInput($request->except('password', 'password_confirmation'))
                 ->withErrors(['error' => 'Registration failed: ' . $e->getMessage()]);

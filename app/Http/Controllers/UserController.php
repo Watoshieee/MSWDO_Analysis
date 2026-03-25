@@ -27,6 +27,9 @@ public function dashboard()
     $approvedCount = Application::where('user_id', $user->id)
         ->where('status', 'approved')
         ->count();
+    $rejectedCount = Application::where('user_id', $user->id)
+        ->where('status', 'rejected')
+        ->count();
     
     $recentApplications = Application::where('user_id', $user->id)
         ->orderBy('application_date', 'desc')
@@ -39,6 +42,7 @@ public function dashboard()
         'totalApplications',
         'pendingCount',
         'approvedCount',
+        'rejectedCount',
         'recentApplications',
         'announcements'
     ));

@@ -6,6 +6,7 @@
     <title>MSWDO Comparative Analysis</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
@@ -37,101 +38,21 @@
             font-family: 'Inter', 'Segoe UI', sans-serif;
         }
 
+
         /* Navbar */
-        .navbar {
-            background: var(--primary-gradient) !important;
-            box-shadow: 0 4px 20px rgba(44, 62, 143, 0.15);
-        }
+        .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44, 62, 143, 0.18); padding: 14px 0; }
+        .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display:flex; align-items:center; gap:10px; }
+        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.95rem; }
+        .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
+        .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
+        .user-info { color: white; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1); padding: 9px 22px; border-radius: 40px; font-size:0.92rem; font-weight:500; }
+        .logout-btn { background: transparent; border: 2px solid rgba(255,255,255,0.8); color: white; border-radius: 30px; padding: 6px 18px; font-weight: 700; transition: all 0.3s; font-size:0.88rem; cursor:pointer; }
+        .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
+        .btn-login { background: white; color: var(--primary-blue); border: 2px solid white; border-radius: 30px; padding: 8px 25px; font-weight: 700; text-decoration: none; transition: all 0.3s; }
+        .btn-login:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); transform: translateY(-2px); }
+        .btn-register { background: transparent; border: 2px solid white; color: white; border-radius: 30px; padding: 8px 25px; font-weight: 700; text-decoration: none; transition: all 0.3s; }
+        .btn-register:hover { background: var(--secondary-yellow); color: var(--primary-blue); transform: translateY(-2px); }
 
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: white !important;
-        }
-
-        .navbar-brand i {
-            color: var(--secondary-yellow);
-        }
-
-        .nav-link {
-            color: rgba(255, 255, 255, 0.9) !important;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            border-radius: 8px;
-            padding: 8px 16px !important;
-        }
-
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: white !important;
-        }
-
-        .nav-link.active {
-            background: var(--secondary-yellow);
-            color: var(--primary-blue) !important;
-            font-weight: 600;
-        }
-
-        .user-info {
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: rgba(255, 255, 255, 0.1);
-            padding: 8px 20px;
-            border-radius: 40px;
-        }
-
-        .logout-btn {
-            background: transparent;
-            border: 2px solid white;
-            color: white;
-            border-radius: 30px;
-            padding: 6px 18px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .logout-btn:hover {
-            background: var(--secondary-yellow);
-            color: var(--primary-blue);
-            border-color: var(--secondary-yellow);
-        }
-
-        .btn-login {
-            background: white;
-            color: var(--primary-blue);
-            border: 2px solid white;
-            border-radius: 30px;
-            padding: 8px 25px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .btn-login:hover {
-            background: var(--secondary-yellow);
-            color: var(--primary-blue);
-            border-color: var(--secondary-yellow);
-            transform: translateY(-2px);
-        }
-
-        .btn-register {
-            background: transparent;
-            border: 2px solid white;
-            color: white;
-            border-radius: 30px;
-            padding: 8px 25px;
-            font-weight: 600;
-            text-decoration: none;
-            transition: all 0.3s ease;
-        }
-
-        .btn-register:hover {
-            background: var(--secondary-yellow);
-            color: var(--primary-blue);
-            transform: translateY(-2px);
-        }
 
         /* Page Header */
         .page-title {
@@ -434,108 +355,161 @@
         }
 
         @media (max-width: 768px) {
-            .page-title {
-                font-size: 1.5rem;
-            }
-            
-            .chart-container {
-                height: 300px;
-            }
-            
-            .stat-card h2 {
-                font-size: 2rem;
-            }
+            .page-title { font-size: 1.5rem; }
+            .chart-container { height: 300px; }
+            .stat-card h2 { font-size: 2rem; }
         }
 
         .btn-group .btn-light {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-color: transparent;
-    color: white;
-    transition: all 0.3s ease;
-}
+            background-color: rgba(255, 255, 255, 0.2);
+            border-color: transparent;
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-group .btn-light:hover { background-color: rgba(255, 255, 255, 0.3); color: white; }
+        .btn-group .btn-light.active { background-color: var(--secondary-yellow); color: var(--primary-blue); border-color: transparent; }
+        .btn-group .btn-light i { margin-right: 5px; }
 
-.btn-group .btn-light:hover {
-    background-color: rgba(255, 255, 255, 0.3);
-    color: white;
-}
+        /* ===== HERO BANNER ===== */
+        .hero-banner {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 58px 0 48px;
+            position: relative;
+            overflow: hidden;
+        }
+        .hero-banner::before {
+            content: ''; position: absolute; top: -70px; right: -70px;
+            width: 320px; height: 320px; border-radius: 50%;
+            background: rgba(253,185,19,0.1);
+        }
+        .hero-banner::after {
+            content: ''; position: absolute; bottom: -80px; left: -50px;
+            width: 250px; height: 250px; border-radius: 50%;
+            background: rgba(255,255,255,0.05);
+        }
+        .hero-banner .hero-badge {
+            display: inline-block;
+            background: rgba(253,185,19,0.18);
+            color: var(--secondary-yellow);
+            border: 1px solid rgba(253,185,19,0.35);
+            border-radius: 30px; padding: 5px 18px;
+            font-size: 0.78rem; font-weight: 700;
+            letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 18px;
+        }
+        .hero-banner h1 { font-size: 2.6rem; font-weight: 800; line-height: 1.2; margin-bottom: 14px; }
+        .hero-divider { width: 55px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; margin: 16px 0; }
+        .hero-banner p { font-size: 1.02rem; opacity: 0.87; max-width: 700px; line-height: 1.75; }
+        .hero-stat-pill {
+            display: inline-flex; align-items: center; gap: 8px;
+            background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 30px; padding: 8px 20px;
+            font-size: 0.9rem; font-weight: 600; margin-right: 10px; margin-top: 10px;
+        }
+        .hero-stat-pill span { color: var(--secondary-yellow); font-size: 1.05rem; font-weight: 800; }
 
-.btn-group .btn-light.active {
-    background-color: var(--secondary-yellow);
-    color: var(--primary-blue);
-    border-color: transparent;
-}
-
-.btn-group .btn-light i {
-    margin-right: 5px;
-}
+        /* ===== FOOTER ===== */
+        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.75); text-align: center; padding: 18px 0; font-size: 0.85rem; margin-top: 60px; }
+        .footer-strip strong { color: white; }
     </style>
 </head>
 <body>
-    <!-- Navigation Bar with proper links -->
+    <!-- Navigation Bar — role-aware -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/analysis">
-                <i class="bi bi-heart-fill"></i> MSWDO Analysis
+                <img src="/images/mswd-logo.png" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
+
+                {{-- ── SUPER ADMIN NAV ── --}}
+                @auth
+                @if(Auth::user()->isSuperAdmin())
                 <ul class="navbar-nav me-auto">
-                    @auth
-                        @if(Auth::user()->isAdmin() || Auth::user()->isSuperAdmin())
-                        <li class="nav-item">
-                            <a class="nav-link" href="/dashboard">
-                                <i class="bi bi-speedometer2"></i> Dashboard
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a class="nav-link" href="{{ route('user.my-requirements') }}">
-                                <i class="bi bi-folder-check"></i> Applications
-                            </a>
-                        </li>
-                        @endif
-                    @endauth
-                    <li class="nav-item">
-                        <a class="nav-link active" href="/analysis">
-                            <i class="bi bi-bar-chart"></i> Analysis
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/analysis/demographic">
-                            <i class="bi bi-people"></i> Demographic
-                        </a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link" href="/analysis/programs">
-                            <i class="bi bi-heart"></i> Programs
-                        </a>
-                    </li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.dashboard') }}">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.data.dashboard') }}">Data Management</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/analysis">Public View</a></li>
                 </ul>
                 <div class="d-flex">
-                    @auth
-                        <div class="user-info">
-                            <i class="bi bi-person-circle"></i>
-                            <span>{{ Auth::user()->full_name }}</span>
-                            <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                @csrf
-                                <button type="submit" class="logout-btn">
-                                    <i class="bi bi-box-arrow-right"></i> Logout
-                                </button>
-                            </form>
-                        </div>
-                    @else
-                        <a href="{{ route('login') }}" class="btn-login me-2">
-                            <i class="bi bi-box-arrow-in-right"></i> Login
-                        </a>
-                        <a href="{{ route('register') }}" class="btn-register">
-                            <i class="bi bi-person-plus"></i> Register
-                        </a>
-                    @endauth
+                    <div class="user-info">
+                        <span>{{ Auth::user()->full_name }}</span>
+                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="logout-btn">Logout</button>
+                        </form>
+                    </div>
                 </div>
+                {{-- ── ADMIN NAV ── --}}
+                @elseif(Auth::user()->isAdmin())
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Public View</a></li>
+                </ul>
+                <div class="d-flex">
+                    <div class="user-info">
+                        <span>{{ Auth::user()->full_name }}</span>
+                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="logout-btn">Logout</button>
+                        </form>
+                    </div>
+                </div>
+                @else
+                {{-- ── USER / GUEST PUBLIC NAV ── --}}
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link active" href="/analysis">Programs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Analysis</a></li>
+                </ul>
+                <div class="d-flex">
+                    <div class="user-info">
+                        <span>{{ Auth::user()->full_name }}</span>
+                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="logout-btn">Logout</button>
+                        </form>
+                    </div>
+                </div>
+                @endif
+                @else
+                {{-- ── GUEST NAV ── --}}
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link active" href="/analysis">Programs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Analysis</a></li>
+                </ul>
+                <div class="d-flex">
+                    <a href="{{ route('login') }}" class="btn-login me-2">Login</a>
+                    <a href="{{ route('register') }}" class="btn-register">Register</a>
+                </div>
+                @endauth
+
             </div>
         </div>
     </nav>
+
+    <!-- ===== HERO BANNER ===== -->
+    <section class="hero-banner">
+        <div class="container" style="position:relative;z-index:2;">
+            <div class="hero-badge">Comparative Analysis</div>
+            <h1>Magdalena, Liliw &amp; Majayjay</h1>
+            <div class="hero-divider"></div>
+            <p>A side-by-side comparison of population demographics, social welfare program beneficiaries, and household statistics across the three municipalities.</p>
+            <div class="mt-3">
+                <span class="hero-stat-pill"><i class="bi bi-people-fill"></i> Population &amp; Households</span>
+                <span class="hero-stat-pill"><i class="bi bi-heart-fill"></i> Program Beneficiaries</span>
+                <span class="hero-stat-pill"><i class="bi bi-bar-chart-fill"></i> Trends &amp; Insights</span>
+            </div>
+        </div>
+    </section>
 
     <div class="container mt-4">
         <!-- Session Messages -->
@@ -1300,5 +1274,101 @@
         document.getElementById('barBtn').classList.remove('active');
     }
 </script>
+
+    <!-- Footer -->
+    <div class="footer-strip">
+        <i class="bi bi-heart-fill me-1" style="color:#FDB913;"></i>
+        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
+    </div>
+
+
+    {{-- ── User back-button (non-admin authenticated users only) ── --}}
+    @auth
+    @if(!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin())
+    <style>
+        .back-dashboard-btn {
+            position: fixed; bottom: 32px; left: 32px; z-index: 9999;
+            display: flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
+            color: white; border: none; border-radius: 50px;
+            padding: 13px 22px 13px 18px;
+            font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.88rem;
+            box-shadow: 0 8px 28px rgba(44,62,143,0.35);
+            cursor: pointer; text-decoration: none;
+            transition: all 0.3s ease;
+            animation: slideInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        .back-dashboard-btn:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(44,62,143,0.45); color: white; }
+        .back-dashboard-btn .btn-dot { width: 8px; height: 8px; border-radius: 50%; background: #FDB913; flex-shrink: 0; box-shadow: 0 0 0 3px rgba(253,185,19,0.25); }
+        .back-dashboard-btn .btn-label { letter-spacing: 0.02em; }
+        .back-dashboard-btn .btn-arrow { width: 26px; height: 26px; border-radius: 50%; background: rgba(253,185,19,0.22); color: #FDB913; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 900; flex-shrink: 0; transition: transform 0.25s ease; }
+        .back-dashboard-btn:hover .btn-arrow { transform: translateX(-3px); }
+        @keyframes slideInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+    <a href="{{ route('user.dashboard') }}" class="back-dashboard-btn" title="Return to your dashboard">
+        <span class="btn-arrow">&#8592;</span>
+        <span class="btn-dot"></span>
+        <span class="btn-label">My Dashboard</span>
+    </a>
+    @endif
+    @endauth
+
+    {{-- ── Back button: super-admin ── --}}
+    @auth
+    @if(Auth::user()->isSuperAdmin())
+    <style>
+        .admin-back-btn {
+            position: fixed; bottom: 32px; left: 32px; z-index: 9999;
+            display: flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
+            color: #1A2A5C; border: none; border-radius: 50px;
+            padding: 13px 22px 13px 18px;
+            font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.88rem;
+            box-shadow: 0 8px 28px rgba(253,185,19,0.45);
+            cursor: pointer; text-decoration: none;
+            transition: all 0.3s ease;
+            animation: adminSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        .admin-back-btn:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(253,185,19,0.55); color: #1A2A5C; }
+        .admin-back-btn .abtn-dot { width: 8px; height: 8px; border-radius: 50%; background: #1A2A5C; flex-shrink: 0; box-shadow: 0 0 0 3px rgba(26,42,92,0.18); }
+        .admin-back-btn .abtn-label { letter-spacing: 0.02em; }
+        .admin-back-btn .abtn-arrow { width: 26px; height: 26px; border-radius: 50%; background: rgba(26,42,92,0.12); color: #1A2A5C; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 900; flex-shrink: 0; transition: transform 0.25s ease; }
+        .admin-back-btn:hover .abtn-arrow { transform: translateX(-3px); }
+        @keyframes adminSlideIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+    <a href="{{ route('superadmin.dashboard') }}" class="admin-back-btn" title="Return to Super Admin Dashboard">
+        <span class="abtn-arrow">&#8592;</span>
+        <span class="abtn-dot"></span>
+        <span class="abtn-label">Super Admin Dashboard</span>
+    </a>
+    {{-- ── Back button: admin ── --}}
+    @elseif(Auth::user()->isAdmin())
+    <style>
+        .admin-back-btn {
+            position: fixed; bottom: 32px; left: 32px; z-index: 9999;
+            display: flex; align-items: center; gap: 10px;
+            background: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
+            color: #1A2A5C; border: none; border-radius: 50px;
+            padding: 13px 22px 13px 18px;
+            font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.88rem;
+            box-shadow: 0 8px 28px rgba(253,185,19,0.45);
+            cursor: pointer; text-decoration: none;
+            transition: all 0.3s ease;
+            animation: adminSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
+        .admin-back-btn:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(253,185,19,0.55); color: #1A2A5C; }
+        .admin-back-btn .abtn-dot { width: 8px; height: 8px; border-radius: 50%; background: #1A2A5C; flex-shrink: 0; box-shadow: 0 0 0 3px rgba(26,42,92,0.18); }
+        .admin-back-btn .abtn-label { letter-spacing: 0.02em; }
+        .admin-back-btn .abtn-arrow { width: 26px; height: 26px; border-radius: 50%; background: rgba(26,42,92,0.12); color: #1A2A5C; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 900; flex-shrink: 0; transition: transform 0.25s ease; }
+        .admin-back-btn:hover .abtn-arrow { transform: translateX(-3px); }
+    </style>
+    <a href="{{ route('admin.dashboard') }}" class="admin-back-btn" title="Return to Admin Dashboard">
+        <span class="abtn-arrow">&#8592;</span>
+        <span class="abtn-dot"></span>
+        <span class="abtn-label">Admin Dashboard</span>
+    </a>
+    @endif
+    @endauth
+
 </body>
 </html>

@@ -3,440 +3,307 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Super Admin Dashboard - MSWDO</title>
+    <title>Super Admin Dashboard – MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --primary-blue: #2C3E8F;
             --primary-blue-light: #E5EEFF;
+            --primary-blue-soft: #5D7BB9;
             --secondary-yellow: #FDB913;
+            --secondary-yellow-light: #FFF3D6;
+            --accent-red: #C41E24;
             --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
+            --secondary-gradient: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
             --bg-light: #F8FAFC;
-            --bg-white: #FFFFFF;
             --border-light: #E2E8F0;
         }
+        *, body { font-family: 'Inter', 'Segoe UI', sans-serif; }
+        body { background: var(--bg-light); display: flex; flex-direction: column; min-height: 100vh; }
 
-        body {
-            background: var(--bg-light);
-            font-family: 'Inter', 'Segoe UI', sans-serif;
-        }
+        /* ── NAVBAR ── */
+        .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
+        .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display:flex; align-items:center; gap:10px; }
+        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.95rem; }
+        .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
+        .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
+        .user-info { color: white; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.1); padding:9px 22px; border-radius:40px; font-size:0.92rem; font-weight:500; }
+        .logout-btn { background:transparent; border:2px solid rgba(255,255,255,0.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; transition:all 0.3s; font-size:0.88rem; cursor:pointer; }
+        .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
 
-        .navbar {
-            background: var(--primary-gradient) !important;
-            box-shadow: 0 4px 20px rgba(44, 62, 143, 0.15);
-        }
+        /* ── HERO ── */
+        .hero-banner { background: var(--primary-gradient); color:white; padding:52px 0 42px; position:relative; overflow:hidden; }
+        .hero-banner::before { content:''; position:absolute; top:-70px; right:-70px; width:320px; height:320px; border-radius:50%; background:rgba(253,185,19,0.10); }
+        .hero-banner::after { content:''; position:absolute; bottom:-80px; left:-50px; width:250px; height:250px; border-radius:50%; background:rgba(255,255,255,0.05); }
+        .hero-badge { display:inline-block; background:rgba(253,185,19,0.18); color:var(--secondary-yellow); border:1px solid rgba(253,185,19,0.35); border-radius:30px; padding:5px 18px; font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:18px; }
+        .hero-banner h1 { font-size:2.4rem; font-weight:800; line-height:1.2; margin-bottom:10px; }
+        .hero-divider { width:55px; height:4px; background:var(--secondary-yellow); border-radius:2px; margin:14px 0; }
+        .hero-banner p { font-size:1rem; opacity:0.87; max-width:580px; }
+        .municipality-badge { background:rgba(253,185,19,0.15); border:1px solid rgba(253,185,19,0.3); border-radius:16px; padding:20px 30px; text-align:center; }
+        .municipality-badge .badge-label { font-size:0.72rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--secondary-yellow); opacity:0.9; }
+        .municipality-badge .badge-name { font-size:1.4rem; font-weight:800; color:white; margin-top:4px; }
 
-        .navbar-brand {
-            font-weight: 700;
-            font-size: 1.5rem;
-            color: white !important;
-        }
+        /* ── MAIN CONTENT ── */
+        .main-content { flex: 1; }
+        .section-heading { font-size:1.35rem; font-weight:800; color:var(--primary-blue); margin-bottom:20px; display:flex; align-items:center; gap:10px; }
+        .section-heading::after { content:''; flex:1; height:2px; background:var(--border-light); border-radius:2px; }
 
-        .navbar-brand i {
-            color: var(--secondary-yellow);
-        }
+        /* ── STAT CARDS ── */
+        .stat-card { background:white; border-radius:20px; padding:28px 24px; box-shadow:0 4px 15px rgba(0,0,0,0.03); border:1px solid var(--border-light); transition:all 0.3s ease; height:100%; position:relative; overflow:hidden; }
+        .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--primary-gradient); }
+        .stat-card:hover { transform:translateY(-5px); box-shadow:0 14px 32px rgba(44,62,143,0.12); border-color:var(--primary-blue-soft); }
+        .stat-number { font-size:2.4rem; font-weight:800; color:var(--primary-blue); line-height:1; margin:12px 0 6px; }
+        .stat-label { font-size:0.88rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; }
+        .stat-badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; margin-bottom:10px; }
+        .stat-badge.blue { background:var(--primary-blue-light); color:var(--primary-blue); }
+        .stat-badge.yellow { background:var(--secondary-yellow-light); color:#92600a; }
+        .stat-badge.gold { background:rgba(253,185,19,0.15); color:#92600a; }
+        .stat-badge.green { background:#e6f9f0; color:#1a7a4a; }
 
-        .nav-link {
-            color: rgba(255, 255, 255, 0.9) !important;
-            font-weight: 500;
-        }
+        /* ── MENU CARDS ── */
+        .menu-card { background:white; border-radius:18px; padding:28px 24px; border:1px solid var(--border-light); box-shadow:0 4px 15px rgba(0,0,0,0.03); transition:all 0.3s ease; height:100%; cursor:pointer; text-decoration:none; display:block; position:relative; overflow:hidden; }
+        .menu-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--secondary-gradient); }
+        .menu-card:hover { transform:translateY(-5px); box-shadow:0 14px 32px rgba(44,62,143,0.12); border-color:var(--primary-blue-soft); }
+        .menu-card-num { font-size:0.75rem; font-weight:800; color:rgba(253,185,19,0.8); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:10px; }
+        .menu-card-title { font-size:1.12rem; font-weight:800; color:var(--primary-blue); margin-bottom:6px; }
+        .menu-card-desc { font-size:0.85rem; color:#64748b; line-height:1.55; }
+        .menu-card-arrow { position:absolute; bottom:22px; right:22px; font-size:1.2rem; color:var(--secondary-yellow); font-weight:900; transition:transform 0.25s ease; }
+        .menu-card:hover .menu-card-arrow { transform:translateX(4px); }
 
-        .nav-link:hover {
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 8px;
-        }
+        /* ── PANEL CARD ── */
+        .panel-card { background:white; border-radius:20px; box-shadow:0 4px 15px rgba(0,0,0,0.03); border:1px solid var(--border-light); overflow:hidden; }
+        .panel-header { background:var(--primary-gradient); color:white; padding:20px 28px; display:flex; align-items:center; justify-content:space-between; }
+        .panel-header h5 { font-weight:700; margin:0; font-size:1.05rem; }
+        .panel-header .count-badge { background:rgba(253,185,19,0.25); color:var(--secondary-yellow); border:1px solid rgba(253,185,19,0.4); border-radius:20px; padding:3px 12px; font-size:0.78rem; font-weight:700; }
+        .panel-body { padding:0; }
+        table.premium-table { width:100%; border-collapse:collapse; }
+        .premium-table thead th { background:var(--bg-light); color:var(--primary-blue); font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:12px 20px; border-bottom:2px solid var(--border-light); }
+        .premium-table tbody td { padding:14px 20px; font-size:0.88rem; border-bottom:1px solid var(--border-light); vertical-align:middle; color:#334155; }
+        .premium-table tbody tr:last-child td { border-bottom:none; }
+        .premium-table tbody tr:hover { background:var(--primary-blue-light); }
 
-        .user-info {
-            color: white;
-            display: flex;
-            align-items: center;
-            gap: 15px;
-            background: rgba(255,255,255,0.1);
-            padding: 8px 20px;
-            border-radius: 40px;
-        }
+        /* ── ROLE PILLS ── */
+        .role-pill { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; letter-spacing:0.04em; }
+        .role-pill.super-admin { background:rgba(196,30,36,0.12); color:#C41E24; border:1px solid rgba(196,30,36,0.2); }
+        .role-pill.admin { background:var(--secondary-yellow-light); color:#92600a; border:1px solid rgba(253,185,19,0.3); }
+        .role-pill.user { background:var(--primary-blue-light); color:var(--primary-blue); border:1px solid rgba(44,62,143,0.2); }
+        .status-pill { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; }
+        .status-pill.active { background:#e6f9f0; color:#1a7a4a; }
+        .status-pill.inactive { background:#fef2f2; color:#991b1b; }
 
-        .logout-btn {
-            background: transparent;
-            border: 2px solid white;
-            color: white;
-            border-radius: 30px;
-            padding: 6px 18px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
+        /* ── FOOTER ── */
+        .footer-strip { background:var(--primary-gradient); color:rgba(255,255,255,0.75); text-align:center; padding:18px 0; font-size:0.85rem; margin-top:auto; }
+        .footer-strip strong { color:white; }
 
-        .logout-btn:hover {
-            background: var(--secondary-yellow);
-            color: var(--primary-blue);
-            border-color: var(--secondary-yellow);
-        }
-
-        /* Sidebar Styles */
-        .wrapper {
-            display: flex;
-            width: 100%;
-        }
-
-        .sidebar {
-            width: 280px;
-            background: white;
-            border-right: 1px solid var(--border-light);
-            height: calc(100vh - 72px);
-            position: sticky;
-            top: 72px;
-            overflow-y: auto;
-            padding: 20px 0;
-        }
-
-        .sidebar .nav-link {
-            color: var(--text-dark) !important;
-            padding: 12px 25px;
-            margin: 5px 15px;
-            border-radius: 12px;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .sidebar .nav-link i {
-            color: var(--primary-blue);
-            font-size: 1.3rem;
-            width: 24px;
-        }
-
-        .sidebar .nav-link:hover {
-            background: var(--primary-blue-light);
-            color: var(--primary-blue) !important;
-            transform: translateX(5px);
-        }
-
-        .sidebar .nav-link.active {
-            background: var(--primary-gradient);
-            color: white !important;
-        }
-
-        .sidebar .nav-link.active i {
-            color: var(--secondary-yellow);
-        }
-
-        .sidebar .nav-link .badge {
-            background: var(--secondary-yellow);
-            color: var(--primary-blue);
-            margin-left: auto;
-        }
-
-        .sidebar .section-title {
-            padding: 15px 25px 5px;
-            color: #6c757d;
-            font-size: 0.8rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            font-weight: 600;
-        }
-
-        .main-content {
-            flex: 1;
-            padding: 30px;
-            overflow-y: auto;
-        }
-
-        .stat-card {
-            background: white;
-            border-radius: 20px;
-            padding: 25px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
-            border: 1px solid var(--border-light);
-            transition: all 0.3s ease;
-            height: 100%;
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 12px 30px rgba(44, 62, 143, 0.1);
-        }
-
-        .stat-icon {
-            font-size: 2.5rem;
-            color: var(--secondary-yellow);
-            margin-bottom: 15px;
-        }
-
-        .stat-value {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-blue);
-        }
-
-        .stat-label {
-            color: #6c757d;
-            font-size: 0.9rem;
-        }
-
-        .data-menu-card {
-            background: white;
-            border-radius: 16px;
-            padding: 20px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-light);
-            transition: all 0.3s ease;
-            cursor: pointer;
-        }
-
-        .data-menu-card:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 8px 20px rgba(44, 62, 143, 0.1);
-            border-color: var(--primary-blue);
-        }
-
-        .data-menu-icon {
-            font-size: 2rem;
-            color: var(--secondary-yellow);
-            margin-bottom: 10px;
-        }
-
-        .data-menu-title {
-            font-size: 1.2rem;
-            font-weight: 600;
-            color: var(--primary-blue);
-            margin-bottom: 5px;
-        }
-
-        .data-menu-desc {
-            color: #6c757d;
-            font-size: 0.85rem;
-        }
-
-        @media (max-width: 768px) {
-            .wrapper {
-                flex-direction: column;
-            }
-            .sidebar {
-                width: 100%;
-                height: auto;
-                position: static;
-            }
-        }
+        /* ── ALERT ── */
+        .alert-success { background:var(--primary-blue-light); color:var(--primary-blue); border-left:4px solid var(--primary-blue); border-radius:12px; border-color:transparent; border-left-color:var(--primary-blue); }
     </style>
 </head>
 <body>
-    <!-- Navbar -->
+    <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid">
-            <a class="navbar-brand" href="/superadmin/dashboard">
-                <i class="bi bi-shield-lock-fill"></i> Super Admin Panel
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="{{ route('superadmin.dashboard') }}">
+                <img src="/images/mswd-logo.png" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
             </a>
-            <div class="d-flex">
-                <div class="user-info">
-                    <i class="bi bi-person-circle"></i>
-                    <span>{{ Auth::user()->full_name }}</span>
-                    <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                        @csrf
-                        <button type="submit" class="logout-btn">
-                            <i class="bi bi-box-arrow-right"></i> Logout
-                        </button>
-                    </form>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link active" href="{{ route('superadmin.dashboard') }}">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.data.dashboard') }}">Data Management</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Public View</a></li>
+                </ul>
+                <div class="d-flex">
+                    <div class="user-info">
+                        <span>{{ Auth::user()->full_name }}</span>
+                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                            @csrf
+                            <button type="submit" class="logout-btn">Logout</button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </nav>
 
-    <div class="wrapper">
-        <!-- Sidebar -->
-        <div class="sidebar">
-            <div class="section-title">Main Menu</div>
-            <a href="{{ route('superadmin.dashboard') }}" class="nav-link active">
-                <i class="bi bi-speedometer2"></i> Dashboard
-            </a>
-            <a href="{{ route('superadmin.users') }}" class="nav-link">
-                <i class="bi bi-people"></i> User Management
-                <span class="badge">{{ $totalUsers }}</span>
-            </a>
-            <div class="section-title mt-3">Municipality Management</div>
-              <a href="{{ route('superadmin.municipalities.index') }}" class="nav-link">
-                 <i class="bi bi-building"></i> Municipalities
-            </a>
-            <div class="section-title mt-3">Data Management</div>
-            <a href="{{ route('superadmin.data.dashboard') }}" class="nav-link">
-                <i class="bi bi-database"></i> Data Dashboard
-            </a>
-            
-            <a href="{{ route('superadmin.data.municipalities') }}" class="nav-link">
-                <i class="bi bi-building"></i> Municipalities
-            </a>
-            <a href="{{ route('superadmin.data.barangays') }}" class="nav-link">
-                <i class="bi bi-grid-3x3"></i> Barangays
-            </a>
-            <a href="{{ route('superadmin.data.programs') }}" class="nav-link">
-                <i class="bi bi-heart"></i> Programs
-            </a>
-
-            <div class="section-title mt-3">Quick Links</div>
-            <a href="/analysis" class="nav-link" target="_blank">
-                <i class="bi bi-bar-chart"></i> View Analysis
-            </a>
-            <a href="/applications" class="nav-link" target="_blank">
-                <i class="bi bi-folder-check"></i> Applications
-            </a>
-        </div>
-
-        <!-- Main Content -->
-        <div class="main-content">
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    <!-- HERO -->
+    <section class="hero-banner">
+        <div class="container" style="position:relative;z-index:2;">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <div class="hero-badge">Super Admin Panel</div>
+                    <h1>System Dashboard</h1>
+                    <div class="hero-divider"></div>
+                    <p>Manage users, municipalities, and system-wide data across all MSWDO municipalities.</p>
                 </div>
+                <div class="col-lg-4 text-end">
+                    <div class="municipality-badge">
+                        <div class="badge-label">System</div>
+                        <div class="badge-name">MSWDO</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="main-content">
+        <div class="container py-5">
+            @if(session('success'))
+                <div class="alert alert-success mb-4">{{ session('success') }}</div>
             @endif
 
-            <!-- Welcome Header -->
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h1 style="color: var(--primary-blue);">
-                    <i class="bi bi-speedometer2" style="color: var(--secondary-yellow);"></i>
-                    Super Admin Dashboard
-                </h1>
-                <span class="badge bg-primary p-3">Welcome back, {{ Auth::user()->full_name }}!</span>
-            </div>
-
-            <!-- Statistics Cards -->
-            <div class="row mb-4">
-                <div class="col-md-3 mb-3">
+            <!-- STAT CARDS -->
+            <div class="section-heading">System Overview</div>
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
                     <div class="stat-card">
-                        <div class="stat-icon"><i class="bi bi-people"></i></div>
-                        <div class="stat-value">{{ $totalUsers }}</div>
-                        <div class="stat-label">Total Users</div>
+                        <div class="stat-badge blue">Total Users</div>
+                        <div class="stat-number">{{ $totalUsers }}</div>
+                        <div class="stat-label">Registered Accounts</div>
                     </div>
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-3">
                     <div class="stat-card">
-                        <div class="stat-icon"><i class="bi bi-shield-fill"></i></div>
-                        <div class="stat-value">{{ $totalSuperAdmins }}</div>
-                        <div class="stat-label">Super Admins</div>
+                        <div class="stat-badge yellow">Super Admins</div>
+                        <div class="stat-number">{{ $totalSuperAdmins }}</div>
+                        <div class="stat-label">System Administrators</div>
                     </div>
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-3">
                     <div class="stat-card">
-                        <div class="stat-icon"><i class="bi bi-person-badge"></i></div>
-                        <div class="stat-value">{{ $totalAdmins }}</div>
-                        <div class="stat-label">Admins</div>
+                        <div class="stat-badge gold">Admins</div>
+                        <div class="stat-number">{{ $totalAdmins }}</div>
+                        <div class="stat-label">Municipal Admins</div>
                     </div>
                 </div>
-                <div class="col-md-3 mb-3">
+                <div class="col-md-3">
                     <div class="stat-card">
-                        <div class="stat-icon"><i class="bi bi-person"></i></div>
-                        <div class="stat-value">{{ $totalRegularUsers }}</div>
+                        <div class="stat-badge green">Users</div>
+                        <div class="stat-number">{{ $totalRegularUsers }}</div>
                         <div class="stat-label">Regular Users</div>
                     </div>
                 </div>
             </div>
 
-            <!-- Data Management Quick Access -->
-            <h4 class="mb-3" style="color: var(--primary-blue);">
-                <i class="bi bi-database" style="color: var(--secondary-yellow);"></i>
-                Quick Data Management
-            </h4>
-
-            <div class="row mb-4">
-                <div class="col-md-4">
-                    <a href="{{ route('superadmin.data.municipalities') }}" style="text-decoration: none;">
-                        <div class="data-menu-card">
-                            <div class="data-menu-icon"><i class="bi bi-building"></i></div>
-                            <div class="data-menu-title">Municipality Data</div>
-                            <div class="data-menu-desc">Update population, households, demographics</div>
-                        </div>
+            <!-- QUICK ACCESS MENU CARDS -->
+            <div class="section-heading">Quick Access</div>
+            <div class="row g-4 mb-5">
+                <div class="col-md-3">
+                    <a href="{{ route('superadmin.users') }}" class="menu-card">
+                        <div class="menu-card-num">01</div>
+                        <div class="menu-card-title">User Management</div>
+                        <div class="menu-card-desc">Create, update, and manage all system users and their roles.</div>
+                        <span class="menu-card-arrow">&#8594;</span>
                     </a>
                 </div>
-                <div class="col-md-4">
-                    <a href="{{ route('superadmin.data.barangays') }}" style="text-decoration: none;">
-                        <div class="data-menu-card">
-                            <div class="data-menu-icon"><i class="bi bi-grid-3x3"></i></div>
-                            <div class="data-menu-title">Barangay Data</div>
-                            <div class="data-menu-desc">Manage barangay-level statistics</div>
-                        </div>
+                <div class="col-md-3">
+                    <a href="{{ route('superadmin.municipalities.index') }}" class="menu-card">
+                        <div class="menu-card-num">02</div>
+                        <div class="menu-card-title">Municipalities</div>
+                        <div class="menu-card-desc">Add and configure municipalities served by the MSWDO system.</div>
+                        <span class="menu-card-arrow">&#8594;</span>
                     </a>
                 </div>
-                <div class="col-md-4">
-                    <a href="{{ route('superadmin.data.programs') }}" style="text-decoration: none;">
-                        <div class="data-menu-card">
-                            <div class="data-menu-icon"><i class="bi bi-heart"></i></div>
-                            <div class="data-menu-title">Program Data</div>
-                            <div class="data-menu-desc">Track beneficiaries per program</div>
-                        </div>
+                <div class="col-md-3">
+                    <a href="{{ route('superadmin.data.municipalities') }}" class="menu-card">
+                        <div class="menu-card-num">03</div>
+                        <div class="menu-card-title">Municipality Data</div>
+                        <div class="menu-card-desc">Update population, households, and demographics per municipality.</div>
+                        <span class="menu-card-arrow">&#8594;</span>
+                    </a>
+                </div>
+                <div class="col-md-3">
+                    <a href="{{ route('superadmin.data.barangays') }}" class="menu-card">
+                        <div class="menu-card-num">04</div>
+                        <div class="menu-card-title">Barangay Data</div>
+                        <div class="menu-card-desc">Manage barangay-level statistics across all municipalities.</div>
+                        <span class="menu-card-arrow">&#8594;</span>
                     </a>
                 </div>
             </div>
 
-            <!-- Recent Users -->
-            <div class="card mb-4">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-people"></i> Recent Users</h5>
+            <!-- RECENT USERS TABLE -->
+            <div class="section-heading">Recent Users</div>
+            <div class="panel-card mb-5">
+                <div class="panel-header">
+                    <h5>Recent Registrations</h5>
+                    <a href="{{ route('superadmin.users') }}" style="color:var(--secondary-yellow);font-size:0.85rem;font-weight:700;text-decoration:none;">View all &rarr;</a>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Name</th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($recentUsers as $user)
-                                <tr>
-                                    <td>{{ $user->full_name }}</td>
-                                    <td>{{ $user->email }}</td>
-                                    <td>
-                                        <span class="badge bg-{{ $user->role == 'super_admin' ? 'danger' : ($user->role == 'admin' ? 'warning' : 'info') }}">
-                                            {{ $user->role }}
-                                        </span>
-                                    </td>
-                                    <td>
-                                        <span class="badge bg-{{ $user->status == 'active' ? 'success' : 'secondary' }}">
-                                            {{ $user->status }}
-                                        </span>
-                                    </td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="panel-body">
+                    <table class="premium-table">
+                        <thead>
+                            <tr>
+                                <th>Full Name</th>
+                                <th>Email</th>
+                                <th>Role</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($recentUsers as $user)
+                            <tr>
+                                <td style="font-weight:600;">{{ $user->full_name }}</td>
+                                <td>{{ $user->email }}</td>
+                                <td>
+                                    @if($user->role == 'super_admin')
+                                        <span class="role-pill super-admin">Super Admin</span>
+                                    @elseif($user->role == 'admin')
+                                        <span class="role-pill admin">Admin</span>
+                                    @else
+                                        <span class="role-pill user">User</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    <span class="status-pill {{ $user->status == 'active' ? 'active' : 'inactive' }}">
+                                        {{ ucfirst($user->status) }}
+                                    </span>
+                                </td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
-            <!-- Municipalities Overview -->
-            <div class="card">
-                <div class="card-header bg-primary text-white">
-                    <h5 class="mb-0"><i class="bi bi-building"></i> Municipalities Overview</h5>
+            <!-- MUNICIPALITIES OVERVIEW -->
+            <div class="section-heading">Municipalities Overview</div>
+            <div class="panel-card mb-4">
+                <div class="panel-header">
+                    <h5>Municipality Statistics</h5>
+                    <span class="count-badge">{{ count($municipalities) }} municipalities</span>
                 </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover">
-                            <thead>
-                                <tr>
-                                    <th>Municipality</th>
-                                    <th>Population</th>
-                                    <th>Households</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($municipalities as $m)
-                                <tr>
-                                    <td>{{ $m->name }}</td>
-                                    <td>{{ number_format($m->male_population + $m->female_population) }}</td>
-                                    <td>{{ number_format($m->total_households) }}</td>
-                                </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                <div class="panel-body">
+                    <table class="premium-table">
+                        <thead>
+                            <tr>
+                                <th>Municipality</th>
+                                <th>Total Population</th>
+                                <th>Households</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach($municipalities as $m)
+                            <tr>
+                                <td style="font-weight:700;color:var(--primary-blue);">{{ $m->name }}</td>
+                                <td>{{ number_format($m->male_population + $m->female_population) }}</td>
+                                <td>{{ number_format($m->total_households) }}</td>
+                            </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
     </div>
+
+    <footer class="footer-strip">
+        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
+    </footer>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
