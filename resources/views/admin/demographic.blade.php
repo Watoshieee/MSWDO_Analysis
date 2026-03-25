@@ -99,7 +99,7 @@
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav ms-auto">
                     <li class="nav-item">
-                        <a class="nav-link" href="{{ route('admin.dashboard') }}">
+                        <a class="nav-link" href="{{ route('user.my-requirements') }}">
                             <i class="bi bi-arrow-left"></i> Back to Dashboard
                         </a>
                     </li>

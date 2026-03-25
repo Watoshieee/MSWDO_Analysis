@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail; // ADD THIS
 
 class LoginController extends Controller
 {
@@ -46,13 +47,13 @@ class LoginController extends Controller
             ])->withInput($request->only('login'));
         }
 
-        // Check if email is verified for regular users
+        // CHECK IF EMAIL IS VERIFIED FOR REGULAR USERS
         if ($user->role === 'user' && !$user->hasVerifiedEmail()) {
             // Generate and send new OTP
             $otp = $user->generateOtp();
             
             try {
-                \Mail::send('emails.otp', ['user' => $user, 'otp' => $otp], function ($message) use ($user) {
+                Mail::send('emails.otp', ['user' => $user, 'otp' => $otp], function ($message) use ($user) {
                     $message->to($user->email, $user->full_name)
                         ->subject('Email Verification OTP - MSWDO Analysis');
                 });
@@ -69,10 +70,8 @@ class LoginController extends Controller
         if (Auth::attempt($credentials, $request->filled('remember'))) {
             $request->session()->regenerate();
             
-            // Get the authenticated user
             $authenticatedUser = Auth::user();
             
-            // Log the login for debugging
             Log::info('User logged in:', [
                 'id' => $authenticatedUser->id,
                 'username' => $authenticatedUser->username,
@@ -93,7 +92,6 @@ class LoginController extends Controller
             }
         }
 
-        // If login fails
         return back()->withErrors([
             'login' => 'The provided credentials are incorrect.',
         ])->withInput($request->only('login'));

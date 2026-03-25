@@ -490,7 +490,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="{{ route('applications.index') }}">
+                            <a class="nav-link" href="{{ route('user.my-requirements') }}">
                                 <i class="bi bi-folder-check"></i> Applications
                             </a>
                         </li>

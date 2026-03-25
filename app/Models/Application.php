@@ -28,12 +28,15 @@ class Application extends Model
         'status',
         'application_date',
         'year',
-        'form_data'
+        'form_data',
+        'stage',
+        'completed_at'
     ];
     
     protected $casts = [
         'form_data' => 'array',
-        'application_date' => 'datetime'
+        'application_date' => 'datetime',
+        'completed_at' => 'datetime'
     ];
     
     // Relationships
@@ -50,5 +53,10 @@ class Application extends Model
     public function barangay()
     {
         return $this->belongsTo(Barangay::class, 'barangay', 'name');
+    }
+    
+    public function fileMonitoring()
+    {
+        return $this->hasOne(FileMonitoring::class);
     }
 }

@@ -241,7 +241,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('applications.*') ? 'active' : '' }}" href="{{ route('applications.index') }}">
+                            <a class="nav-link {{ request()->routeIs('admin.requirements.*') ? 'active' : '' }}" href="{{ route('admin.requirements') }}">
                                 <i class="bi bi-folder-check"></i> Applications
                             </a>
                         </li>

@@ -631,7 +631,7 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('applications.*') ? 'active' : '' }}" href="{{ route('applications.index') }}">
+                            <a class="nav-link {{ request()->routeIs('applications.*') ? 'active' : '' }}" href="{{ route('user.my-applications') }}">
                                 <i class="bi bi-folder-check"></i> Applications
                             </a>
                         </li>
@@ -685,7 +685,7 @@
                 <i class="bi bi-folder-check"></i> 
                 Application Management
             </h1>
-            <a href="{{ route('applications.create') }}" class="btn-new">
+            <a href="{{ route('user.programs') }}" class="btn-new">
                 <i class="bi bi-plus-circle"></i> New Application
             </a>
         </div>
@@ -709,7 +709,7 @@
             <div class="filter-title">
                 <i class="bi bi-funnel"></i> Filter Applications
             </div>
-            <form method="GET" action="{{ route('applications.index') }}" id="filter-form">
+            <form method="GET" action="{{ url()->current() }}" id="filter-form">
                 <div class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">Status</label>
@@ -785,7 +785,7 @@
                         </button>
                     </div>
                     <div class="col-md-2">
-                        <a href="{{ route('applications.index') }}" class="btn-clear">
+                        <a href="{{ url()->current() }}" class="btn-clear">
                             <i class="bi bi-eraser"></i> Clear
                         </a>
                     </div>
@@ -892,7 +892,7 @@
                             <td colspan="8" class="empty-state">
                                 <i class="bi bi-inbox"></i>
                                 <h5>No applications found</h5>
-                                <a href="{{ route('applications.create') }}" class="btn-new mt-3">
+                                <a href="{{ route('user.programs') }}" class="btn-new mt-3">
                                     <i class="bi bi-plus-circle"></i> Create Your First Application
                                 </a>
                             </td>

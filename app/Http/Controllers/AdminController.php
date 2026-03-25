@@ -6,6 +6,8 @@ use App\Models\Municipality;
 use App\Models\Barangay;
 use App\Models\Application;
 use App\Models\SocialWelfareProgram;
+use App\Models\FileMonitoring;
+use App\Models\FileUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -80,6 +82,123 @@ class AdminController extends Controller
             'totalPrograms'
         ));
     }
+
+   public function requirements()
+{
+    error_reporting(E_ALL);
+    ini_set('display_errors', 1);
+    
+    try {
+        $admin = Auth::user();
+        
+        if (!$admin) {
+            return redirect()->route('login')->with('error', 'Please login first.');
+        }
+        
+        $municipality = $admin->municipality;
+        
+        // Debug: dump the municipality
+        \Log::info('Municipality: ' . $municipality);
+        
+        // Check if FileMonitoring model exists
+        if (!class_exists('App\Models\FileMonitoring')) {
+            return response()->json(['error' => 'FileMonitoring model not found'], 500);
+        }
+        
+        $fileMonitorings = FileMonitoring::where('municipality', $municipality)
+            ->with(['application', 'fileUploads'])
+            ->orderBy('created_at', 'desc')
+            ->paginate(20);
+        
+        // Check if the query executed
+        \Log::info('FileMonitorings count: ' . $fileMonitorings->count());
+        
+        // Check if the view exists
+        $viewPath = resource_path('views/admin/requirements.blade.php');
+        if (!file_exists($viewPath)) {
+            return response()->json(['error' => 'View file not found: ' . $viewPath], 500);
+        }
+        
+        return view('admin.requirements', compact('fileMonitorings', 'municipality'));
+        
+    } catch (\Exception $e) {
+        // Return the actual error instead of redirecting
+        return response()->json([
+            'error' => $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+}
+    
+    public function viewRequirement($id)
+    {
+        $admin = Auth::user();
+        
+        $fileMonitoring = FileMonitoring::with(['application', 'fileUploads'])
+            ->where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->firstOrFail();
+        
+        return view('admin.view-requirement', compact('fileMonitoring'));
+    }
+    
+public function updateFileStatus(Request $request, $id)
+{
+    $admin = Auth::user();
+    
+    $request->validate([
+        'status' => 'required|in:pending,approved,rejected',
+        'admin_remarks' => 'required_if:status,rejected|nullable|string'  // Required if rejected
+    ]);
+    
+    $fileUpload = FileUpload::with(['fileMonitoring'])
+        ->where('id', $id)
+        ->whereHas('fileMonitoring', function($q) use ($admin) {
+            $q->where('municipality', $admin->municipality);
+        })
+        ->firstOrFail();
+    
+    $oldStatus = $fileUpload->status;
+    $fileUpload->status = $request->status;
+    $fileUpload->remarks = $request->remarks; // For admin use
+    $fileUpload->admin_remarks = $request->admin_remarks; // This will show to user
+    $fileUpload->verified_at = now();
+    $fileUpload->verified_by = $admin->id;
+    $fileUpload->save();
+    
+    // Update overall status
+    $fileMonitoring = $fileUpload->fileMonitoring;
+    $totalFiles = $fileMonitoring->fileUploads()->count();
+    $approvedFiles = $fileMonitoring->fileUploads()->where('status', 'approved')->count();
+    $rejectedFiles = $fileMonitoring->fileUploads()->where('status', 'rejected')->count();
+    
+    if ($rejectedFiles > 0) {
+        $fileMonitoring->overall_status = 'rejected';
+    } elseif ($approvedFiles == $totalFiles && $totalFiles > 0) {
+        $fileMonitoring->overall_status = 'approved';
+        $fileMonitoring->application->update(['status' => 'approved']);
+    } else {
+        $fileMonitoring->overall_status = 'in_review';
+    }
+    $fileMonitoring->save();
+    
+    // Create log
+    \App\Models\FileStatusLog::create([
+        'file_monitoring_id' => $fileMonitoring->id,
+        'user_id' => $fileMonitoring->user_id,
+        'municipality' => $admin->municipality,
+        'changed_by' => $admin->id,
+        'old_status' => $oldStatus,
+        'new_status' => $request->status,
+        'remarks' => $request->admin_remarks,
+        'requirement_name' => $fileUpload->requirement_name,
+        'created_at' => now()
+    ]);
+    
+    return redirect()->back()->with('success', 'File status updated successfully!');
+}
 
     /**
      * NEW METHOD: Detailed Analysis Page

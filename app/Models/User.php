@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
@@ -20,24 +21,30 @@ class User extends Authenticatable
         'username', 
         'password', 
         'email', 
-        'full_name', 
+        'full_name',
+        'birthdate',
+        'age', 
         'role', 
         'municipality', 
         'status',
         'email_verified_at',
         'otp_code',
-        'otp_expires_at'
+        'otp_expires_at',
+        'reset_token',
+        'reset_token_expires_at',
     ];
 
     protected $hidden = [
         'password',
         'remember_token',
         'otp_code',
+        'reset_token',
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'otp_expires_at' => 'datetime',
+        'reset_token_expires_at' => 'datetime',
         'password' => 'hashed',
     ];
 
@@ -90,16 +97,16 @@ class User extends Authenticatable
 
     public function generateOtp()
     {
-        $this->otp_code = str_pad(random_int(0, 999999), 6, '0', STR_PAD_LEFT);
+        $otp = rand(100000, 999999);
+        $this->otp_code = $otp;
         $this->otp_expires_at = now()->addMinutes(10);
         $this->save();
-        
-        return $this->otp_code;
+        return $otp;
     }
 
-    public function verifyOtp($code)
+    public function verifyOtp($otp)
     {
-        if ($this->otp_code === $code && $this->otp_expires_at->isFuture()) {
+        if ($this->otp_code == $otp && $this->otp_expires_at > now()) {
             $this->email_verified_at = now();
             $this->otp_code = null;
             $this->otp_expires_at = null;
@@ -107,5 +114,27 @@ class User extends Authenticatable
             return true;
         }
         return false;
+    }
+
+    // PASSWORD RESET METHODS
+    public function generateResetToken()
+    {
+        $token = Str::random(60);
+        $this->reset_token = $token;
+        $this->reset_token_expires_at = now()->addMinutes(30);
+        $this->save();
+        return $token;
+    }
+
+    public function verifyResetToken($token)
+    {
+        return $this->reset_token === $token && $this->reset_token_expires_at > now();
+    }
+
+    public function clearResetToken()
+    {
+        $this->reset_token = null;
+        $this->reset_token_expires_at = null;
+        $this->save();
     }
 }

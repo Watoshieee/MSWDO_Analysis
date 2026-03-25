@@ -11,16 +11,39 @@ use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminController;
 
-// User Routes (authenticated users with role 'user')
+// ============================================
+// USER ROUTES (authenticated users with role 'user')
+// ============================================
 Route::middleware(['auth'])->group(function () {
     Route::get('/user/dashboard', [UserController::class, 'dashboard'])->name('user.dashboard');
     Route::get('/user/programs', [UserController::class, 'programs'])->name('user.programs');
     Route::get('/user/announcements', [UserController::class, 'announcements'])->name('user.announcements');
-    Route::get('/user/my-applications', [UserController::class, 'myApplications'])->name('user.my-applications');
+    Route::get('/user/my-requirements', [UserController::class, 'myRequirements'])->name('user.my-requirements'); // ADD THIS   
+    Route::put('/user/resubmit-requirement/{fileUploadId}', [UserController::class, 'resubmitRequirement'])->name('user.resubmit-requirement'); 
     Route::get('/user/apply/{program}', [ApplicationController::class, 'create'])->name('user.apply');
 });
 
+// ============================================
+// SOLO PARENT APPLICATION ROUTES
+// ============================================
+Route::middleware(['auth'])->group(function () {
+    Route::get('/apply/solo-parent', [ApplicationController::class, 'showSoloParentForm'])->name('solo-parent.apply');
+    Route::post('/applications', [ApplicationController::class, 'store'])->name('applications.store');
+    Route::get('/applications/{id}', [ApplicationController::class, 'show'])->name('applications.show');
+});
+
+// ============================================
+// REQUIREMENT UPLOAD ROUTES
+// ============================================
+Route::middleware(['auth'])->prefix('applications')->name('applications.')->group(function () {
+    Route::get('/{applicationId}/requirements', [ApplicationController::class, 'showRequirements'])->name('requirements');
+    Route::post('/{applicationId}/requirement/upload', [ApplicationController::class, 'uploadRequirement'])->name('requirement.upload');
+    Route::delete('/{applicationId}/requirement/delete', [ApplicationController::class, 'deleteRequirement'])->name('requirement.delete');
+});
+
+// ============================================
 // PUBLIC ROUTES
+// ============================================
 Route::get('/', function () {
     return redirect('/analysis');
 });
@@ -32,7 +55,9 @@ Route::prefix('analysis')->name('analysis.')->group(function () {
     Route::get('/programs', [AnalysisController::class, 'programs'])->name('programs');
 });
 
+// ============================================
 // GUEST ROUTES
+// ============================================
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
@@ -45,6 +70,17 @@ Route::middleware('guest')->group(function () {
     Route::post('/resend-otp', [OtpController::class, 'resend'])->name('otp.resend');
 });
 
+// Password Reset Routes
+Route::middleware('guest')->group(function () {
+    Route::get('/forgot-password', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'create'])
+        ->name('password.request');
+    Route::post('/forgot-password', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store'])
+        ->name('password.email');
+    Route::get('/reset-password/{token}', [App\Http\Controllers\Auth\NewPasswordController::class, 'create'])
+        ->name('password.reset');
+    Route::post('/reset-password', [App\Http\Controllers\Auth\NewPasswordController::class, 'store'])
+        ->name('password.update');
+});
 // LOGOUT
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -53,9 +89,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 });
 
+// ============================================
 // SUPER ADMIN ROUTES
+// ============================================
 Route::middleware(['auth', 'role:super_admin'])->prefix('superadmin')->name('superadmin.')->group(function () {
-    // DASHBOARD - dapat ito ang una
+    // DASHBOARD
     Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
     
     // User Management
@@ -77,7 +115,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('superadmin')->name('sup
         Route::delete('/programs/{id}', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'deleteProgram'])->name('programs.delete');
     });
     
-    // MUNICIPALITY MANAGEMENT ROUTES (NEW)
+    // MUNICIPALITY MANAGEMENT ROUTES
     Route::prefix('municipalities')->name('municipalities.')->group(function () {
         Route::get('/', [App\Http\Controllers\SuperAdmin\MunicipalityManagementController::class, 'index'])->name('index');
         Route::get('/create', [App\Http\Controllers\SuperAdmin\MunicipalityManagementController::class, 'create'])->name('create');
@@ -96,7 +134,9 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('superadmin')->name('sup
     Route::get('/api/barangays/{municipality}', [App\Http\Controllers\SuperAdmin\MunicipalityManagementController::class, 'getBarangays']);
 });
 
+// ============================================
 // ADMIN ROUTES (for municipality admins)
+// ============================================
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     // Existing routes
     Route::get('/dashboard', [App\Http\Controllers\AdminController::class, 'dashboard'])->name('dashboard');
@@ -104,6 +144,10 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/applications', [App\Http\Controllers\AdminController::class, 'applications'])->name('applications');
     Route::post('/applications/{id}/status', [App\Http\Controllers\AdminController::class, 'updateApplicationStatus'])->name('applications.status');
     Route::get('/barangay/{name}', [App\Http\Controllers\AdminController::class, 'barangay'])->name('barangay');
+     // Requirements routes - ADD THESE
+    Route::get('/requirements', [App\Http\Controllers\AdminController::class, 'requirements'])->name('requirements');
+    Route::get('/requirements/{id}', [App\Http\Controllers\AdminController::class, 'viewRequirement'])->name('view-requirement');
+    Route::post('/requirements/{id}/status', [App\Http\Controllers\AdminController::class, 'updateFileStatus'])->name('update-file-status');
     
     // Admin Data Management Routes
     Route::prefix('data')->name('data.')->group(function () {
@@ -126,19 +170,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/compare', [App\Http\Controllers\Admin\YearlyComparisonController::class, 'compare'])->name('compare');
     });
 });
-
-// ============================================
-// SOLO PARENT APPLICATION ROUTE - MUST BE BEFORE THE GENERIC user.apply ROUTE
-// ============================================
-
-// Solo Parent Application Form - Specific route for Solo Parent
+// User Dashboard Route
 Route::middleware(['auth'])->group(function () {
-    Route::get('/apply/solo-parent', [ApplicationController::class, 'showSoloParentForm'])->name('solo-parent.apply');
-    Route::post('/applications', [ApplicationController::class, 'store'])->name('applications.store');
-    Route::get('/applications/{id}', [ApplicationController::class, 'show'])->name('applications.show');
+    Route::get('/user/dashboard', [UserController::class, 'dashboard'])->name('user.dashboard');
+    Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard');
 });
-
-// Barangay Analysis Routes
+// ============================================
+// BARANGAY ANALYSIS ROUTES
+// ============================================
 Route::prefix('barangay-analysis')->name('barangay-analysis.')->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\BarangayAnalysisController::class, 'index'])->name('index');
     Route::get('/programs', [App\Http\Controllers\Admin\BarangayAnalysisController::class, 'programs'])->name('programs');
@@ -146,7 +185,12 @@ Route::prefix('barangay-analysis')->name('barangay-analysis.')->group(function (
     Route::get('/{barangay}', [App\Http\Controllers\Admin\BarangayAnalysisController::class, 'showBarangay'])->name('show');
 });
 
-// API Routes for Barangay Data (PUT THIS AT THE VERY BOTTOM)
+// Batch upload for requirements
+Route::middleware(['auth'])->post('/applications/upload-batch', [ApplicationController::class, 'uploadBatch'])->name('applications.upload-batch');
+
+// ============================================
+// API ROUTES FOR BARANGAY DATA
+// ============================================
 Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
     // Get barangay data for specific year
     Route::get('/barangays/{municipality}/{year}', function($municipality, $year) {

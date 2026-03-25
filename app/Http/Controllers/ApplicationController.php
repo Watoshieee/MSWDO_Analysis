@@ -5,10 +5,14 @@ namespace App\Http\Controllers;
 use App\Models\Application;
 use App\Models\User;
 use App\Models\Barangay;
+use App\Models\ProgramRequirement;
+use App\Models\FileMonitoring;
+use App\Models\FileUpload;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 class ApplicationController extends Controller
 {
@@ -112,62 +116,134 @@ class ApplicationController extends Controller
     }
 
     /**
-     * Show the form for creating a new application.
-     */
-    public function create()
-    {
+ * Show requirements page for selected program
+ */
+public function create($programType)
+{
+    $user = Auth::user();
+    
+    // Validate program type
+    $validPrograms = ['4Ps', 'Senior_Citizen_Pension', 'PWD_Assistance', 'AICS', 'SLP', 'ESA', 'Solo_Parent'];
+    if (!in_array($programType, $validPrograms)) {
+        return redirect()->back()->with('error', 'Invalid program selected.');
+    }
+    
+    // CHECK: Does the user have any pending or approved application?
+    $hasPendingOrApproved = Application::where('user_id', $user->id)
+        ->whereIn('status', ['pending', 'approved'])
+        ->exists();
+    
+    if ($hasPendingOrApproved) {
+        return redirect()->route('user.my-requirements')
+            ->with('error', 'You cannot apply for another program while you have a pending or approved application. Please wait for your current application to be reviewed or rejected.');
+    }
+    
+    // Map program type to requirements program type
+    $programTypeMap = [
+        '4Ps' => '4Ps',
+        'Senior_Citizen_Pension' => 'Senior_Citizen',
+        'PWD_Assistance' => 'PWD_New',
+        'AICS' => 'AICS_Medical',
+        'SLP' => 'SLP',
+        'ESA' => 'ESA',
+        'Solo_Parent' => 'Solo_Parent',
+    ];
+    
+    $programKey = $programTypeMap[$programType] ?? $programType;
+    
+    // Get requirements for this program
+    $requirements = ProgramRequirement::where('program_type', $programKey)->get();
+    
+    // Get program name for display
+    $programName = str_replace('_', ' ', $programType);
+    
+    // Return view with requirements only (no application record)
+    return view('applications.create', compact('requirements', 'programType', 'programName'));
+}
+
+/**
+ * Batch upload requirements
+ */
+public function uploadBatch(Request $request)
+{
+    try {
         $user = Auth::user();
         
-        // Get program types from enum
-        $programTypes = [
-            '4Ps' => '4Ps',
-            'Senior_Citizen_Pension' => 'Senior Citizen Pension',
-            'PWD_Assistance' => 'PWD Assistance',
-            'AICS' => 'AICS',
-            'SLP' => 'SLP',
-            'ESA' => 'ESA',
-            'Solo_Parent' => 'Solo Parent'
-        ];
-
-        // Get years (current year and next year)
-        $currentYear = date('Y');
-        $years = [
-            $currentYear => $currentYear,
-            $currentYear + 1 => $currentYear + 1
-        ];
-
-        // Get barangays based on user role
-        if ($user->isAdmin()) {
-            // Admin can only select barangays from their municipality
-            $barangays = Barangay::where('municipality', $user->municipality)
-                ->pluck('name', 'name');
-            $municipality = $user->municipality;
-            $municipalities = [$user->municipality => $user->municipality];
-        } elseif ($user->isSuperAdmin()) {
-            // Super admin can select any municipality and barangay
-            $barangays = Barangay::pluck('name', 'name');
-            $municipalities = [
-                'Magdalena' => 'Magdalena',
-                'Liliw' => 'Liliw',
-                'Majayjay' => 'Majayjay'
-            ];
-        } else {
-            // Regular user can select any municipality and barangay
-            $barangays = Barangay::pluck('name', 'name');
-            $municipalities = [
-                'Magdalena' => 'Magdalena',
-                'Liliw' => 'Liliw',
-                'Majayjay' => 'Majayjay'
-            ];
+        // CHECK: Does the user have any pending or approved application?
+        $hasPendingOrApproved = Application::where('user_id', $user->id)
+            ->whereIn('status', ['pending', 'approved'])
+            ->exists();
+        
+        if ($hasPendingOrApproved) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You cannot apply for another program while you have a pending or approved application. Please wait for your current application to be reviewed or rejected.'
+            ], 400);
         }
-
-        return view('applications.create', compact(
-            'programTypes', 
-            'barangays', 
-            'municipalities',
-            'years'
-        ));
+        
+        $request->validate([
+            'program_type' => 'required|string',
+            'requirements' => 'required|array',
+            'requirement_names' => 'required|array'
+        ]);
+        
+        // GET USER'S MUNICIPALITY
+        $municipality = $user->municipality ?? 'Majayjay';
+        
+        // Create application record
+        $application = Application::create([
+            'user_id' => $user->id,
+            'program_type' => $request->program_type,
+            'full_name' => $user->full_name,
+            'age' => 0,
+            'gender' => 'Male',
+            'contact_number' => $user->email ?? '',
+            'barangay' => '',
+            'municipality' => $municipality,  // SAVE MUNICIPALITY HERE
+            'status' => 'pending',
+            'application_date' => now(),
+            'year' => date('Y'),
+            'stage' => 'requirements'
+        ]);
+        
+        // CREATE FILE MONITORING WITH MUNICIPALITY
+        $fileMonitoring = FileMonitoring::create([
+            'application_id' => $application->id,
+            'user_id' => $user->id,  // ADD THIS - user->id ang gagamitin
+            'municipality' => $municipality,  // SAVE MUNICIPALITY HERE
+            'priority' => 'medium',
+            'overall_status' => 'pending'
+        ]);
+        
+        // Upload each file
+        foreach ($request->file('requirements') as $requirementName => $file) {
+            $originalName = $file->getClientOriginalName();
+            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
+            $path = $file->storeAs("applications/{$application->id}/requirements", $filename, 'public');
+            
+            FileUpload::create([
+                'file_monitoring_id' => $fileMonitoring->id,
+                'file_name' => $originalName,
+                'file_path' => $path,
+                'requirement_name' => $requirementName,
+                'status' => 'pending',
+                'uploaded_at' => now()
+            ]);
+        }
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Application submitted successfully! Your documents are now pending review.'
+        ]);
+        
+    } catch (\Exception $e) {
+        Log::error('Batch upload error: ' . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => $e->getMessage()
+        ], 500);
     }
+}
 
     /**
      * Show the solo parent application form
@@ -343,6 +419,7 @@ class ApplicationController extends Controller
                 'application_date' => now(),
                 'year' => date('Y'),
                 'form_data' => json_encode($request->additional_data),
+                'stage' => 'requirements'
             ];
             
             // Create application
@@ -350,8 +427,9 @@ class ApplicationController extends Controller
             
             \Log::info('Application created successfully with ID: ' . $application->id);
             
-            return redirect()->route('applications.show', $application->id)
-                ->with('success', 'Your Solo Parent application has been submitted successfully!');
+            // Redirect to requirements upload page
+            return redirect()->route('applications.requirements', $application->id)
+                ->with('success', 'Application created! Please upload the required documents.');
                 
         } catch (\Exception $e) {
             \Log::error('Error storing Solo Parent application: ' . $e->getMessage());
@@ -477,36 +555,204 @@ class ApplicationController extends Controller
     }
 
     /**
+     * Show requirements upload page after application submission
+     */
+    public function showRequirements($applicationId)
+    {
+        $application = Application::with(['fileMonitoring.fileUploads'])->findOrFail($applicationId);
+        
+        // Check authorization
+        $user = Auth::user();
+        if ($user->isUser() && $application->user_id !== $user->id) {
+            abort(403);
+        }
+        
+        // Complete program type mapping for all programs
+        $programTypeMap = [
+            // AICS Programs
+            'AICS' => 'AICS_Medical',
+            'AICS_Medical' => 'AICS_Medical',
+            'AICS_Burial' => 'AICS_Burial',
+            
+            // Solo Parent
+            'Solo_Parent' => 'Solo_Parent',
+            
+            // PWD Programs
+            'PWD_Assistance' => 'PWD_New',
+            'PWD_New' => 'PWD_New',
+            'PWD_Renewal' => 'PWD_Renewal',
+            
+            // 4Ps
+            '4Ps' => '4Ps',
+            
+            // Senior Citizen
+            'Senior_Citizen_Pension' => 'Senior_Citizen',
+            'Senior_Citizen' => 'Senior_Citizen',
+            
+            // SLP and ESA (if they have requirements, add them)
+            'SLP' => 'SLP',
+            'ESA' => 'ESA',
+        ];
+        
+        $programKey = $programTypeMap[$application->program_type] ?? $application->program_type;
+        
+        // Get requirements for this program
+        $requirements = ProgramRequirement::where('program_type', $programKey)->get();
+        
+        // Get or create file monitoring record
+        $fileMonitoring = $application->fileMonitoring;
+        if (!$fileMonitoring) {
+            $fileMonitoring = FileMonitoring::create([
+                'application_id' => $application->id,
+                'priority' => 'medium',
+                'overall_status' => 'pending'
+            ]);
+            
+            // Create file upload entries for each requirement
+            foreach ($requirements as $req) {
+                FileUpload::create([
+                    'file_monitoring_id' => $fileMonitoring->id,
+                    'requirement_name' => $req->requirement_name,
+                    'status' => 'pending',
+                    'uploaded_at' => null
+                ]);
+            }
+        }
+        
+        // Load file uploads
+        $fileUploads = FileUpload::where('file_monitoring_id', $fileMonitoring->id)->get();
+        
+        return view('applications.requirements', compact('application', 'requirements', 'fileUploads', 'fileMonitoring'));
+    }
+
+    /**
+     * Upload requirement file
+     */
+    public function uploadRequirement(Request $request, $applicationId)
+    {
+        $request->validate([
+            'requirement_name' => 'required|string',
+            'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120'
+        ]);
+        
+        $application = Application::findOrFail($applicationId);
+        $user = Auth::user();
+        
+        // Check authorization
+        if ($user->isUser() && $application->user_id !== $user->id) {
+            abort(403);
+        }
+        
+        $fileMonitoring = FileMonitoring::where('application_id', $applicationId)->firstOrFail();
+        
+        $file = $request->file('file');
+        $originalName = $file->getClientOriginalName();
+        $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
+        $path = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
+        
+        // Update file upload record
+        $fileUpload = FileUpload::where('file_monitoring_id', $fileMonitoring->id)
+            ->where('requirement_name', $request->requirement_name)
+            ->first();
+        
+        if ($fileUpload) {
+            // Delete old file if exists
+            if ($fileUpload->file_path && Storage::disk('public')->exists($fileUpload->file_path)) {
+                Storage::disk('public')->delete($fileUpload->file_path);
+            }
+            
+            $fileUpload->update([
+                'file_name' => $originalName,
+                'file_path' => $path,
+                'status' => 'pending',
+                'remarks' => null,
+                'uploaded_at' => now()
+            ]);
+        } else {
+            FileUpload::create([
+                'file_monitoring_id' => $fileMonitoring->id,
+                'file_name' => $originalName,
+                'file_path' => $path,
+                'requirement_name' => $request->requirement_name,
+                'status' => 'pending',
+                'uploaded_at' => now()
+            ]);
+        }
+        
+        // Update overall status
+        $fileMonitoring->updateOverallStatus();
+        
+        return redirect()->back()->with('success', 'File uploaded successfully.');
+    }
+
+    /**
+     * Delete requirement file
+     */
+    public function deleteRequirement(Request $request, $applicationId)
+    {
+        $request->validate([
+            'requirement_name' => 'required|string'
+        ]);
+        
+        $application = Application::findOrFail($applicationId);
+        $user = Auth::user();
+        
+        if ($user->isUser() && $application->user_id !== $user->id) {
+            abort(403);
+        }
+        
+        $fileMonitoring = FileMonitoring::where('application_id', $applicationId)->firstOrFail();
+        
+        $fileUpload = FileUpload::where('file_monitoring_id', $fileMonitoring->id)
+            ->where('requirement_name', $request->requirement_name)
+            ->first();
+        
+        if ($fileUpload) {
+            if ($fileUpload->file_path && Storage::disk('public')->exists($fileUpload->file_path)) {
+                Storage::disk('public')->delete($fileUpload->file_path);
+            }
+            
+            $fileUpload->update([
+                'file_name' => null,
+                'file_path' => null,
+                'status' => 'pending',
+                'uploaded_at' => null
+            ]);
+        }
+        
+        $fileMonitoring->updateOverallStatus();
+        
+        return redirect()->back()->with('success', 'File removed successfully.');
+    }
+
+    /**
      * Remove the specified application from storage.
      */
-/**
- * Remove the specified application from storage.
- */
-public function destroy($id)
-{
-    $application = Application::findOrFail($id);
-    
-    // Check authorization
-    $user = Auth::user();
-    if ($user->isUser() && $application->user_id !== $user->id) {
-        abort(403, 'Unauthorized access.');
-    }
-    if ($user->isAdmin() && $application->municipality !== $user->municipality) {
-        abort(403, 'Unauthorized access.');
-    }
+    public function destroy($id)
+    {
+        $application = Application::findOrFail($id);
+        
+        // Check authorization
+        $user = Auth::user();
+        if ($user->isUser() && $application->user_id !== $user->id) {
+            abort(403, 'Unauthorized access.');
+        }
+        if ($user->isAdmin() && $application->municipality !== $user->municipality) {
+            abort(403, 'Unauthorized access.');
+        }
 
-    // Only pending applications can be deleted
-    if ($application->status !== 'pending') {
+        // Only pending applications can be deleted
+        if ($application->status !== 'pending') {
+            return redirect()->route('applications.index')
+                ->with('error', 'Only pending applications can be deleted.');
+        }
+
+        // Permanent delete (not soft delete)
+        $application->forceDelete();
+
         return redirect()->route('applications.index')
-            ->with('error', 'Only pending applications can be deleted.');
+            ->with('success', 'Application deleted successfully!');
     }
-
-    // Permanent delete (not soft delete)
-    $application->forceDelete();
-
-    return redirect()->route('applications.index')
-        ->with('success', 'Application deleted successfully!');
-}
 
     /**
      * Update application status (for admins only).

@@ -263,8 +263,8 @@
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/user/my-applications">
-                            <i class="bi bi-folder-check"></i> My Applications
+                        <a class="nav-link" href="{{ route('user.my-requirements') }}">
+                            <i class="bi bi-file-earmark-check"></i> My Requirements
                         </a>
                     </li>
                     <li class="nav-item">
@@ -359,111 +359,218 @@
             </div>
         </div>
 
-        <!-- Available Programs Section -->
-        <h4 class="mb-3" style="color: var(--primary-blue);">
-            <i class="bi bi-grid-3x3-gap-fill" style="color: var(--secondary-yellow);"></i>
-            Available Programs
-        </h4>
+<!-- Available Programs Section -->
+<h4 class="mb-3" style="color: var(--primary-blue);">
+    <i class="bi bi-grid-3x3-gap-fill" style="color: var(--secondary-yellow);"></i>
+    Available Programs
+</h4>
 
-        <div class="row mb-4">
-            <!-- 4Ps Card -->
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="{{ route('user.apply', '4Ps') }}">
-                    <div class="program-card">
-                        <div class="program-icon"><i class="bi bi-people"></i></div>
-                        <div class="program-title">4Ps</div>
-                        <small class="text-muted">Pantawid Pamilyang Pilipino Program</small>
-                        <div class="mt-3">
-                            <button class="apply-btn btn-sm">Apply Now <i class="bi bi-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </a>
+@php
+    $hasPendingOrApproved = \App\Models\Application::where('user_id', Auth::id())
+        ->whereIn('status', ['pending', 'in_review'])
+        ->exists();
+    $hasCompleted = \App\Models\Application::where('user_id', Auth::id())
+        ->where('status', 'approved')
+        ->exists();
+@endphp
+
+@if($hasCompleted)
+    <div class="alert alert-success alert-dismissible fade show mb-4" style="background: #d4edda; border-left: 5px solid #28a745;">
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <div class="d-flex align-items-center">
+            <div class="me-3">
+                <i class="bi bi-trophy" style="font-size: 2rem; color: #28a745;"></i>
             </div>
-
-            <!-- Senior Citizen Card -->
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="{{ route('user.apply', 'Senior_Citizen_Pension') }}">
-                    <div class="program-card">
-                        <div class="program-icon"><i class="bi bi-person-standing"></i></div>
-                        <div class="program-title">Senior Citizen</div>
-                        <small class="text-muted">Social pension for senior citizens</small>
-                        <div class="mt-3">
-                            <button class="apply-btn btn-sm">Apply Now <i class="bi bi-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <!-- PWD Card -->
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="{{ route('user.apply', 'PWD_Assistance') }}">
-                    <div class="program-card">
-                        <div class="program-icon"><i class="bi bi-handicap"></i></div>
-                        <div class="program-title">PWD Assistance</div>
-                        <small class="text-muted">Assistance for persons with disability</small>
-                        <div class="mt-3">
-                            <button class="apply-btn btn-sm">Apply Now <i class="bi bi-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <!-- Solo Parent Card - FIXED: Uses solo-parent.apply route -->
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="{{ route('solo-parent.apply') }}">
-                    <div class="program-card">
-                        <div class="program-icon"><i class="bi bi-person-hearts"></i></div>
-                        <div class="program-title">Solo Parent</div>
-                        <small class="text-muted">Support for solo parents</small>
-                        <div class="mt-3">
-                            <button class="apply-btn btn-sm">Apply Now <i class="bi bi-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <!-- AICS Card -->
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="{{ route('user.apply', 'AICS') }}">
-                    <div class="program-card">
-                        <div class="program-icon"><i class="bi bi-cash-stack"></i></div>
-                        <div class="program-title">AICS</div>
-                        <small class="text-muted">Assistance to Individuals in Crisis Situation</small>
-                        <div class="mt-3">
-                            <button class="apply-btn btn-sm">Apply Now <i class="bi bi-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <!-- SLP Card -->
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="{{ route('user.apply', 'SLP') }}">
-                    <div class="program-card">
-                        <div class="program-icon"><i class="bi bi-briefcase"></i></div>
-                        <div class="program-title">SLP</div>
-                        <small class="text-muted">Sustainable Livelihood Program</small>
-                        <div class="mt-3">
-                            <button class="apply-btn btn-sm">Apply Now <i class="bi bi-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </a>
-            </div>
-
-            <!-- ESA Card -->
-            <div class="col-md-3 col-sm-6 mb-3">
-                <a href="{{ route('user.apply', 'ESA') }}">
-                    <div class="program-card">
-                        <div class="program-icon"><i class="bi bi-mortarboard"></i></div>
-                        <div class="program-title">ESA</div>
-                        <small class="text-muted">Educational Assistance</small>
-                        <div class="mt-3">
-                            <button class="apply-btn btn-sm">Apply Now <i class="bi bi-arrow-right"></i></button>
-                        </div>
-                    </div>
-                </a>
+            <div>
+                <strong>Congratulations!</strong> Your application has been approved! 
+                Please proceed to the MSWDO Office to claim your benefits.
             </div>
         </div>
+    </div>
+@elseif($hasPendingOrApproved)
+    <div class="alert alert-warning alert-dismissible fade show mb-4">
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <i class="bi bi-info-circle"></i>
+        <strong>You have an active application.</strong> You cannot apply for another program until your current application is completed or rejected.
+    </div>
+@endif
+
+<div class="row mb-4">
+    <!-- 4Ps Card -->
+    <div class="col-md-3 col-sm-6 mb-3">
+        @if($hasPendingOrApproved)
+            <div class="program-card" style="opacity: 0.6; cursor: not-allowed;">
+                <div class="program-icon"><i class="bi bi-people"></i></div>
+                <div class="program-title">4Ps</div>
+                <small class="text-muted">Pantawid Pamilyang Pilipino Program</small>
+                <div class="mt-3">
+                    <button class="apply-btn btn-sm" disabled>Requirements <i class="bi bi-arrow-right"></i></button>
+                </div>
+            </div>
+        @else
+            <a href="{{ route('user.apply', '4Ps') }}">
+                <div class="program-card">
+                    <div class="program-icon"><i class="bi bi-people"></i></div>
+                    <div class="program-title">4Ps</div>
+                    <small class="text-muted">Pantawid Pamilyang Pilipino Program</small>
+                    <div class="mt-3">
+                        <button class="apply-btn btn-sm">Requirements <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
+            </a>
+        @endif
+    </div>
+
+    <!-- Senior Citizen Card -->
+    <div class="col-md-3 col-sm-6 mb-3">
+        @if($hasPendingOrApproved)
+            <div class="program-card" style="opacity: 0.6; cursor: not-allowed;">
+                <div class="program-icon"><i class="bi bi-person-standing"></i></div>
+                <div class="program-title">Senior Citizen</div>
+                <small class="text-muted">Social pension for senior citizens</small>
+                <div class="mt-3">
+                    <button class="apply-btn btn-sm" disabled>Requirements <i class="bi bi-arrow-right"></i></button>
+                </div>
+            </div>
+        @else
+            <a href="{{ route('user.apply', 'Senior_Citizen_Pension') }}">
+                <div class="program-card">
+                    <div class="program-icon"><i class="bi bi-person-standing"></i></div>
+                    <div class="program-title">Senior Citizen</div>
+                    <small class="text-muted">Social pension for senior citizens</small>
+                    <div class="mt-3">
+                        <button class="apply-btn btn-sm">Requirements <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
+            </a>
+        @endif
+    </div>
+
+    <!-- PWD Card -->
+    <div class="col-md-3 col-sm-6 mb-3">
+        @if($hasPendingOrApproved)
+            <div class="program-card" style="opacity: 0.6; cursor: not-allowed;">
+                <div class="program-icon"><i class="bi bi-handicap"></i></div>
+                <div class="program-title">PWD Assistance</div>
+                <small class="text-muted">Assistance for persons with disability</small>
+                <div class="mt-3">
+                    <button class="apply-btn btn-sm" disabled>Requirements <i class="bi bi-arrow-right"></i></button>
+                </div>
+            </div>
+        @else
+            <a href="{{ route('user.apply', 'PWD_Assistance') }}">
+                <div class="program-card">
+                    <div class="program-icon"><i class="bi bi-handicap"></i></div>
+                    <div class="program-title">PWD Assistance</div>
+                    <small class="text-muted">Assistance for persons with disability</small>
+                    <div class="mt-3">
+                        <button class="apply-btn btn-sm">Requirements <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
+            </a>
+        @endif
+    </div>
+
+    <!-- Solo Parent Card -->
+    <div class="col-md-3 col-sm-6 mb-3">
+        @if($hasPendingOrApproved)
+            <div class="program-card" style="opacity: 0.6; cursor: not-allowed;">
+                <div class="program-icon"><i class="bi bi-person-hearts"></i></div>
+                <div class="program-title">Solo Parent</div>
+                <small class="text-muted">Support for solo parents</small>
+                <div class="mt-3">
+                    <button class="apply-btn btn-sm" disabled>Requirements <i class="bi bi-arrow-right"></i></button>
+                </div>
+            </div>
+        @else
+            <a href="{{ route('user.apply', 'Solo_Parent') }}">
+                <div class="program-card">
+                    <div class="program-icon"><i class="bi bi-person-hearts"></i></div>
+                    <div class="program-title">Solo Parent</div>
+                    <small class="text-muted">Support for solo parents</small>
+                    <div class="mt-3">
+                        <button class="apply-btn btn-sm">Requirements <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
+            </a>
+        @endif
+    </div>
+
+    <!-- AICS Card -->
+    <div class="col-md-3 col-sm-6 mb-3">
+        @if($hasPendingOrApproved)
+            <div class="program-card" style="opacity: 0.6; cursor: not-allowed;">
+                <div class="program-icon"><i class="bi bi-cash-stack"></i></div>
+                <div class="program-title">AICS</div>
+                <small class="text-muted">Assistance to Individuals in Crisis Situation</small>
+                <div class="mt-3">
+                    <button class="apply-btn btn-sm" disabled>Requirements <i class="bi bi-arrow-right"></i></button>
+                </div>
+            </div>
+        @else
+            <a href="{{ route('user.apply', 'AICS') }}">
+                <div class="program-card">
+                    <div class="program-icon"><i class="bi bi-cash-stack"></i></div>
+                    <div class="program-title">AICS</div>
+                    <small class="text-muted">Assistance to Individuals in Crisis Situation</small>
+                    <div class="mt-3">
+                        <button class="apply-btn btn-sm">Requirements <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
+            </a>
+        @endif
+    </div>
+
+    <!-- SLP Card -->
+    <div class="col-md-3 col-sm-6 mb-3">
+        @if($hasPendingOrApproved)
+            <div class="program-card" style="opacity: 0.6; cursor: not-allowed;">
+                <div class="program-icon"><i class="bi bi-briefcase"></i></div>
+                <div class="program-title">SLP</div>
+                <small class="text-muted">Sustainable Livelihood Program</small>
+                <div class="mt-3">
+                    <button class="apply-btn btn-sm" disabled>Requirements <i class="bi bi-arrow-right"></i></button>
+                </div>
+            </div>
+        @else
+            <a href="{{ route('user.apply', 'SLP') }}">
+                <div class="program-card">
+                    <div class="program-icon"><i class="bi bi-briefcase"></i></div>
+                    <div class="program-title">SLP</div>
+                    <small class="text-muted">Sustainable Livelihood Program</small>
+                    <div class="mt-3">
+                        <button class="apply-btn btn-sm">Requirements <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
+            </a>
+        @endif
+    </div>
+
+    <!-- ESA Card -->
+    <div class="col-md-3 col-sm-6 mb-3">
+        @if($hasPendingOrApproved)
+            <div class="program-card" style="opacity: 0.6; cursor: not-allowed;">
+                <div class="program-icon"><i class="bi bi-mortarboard"></i></div>
+                <div class="program-title">ESA</div>
+                <small class="text-muted">Educational Assistance</small>
+                <div class="mt-3">
+                    <button class="apply-btn btn-sm" disabled>Requirements <i class="bi bi-arrow-right"></i></button>
+                </div>
+            </div>
+        @else
+            <a href="{{ route('user.apply', 'ESA') }}">
+                <div class="program-card">
+                    <div class="program-icon"><i class="bi bi-mortarboard"></i></div>
+                    <div class="program-title">ESA</div>
+                    <small class="text-muted">Educational Assistance</small>
+                    <div class="mt-3">
+                        <button class="apply-btn btn-sm">Requirements <i class="bi bi-arrow-right"></i></button>
+                    </div>
+                </div>
+            </a>
+        @endif
+    </div>
+</div>
 
         <div class="row">
             <!-- Recent Applications -->
@@ -560,4 +667,4 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-</html>
+</html>a

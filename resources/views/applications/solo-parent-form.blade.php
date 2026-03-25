@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Solo Parent Application Form - MSWDO</title>
-
+    <title>Solo Parent Application - MSWDO</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <style>
         body {
             font-family: "Times New Roman", serif;
@@ -22,10 +22,6 @@
             background: white;
             border: 1px solid #000;
             box-shadow: 0 0 10px rgba(0,0,0,0.1);
-        }
-
-        h1, h2, h3, h4, h5, h6 {
-            margin: 0;
         }
 
         .center {
@@ -54,11 +50,6 @@
         .line-input:focus {
             outline: none;
             border-bottom-color: #2C3E8F;
-        }
-
-        .inline {
-            display: inline-block;
-            margin-right: 10px;
         }
 
         .row {
@@ -90,12 +81,6 @@
             width: 100%;
             border: none;
             padding: 3px;
-            font-size: 11px;
-        }
-
-        td input:focus, td select:focus {
-            outline: none;
-            background: #f9f9f9;
         }
 
         textarea {
@@ -106,107 +91,71 @@
             resize: vertical;
         }
 
-        textarea:focus {
-            outline: none;
-            border-bottom-color: #2C3E8F;
-        }
-
-        .footer {
-            margin-top: 20px;
-        }
-
         .signature {
             margin-top: 30px;
             display: flex;
             justify-content: space-between;
         }
 
-        .print-btn {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #2C3E8F;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 14px;
-            z-index: 1000;
-        }
-
-        .print-btn:hover {
-            background: #1a2a5c;
-        }
-
         .btn-container {
             position: fixed;
             bottom: 20px;
             left: 20px;
+            right: 20px;
+            text-align: center;
             z-index: 1000;
-            display: flex;
-            gap: 10px;
-        }
-
-        .btn-back {
-            background: #6c757d;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            text-decoration: none;
-            font-size: 14px;
-            font-family: "Times New Roman", serif;
-        }
-
-        .btn-back:hover {
-            background: #5a6268;
-            color: white;
         }
 
         .btn-submit {
             background: #28a745;
             color: white;
+            padding: 12px 30px;
             border: none;
-            padding: 10px 20px;
             border-radius: 5px;
             cursor: pointer;
-            font-size: 14px;
-            font-family: "Times New Roman", serif;
+            margin: 0 10px;
         }
 
-        .btn-submit:hover {
-            background: #218838;
+        .btn-back {
+            background: #6c757d;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-print {
+            background: #2C3E8F;
+            color: white;
+            padding: 12px 30px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 0 10px;
         }
 
         @media print {
-            .print-btn, .btn-container {
+            .btn-container {
                 display: none;
             }
             .page {
                 border: none;
                 padding: 0;
                 margin: 0;
-                box-shadow: none;
-            }
-            body {
-                padding: 0;
-                margin: 0;
-                background: white;
             }
         }
     </style>
 </head>
-
 <body>
 
 <div class="btn-container">
+    <button class="btn-print" onclick="window.print()">🖨️ Print</button>
     <a href="{{ route('user.programs') }}" class="btn-back">← Back to Programs</a>
     <button type="submit" form="soloParentForm" class="btn-submit">✓ Submit Application</button>
 </div>
-
-<button class="print-btn" onclick="window.print()">🖨️ Print</button>
 
 <div class="page">
     <form method="POST" action="{{ route('applications.store') }}" id="soloParentForm">
@@ -247,7 +196,14 @@
 
         <div class="row">
             <div>Relihiyon: <input type="text" name="additional_data[relihiyon]" class="line-input"></div>
-            <div>Tirahan: <input type="text" name="additional_data[tirahan]" class="line-input" placeholder="Buong address"></div>
+            <div>Barangay: 
+                <select name="additional_data[barangay]" class="line-input" required>
+                    <option value="">Pumili ng Barangay</option>
+                    @foreach($barangays ?? [] as $barangay)
+                        <option value="{{ $barangay }}">{{ $barangay }}</option>
+                    @endforeach
+                </select>
+            </div>
         </div>
 
         <div class="row">
@@ -261,14 +217,6 @@
         </div>
 
         <div class="row">
-            <div>Barangay: 
-                <select name="additional_data[barangay]" class="line-input" required>
-                    <option value="">Pumili ng Barangay</option>
-                    @foreach($barangays ?? [] as $barangay)
-                        <option value="{{ $barangay }}">{{ $barangay }}</option>
-                    @endforeach
-                </select>
-            </div>
             <div>Miyembro ng Philhealth? 
                 <input type="radio" name="additional_data[philhealth]" value="Oo"> Oo
                 <input type="radio" name="additional_data[philhealth]" value="Hindi"> Hindi
@@ -278,9 +226,9 @@
         <!-- TABLE - Komposisyon ng Pamilya -->
         <p class="section">II. Komposisyon ng Pamilya:</p>
 
-        <table>
+         <table>
             <thead>
-                <tr>
+                 <tr>
                     <th>Pangalan</th>
                     <th>Kapanganakan</th>
                     <th>Edad</th>
@@ -288,11 +236,11 @@
                     <th>Natamong Edukasyon</th>
                     <th>Trabaho</th>
                     <th>Puna</th>
-                </tr>
+                 </tr>
             </thead>
             <tbody>
                 @for($i = 0; $i < 5; $i++)
-                <tr>
+                 <tr>
                     <td><input type="text" name="additional_data[family][{{$i}}][name]" placeholder="Pangalan"></td>
                     <td><input type="text" name="additional_data[family][{{$i}}][birth]" placeholder="MM/DD/YYYY"></td>
                     <td><input type="number" name="additional_data[family][{{$i}}][age]" placeholder="Edad"></td>
@@ -316,11 +264,11 @@
 
         <!-- SECTION 3 -->
         <p class="section">III. Klasipikasyon/Dahilan ng Pagiging Solong Magulang:</p>
-        <textarea name="additional_data[reason]" placeholder="Ilagay ang dahilan kung bakit kayo ay itinuturing na solong magulang..."></textarea>
+        <textarea name="additional_data[reason]" placeholder="Ilagay ang dahilan..."></textarea>
 
         <!-- SECTION 4 -->
         <p class="section">IV. Pangangailangan/Problema Bilang Solong Magulang:</p>
-        <textarea name="additional_data[needs]" placeholder="Ilagay ang inyong mga pangangailangan at problema bilang solong magulang..."></textarea>
+        <textarea name="additional_data[needs]" placeholder="Ilagay ang inyong mga pangangailangan..."></textarea>
 
         <!-- SECTION 5 -->
         <p class="section">V. Pinagkukunan ng Kabuhayan:</p>
@@ -337,15 +285,14 @@
                 Petsa:<br>
                 <input type="date" name="additional_data[petsa]" class="line-input" value="{{ date('Y-m-d') }}">
             </div>
-
             <div>
                 Pirma/Dit sa Ibabaw ng Pangalan:<br>
                 <input type="text" name="additional_data[pirma]" class="line-input" placeholder="Pirma">
             </div>
         </div>
-
     </form>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

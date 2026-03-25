@@ -9,8 +9,9 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Auth; // Ito ang tama, hindi 'Auth' lang
+use Illuminate\Support\Facades\Auth;
 use Exception;
+use Carbon\Carbon;
 
 class RegisterController extends Controller
 {
@@ -28,62 +29,66 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         try {
-            // Validate input
             $validated = $request->validate([
                 'username' => 'required|string|max:50|unique:users',
                 'email' => 'required|string|email|max:100|unique:users',
                 'password' => 'required|string|min:8|confirmed',
                 'full_name' => 'required|string|max:100',
-                'municipality' => 'required_if:role,admin|nullable|string|max:50',
+                'birthdate' => 'required|date|before:today',
+                'municipality' => 'nullable|string|max:50',
                 'role' => 'required|in:user,admin,super_admin',
             ]);
 
-            // Prepare user data
+            $birthdate = Carbon::parse($validated['birthdate']);
+            $age = $birthdate->age;
+
             $userData = [
                 'username' => $validated['username'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['password']),
                 'full_name' => $validated['full_name'],
+                'birthdate' => $validated['birthdate'],
+                'age' => $age,
                 'role' => $validated['role'],
                 'status' => 'active',
             ];
 
-            // Add municipality if provided
-            if (!empty($validated['municipality'])) {
+            if ($validated['role'] === 'admin' || $validated['role'] === 'super_admin') {
+                if (empty($validated['municipality'])) {
+                    throw new Exception('Municipality is required for admin accounts.');
+                }
                 $userData['municipality'] = $validated['municipality'];
+            } else {
+                $userData['municipality'] = $validated['municipality'] ?? 'Majayjay';
             }
 
-            // Create user
             $user = User::create($userData);
 
-            // For super_admin and admin, auto-verify
+            // For super_admin and admin, auto-verify (no OTP needed)
             if (in_array($validated['role'], ['super_admin', 'admin'])) {
                 $user->email_verified_at = now();
                 $user->save();
                 
-                // Log in using Auth facade
                 Auth::login($user);
                 
                 if ($user->role === 'super_admin') {
                     return redirect()->route('superadmin.dashboard')
                         ->with('success', 'Super Admin account created successfully!');
                 } else {
-                    return redirect()->route('dashboard')
+                    return redirect()->route('admin.dashboard')
                         ->with('success', 'Admin account created successfully!');
                 }
             }
 
-            // For regular users, generate OTP
+            // For regular users, generate OTP and send email
             try {
                 $otp = $user->generateOtp();
                 
-                // Try to send email
                 Mail::send('emails.otp', ['user' => $user, 'otp' => $otp], function ($message) use ($user) {
                     $message->to($user->email, $user->full_name)
                         ->subject('Email Verification OTP - MSWDO Analysis');
                 });
                 
-                // Store user id in session for OTP verification
                 session(['otp_user_id' => $user->id]);
                 
                 return redirect()->route('otp.verify.form')
@@ -92,13 +97,10 @@ class RegisterController extends Controller
             } catch (Exception $e) {
                 Log::error('Failed to send OTP email: ' . $e->getMessage());
                 
-                // If email fails, auto-verify na lang muna for development
-                $user->email_verified_at = now();
-                $user->save();
-                Auth::login($user);
-                
-                return redirect()->route('dashboard')
-                    ->with('success', 'Registration successful! (Email sending failed, but you are logged in)');
+                // If email fails, show OTP form anyway with warning
+                session(['otp_user_id' => $user->id]);
+                return redirect()->route('otp.verify.form')
+                    ->with('warning', 'Registration successful but email sending failed. Please contact admin for OTP.');
             }
 
         } catch (Exception $e) {

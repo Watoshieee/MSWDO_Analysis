@@ -329,8 +329,8 @@
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->routeIs('applications.*') ? 'active' : '' }}" href="{{ route('applications.index') }}">
-                                <i class="bi bi-folder-check"></i> Applications
+                            <a class="nav-link {{ request()->routeIs('admin.requirements.*') ? 'active' : '' }}" href="{{ route('admin.requirements') }}">
+                                <i class="bi bi-folder-check"></i> Requirements
                             </a>
                         </li>
                         @endif
@@ -460,7 +460,7 @@
                          </div>
                     </div>
                     
-                    <div class="action-btn" onclick="window.location.href='{{ route('applications.index') }}'">
+                    <div class="action-btn" onclick="window.location.href='{{ route('admin.requirements') }}'">
                         <i class="bi bi-list-check"></i>
                         <div>
                             <h6>Manage Applications</h6>
@@ -468,13 +468,6 @@
                         </div>
                     </div>
                     
-                    <div class="action-btn" onclick="window.location.href='{{ route('applications.create') }}'">
-                        <i class="bi bi-plus-circle-fill"></i>
-                        <div>
-                            <h6>Create New Application</h6>
-                            <p>Add a new beneficiary application</p>
-                        </div>
-                    </div>
                 </div>
             </div>
 

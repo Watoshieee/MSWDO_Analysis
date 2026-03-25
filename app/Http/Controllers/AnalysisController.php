@@ -100,8 +100,8 @@ class AnalysisController extends Controller
             'comparisonData', 
             'programTypes', 
             'barangays',
-            'programComparison',        // NEW - for comparative table
-            'municipalityProgramTotals'  // NEW - for summary
+            'programComparison',
+            'municipalityProgramTotals'
         ));
     }
 
@@ -189,7 +189,22 @@ class AnalysisController extends Controller
                 ->groupBy('municipality')
                 ->pluck('total', 'municipality'),
         ];
+        
+        // ADD THE MISSING VARIABLE - municipalityTotals
+        $municipalityTotals = SocialWelfareProgram::whereIn('municipality', $municipalities)
+            ->select('municipality')
+            ->selectRaw('SUM(beneficiary_count) as total')
+            ->groupBy('municipality')
+            ->get()
+            ->keyBy('municipality');
 
-        return view('analysis.programs', compact('programs', 'programTypes', 'years', 'municipalities', 'summary'));
+        return view('analysis.programs', compact(
+            'programs', 
+            'programTypes', 
+            'years', 
+            'municipalities', 
+            'summary',
+            'municipalityTotals'  // ADD THIS - fixes the error
+        ));
     }
 }
