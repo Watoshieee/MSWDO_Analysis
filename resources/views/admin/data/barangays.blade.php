@@ -66,7 +66,7 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis">Public View</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
                 </ul>
                 <div class="d-flex">
                     @auth

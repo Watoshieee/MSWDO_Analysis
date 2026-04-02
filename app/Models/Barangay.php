@@ -22,6 +22,8 @@ class Barangay extends Model
         'population_20_59',
         'population_60_100',
         'single_parent_count',
+        'pwd_count',
+        'aics_count',
         'total_households',
         'total_approved_applications',
         'year'

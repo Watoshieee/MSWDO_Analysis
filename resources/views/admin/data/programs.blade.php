@@ -72,7 +72,7 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis">Public View</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
                 </ul>
                 <div class="d-flex">@auth<div class="user-info"><span>{{ Auth::user()->full_name }}</span><form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf<button type="submit" class="logout-btn">Logout</button></form></div>@endauth</div>
             </div>

@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MSWDO Comparative Analysis</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
+
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -79,52 +79,31 @@
             color: var(--secondary-yellow);
         }
 
-        /* Stat Cards */
+        /* Stat Cards — white with top accent bar */
         .stat-card {
-            transition: all 0.3s ease;
-            border: none;
-            border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            background: white;
+            border-radius: 18px;
             border: 1px solid #E2E8F0;
-            height: 100%;
             overflow: hidden;
+            transition: transform .28s, box-shadow .28s;
+            height: 100%;
         }
+        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 14px 32px rgba(44,62,143,0.11); }
+        .accent-bar { height: 4px; }
+        .acc-blue   { background: linear-gradient(90deg,#2C3E8F,#5578d9); }
+        .acc-green  { background: linear-gradient(90deg,#16a34a,#22c55e); }
+        .acc-yellow { background: linear-gradient(90deg,#FDB913,#E5A500); }
+        .acc-teal   { background: linear-gradient(90deg,#0891b2,#22d3ee); }
+        .acc-red    { background: linear-gradient(90deg,#dc2626,#ef4444); }
+        .sc-body  { padding: 18px 20px 16px; }
+        .sc-label { font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing:.1em; color: #64748b; margin-bottom: 6px; }
+        .sc-value { font-size: 1.9rem; font-weight: 900; color: var(--primary-blue); line-height:1.1; margin-bottom:3px; }
+        .sc-sub   { font-size: 0.75rem; color: #64748b; font-weight:500; }
 
-        .stat-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 30px rgba(44, 62, 143, 0.1);
-            border-color: var(--primary-blue-soft);
-        }
-
-        .stat-card.bg-primary {
-            background: var(--primary-gradient) !important;
-            color: white;
-        }
-
-        .stat-card.bg-success {
-            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%) !important;
-            color: white;
-        }
-
-        .stat-card.bg-warning {
-            background: var(--secondary-gradient) !important;
-            color: var(--primary-blue);
-        }
-
-        .stat-card.bg-info {
-            background: linear-gradient(135deg, #5D7BB9 0%, #2C3E8F 100%) !important;
-            color: white;
-        }
-
-        .stat-card .card-body {
-            padding: 25px;
-        }
-
-        .stat-card h2 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 10px 0 0 0;
-        }
+        /* Section header (yellow-underline style) */
+        .sec-title { font-size:1rem; font-weight:800; color:var(--primary-blue); position:relative; padding-bottom:10px; margin-bottom:4px; }
+        .sec-title::after { content:''; position:absolute; bottom:0; left:0; width:34px; height:4px; background:var(--secondary-yellow); border-radius:2px; }
+        .sec-sub { font-size:0.8rem; color:#64748b; margin:8px 0 0; }
 
         /* Chart Cards */
         .chart-card {
@@ -173,40 +152,21 @@
             width: 100%;
         }
 
-        /* Program Beneficiaries Cards */
+        /* Municipality beneficiary cards — white with accent bar */
         .program-card {
-            text-align: center;
-            padding: 20px;
-            border-radius: 15px;
+            background: white;
+            border-radius: 18px;
+            border: 1px solid #E2E8F0;
+            overflow: hidden;
             height: 100%;
-            transition: all 0.3s ease;
+            transition: transform .28s, box-shadow .28s;
         }
-
-        .program-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 10px 25px rgba(44, 62, 143, 0.15);
-        }
-
-        .program-card.bg-success {
-            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
-            color: white;
-        }
-
-        .program-card.bg-warning {
-            background: var(--secondary-gradient);
-            color: var(--primary-blue);
-        }
-
-        .program-card.bg-info {
-            background: linear-gradient(135deg, #5D7BB9 0%, #2C3E8F 100%);
-            color: white;
-        }
-
-        .program-card h3 {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin: 15px 0 5px 0;
-        }
+        .program-card:hover { transform: translateY(-4px); box-shadow: 0 14px 32px rgba(44,62,143,0.11); }
+        .program-card .pc-body { padding: 20px 22px 18px; }
+        .program-card .pc-muni { font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:#64748b; margin-bottom:6px; }
+        .program-card .pc-value { font-size:2rem; font-weight:900; color:var(--primary-blue); line-height:1.1; margin-bottom:2px; }
+        .program-card .pc-label { font-size:0.75rem; color:#64748b; font-weight:500; }
+        .program-card .pc-active { font-size:0.72rem; color:#64748b; margin-top:6px; }
 
         .legend-item {
             display: inline-block;
@@ -465,9 +425,9 @@
                 @else
                 {{-- ── USER / GUEST PUBLIC NAV ── --}}
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link active" href="/analysis">Programs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis">Programs</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Analysis</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
                 </ul>
                 <div class="d-flex">
                     <div class="user-info">
@@ -482,9 +442,9 @@
                 @else
                 {{-- ── GUEST NAV ── --}}
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link active" href="/analysis">Programs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis">Programs</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Analysis</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
                 </ul>
                 <div class="d-flex">
                     <a href="{{ route('login') }}" class="btn-login me-2">Login</a>
@@ -504,9 +464,9 @@
             <div class="hero-divider"></div>
             <p>A side-by-side comparison of population demographics, social welfare program beneficiaries, and household statistics across the three municipalities.</p>
             <div class="mt-3">
-                <span class="hero-stat-pill"><i class="bi bi-people-fill"></i> Population &amp; Households</span>
-                <span class="hero-stat-pill"><i class="bi bi-heart-fill"></i> Program Beneficiaries</span>
-                <span class="hero-stat-pill"><i class="bi bi-bar-chart-fill"></i> Trends &amp; Insights</span>
+                <span class="hero-stat-pill">Population &amp; Households</span>
+                <span class="hero-stat-pill">Program Beneficiaries</span>
+                <span class="hero-stat-pill">Trends &amp; Insights</span>
             </div>
         </div>
     </section>
@@ -527,42 +487,50 @@
             </div>
         @endif
 
-        <h1 class="page-title">
-            <i class="bi bi-bar-chart-line"></i> 
-            Comparative Analysis: Magdalena, Liliw, and Majayjay
-        </h1>
+        <div style="margin:8px 0 28px;">
+            <div class="sec-title" style="font-size:1.4rem;">Comparative Analysis: Magdalena, Liliw &amp; Majayjay</div>
+            <p class="sec-sub">Side-by-side population, household, and social welfare statistics across the three municipalities.</p>
+        </div>
 
         <!-- Summary Stats (existing) -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stat-card bg-primary text-white">
-            <div class="card-body">
-                <h5 class="card-title">Total Population</h5>
-                <h2>{{ number_format(array_sum(array_column($comparisonData, 'total_population'))) }}</h2>
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="accent-bar acc-blue"></div>
+            <div class="sc-body">
+                <div class="sc-label">Total Population</div>
+                <div class="sc-value">{{ number_format(array_sum(array_column($comparisonData, 'total_population'))) }}</div>
+                <div class="sc-sub">3 Municipalities</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card bg-success text-white">
-            <div class="card-body">
-                <h5 class="card-title">Total Households</h5>
-                <h2>{{ number_format(array_sum(array_column($comparisonData, 'households'))) }}</h2>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="accent-bar acc-green"></div>
+            <div class="sc-body">
+                <div class="sc-label">Total Households</div>
+                <div class="sc-value">{{ number_format(array_sum(array_column($comparisonData, 'households'))) }}</div>
+                <div class="sc-sub">Registered households</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card bg-warning text-white">
-            <div class="card-body">
-                <h5 class="card-title">Single Parents</h5>
-                <h2>{{ number_format(array_sum(array_column($comparisonData, 'single_parents'))) }}</h2>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="accent-bar acc-yellow"></div>
+            <div class="sc-body">
+                <div class="sc-label">Single Parents</div>
+                <div class="sc-value">{{ number_format(array_sum(array_column($comparisonData, 'single_parents'))) }}</div>
+                <div class="sc-sub">Solo parent households</div>
             </div>
         </div>
     </div>
-    <div class="col-md-3">
-        <div class="card stat-card bg-info text-white">
-            <div class="card-body">
-                <h5 class="card-title">Approved Apps</h5>
-                <h2>{{ number_format(array_sum(array_column($comparisonData, 'approved_apps'))) }}</h2>
+    <div class="col-md-3 col-sm-6">
+        <div class="stat-card">
+            <div class="accent-bar acc-teal"></div>
+            <div class="sc-body">
+                <div class="sc-label">Approved Applications</div>
+                <div class="sc-value">{{ number_format(array_sum(array_column($comparisonData, 'approved_apps'))) }}</div>
+                <div class="sc-sub">Total approved</div>
             </div>
         </div>
     </div>
@@ -571,19 +539,12 @@
 <!-- Comparative Analysis Card with Toggle Buttons -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card stat-card">
-            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0">
-                    <i class="bi bi-bar-chart"></i> 
-                    Comparative Analysis: Population, Households & Single Parents
-                </h5>
+        <div class="card stat-card" style="background:white; border:1px solid #E2E8F0;">
+            <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%); border:none; padding:16px 20px;">
+                <h5 class="mb-0" style="font-weight:700; font-size:0.97rem;">Comparative Analysis: Population, Households &amp; Single Parents</h5>
                 <div class="btn-group" role="group" aria-label="Chart type toggle">
-                    <button type="button" class="btn btn-light btn-sm active" id="barBtn" onclick="showBarChart()">
-                        <i class="bi bi-bar-chart"></i> Bar Graph
-                    </button>
-                    <button type="button" class="btn btn-light btn-sm" id="lineBtn" onclick="showLineChart()">
-                        <i class="bi bi-graph-up"></i> Line Graph
-                    </button>
+                    <button type="button" class="btn btn-light btn-sm active" id="barBtn" onclick="showBarChart()">Bar Graph</button>
+                    <button type="button" class="btn btn-light btn-sm" id="lineBtn" onclick="showLineChart()">Line Graph</button>
                 </div>
             </div>
             <div class="card-body">
@@ -606,41 +567,42 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="chart-card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-heart-fill"></i> Program Beneficiaries Overview</h5>
+                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                        <div class="sec-title">Program Beneficiaries Overview</div>
+                        <div class="sec-sub">Total beneficiaries per municipality</div>
                     </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-4 mb-3">
-                                <div class="program-card bg-success">
-                                    <i class="bi bi-building" style="font-size: 2rem;"></i>
-                                    <h6>Magdalena</h6>
-                                    <h3>{{ number_format($municipalityProgramTotals['Magdalena']) }}</h3>
-                                    <small>Total Beneficiaries</small>
-                                    <div class="mt-2">
-                                        <small>{{ $comparisonData['Magdalena']['programs']->count() }} active programs</small>
+                    <div class="card-body" style="padding:18px 22px;">
+                        <div class="row g-3">
+                            <div class="col-md-4">
+                                <div class="program-card">
+                                    <div class="accent-bar acc-green"></div>
+                                    <div class="pc-body">
+                                        <div class="pc-muni">Magdalena</div>
+                                        <div class="pc-value">{{ number_format($municipalityProgramTotals['Magdalena']) }}</div>
+                                        <div class="pc-label">Total Beneficiaries</div>
+                                        <div class="pc-active">{{ $comparisonData['Magdalena']['programs']->count() }} active programs</div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="program-card bg-warning">
-                                    <i class="bi bi-building" style="font-size: 2rem;"></i>
-                                    <h6>Liliw</h6>
-                                    <h3>{{ number_format($municipalityProgramTotals['Liliw']) }}</h3>
-                                    <small>Total Beneficiaries</small>
-                                    <div class="mt-2">
-                                        <small>{{ $comparisonData['Liliw']['programs']->count() }} active programs</small>
+                            <div class="col-md-4">
+                                <div class="program-card">
+                                    <div class="accent-bar acc-yellow"></div>
+                                    <div class="pc-body">
+                                        <div class="pc-muni">Liliw</div>
+                                        <div class="pc-value">{{ number_format($municipalityProgramTotals['Liliw']) }}</div>
+                                        <div class="pc-label">Total Beneficiaries</div>
+                                        <div class="pc-active">{{ $comparisonData['Liliw']['programs']->count() }} active programs</div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="program-card bg-info">
-                                    <i class="bi bi-building" style="font-size: 2rem;"></i>
-                                    <h6>Majayjay</h6>
-                                    <h3>{{ number_format($municipalityProgramTotals['Majayjay']) }}</h3>
-                                    <small>Total Beneficiaries</small>
-                                    <div class="mt-2">
-                                        <small>{{ $comparisonData['Majayjay']['programs']->count() }} active programs</small>
+                            <div class="col-md-4">
+                                <div class="program-card">
+                                    <div class="accent-bar acc-blue"></div>
+                                    <div class="pc-body">
+                                        <div class="pc-muni">Majayjay</div>
+                                        <div class="pc-value">{{ number_format($municipalityProgramTotals['Majayjay']) }}</div>
+                                        <div class="pc-label">Total Beneficiaries</div>
+                                        <div class="pc-active">{{ $comparisonData['Majayjay']['programs']->count() }} active programs</div>
                                     </div>
                                 </div>
                             </div>
@@ -654,8 +616,9 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="chart-card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-bar-chart-fill"></i> Program Beneficiaries Comparison</h5>
+                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                        <div class="sec-title">Program Beneficiaries Comparison</div>
+                        <div class="sec-sub">Breakdown by municipality and program type</div>
                     </div>
                     <div class="card-body">
                         <!-- Graph Legend -->
@@ -680,39 +643,27 @@
                         </div>
                         
                         <!-- Graph Insights -->
-                        <div class="row mt-4">
+                        <div class="row g-3 mt-2">
                             <div class="col-md-4">
                                 <div class="alert alert-success">
-                                    <i class="bi bi-trophy-fill"></i>
-                                    <strong>Highest Total:</strong> 
-                                    @php
-                                        $highestTotal = array_keys($municipalityProgramTotals, max($municipalityProgramTotals))[0];
-                                    @endphp
+                                    <strong>Highest Total:</strong>
+                                    @php $highestTotal = array_keys($municipalityProgramTotals, max($municipalityProgramTotals))[0]; @endphp
                                     {{ $highestTotal }} ({{ number_format(max($municipalityProgramTotals)) }} beneficiaries)
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="alert alert-info">
-                                    <i class="bi bi-pie-chart-fill"></i>
                                     <strong>Most Programs:</strong>
                                     @php
-                                        $mostPrograms = 'Magdalena';
-                                        $maxCount = $comparisonData['Magdalena']['programs']->count();
-                                        if($comparisonData['Liliw']['programs']->count() > $maxCount) {
-                                            $mostPrograms = 'Liliw';
-                                            $maxCount = $comparisonData['Liliw']['programs']->count();
-                                        }
-                                        if($comparisonData['Majayjay']['programs']->count() > $maxCount) {
-                                            $mostPrograms = 'Majayjay';
-                                            $maxCount = $comparisonData['Majayjay']['programs']->count();
-                                        }
+                                        $mostPrograms = 'Magdalena'; $maxCount = $comparisonData['Magdalena']['programs']->count();
+                                        if($comparisonData['Liliw']['programs']->count() > $maxCount){ $mostPrograms='Liliw'; $maxCount=$comparisonData['Liliw']['programs']->count(); }
+                                        if($comparisonData['Majayjay']['programs']->count() > $maxCount){ $mostPrograms='Majayjay'; $maxCount=$comparisonData['Majayjay']['programs']->count(); }
                                     @endphp
                                     {{ $mostPrograms }} ({{ $maxCount }} programs)
                                 </div>
                             </div>
                             <div class="col-md-4">
                                 <div class="alert alert-warning">
-                                    <i class="bi bi-bar-chart-fill"></i>
                                     <strong>Total Across All:</strong>
                                     {{ number_format(array_sum($municipalityProgramTotals)) }} beneficiaries
                                 </div>
@@ -727,8 +678,8 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="chart-card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-bar-chart-fill"></i> Population Distribution by Municipality</h5>
+                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                        <div class="sec-title">Population Distribution by Municipality</div>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
@@ -739,8 +690,8 @@
             </div>
             <div class="col-md-6">
                 <div class="chart-card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-pie-chart-fill"></i> Gender Distribution</h5>
+                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                        <div class="sec-title">Gender Distribution</div>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
@@ -754,8 +705,8 @@
         <div class="row mt-4">
             <div class="col-md-6">
                 <div class="chart-card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-graph-up"></i> Age Group Distribution</h5>
+                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                        <div class="sec-title">Age Group Distribution</div>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
@@ -766,8 +717,8 @@
             </div>
             <div class="col-md-6">
                 <div class="chart-card">
-                    <div class="card-header">
-                        <h5><i class="bi bi-file-text"></i> Application Status</h5>
+                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                        <div class="sec-title">Application Status</div>
                     </div>
                     <div class="card-body">
                         <div class="chart-container">
@@ -779,15 +730,12 @@
         </div>
 
         <!-- Municipality Details -->
-        <div class="row mt-4">
+        <div class="row mt-4 g-3">
             @foreach($comparisonData as $municipality => $data)
             <div class="col-md-4 mb-4">
                 <div class="municipality-card">
                     <div class="card-header">
-                        <h5>
-                            <i class="bi bi-building"></i> 
-                            {{ $municipality }}
-                        </h5>
+                        <h5>{{ $municipality }}</h5>
                     </div>
                     <div class="card-body">
                         <!-- Quick Stats -->
@@ -803,9 +751,7 @@
                         </div>
 
                         <!-- Demographics -->
-                        <h6 class="mt-3" style="color: var(--primary-blue);">
-                            <i class="bi bi-people" style="color: var(--secondary-yellow);"></i> Demographics
-                        </h6>
+                        <h6 class="mt-3" style="color: var(--primary-blue); font-weight:700;">Demographics</h6>
                         <table class="table table-sm">
                             <tr>
                                 <td>Male:</td>
@@ -825,9 +771,7 @@
                         </table>
 
                         <!-- Age Distribution -->
-                        <h6 class="mt-3" style="color: var(--primary-blue);">
-                            <i class="bi bi-graph-up" style="color: var(--secondary-yellow);"></i> Age Groups
-                        </h6>
+                        <h6 class="mt-3" style="color: var(--primary-blue); font-weight:700;">Age Groups</h6>
                         <table class="table table-sm">
                             @foreach($data['age_groups'] as $group => $count)
                             <tr>
@@ -839,9 +783,7 @@
                         </table>
 
                         <!-- Applications -->
-                        <h6 class="mt-3" style="color: var(--primary-blue);">
-                            <i class="bi bi-file-text" style="color: var(--secondary-yellow);"></i> Applications
-                        </h6>
+                        <h6 class="mt-3" style="color: var(--primary-blue); font-weight:700;">Applications</h6>
                         <div class="row text-center mb-3">
                             <div class="col-4">
                                 <span class="badge bg-warning">Pending</span>
@@ -858,9 +800,7 @@
                         </div>
 
                         <!-- Programs -->
-                        <h6 class="mt-3" style="color: var(--primary-blue);">
-                            <i class="bi bi-heart" style="color: var(--secondary-yellow);"></i> Program Beneficiaries
-                        </h6>
+                        <h6 class="mt-3" style="color: var(--primary-blue); font-weight:700;">Program Beneficiaries</h6>
                         <div class="program-list">
                             @forelse($data['programs'] as $program => $count)
                             <div class="program-item">
@@ -873,9 +813,7 @@
                         </div>
                     </div>
                     <div class="card-footer bg-transparent border-0 pb-3 text-center">
-                        <a href="/analysis/municipality/{{ $municipality }}" class="btn-view">
-                            <i class="bi bi-eye"></i> View Details
-                        </a>
+                        <a href="/analysis/municipality/{{ $municipality }}" class="btn-view">View Barangay Details &rarr;</a>
                     </div>
                 </div>
             </div>

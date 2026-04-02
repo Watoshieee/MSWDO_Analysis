@@ -46,29 +46,27 @@
         .muni-badge-lg .muni-sub  { font-size: 0.72rem; opacity: 0.75; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
 
         /* STAT CARDS */
-        .stat-card { background: var(--bg-white); border-radius: 18px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); height: 100%; transition: all 0.3s; position: relative; overflow: hidden; }
+        .stat-card { background: #EEF2FF; border-radius: 18px; border: 1px solid #C7D6F5; box-shadow: 0 8px 36px rgba(44,62,143,0.18); height: 100%; position: relative; overflow: hidden; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary-gradient); }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(44,62,143,0.10); }
         .stat-card .inner { padding: 26px 28px; }
-        .stat-pill  { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; background: #E5EEFF; color: var(--primary-blue); border-radius: 20px; padding: 3px 10px; display: inline-block; margin-bottom: 10px; }
-        .stat-label { font-size: 0.78rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
+        .stat-pill  { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; background: #D8E4FF; color: var(--primary-blue); border-radius: 20px; padding: 3px 10px; display: inline-block; margin-bottom: 10px; }
+        .stat-label { font-size: 0.78rem; font-weight: 600; color: #6278b8; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
         .stat-value { font-size: 2.6rem; font-weight: 900; color: var(--primary-blue); line-height: 1; }
-        .stat-sub   { font-size: 0.75rem; color: #94a3b8; margin-top: 8px; font-weight: 500; }
+        .stat-sub   { font-size: 0.75rem; color: #6278b8; margin-top: 8px; font-weight: 500; }
 
         /* SECTION HEADING */
         .section-heading { font-size: 1.05rem; font-weight: 800; color: var(--primary-blue); position: relative; padding-bottom: 10px; margin-bottom: 20px; }
         .section-heading::after { content: ''; position: absolute; bottom: 0; left: 0; width: 36px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; }
 
-        /* MENU CARDS */
-        .menu-card { background: var(--bg-white); border-radius: 18px; padding: 28px 26px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: all 0.3s ease; height: 100%; position: relative; overflow: hidden; display: block; color: inherit; }
-        .menu-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary-gradient); transition: height 0.3s; }
-        .menu-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(44,62,143,0.12); border-color: var(--primary-blue); color: inherit; }
-        .menu-card:hover::before { height: 6px; }
-        .menu-num   { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; color: var(--primary-blue); background: var(--bg-soft-blue); border-radius: 20px; padding: 3px 10px; display: inline-block; margin-bottom: 14px; }
-        .menu-title { font-size: 1.1rem; font-weight: 800; color: var(--primary-blue); margin-bottom: 8px; }
-        .menu-desc  { font-size: 0.83rem; color: #64748b; line-height: 1.65; }
-        .menu-arrow { font-size: 1.2rem; margin-top: 16px; color: var(--primary-blue); opacity: 0.35; display: block; transition: all 0.25s; }
-        .menu-card:hover .menu-arrow { opacity: 1; transform: translateX(4px); }
+        /* MENU CARDS — Quick Actions style */
+        .menu-card { display: flex; align-items: center; gap: 14px; padding: 16px 18px; border-radius: 14px; background: var(--primary-gradient); color: white; border: none; transition: all 0.25s ease; margin-bottom: 0; text-decoration: none; box-shadow: 0 3px 14px rgba(44,62,143,0.18); height: 100%; }
+        .menu-card:hover { box-shadow: 0 10px 28px rgba(44,62,143,0.32); transform: translateY(-3px); color: white; }
+        .menu-text  { flex: 1; }
+        .menu-num   { font-size: 0.6rem; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: rgba(253,185,19,0.9); display: block; margin-bottom: 4px; }
+        .menu-title { font-size: 1rem; font-weight: 800; color: white; display: block; margin-bottom: 4px; line-height: 1.25; }
+        .menu-desc  { font-size: 0.76rem; color: rgba(255,255,255,0.72); display: block; line-height: 1.5; }
+        .menu-arrow { font-size: 1.4rem; color: rgba(255,255,255,0.55); flex-shrink: 0; transition: color 0.2s; }
+        .menu-card:hover .menu-arrow { color: var(--secondary-yellow); }
 
         /* ALERT */
         .alert-success-c { border-radius: 12px; font-size: 0.88rem; padding: 12px 16px; margin-bottom: 16px; background: #d4edda; border-left: 4px solid #28a745; color: #155724; border: none; }
@@ -98,7 +96,7 @@
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.requirements*') ? 'active' : '' }}" href="{{ route('admin.requirements') }}">Applications</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis">Public View</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
                 </ul>
                 <div class="d-flex">
                     @auth
@@ -183,26 +181,32 @@
         <div class="row g-4 mb-4">
             <div class="col-md-4">
                 <a href="{{ route('admin.data.municipality') }}" class="menu-card">
-                    <span class="menu-num">01 — Municipality</span>
-                    <div class="menu-title">Municipality Profile</div>
-                    <div class="menu-desc">Update population, households, age groups, and program beneficiary counts for {{ $municipality->name }}.</div>
-                    <span class="menu-arrow">&#8594;</span>
+                    <div class="menu-text">
+                        <span class="menu-num">01 &mdash; Municipality</span>
+                        <span class="menu-title">Municipality Profile</span>
+                        <span class="menu-desc">Update population, households, age groups, and program beneficiary counts for {{ $municipality->name }}.</span>
+                    </div>
+                    <span class="menu-arrow">&rsaquo;</span>
                 </a>
             </div>
             <div class="col-md-4">
                 <a href="{{ route('admin.data.barangays') }}" class="menu-card">
-                    <span class="menu-num">02 — Barangays</span>
-                    <div class="menu-title">Barangay Records</div>
-                    <div class="menu-desc">Manage population, household, and demographic data for all {{ $barangays }} barangays in {{ $municipality->name }}.</div>
-                    <span class="menu-arrow">&#8594;</span>
+                    <div class="menu-text">
+                        <span class="menu-num">02 &mdash; Barangays</span>
+                        <span class="menu-title">Barangay Records</span>
+                        <span class="menu-desc">Manage population, household, and demographic data for all {{ $barangays }} barangays in {{ $municipality->name }}.</span>
+                    </div>
+                    <span class="menu-arrow">&rsaquo;</span>
                 </a>
             </div>
             <div class="col-md-4">
                 <a href="{{ route('admin.data.programs') }}" class="menu-card">
-                    <span class="menu-num">03 — Programs</span>
-                    <div class="menu-title">Social Programs</div>
-                    <div class="menu-desc">Manage social welfare program beneficiaries, enrollment data, and yearly records.</div>
-                    <span class="menu-arrow">&#8594;</span>
+                    <div class="menu-text">
+                        <span class="menu-num">03 &mdash; Programs</span>
+                        <span class="menu-title">Social Programs</span>
+                        <span class="menu-desc">Manage social welfare program beneficiaries, enrollment data, and yearly records.</span>
+                    </div>
+                    <span class="menu-arrow">&rsaquo;</span>
                 </a>
             </div>
         </div>

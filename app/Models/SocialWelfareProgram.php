@@ -4,14 +4,17 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class SocialWelfareProgram extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $table = 'social_welfare_programs';
     
-    public $timestamps = false;
+    public $timestamps = true;
+    const CREATED_AT = null;
+    const UPDATED_AT = null;
 
     protected $fillable = [
         'municipality',

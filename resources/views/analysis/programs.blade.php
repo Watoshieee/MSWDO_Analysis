@@ -140,7 +140,7 @@
             border-radius: 2px;
         }
 
-        /* ===== VMG CARDS ===== */
+        /* ===== VMG CARDS - NO HOVER ANIMATION ===== */
         .vmg-card {
             background: white;
             border-radius: 20px;
@@ -148,7 +148,6 @@
             border: 1px solid var(--border-light);
             box-shadow: 0 4px 15px rgba(0,0,0,0.03);
             height: 100%;
-            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
         }
@@ -158,7 +157,6 @@
             height: 4px;
             background: var(--primary-gradient);
         }
-        .vmg-card:hover { transform: translateY(-6px); box-shadow: 0 16px 40px rgba(44,62,143,0.12); border-color: var(--primary-blue-soft); }
 
         .vmg-label {
             display: inline-block;
@@ -181,7 +179,7 @@
         }
         .vmg-card p { color: #475569; font-size: 0.94rem; line-height: 1.78; margin: 0; }
 
-        /* ===== GOALS ===== */
+        /* ===== GOALS - NO HOVER ANIMATION ===== */
         .goal-item {
             background: white;
             border-radius: 16px;
@@ -190,9 +188,7 @@
             box-shadow: 0 4px 15px rgba(0,0,0,0.03);
             margin-bottom: 16px;
             display: flex; align-items: flex-start; gap: 18px;
-            transition: all 0.3s ease;
         }
-        .goal-item:hover { transform: translateX(6px); box-shadow: 0 8px 25px rgba(44,62,143,0.1); border-color: var(--primary-blue-soft); }
         .goal-number {
             min-width: 44px; height: 44px;
             border-radius: 12px;
@@ -206,17 +202,15 @@
         .goal-content h6 { font-weight: 700; color: var(--primary-blue); margin-bottom: 5px; font-size: 1rem; }
         .goal-content p { color: #475569; margin: 0; font-size: 0.92rem; line-height: 1.65; }
 
-        /* ===== PROGRAM CARDS ===== */
+        /* ===== PROGRAM CARDS - NO HOVER ANIMATION ===== */
         .program-card {
             background: white;
             border-radius: 20px;
             border: 1px solid var(--border-light);
             box-shadow: 0 4px 15px rgba(0,0,0,0.03);
             height: 100%;
-            transition: all 0.35s ease;
             overflow: hidden;
         }
-        .program-card:hover { transform: translateY(-6px); box-shadow: 0 18px 44px rgba(44,62,143,0.13); border-color: var(--primary-blue-soft); }
         .program-card-header {
             background: var(--primary-gradient);
             padding: 24px 26px 20px;

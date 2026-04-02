@@ -3,13 +3,14 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
 {
-    use HasFactory, Notifiable;
+    use HasFactory, Notifiable, SoftDeletes;
 
     protected $table = 'users';
     protected $primaryKey = 'id';
@@ -18,20 +19,23 @@ class User extends Authenticatable
     const UPDATED_AT = null;
 
     protected $fillable = [
-        'username', 
-        'password', 
-        'email', 
+        'username',
+        'password',
+        'email',
         'full_name',
         'birthdate',
-        'age', 
-        'role', 
-        'municipality', 
+        'age',
+        'role',
+        'municipality',
+        'barangay',
+        'mobile_number',
         'status',
         'email_verified_at',
         'otp_code',
         'otp_expires_at',
         'reset_token',
         'reset_token_expires_at',
+        'archived_by',
     ];
 
     protected $hidden = [

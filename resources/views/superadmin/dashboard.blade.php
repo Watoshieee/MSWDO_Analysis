@@ -52,7 +52,6 @@
         /* ── STAT CARDS ── */
         .stat-card { background:white; border-radius:20px; padding:28px 24px; box-shadow:0 4px 15px rgba(0,0,0,0.03); border:1px solid var(--border-light); transition:all 0.3s ease; height:100%; position:relative; overflow:hidden; }
         .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--primary-gradient); }
-        .stat-card:hover { transform:translateY(-5px); box-shadow:0 14px 32px rgba(44,62,143,0.12); border-color:var(--primary-blue-soft); }
         .stat-number { font-size:2.4rem; font-weight:800; color:var(--primary-blue); line-height:1; margin:12px 0 6px; }
         .stat-label { font-size:0.88rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; }
         .stat-badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; margin-bottom:10px; }

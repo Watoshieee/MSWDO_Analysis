@@ -449,20 +449,55 @@ class MunicipalityManagementController extends Controller
     }
 
     /**
-     * Delete municipality
+     * Archive municipality (soft delete)
      */
     public function destroy($id)
     {
         $municipality = Municipality::findOrFail($id);
-        
-        // Delete related barangays first
-        Barangay::where('municipality', $municipality->name)->delete();
-        
-        // Delete municipality
-        $municipality->delete();
+
+        // Protect core municipalities from deletion
+        $coreMunicipalities = ['Liliw', 'Magdalena', 'Majayjay'];
+        if (in_array($municipality->name, $coreMunicipalities)) {
+            return redirect()->route('superadmin.municipalities.index')
+                ->with('error', 'Cannot archive "' . $municipality->name . '" — it is a core municipality required by the system.');
+        }
+
+        $municipality->delete(); // soft delete
 
         return redirect()->route('superadmin.municipalities.index')
-            ->with('success', 'Municipality deleted successfully!');
+            ->with('success', 'Municipality "' . $municipality->name . '" archived successfully. You can restore it from the archive.');
+    }
+
+    /**
+     * Get all archived municipalities as JSON
+     */
+    public function getArchived()
+    {
+        $archived = Municipality::onlyTrashed()->orderBy('deleted_at', 'desc')->get();
+        return response()->json($archived);
+    }
+
+    /**
+     * Restore an archived municipality
+     */
+    public function restore($id)
+    {
+        $municipality = Municipality::onlyTrashed()->findOrFail($id);
+        $municipality->restore();
+        return response()->json(['success' => true, 'message' => '"' . $municipality->name . '" restored successfully.']);
+    }
+
+    /**
+     * Permanently delete a municipality from the database
+     */
+    public function forceDestroy($id)
+    {
+        $municipality = Municipality::onlyTrashed()->findOrFail($id);
+        $name = $municipality->name;
+        // Also permanently delete related barangays
+        Barangay::where('municipality', $name)->forceDelete();
+        $municipality->forceDelete();
+        return response()->json(['success' => true, 'message' => '"' . $name . '" permanently deleted from the database.']);
     }
 
     /**

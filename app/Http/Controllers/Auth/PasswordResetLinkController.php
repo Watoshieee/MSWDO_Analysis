@@ -36,7 +36,8 @@ class PasswordResetLinkController extends Controller
         // Send email with reset link
         try {
             Mail::send('emails.reset-password', ['user' => $user, 'token' => $token], function ($message) use ($user) {
-                $message->to($user->email, $user->full_name)
+                $message->from(config('mail.from.address'), 'MSWDO Member Portal')
+                    ->to($user->email, $user->full_name)
                     ->subject('Password Reset Request - MSWDO Analysis');
             });
 

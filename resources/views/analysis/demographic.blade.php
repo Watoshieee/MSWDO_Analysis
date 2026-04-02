@@ -339,7 +339,7 @@
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="stat-card accent-green">
-                        <div class="stat-icon" style="background:#e8f5e9;color:#1e7e34;font-size:0.85rem;">FEM</div>
+                        <div class="stat-icon" style="background:#e8f5e9;color:#1e7e34;font-size:0.85rem;">FEMALE</div>
                         <h2 style="color:#2C3E8F;">{{ number_format($totalFemale) }}</h2>
                         <p class="stat-label">Female Population</p>
                         <p class="stat-sub">{{ $femalePct }}% of total</p>

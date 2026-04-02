@@ -67,26 +67,66 @@
         }
         .hero-pill .pill-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--secondary-yellow); flex-shrink: 0; }
 
-        /* ── STAT CARDS ── */
-        .stat-card {
-            background: white; border-radius: 18px;
-            border: 1px solid var(--border-light);
-            box-shadow: 0 4px 16px rgba(0,0,0,0.04);
-            height: 100%; transition: all 0.3s ease;
-            position: relative; overflow: hidden;
-        }
-        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 5px; background: var(--primary-gradient); }
-        .stat-card.s-yellow::before { background: var(--secondary-gradient); }
-        .stat-card.s-green::before  { background: linear-gradient(135deg,#28a745,#1e7e34); }
-        .stat-card.s-red::before    { background: linear-gradient(135deg,#C41E24,#8B0000); }
-        .stat-card:hover { transform: translateY(-5px); box-shadow: 0 14px 32px rgba(44,62,143,0.11); }
-        .stat-card .card-body { padding: 26px 28px; }
-        .stat-label { font-size: 0.72rem; font-weight: 800; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.09em; margin-bottom: 8px; }
-        .stat-value { font-size: 3rem; font-weight: 900; color: var(--primary-blue); line-height: 1; margin-bottom: 4px; }
-        .stat-value.v-yellow { color: #856404; }
-        .stat-value.v-green  { color: #155724; }
-        .stat-value.v-red    { color: var(--accent-red); }
-        .stat-desc { font-size: 0.78rem; color: var(--text-light); font-weight: 500; }
+        /* ── STAT CARDS - NO HOVER ANIMATION ── */
+.stat-card {
+    background: white; 
+    border-radius: 18px;
+    border: 1px solid var(--border-light);
+    box-shadow: 0 4px 16px rgba(0,0,0,0.04);
+    height: 100%; 
+    position: relative; 
+    overflow: hidden;
+}
+.stat-card::before { 
+    content: ''; 
+    position: absolute; 
+    top: 0; 
+    left: 0; 
+    right: 0; 
+    height: 5px; 
+    background: var(--primary-gradient); 
+}
+.stat-card.s-yellow::before { 
+    background: var(--secondary-gradient); 
+}
+.stat-card.s-green::before { 
+    background: linear-gradient(135deg,#28a745,#1e7e34); 
+}
+.stat-card.s-red::before { 
+    background: linear-gradient(135deg,#C41E24,#8B0000); 
+}
+.stat-card .card-body { 
+    padding: 26px 28px; 
+}
+.stat-label { 
+    font-size: 0.72rem; 
+    font-weight: 800; 
+    color: var(--text-light); 
+    text-transform: uppercase; 
+    letter-spacing: 0.09em; 
+    margin-bottom: 8px; 
+}
+.stat-value { 
+    font-size: 3rem; 
+    font-weight: 900; 
+    color: var(--primary-blue); 
+    line-height: 1; 
+    margin-bottom: 4px; 
+}
+.stat-value.v-yellow { 
+    color: #856404; 
+}
+.stat-value.v-green { 
+    color: #155724; 
+}
+.stat-value.v-red { 
+    color: var(--accent-red); 
+}
+.stat-desc { 
+    font-size: 0.78rem; 
+    color: var(--text-light); 
+    font-weight: 500; 
+}
 
         /* ── SECTION HEADER ── */
         .section-header { margin-bottom: 22px; }
@@ -297,32 +337,7 @@
             </div>
         </div>
 
-        @php
-            $hasPendingOrApproved = \App\Models\Application::where('user_id', Auth::id())
-                ->whereIn('status', ['pending', 'in_review'])->exists();
-            $hasCompleted = \App\Models\Application::where('user_id', Auth::id())
-                ->where('status', 'approved')->exists();
-        @endphp
 
-        @if($hasCompleted)
-            <div class="dash-alert alert-success-c alert-dismissible fade show mb-4">
-                <div class="alert-icon" style="background:#c3e6cb;color:#155724;">✓</div>
-                <div>
-                    <span class="dash-alert-label">Congratulations</span>
-                    Your application has been <strong>approved</strong>. Please proceed to the MSWDO Office to claim your benefits.
-                </div>
-                <button class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-            </div>
-        @elseif($hasPendingOrApproved)
-            <div class="dash-alert alert-warning-c alert-dismissible fade show mb-4">
-                <div class="alert-icon" style="background:#fde8a8;color:#856404;">!</div>
-                <div>
-                    <span class="dash-alert-label">Active Application</span>
-                    You cannot apply for another program until your current application is resolved.
-                </div>
-                <button class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
 
         {{-- Programs --}}
         <div class="section-header mb-3">
@@ -332,37 +347,24 @@
 
         @php
             $programs = [
-                ['key' => '4Ps',                    'num' => '01', 'num_class' => '',          'card_class' => '',          'title' => 'Pantawid Pamilyang Pilipino', 'sub' => 'Conditional cash grants for the poorest families.'],
-                ['key' => 'Senior_Citizen_Pension',  'num' => '02', 'num_class' => 'n-yellow',  'card_class' => 'pc-yellow', 'title' => 'Senior Citizen Pension',     'sub' => 'Monthly social pension for senior citizens 60 years and above.'],
-                ['key' => 'PWD_Assistance',          'num' => '03', 'num_class' => 'n-green',   'card_class' => 'pc-green',  'title' => 'PWD Assistance',             'sub' => 'Support services for persons with disability.'],
-                ['key' => 'Solo_Parent',             'num' => '04', 'num_class' => 'n-purple',  'card_class' => 'pc-purple', 'title' => 'Solo Parent Support',        'sub' => 'Assistance for solo parents raising children alone.'],
-                ['key' => 'AICS',                    'num' => '05', 'num_class' => 'n-red',     'card_class' => 'pc-red',    'title' => 'Assistance in Crisis',       'sub' => 'Emergency financial aid for families in crisis situations.'],
-                ['key' => 'SLP',                     'num' => '06', 'num_class' => 'n-teal',    'card_class' => 'pc-teal',   'title' => 'Sustainable Livelihood',     'sub' => 'Livelihood support to increase household income.'],
-                ['key' => 'ESA',                     'num' => '07', 'num_class' => 'n-orange',  'card_class' => 'pc-orange', 'title' => 'Educational Assistance',     'sub' => 'Scholarship support for qualified student beneficiaries.'],
+                ['key' => 'Senior_Citizen_Pension',  'num' => '01', 'num_class' => 'n-yellow',  'card_class' => 'pc-yellow', 'title' => 'Senior Citizen Pension',     'sub' => 'Monthly social pension for senior citizens 60 years and above.'],
+                ['key' => 'PWD_Assistance',          'num' => '02', 'num_class' => 'n-green',   'card_class' => 'pc-green',  'title' => 'PWD Assistance',             'sub' => 'Support services for persons with disability.',             'url' => route('user.pwd-application')],
+                ['key' => 'Solo_Parent',             'num' => '03', 'num_class' => 'n-purple',  'card_class' => 'pc-purple', 'title' => 'Solo Parent Support',        'sub' => 'Assistance for solo parents raising children alone.',       'url' => route('user.solo-parent-application')],
+                ['key' => 'AICS',                    'num' => '04', 'num_class' => 'n-red',     'card_class' => 'pc-red',    'title' => 'Assistance in Crisis',       'sub' => 'Emergency financial aid for families in crisis situations.', 'url' => route('user.aics-category')],
             ];
         @endphp
 
-        {{-- 3-per-row grid, last card centered when alone --}}
         <div class="row g-3 mb-4 justify-content-center">
             @foreach($programs as $p)
             <div class="col-md-4 col-sm-6">
-                @if($hasPendingOrApproved)
-                    <div class="program-card {{ $p['card_class'] }} locked">
+                <a href="{{ $p['url'] ?? route('user.apply', $p['key']) }}" style="display:block;height:100%;">
+                    <div class="program-card {{ $p['card_class'] }}">
                         <span class="prog-num {{ $p['num_class'] }}">{{ $p['num'] }}</span>
                         <div class="prog-title">{{ $p['title'] }}</div>
                         <div class="prog-sub">{{ $p['sub'] }}</div>
-                        <button class="apply-btn" disabled>Currently Unavailable</button>
+                        <button class="apply-btn">Apply Now &rarr;</button>
                     </div>
-                @else
-                    <a href="{{ route('user.apply', $p['key']) }}" style="display:block;height:100%;">
-                        <div class="program-card {{ $p['card_class'] }}">
-                            <span class="prog-num {{ $p['num_class'] }}">{{ $p['num'] }}</span>
-                            <div class="prog-title">{{ $p['title'] }}</div>
-                            <div class="prog-sub">{{ $p['sub'] }}</div>
-                            <button class="apply-btn">Apply Now &rarr;</button>
-                        </div>
-                    </a>
-                @endif
+                </a>
             </div>
             @endforeach
         </div>
@@ -449,8 +451,24 @@
                                     </div>
                                     <span class="ql-arrow">&rsaquo;</span>
                                 </a>
+                                <a href="{{ route('user.pwd-application') }}" class="quick-link" style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border:1px solid rgba(44,62,143,.15);">
+                                    <div class="ql-num" style="background:var(--primary-blue);color:white;">03</div>
+                                    <div class="ql-text">
+                                        <strong style="color:var(--primary-blue);">PWD Application (Apply)</strong>
+                                        <span>Guide, forms &amp; verification tool</span>
+                                    </div>
+                                    <span class="ql-arrow" style="color:var(--primary-blue);">&rsaquo;</span>
+                                </a>
+                                <a href="{{ route('user.solo-parent-application') }}" class="quick-link" style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border:1px solid rgba(44,62,143,.15);">
+                                    <div class="ql-num" style="background:var(--primary-blue);color:white;">04</div>
+                                    <div class="ql-text">
+                                        <strong style="color:var(--primary-blue);">Solo Parent ID (Apply)</strong>
+                                        <span>Step-by-step application guide</span>
+                                    </div>
+                                    <span class="ql-arrow" style="color:var(--primary-blue);">&rsaquo;</span>
+                                </a>
                                 <a href="/user/announcements" class="quick-link">
-                                    <div class="ql-num" style="background:var(--secondary-yellow-light);color:#856404;">03</div>
+                                    <div class="ql-num" style="background:var(--secondary-yellow-light);color:#856404;">05</div>
                                     <div class="ql-text">
                                         <strong>Announcements</strong>
                                         <span>Stay updated with MSWDO news</span>
@@ -458,7 +476,7 @@
                                     <span class="ql-arrow">&rsaquo;</span>
                                 </a>
                                 <a href="/analysis" class="quick-link">
-                                    <div class="ql-num" style="background:#d1f5f9;color:#17a2b8;">04</div>
+                                    <div class="ql-num" style="background:#d1f5f9;color:#17a2b8;">05</div>
                                     <div class="ql-text">
                                         <strong>Public Analysis</strong>
                                         <span>View demographic &amp; program data</span>

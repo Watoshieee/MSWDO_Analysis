@@ -128,16 +128,8 @@ public function create($programType)
         return redirect()->back()->with('error', 'Invalid program selected.');
     }
     
-    // CHECK: Does the user have any pending or approved application?
-    $hasPendingOrApproved = Application::where('user_id', $user->id)
-        ->whereIn('status', ['pending', 'approved'])
-        ->exists();
-    
-    if ($hasPendingOrApproved) {
-        return redirect()->route('user.my-requirements')
-            ->with('error', 'You cannot apply for another program while you have a pending or approved application. Please wait for your current application to be reviewed or rejected.');
-    }
-    
+
+
     // Map program type to requirements program type
     $programTypeMap = [
         '4Ps' => '4Ps',

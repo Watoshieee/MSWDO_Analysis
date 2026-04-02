@@ -50,7 +50,7 @@
             <h2>MSWDO Analysis System</h2>
         </div>
         <div class="content">
-            <h3>Hello, {{ $user->full_name }}!</h3>
+            <h3>Hello, {{ $full_name }}!</h3>
             <p>Thank you for registering. Please use the following OTP to verify your email address:</p>
             
             <div class="otp-code">

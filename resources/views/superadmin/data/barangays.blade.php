@@ -104,7 +104,6 @@
                 <div class="alert alert-success mb-4">{{ session('success') }}</div>
             @endif
 
-            <!-- Filter -->
             <div class="filter-card">
                 <form method="GET" action="{{ route('superadmin.data.barangays') }}">
                     <div class="row g-3 align-items-end">
@@ -114,6 +113,15 @@
                                 <option value="">All Municipalities</option>
                                 @foreach($municipalities as $municipality)
                                     <option value="{{ $municipality }}" {{ request('municipality') == $municipality ? 'selected' : '' }}>{{ $municipality }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label class="form-label">Filter by Year</label>
+                            <select name="year" class="form-select">
+                                <option value="">All Years</option>
+                                @foreach($years as $yr)
+                                    <option value="{{ $yr }}" {{ request('year') == $yr ? 'selected' : '' }}>{{ $yr }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -138,8 +146,9 @@
                                 <th>Municipality</th>
                                 <th>Barangay</th>
                                 <th>Population</th>
-                                <th>Households</th>
-                                <th>Single Parents</th>
+                                <th>PWD</th>
+                                <th>Solo Parent</th>
+                                <th>AICS</th>
                                 <th>Year</th>
                                 <th>Actions</th>
                             </tr>
@@ -151,8 +160,9 @@
                                 <td>{{ $barangay->municipality }}</td>
                                 <td style="font-weight:700;color:var(--primary-blue);">{{ $barangay->name }}</td>
                                 <td>{{ number_format($barangay->male_population + $barangay->female_population) }}</td>
-                                <td>{{ number_format($barangay->total_households) }}</td>
+                                <td>{{ number_format($barangay->pwd_count ?? 0) }}</td>
                                 <td>{{ number_format($barangay->single_parent_count) }}</td>
+                                <td>{{ number_format($barangay->aics_count ?? 0) }}</td>
                                 <td>{{ $barangay->year ?? 'N/A' }}</td>
                                 <td>
                                     <button class="btn-action-edit" data-bs-toggle="modal" data-bs-target="#editBgy{{ $barangay->id }}">Edit</button>
@@ -173,31 +183,35 @@
                                                 <div class="row g-3">
                                                     <div class="col-md-6">
                                                         <label class="form-label">Male Population</label>
-                                                        <input type="number" name="male_population" class="form-control" value="{{ $barangay->male_population }}" required>
+                                                        <input type="number" name="male_population" class="form-control" value="{{ $barangay->male_population }}" required min="0">
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Female Population</label>
-                                                        <input type="number" name="female_population" class="form-control" value="{{ $barangay->female_population }}" required>
+                                                        <input type="number" name="female_population" class="form-control" value="{{ $barangay->female_population }}" required min="0">
                                                     </div>
                                                     <div class="col-md-4">
                                                         <label class="form-label">Population 0–19</label>
-                                                        <input type="number" name="population_0_19" class="form-control" value="{{ $barangay->population_0_19 }}" required>
+                                                        <input type="number" name="population_0_19" class="form-control" value="{{ $barangay->population_0_19 }}" required min="0">
                                                     </div>
                                                     <div class="col-md-4">
                                                         <label class="form-label">Population 20–59</label>
-                                                        <input type="number" name="population_20_59" class="form-control" value="{{ $barangay->population_20_59 }}" required>
+                                                        <input type="number" name="population_20_59" class="form-control" value="{{ $barangay->population_20_59 }}" required min="0">
                                                     </div>
                                                     <div class="col-md-4">
                                                         <label class="form-label">Population 60–100</label>
-                                                        <input type="number" name="population_60_100" class="form-control" value="{{ $barangay->population_60_100 }}" required>
+                                                        <input type="number" name="population_60_100" class="form-control" value="{{ $barangay->population_60_100 }}" required min="0">
                                                     </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label">Total Households</label>
-                                                        <input type="number" name="total_households" class="form-control" value="{{ $barangay->total_households }}" required>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">PWD Count</label>
+                                                        <input type="number" name="pwd_count" class="form-control" value="{{ $barangay->pwd_count ?? 0 }}" min="0">
                                                     </div>
-                                                    <div class="col-md-6">
-                                                        <label class="form-label">Single Parent Count</label>
-                                                        <input type="number" name="single_parent_count" class="form-control" value="{{ $barangay->single_parent_count }}" required>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">Solo Parent Count</label>
+                                                        <input type="number" name="single_parent_count" class="form-control" value="{{ $barangay->single_parent_count }}" required min="0">
+                                                    </div>
+                                                    <div class="col-md-4">
+                                                        <label class="form-label">AICS Count</label>
+                                                        <input type="number" name="aics_count" class="form-control" value="{{ $barangay->aics_count ?? 0 }}" min="0">
                                                     </div>
                                                     <div class="col-md-6">
                                                         <label class="form-label">Year</label>

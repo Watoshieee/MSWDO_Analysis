@@ -79,15 +79,17 @@ class LoginController extends Controller
                 'time' => now()
             ]);
             
-            // Redirect based on role
+            // Redirect based on role — never use intended() for role-specific
+            // dashboards because a stale intended URL from a previous session
+            // can send the wrong role to the wrong page.
             if ($authenticatedUser->role === 'super_admin') {
-                return redirect()->intended('/superadmin/dashboard')
+                return redirect('/superadmin/dashboard')
                     ->with('success', 'Welcome back, Super Admin!');
             } elseif ($authenticatedUser->role === 'admin') {
-                return redirect()->intended('/admin/dashboard')
+                return redirect('/admin/dashboard')
                     ->with('success', 'Welcome back, ' . $authenticatedUser->full_name . '!');
             } else {
-                return redirect()->intended('/dashboard')
+                return redirect('/dashboard')
                     ->with('success', 'Welcome back, ' . $authenticatedUser->full_name . '!');
             }
         }

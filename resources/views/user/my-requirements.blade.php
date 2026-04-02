@@ -93,8 +93,45 @@
 
         /* File preview */
         .file-preview { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; cursor: pointer; }
-        .btn-view { background: var(--primary-blue); color: white; border: none; padding: 5px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; }
+        .btn-view { background: var(--primary-blue); color: white; border: none; padding: 5px 14px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; transition: all 0.25s; cursor: pointer; }
         .btn-view:hover { background: #1A2A5C; color: white; }
+
+        /* Modal styles */
+        .modal-content { border-radius: 20px; overflow: hidden; border: none; }
+        .modal-header { background: var(--primary-gradient); color: white; border: none; padding: 20px 24px; }
+        .modal-header .btn-close { background-color: white; opacity: 0.8; }
+        .modal-title { font-weight: 800; font-size: 1.2rem; }
+        .modal-body { padding: 24px; }
+        .file-view-container {
+            text-align: center;
+            background: var(--bg-light);
+            border-radius: 12px;
+            padding: 24px;
+            min-height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .file-view-container img {
+            max-width: 100%;
+            max-height: 60vh;
+            border-radius: 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+        }
+        .file-view-container iframe {
+            width: 100%;
+            height: 60vh;
+            border: none;
+            border-radius: 8px;
+        }
+        .file-info {
+            margin-top: 20px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-light);
+        }
+        .file-info p { margin: 5px 0; }
+        .file-name { font-weight: 700; color: var(--primary-blue); word-break: break-all; }
+        .modal-footer { background: var(--bg-light); border: none; padding: 16px 24px; }
 
         /* Alerts */
         .alert { border-radius: 12px; border: none; font-size: 0.9rem; }
@@ -171,26 +208,7 @@
             </div>
         @endif
 
-        @php
-            $hasPendingOrApproved = false; $hasCompleted = false;
-            foreach($requirementsData as $data) {
-                if (in_array($data['overallStatus'], ['pending', 'in_review'])) $hasPendingOrApproved = true;
-                if ($data['overallStatus'] == 'approved') $hasCompleted = true;
-            }
-        @endphp
 
-        @if($hasCompleted)
-            <div class="alert alert-success-c alert-dismissible fade show mb-4">
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                <strong>Congratulations, {{ Auth::user()->full_name }}!</strong> All your requirements have been approved.
-                Please proceed to the <strong>MSWDO Office</strong> (Municipal Social Welfare and Development Office, Municipal Hall) during office hours: <strong>Mon–Fri, 8:00 AM – 5:00 PM</strong>.
-            </div>
-        @elseif($hasPendingOrApproved)
-            <div class="alert alert-warning-c alert-dismissible fade show mb-4">
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                <strong>Active Application.</strong> You cannot apply for another program until your current application is resolved.
-            </div>
-        @endif
 
         @if(count($requirementsData) > 0)
             @foreach($requirementsData as $data)
@@ -249,11 +267,11 @@
                                         @if($hasFile)
                                             @php $ext = pathinfo($file->file_path, PATHINFO_EXTENSION); @endphp
                                             @if(in_array($ext, ['jpg','jpeg','png']))
-                                                <img src="{{ asset('storage/' . $file->file_path) }}" class="file-preview" onclick="window.open('{{ asset('storage/' . $file->file_path) }}')">
+                                                <img src="{{ asset('storage/' . $file->file_path) }}" class="file-preview" onclick="openFileModal('{{ asset('storage/' . $file->file_path) }}', '{{ $file->requirement_name }}', '{{ $ext }}')">
                                             @else
-                                                <span style="font-size:1.6rem;color:#dc3545;cursor:pointer;" onclick="window.open('{{ asset('storage/' . $file->file_path) }}')">PDF</span>
+                                                <span style="font-size:1.6rem;color:#dc3545;cursor:pointer;" onclick="openFileModal('{{ asset('storage/' . $file->file_path) }}', '{{ $file->requirement_name }}', '{{ $ext }}')">📄 PDF</span>
                                             @endif
-                                            <a href="{{ asset('storage/' . $file->file_path) }}" target="_blank" class="btn-view ms-2">View</a>
+                                            <button onclick="openFileModal('{{ asset('storage/' . $file->file_path) }}', '{{ $file->requirement_name }}', '{{ $ext }}')" class="btn-view ms-2">View</button>
                                         @else
                                             <span style="font-size:0.82rem;color:#94a3b8;">Not uploaded</span>
                                         @endif
@@ -300,9 +318,118 @@
     </div>
     </div>
 
+    <!-- ===== MODAL FOR FILE VIEWER ===== -->
+    <div class="modal fade" id="fileViewerModal" tabindex="-1" aria-labelledby="fileViewerModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="fileViewerModalLabel">Document Viewer</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="file-view-container" id="fileViewerContainer">
+                        <!-- Content will be loaded here dynamically -->
+                        <div class="text-muted">Loading document...</div>
+                    </div>
+                    <div class="file-info" id="fileInfo">
+                        <!-- File info will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                    <a href="#" id="downloadFileBtn" class="btn btn-primary" download>Download File</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="footer-strip">
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
+    
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Global variable for modal instance
+        let fileViewerModal;
+        
+        // Initialize modal when document is ready
+        document.addEventListener('DOMContentLoaded', function() {
+            fileViewerModal = new bootstrap.Modal(document.getElementById('fileViewerModal'));
+        });
+        
+        // Function to open modal and display file
+        function openFileModal(fileUrl, fileName, fileExt) {
+            const container = document.getElementById('fileViewerContainer');
+            const fileInfo = document.getElementById('fileInfo');
+            const downloadBtn = document.getElementById('downloadFileBtn');
+            
+            // Set download link
+            downloadBtn.href = fileUrl;
+            downloadBtn.setAttribute('download', fileName + '.' + fileExt);
+            
+            // Display file based on extension
+            const ext = fileExt.toLowerCase();
+            
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) {
+                // Display image
+                container.innerHTML = `<img src="${fileUrl}" alt="${fileName}" class="img-fluid rounded">`;
+            } else if (ext === 'pdf') {
+                // Display PDF using iframe
+                container.innerHTML = `<iframe src="${fileUrl}" title="${fileName}"></iframe>`;
+            } else {
+                // For other file types, show message and download option
+                container.innerHTML = `
+                    <div class="text-center">
+                        <div style="font-size: 4rem; margin-bottom: 20px;">📄</div>
+                        <h6>File cannot be previewed</h6>
+                        <p class="text-muted">This file type (${ext.toUpperCase()}) cannot be displayed in the browser.</p>
+                        <a href="${fileUrl}" class="btn btn-primary" download>Download File</a>
+                    </div>
+                `;
+            }
+            
+            // Update file info
+            fileInfo.innerHTML = `
+                <p><strong>Document Name:</strong> <span class="file-name">${escapeHtml(fileName)}</span></p>
+                <p><strong>File Type:</strong> ${ext.toUpperCase()}</p>
+                <p><strong>File Size:</strong> <span id="fileSize">Loading...</span></p>
+            `;
+            
+            // Try to get file size
+            fetch(fileUrl, { method: 'HEAD' })
+                .then(response => {
+                    const size = response.headers.get('Content-Length');
+                    if (size) {
+                        const fileSizeBytes = parseInt(size);
+                        const fileSizeFormatted = formatFileSize(fileSizeBytes);
+                        document.getElementById('fileSize').textContent = fileSizeFormatted;
+                    } else {
+                        document.getElementById('fileSize').textContent = 'Unknown';
+                    }
+                })
+                .catch(() => {
+                    document.getElementById('fileSize').textContent = 'Unknown';
+                });
+            
+            // Show modal
+            fileViewerModal.show();
+        }
+        
+        // Helper function to format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+        
+        // Helper function to escape HTML to prevent XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
 </body>
 </html>
