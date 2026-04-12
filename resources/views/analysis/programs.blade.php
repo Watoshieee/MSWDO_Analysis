@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -7,6 +8,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
         :root {
             --primary-blue: #2C3E8F;
@@ -33,42 +35,100 @@
             box-shadow: 0 4px 24px rgba(44, 62, 143, 0.18);
             padding: 14px 0;
         }
-        .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display:flex; align-items:center; gap:10px; }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.55rem;
+            color: white !important;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
         .nav-link {
-            color: rgba(255,255,255,0.88) !important;
+            color: rgba(255, 255, 255, 0.88) !important;
             font-weight: 600;
             transition: all 0.25s;
             border-radius: 8px;
             padding: 10px 18px !important;
             font-size: 0.95rem;
         }
-        .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white !important;
+        }
+
         .nav-link.active {
             background: var(--secondary-yellow);
             color: var(--primary-blue) !important;
             font-weight: 700;
         }
+
         .user-info {
-            color: white; display: flex; align-items: center; gap: 12px;
-            background: rgba(255,255,255,0.1); padding: 9px 22px; border-radius: 40px; font-size:0.92rem; font-weight:500;
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 9px 22px;
+            border-radius: 40px;
+            font-size: 0.92rem;
+            font-weight: 500;
         }
+
         .logout-btn {
-            background: transparent; border: 2px solid rgba(255,255,255,0.8); color: white;
-            border-radius: 30px; padding: 6px 18px; font-weight: 700; transition: all 0.3s; font-size:0.88rem; cursor:pointer;
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            color: white;
+            border-radius: 30px;
+            padding: 6px 18px;
+            font-weight: 700;
+            transition: all 0.3s;
+            font-size: 0.88rem;
+            cursor: pointer;
         }
-        .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
+
+        .logout-btn:hover {
+            background: var(--secondary-yellow);
+            color: var(--primary-blue);
+            border-color: var(--secondary-yellow);
+        }
+
         .btn-login {
-            background: white; color: var(--primary-blue); border: 2px solid white;
-            border-radius: 30px; padding: 8px 25px; font-weight: 600;
-            text-decoration: none; transition: all 0.3s ease;
+            background: white;
+            color: var(--primary-blue);
+            border: 2px solid white;
+            border-radius: 30px;
+            padding: 8px 25px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
         }
-        .btn-login:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); transform: translateY(-2px); }
+
+        .btn-login:hover {
+            background: var(--secondary-yellow);
+            color: var(--primary-blue);
+            border-color: var(--secondary-yellow);
+            transform: translateY(-2px);
+        }
+
         .btn-register {
-            background: transparent; border: 2px solid white; color: white;
-            border-radius: 30px; padding: 8px 25px; font-weight: 600;
-            text-decoration: none; transition: all 0.3s ease;
+            background: transparent;
+            border: 2px solid white;
+            color: white;
+            border-radius: 30px;
+            padding: 8px 25px;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.3s ease;
         }
-        .btn-register:hover { background: var(--secondary-yellow); color: var(--primary-blue); transform: translateY(-2px); }
+
+        .btn-register:hover {
+            background: var(--secondary-yellow);
+            color: var(--primary-blue);
+            transform: translateY(-2px);
+        }
 
         /* ===== HERO ===== */
         .hero-banner {
@@ -78,23 +138,34 @@
             position: relative;
             overflow: hidden;
         }
+
         .hero-banner::before {
             content: '';
-            position: absolute; top: -80px; right: -80px;
-            width: 340px; height: 340px; border-radius: 50%;
-            background: rgba(253,185,19,0.10);
+            position: absolute;
+            top: -80px;
+            right: -80px;
+            width: 340px;
+            height: 340px;
+            border-radius: 50%;
+            background: rgba(253, 185, 19, 0.10);
         }
+
         .hero-banner::after {
             content: '';
-            position: absolute; bottom: -90px; left: -60px;
-            width: 260px; height: 260px; border-radius: 50%;
-            background: rgba(255,255,255,0.05);
+            position: absolute;
+            bottom: -90px;
+            left: -60px;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
         }
+
         .hero-banner .hero-badge {
             display: inline-block;
-            background: rgba(253,185,19,0.18);
+            background: rgba(253, 185, 19, 0.18);
             color: var(--secondary-yellow);
-            border: 1px solid rgba(253,185,19,0.35);
+            border: 1px solid rgba(253, 185, 19, 0.35);
             border-radius: 30px;
             padding: 5px 18px;
             font-size: 0.78rem;
@@ -103,20 +174,24 @@
             text-transform: uppercase;
             margin-bottom: 20px;
         }
+
         .hero-banner h1 {
             font-size: 2.7rem;
             font-weight: 800;
             line-height: 1.2;
             margin-bottom: 18px;
         }
+
         .hero-banner p {
             font-size: 1.05rem;
             opacity: 0.88;
             max-width: 680px;
             line-height: 1.75;
         }
+
         .hero-divider {
-            width: 60px; height: 4px;
+            width: 60px;
+            height: 4px;
             background: var(--secondary-yellow);
             border-radius: 2px;
             margin: 18px 0;
@@ -132,10 +207,14 @@
             margin-bottom: 30px;
             letter-spacing: -0.01em;
         }
+
         .section-title::after {
             content: '';
-            position: absolute; bottom: 0; left: 0;
-            width: 50px; height: 4px;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 4px;
             background: var(--secondary-yellow);
             border-radius: 2px;
         }
@@ -146,14 +225,18 @@
             border-radius: 20px;
             padding: 34px 28px;
             border: 1px solid var(--border-light);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
             height: 100%;
             position: relative;
             overflow: hidden;
         }
+
         .vmg-card::before {
             content: '';
-            position: absolute; top: 0; left: 0; right: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
             height: 4px;
             background: var(--primary-gradient);
         }
@@ -171,13 +254,20 @@
             margin-bottom: 18px;
             border-left: 3px solid var(--secondary-yellow);
         }
+
         .vmg-card h5 {
             font-size: 1.15rem;
             font-weight: 700;
             color: var(--primary-blue);
             margin-bottom: 12px;
         }
-        .vmg-card p { color: #475569; font-size: 0.94rem; line-height: 1.78; margin: 0; }
+
+        .vmg-card p {
+            color: #475569;
+            font-size: 0.94rem;
+            line-height: 1.78;
+            margin: 0;
+        }
 
         /* ===== GOALS - NO HOVER ANIMATION ===== */
         .goal-item {
@@ -185,32 +275,51 @@
             border-radius: 16px;
             padding: 22px 24px;
             border: 1px solid var(--border-light);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
             margin-bottom: 16px;
-            display: flex; align-items: flex-start; gap: 18px;
+            display: flex;
+            align-items: flex-start;
+            gap: 18px;
         }
+
         .goal-number {
-            min-width: 44px; height: 44px;
+            min-width: 44px;
+            height: 44px;
             border-radius: 12px;
             background: var(--primary-gradient);
             color: white;
             font-weight: 800;
             font-size: 1rem;
-            display: flex; align-items: center; justify-content: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             flex-shrink: 0;
         }
-        .goal-content h6 { font-weight: 700; color: var(--primary-blue); margin-bottom: 5px; font-size: 1rem; }
-        .goal-content p { color: #475569; margin: 0; font-size: 0.92rem; line-height: 1.65; }
+
+        .goal-content h6 {
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 5px;
+            font-size: 1rem;
+        }
+
+        .goal-content p {
+            color: #475569;
+            margin: 0;
+            font-size: 0.92rem;
+            line-height: 1.65;
+        }
 
         /* ===== PROGRAM CARDS - NO HOVER ANIMATION ===== */
         .program-card {
             background: white;
             border-radius: 20px;
             border: 1px solid var(--border-light);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.03);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
             height: 100%;
             overflow: hidden;
         }
+
         .program-card-header {
             background: var(--primary-gradient);
             padding: 24px 26px 20px;
@@ -218,17 +327,23 @@
             position: relative;
             overflow: hidden;
         }
+
         .program-card-header::after {
             content: '';
-            position: absolute; top: -30px; right: -30px;
-            width: 100px; height: 100px; border-radius: 50%;
-            background: rgba(255,255,255,0.07);
+            position: absolute;
+            top: -30px;
+            right: -30px;
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.07);
         }
+
         .program-abbr {
             display: inline-block;
-            background: rgba(253,185,19,0.25);
+            background: rgba(253, 185, 19, 0.25);
             color: var(--secondary-yellow);
-            border: 1px solid rgba(253,185,19,0.4);
+            border: 1px solid rgba(253, 185, 19, 0.4);
             border-radius: 8px;
             padding: 3px 12px;
             font-size: 0.72rem;
@@ -237,10 +352,29 @@
             text-transform: uppercase;
             margin-bottom: 10px;
         }
-        .program-card-header h5 { font-weight: 700; margin: 0 0 4px 0; font-size: 1.05rem; line-height: 1.4; }
-        .program-card-header small { opacity: 0.75; font-size: 0.82rem; }
-        .program-card-body { padding: 22px 26px; }
-        .program-card-body p { color: #475569; font-size: 0.93rem; line-height: 1.78; margin: 0; }
+
+        .program-card-header h5 {
+            font-weight: 700;
+            margin: 0 0 4px 0;
+            font-size: 1.05rem;
+            line-height: 1.4;
+        }
+
+        .program-card-header small {
+            opacity: 0.75;
+            font-size: 0.82rem;
+        }
+
+        .program-card-body {
+            padding: 22px 26px;
+        }
+
+        .program-card-body p {
+            color: #475569;
+            font-size: 0.93rem;
+            line-height: 1.78;
+            margin: 0;
+        }
 
         .category-tag {
             display: inline-block;
@@ -254,8 +388,123 @@
         }
 
         /* ===== SECTIONS ===== */
-        .section-wrapper { padding: 54px 0; }
-        .section-wrapper.alt { background: white; }
+        .section-wrapper {
+            padding: 54px 0;
+        }
+
+        .section-wrapper.alt {
+            background: white;
+        }
+
+        /* ===== YEARLY ANALYSIS ===== */
+        .yearly-section {
+            padding: 60px 0;
+            background: var(--bg-light);
+        }
+
+        .yearly-section.alt {
+            background: white;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            position: relative;
+            padding-bottom: 13px;
+            margin-bottom: 8px;
+            letter-spacing: -0.01em;
+        }
+
+        .section-title::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 50px;
+            height: 4px;
+            background: var(--secondary-yellow);
+            border-radius: 2px;
+        }
+
+        .section-sub {
+            color: #94a3b8;
+            font-size: .88rem;
+            margin-bottom: 32px;
+        }
+
+        .chart-card {
+            background: white;
+            border-radius: 20px;
+            padding: 28px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .04);
+            border: 1px solid var(--border-light);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 28px;
+        }
+
+        .chart-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+        }
+
+        .chart-card h5 {
+            font-weight: 700;
+            color: var(--primary-blue);
+            margin-bottom: 4px;
+            font-size: 1.02rem;
+        }
+
+        .chart-card p.csub {
+            color: #94a3b8;
+            font-size: .82rem;
+            margin-bottom: 18px;
+        }
+
+        .chart-wrap {
+            position: relative;
+            height: 300px;
+        }
+
+        .year-pill {
+            display: inline-block;
+            background: var(--bg-soft-blue);
+            color: var(--primary-blue);
+            border-radius: 20px;
+            padding: 4px 14px;
+            font-size: .78rem;
+            font-weight: 700;
+            margin: 2px;
+            border: 1px solid rgba(44, 62, 143, .15);
+        }
+
+        .stat-pill {
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 14px;
+            padding: 16px 22px;
+            text-align: center;
+        }
+
+        .stat-pill .sp-val {
+            font-size: 1.6rem;
+            font-weight: 900;
+            color: var(--primary-blue);
+            line-height: 1.1;
+        }
+
+        .stat-pill .sp-lbl {
+            font-size: .75rem;
+            color: #64748b;
+            font-weight: 600;
+            margin-top: 3px;
+        }
 
         /* ===== FOOTER ===== */
         .footer-strip {
@@ -267,12 +516,22 @@
             letter-spacing: 0.01em;
         }
 
+        .border-light {
+            border-color: var(--border-light) !important;
+        }
+
         @media (max-width: 768px) {
-            .hero-banner h1 { font-size: 1.85rem; }
-            .section-title { font-size: 1.3rem; }
+            .hero-banner h1 {
+                font-size: 1.85rem;
+            }
+
+            .section-title {
+                font-size: 1.3rem;
+            }
         }
     </style>
 </head>
+
 <body>
 
     <!-- ===== NAVBAR – role-aware ===== -->
@@ -287,67 +546,74 @@
             <div class="collapse navbar-collapse" id="navbarNav">
 
                 @auth
-                @if(Auth::user()->isSuperAdmin())
-                {{-- Super Admin nav --}}
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.dashboard') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.data.dashboard') }}">Data Management</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="/analysis">Public View</a></li>
-                </ul>
-                <div class="d-flex">
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                </div>
-                @elseif(Auth::user()->isAdmin())
-                {{-- Admin nav --}}
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Public View</a></li>
-                </ul>
-                <div class="d-flex">
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                </div>
+                    @if(Auth::user()->isSuperAdmin())
+                        {{-- Super Admin nav --}}
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a>
+                            </li>
+                            <li class="nav-item"><a class="nav-link"
+                                    href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.data.dashboard') }}">Data
+                                    Management</a></li>
+                            <li class="nav-item"><a class="nav-link active" href="/analysis">Public View</a></li>
+                        </ul>
+                        <div class="d-flex">
+                            <div class="user-info">
+                                <span>{{ Auth::user()->full_name }}</span>
+                                <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
+                                    <button type="submit" class="logout-btn">Logout</button>
+                                </form>
+                            </div>
+                        </div>
+                    @elseif(Auth::user()->isAdmin())
+                        {{-- Admin nav --}}
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a>
+                            </li>
+                            <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data
+                                    Management</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a>
+                            </li>
+                            <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Public View</a></li>
+                        </ul>
+                        <div class="d-flex">
+                            <div class="user-info">
+                                <span>{{ Auth::user()->full_name }}</span>
+                                <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
+                                    <button type="submit" class="logout-btn">Logout</button>
+                                </form>
+                            </div>
+                        </div>
+                    @else
+                        {{-- Logged-in user nav --}}
+                        <ul class="navbar-nav me-auto">
+                            <li class="nav-item"><a class="nav-link active" href="/analysis">Programs</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
+                            <li class="nav-item"><a class="nav-link" href="/analysis/programs">Analysis</a></li>
+                        </ul>
+                        <div class="d-flex">
+                            <div class="user-info">
+                                <span>{{ Auth::user()->full_name }}</span>
+                                <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
+                                    <button type="submit" class="logout-btn">Logout</button>
+                                </form>
+                            </div>
+                        </div>
+                    @endif
                 @else
-                {{-- Logged-in user nav --}}
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link active" href="/analysis">Programs</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Analysis</a></li>
-                </ul>
-                <div class="d-flex">
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
+                    {{-- Guest nav --}}
+                    <ul class="navbar-nav me-auto">
+                        <li class="nav-item"><a class="nav-link active" href="/analysis">Programs</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/analysis/programs">Analysis</a></li>
+                    </ul>
+                    <div class="d-flex">
+                        <a href="{{ route('login') }}" class="btn-login me-2">Login</a>
+                        <a href="{{ route('register') }}" class="btn-register">Register</a>
                     </div>
-                </div>
-                @endif
-                @else
-                {{-- Guest nav --}}
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link active" href="/analysis">Programs</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Analysis</a></li>
-                </ul>
-                <div class="d-flex">
-                    <a href="{{ route('login') }}" class="btn-login me-2">Login</a>
-                    <a href="{{ route('register') }}" class="btn-register">Register</a>
-                </div>
                 @endauth
 
             </div>
@@ -421,21 +687,24 @@
                         <div class="goal-number">01</div>
                         <div class="goal-content">
                             <h6>Poverty Reduction</h6>
-                            <p>To alleviate poverty by providing sustainable livelihood opportunities and financial assistance to disadvantaged individuals and families.</p>
+                            <p>To alleviate poverty by providing sustainable livelihood opportunities and financial
+                                assistance to disadvantaged individuals and families.</p>
                         </div>
                     </div>
                     <div class="goal-item">
                         <div class="goal-number">02</div>
                         <div class="goal-content">
                             <h6>Social Protection</h6>
-                            <p>To safeguard the rights and welfare of children, women, senior citizens, persons with disabilities, and other vulnerable sectors.</p>
+                            <p>To safeguard the rights and welfare of children, women, senior citizens, persons with
+                                disabilities, and other vulnerable sectors.</p>
                         </div>
                     </div>
                     <div class="goal-item">
                         <div class="goal-number">03</div>
                         <div class="goal-content">
                             <h6>Community Empowerment</h6>
-                            <p>To strengthen community participation and promote self-reliance through capability-building programs and social development initiatives.</p>
+                            <p>To strengthen community participation and promote self-reliance through
+                                capability-building programs and social development initiatives.</p>
                         </div>
                     </div>
                 </div>
@@ -444,21 +713,24 @@
                         <div class="goal-number">04</div>
                         <div class="goal-content">
                             <h6>Improved Access to Services</h6>
-                            <p>To ensure that social welfare programs and services are accessible, efficient, and responsive to the needs of the public.</p>
+                            <p>To ensure that social welfare programs and services are accessible, efficient, and
+                                responsive to the needs of the public.</p>
                         </div>
                     </div>
                     <div class="goal-item">
                         <div class="goal-number">05</div>
                         <div class="goal-content">
                             <h6>Disaster Preparedness &amp; Response</h6>
-                            <p>To provide timely and effective assistance to individuals and families affected by disasters and emergencies.</p>
+                            <p>To provide timely and effective assistance to individuals and families affected by
+                                disasters and emergencies.</p>
                         </div>
                     </div>
                     <div class="goal-item">
                         <div class="goal-number">06</div>
                         <div class="goal-content">
                             <h6>Good Governance</h6>
-                            <p>To promote transparency, accountability, and professionalism in the delivery of social welfare services.</p>
+                            <p>To promote transparency, accountability, and professionalism in the delivery of social
+                                welfare services.</p>
                         </div>
                     </div>
                 </div>
@@ -482,7 +754,10 @@
                         </div>
                         <div class="program-card-body">
                             <span class="category-tag">Poverty Reduction</span>
-                            <p>A national poverty reduction initiative that provides conditional cash grants to qualified low-income households. The program improves health, nutrition, and education of children aged 0–18 by requiring regular school attendance, health check-ups, and family development sessions.</p>
+                            <p>A national poverty reduction initiative that provides conditional cash grants to
+                                qualified low-income households. The program improves health, nutrition, and education
+                                of children aged 0–18 by requiring regular school attendance, health check-ups, and
+                                family development sessions.</p>
                         </div>
                     </div>
                 </div>
@@ -497,7 +772,9 @@
                         </div>
                         <div class="program-card-body">
                             <span class="category-tag">Social Protection</span>
-                            <p>Provides financial assistance to indigent senior citizens aged 60 and above with no regular source of income or family support. The program supports daily subsistence and improves quality of life through monthly cash assistance.</p>
+                            <p>Provides financial assistance to indigent senior citizens aged 60 and above with no
+                                regular source of income or family support. The program supports daily subsistence and
+                                improves quality of life through monthly cash assistance.</p>
                         </div>
                     </div>
                 </div>
@@ -512,7 +789,9 @@
                         </div>
                         <div class="program-card-body">
                             <span class="category-tag">Inclusion</span>
-                            <p>Offers support services and financial aid to individuals with disabilities including medical assistance, provision of assistive devices, livelihood opportunities, and access to social services to promote inclusion and improve overall well-being.</p>
+                            <p>Offers support services and financial aid to individuals with disabilities including
+                                medical assistance, provision of assistive devices, livelihood opportunities, and access
+                                to social services to promote inclusion and improve overall well-being.</p>
                         </div>
                     </div>
                 </div>
@@ -527,7 +806,9 @@
                         </div>
                         <div class="program-card-body">
                             <span class="category-tag">Family Support</span>
-                            <p>Provides support to individuals solely responsible for the care and upbringing of their children. Services include financial assistance, counseling, livelihood programs, and access to benefits under the Solo Parents Welfare Act.</p>
+                            <p>Provides support to individuals solely responsible for the care and upbringing of their
+                                children. Services include financial assistance, counseling, livelihood programs, and
+                                access to benefits under the Solo Parents Welfare Act.</p>
                         </div>
                     </div>
                 </div>
@@ -542,7 +823,9 @@
                         </div>
                         <div class="program-card-body">
                             <span class="category-tag">Crisis Response</span>
-                            <p>Provides immediate financial and material support to individuals and families facing emergencies. This includes assistance for medical needs, burial expenses, food, transportation, and other urgent concerns.</p>
+                            <p>Provides immediate financial and material support to individuals and families facing
+                                emergencies. This includes assistance for medical needs, burial expenses, food,
+                                transportation, and other urgent concerns.</p>
                         </div>
                     </div>
                 </div>
@@ -557,7 +840,9 @@
                         </div>
                         <div class="program-card-body">
                             <span class="category-tag">Livelihood</span>
-                            <p>A capacity-building initiative that improves the socio-economic status of poor and vulnerable households. It provides skills training, capital assistance, and livelihood opportunities to help beneficiaries establish sustainable sources of income.</p>
+                            <p>A capacity-building initiative that improves the socio-economic status of poor and
+                                vulnerable households. It provides skills training, capital assistance, and livelihood
+                                opportunities to help beneficiaries establish sustainable sources of income.</p>
                         </div>
                     </div>
                 </div>
@@ -572,7 +857,9 @@
                         </div>
                         <div class="program-card-body">
                             <span class="category-tag">Disaster Response</span>
-                            <p>Provides financial aid to families whose homes were partially or totally damaged due to natural or human-induced disasters. The program helps affected families repair or rebuild their houses and restore safe living conditions.</p>
+                            <p>Provides financial aid to families whose homes were partially or totally damaged due to
+                                natural or human-induced disasters. The program helps affected families repair or
+                                rebuild their houses and restore safe living conditions.</p>
                         </div>
                     </div>
                 </div>
@@ -581,6 +868,95 @@
         </div>
     </section>
 
+    @if(isset($allYears) && count($allYears))
+        <!-- ===== YEARLY ANALYSIS ===== -->
+        <section class="yearly-section">
+            <div class="container">
+                <h2 class="section-title">Yearly Beneficiary Analysis</h2>
+                <p class="section-sub">How total program beneficiaries changed year-over-year across all three
+                    municipalities.</p>
+
+                <!-- Quick year pills -->
+                <div class="mb-4">
+                    @foreach($allYears as $yr)
+                        <span class="year-pill">{{ $yr }}</span>
+                    @endforeach
+                </div>
+
+                <!-- Row: line chart + mini stat pills -->
+                <div class="row g-4 mb-2">
+                    <div class="col-lg-8">
+                        <div class="chart-card">
+                            <h5>Total Beneficiaries Over Time</h5>
+                            <p class="csub">Combined beneficiary count per municipality per year</p>
+                            <div class="chart-wrap"><canvas id="yearlyLineChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-4">
+                        <div class="chart-card h-100" style="display:flex;flex-direction:column;justify-content:center;">
+                            <h5>By Municipality Summary</h5>
+                            <p class="csub">Total across all recorded years</p>
+                            <div class="d-flex flex-column gap-3 mt-2">
+                                @php
+                                    $muniColors = ['Magdalena' => '#2C3E8F', 'Liliw' => '#FDB913', 'Majayjay' => '#28a745'];
+                                @endphp
+                                @foreach($coreNames as $mn)
+                                    <div class="stat-pill">
+                                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+                                            <span
+                                                style="width:10px;height:10px;border-radius:50%;background:{{ $muniColors[$mn] ?? '#333' }};display:inline-block;"></span>
+                                            <span style="font-weight:700;font-size:.88rem;color:#334155;">{{ $mn }}</span>
+                                        </div>
+                                        <div class="sp-val">{{ number_format(array_sum($yearlyByMuni[$mn])) }}</div>
+                                        <div class="sp-lbl">Total Beneficiaries</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section class="yearly-section alt">
+            <div class="container">
+                <h2 class="section-title">Program Trends by Year</h2>
+                <p class="section-sub">Breakdown of total beneficiaries per social welfare program across all years and
+                    municipalities.</p>
+                <div class="row g-4">
+                    <div class="col-lg-7">
+                        <div class="chart-card">
+                            <h5>Beneficiaries per Program Type (Yearly)</h5>
+                            <p class="csub">Stacked view of all program types per year</p>
+                            <div class="chart-wrap" style="height:340px;"><canvas id="yearlyProgramChart"></canvas></div>
+                        </div>
+                    </div>
+                    <div class="col-lg-5">
+                        <div class="chart-card">
+                            <h5>Per-Program Totals</h5>
+                            <p class="csub">Aggregated across all years &amp; municipalities</p>
+                            <div class="chart-wrap" style="height:340px;"><canvas id="programDonutChart"></canvas></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        @if(isset($summaryYears) && count($summaryYears))
+            <section class="yearly-section">
+                <div class="container">
+                    <h2 class="section-title">Population Growth Trend</h2>
+                    <p class="section-sub">Recorded population per municipality based on yearly summary data.</p>
+                    <div class="chart-card">
+                        <h5>Population Over the Years</h5>
+                        <p class="csub">Municipality-level population tracked from official yearly summary records</p>
+                        <div class="chart-wrap" style="height:320px;"><canvas id="yearlyPopChart"></canvas></div>
+                    </div>
+                </div>
+            </section>
+        @endif
+    @endif
+
     <!-- ===== FOOTER ===== -->
     <div class="footer-strip">
         MSWDO &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
@@ -588,108 +964,355 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
-    @auth
-    <style>
-        .back-dashboard-btn {
-            position: fixed; bottom: 32px; left: 32px; z-index: 9999;
-            display: flex; align-items: center; gap: 10px;
-            background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
-            color: white; border: none; border-radius: 50px;
-            padding: 13px 22px 13px 18px;
-            font-family: 'Inter', sans-serif; font-weight: 700; font-size: 0.88rem;
-            box-shadow: 0 8px 28px rgba(44,62,143,0.35);
-            cursor: pointer; text-decoration: none;
-            transition: all 0.3s ease;
-            animation: slideInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-        }
-        .back-dashboard-btn:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 14px 36px rgba(44,62,143,0.45);
-            color: white;
-        }
-        .back-dashboard-btn .btn-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: #FDB913; flex-shrink: 0;
-            box-shadow: 0 0 0 3px rgba(253,185,19,0.25);
-        }
-        .back-dashboard-btn .btn-label { letter-spacing: 0.02em; }
-        .back-dashboard-btn .btn-arrow {
-            width: 26px; height: 26px; border-radius: 50%;
-            background: rgba(253,185,19,0.22); color: #FDB913;
-            display: flex; align-items: center; justify-content: center;
-            font-size: 1rem; font-weight: 900; flex-shrink: 0;
-            transition: transform 0.25s ease;
-        }
-        .back-dashboard-btn:hover .btn-arrow { transform: translateX(-3px); }
-        @keyframes slideInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-    </style>
-    @if(!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin())
-    <a href="{{ route('user.dashboard') }}" class="back-dashboard-btn" title="Return to your dashboard">
-        <span class="btn-arrow">&#8592;</span>
-        <span class="btn-dot"></span>
-        <span class="btn-label">My Dashboard</span>
-    </a>
+    @if(isset($allYears) && count($allYears))
+        <script>
+            (function () {
+                const COLORS = { Magdalena: '#2C3E8F', Liliw: '#FDB913', Majayjay: '#28a745' };
+                const PROG_COLORS = ['#2C3E8F', '#FDB913', '#28a745', '#C41E24', '#0891b2', '#d97706', '#7c3aed'];
+                const allYears = @json($allYears);
+                const yearlyByMuni = @json($yearlyByMuni);
+                const yearlyByProg = @json($yearlyByProgram);
+                const summaryYears = @json($summaryYears ?? []);
+                const yearlyPop = @json($yearlyPopulation ?? []);
+                const coreNames = @json($coreNames);
+                const programTypes = @json($programTypes);
+
+                // ── 1. Total beneficiaries over time (line) ───────────────────
+                new Chart(document.getElementById('yearlyLineChart'), {
+                    type: 'line',
+                    data: {
+                        labels: allYears,
+                        datasets: coreNames.map(mn => ({
+                            label: mn,
+                            data: allYears.map(yr => (yearlyByMuni[mn] && yearlyByMuni[mn][yr]) ? yearlyByMuni[mn][yr] : 0),
+                            borderColor: COLORS[mn],
+                            backgroundColor: COLORS[mn] + '22',
+                            fill: true, tension: 0.4, pointRadius: 5,
+                            borderWidth: 3, pointHoverRadius: 7
+                        }))
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+
+                // ── 2. Per-program yearly bar chart ───────────────────────────
+                new Chart(document.getElementById('yearlyProgramChart'), {
+                    type: 'bar',
+                    data: {
+                        labels: allYears,
+                        datasets: programTypes.map((pt, i) => ({
+                            label: pt.replace(/_/g, ' '),
+                            data: allYears.map(yr => (yearlyByProg[pt] && yearlyByProg[pt][yr]) ? yearlyByProg[pt][yr] : 0),
+                            backgroundColor: PROG_COLORS[i % PROG_COLORS.length],
+                            borderRadius: 4
+                        }))
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { position: 'top' } },
+                        scales: {
+                            x: { stacked: true, grid: { display: false } },
+                            y: { stacked: true, beginAtZero: true, ticks: { callback: v => v.toLocaleString() } }
+                        }
+                    }
+                });
+
+                // ── 3. Program totals donut ───────────────────────────────────
+                const progTotals = programTypes.map(pt => Object.values(yearlyByProg[pt] || {}).reduce((a, b) => a + b, 0));
+                new Chart(document.getElementById('programDonutChart'), {
+                    type: 'doughnut',
+                    data: {
+                        labels: programTypes.map(p => p.replace(/_/g, ' ')),
+                        datasets: [{ data: progTotals, backgroundColor: PROG_COLORS, borderWidth: 0, hoverOffset: 10 }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { position: 'right', labels: { font: { size: 12 } } } },
+                        cutout: '60%'
+                    }
+                });
+
+                // ── 4. Population growth (only if summary data exists) ────────
+                if (summaryYears.length && document.getElementById('yearlyPopChart')) {
+                    new Chart(document.getElementById('yearlyPopChart'), {
+                        type: 'line',
+                        data: {
+                            labels: summaryYears,
+                            datasets: coreNames.map(mn => ({
+                                label: mn,
+                                data: summaryYears.map(yr => (yearlyPop[mn] && yearlyPop[mn][yr]) ? yearlyPop[mn][yr] : 0),
+                                borderColor: COLORS[mn],
+                                backgroundColor: COLORS[mn] + '18',
+                                fill: true, tension: 0.4,
+                                pointRadius: 5, pointHoverRadius: 8, borderWidth: 3
+                            }))
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: { legend: { position: 'top' } },
+                            scales: {
+                                y: { beginAtZero: false, ticks: { callback: v => v.toLocaleString() } },
+                                x: { grid: { display: false } }
+                            }
+                        }
+                    });
+                }
+            })();
+        </script>
     @endif
+
+    @auth
+        <style>
+            .back-dashboard-btn {
+                position: fixed;
+                bottom: 32px;
+                left: 32px;
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                gap: 10px;
+                background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
+                color: white;
+                border: none;
+                border-radius: 50px;
+                padding: 13px 22px 13px 18px;
+                font-family: 'Inter', sans-serif;
+                font-weight: 700;
+                font-size: 0.88rem;
+                box-shadow: 0 8px 28px rgba(44, 62, 143, 0.35);
+                cursor: pointer;
+                text-decoration: none;
+                transition: all 0.3s ease;
+                animation: slideInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+            }
+
+            .back-dashboard-btn:hover {
+                transform: translateY(-4px);
+                box-shadow: 0 14px 36px rgba(44, 62, 143, 0.45);
+                color: white;
+            }
+
+            .back-dashboard-btn .btn-dot {
+                width: 8px;
+                height: 8px;
+                border-radius: 50%;
+                background: #FDB913;
+                flex-shrink: 0;
+                box-shadow: 0 0 0 3px rgba(253, 185, 19, 0.25);
+            }
+
+            .back-dashboard-btn .btn-label {
+                letter-spacing: 0.02em;
+            }
+
+            .back-dashboard-btn .btn-arrow {
+                width: 26px;
+                height: 26px;
+                border-radius: 50%;
+                background: rgba(253, 185, 19, 0.22);
+                color: #FDB913;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 1rem;
+                font-weight: 900;
+                flex-shrink: 0;
+                transition: transform 0.25s ease;
+            }
+
+            .back-dashboard-btn:hover .btn-arrow {
+                transform: translateX(-3px);
+            }
+
+            @keyframes slideInUp {
+                from {
+                    opacity: 0;
+                    transform: translateY(30px);
+                }
+
+                to {
+                    opacity: 1;
+                    transform: translateY(0);
+                }
+            }
+        </style>
+        @if(!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin())
+            <a href="{{ route('user.dashboard') }}" class="back-dashboard-btn" title="Return to your dashboard">
+                <span class="btn-arrow">&#8592;</span>
+                <span class="btn-dot"></span>
+                <span class="btn-label">My Dashboard</span>
+            </a>
+        @endif
     @endauth
 
     @auth
-    @if(Auth::user()->isSuperAdmin())
-    <style>
-        .admin-back-btn {
-            position: fixed; bottom: 32px; left: 32px; z-index: 9999;
-            display: flex; align-items: center; gap: 10px;
-            background: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
-            color: #1A2A5C; border: none; border-radius: 50px;
-            padding: 13px 22px 13px 18px;
-            font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.88rem;
-            box-shadow: 0 8px 28px rgba(253,185,19,0.45);
-            cursor: pointer; text-decoration: none;
-            transition: all 0.3s ease;
-            animation: adminSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-        }
-        .admin-back-btn:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(253,185,19,0.55); color: #1A2A5C; }
-        .admin-back-btn .abtn-dot { width: 8px; height: 8px; border-radius: 50%; background: #1A2A5C; flex-shrink: 0; }
-        .admin-back-btn .abtn-label { letter-spacing: 0.02em; }
-        .admin-back-btn .abtn-arrow { width: 26px; height: 26px; border-radius: 50%; background: rgba(26,42,92,0.12); color: #1A2A5C; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 900; flex-shrink: 0; transition: transform 0.25s ease; }
-        .admin-back-btn:hover .abtn-arrow { transform: translateX(-3px); }
-        @keyframes adminSlideIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
-    <a href="{{ route('superadmin.dashboard') }}" class="admin-back-btn" title="Return to Super Admin Dashboard">
-        <span class="abtn-arrow">&#8592;</span>
-        <span class="abtn-dot"></span>
-        <span class="abtn-label">Super Admin Dashboard</span>
-    </a>
-    @elseif(Auth::user()->isAdmin())
-    <style>
-        .admin-back-btn {
-            position: fixed; bottom: 32px; left: 32px; z-index: 9999;
-            display: flex; align-items: center; gap: 10px;
-            background: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
-            color: #1A2A5C; border: none; border-radius: 50px;
-            padding: 13px 22px 13px 18px;
-            font-family: 'Inter', sans-serif; font-weight: 800; font-size: 0.88rem;
-            box-shadow: 0 8px 28px rgba(253,185,19,0.45);
-            cursor: pointer; text-decoration: none;
-            transition: all 0.3s ease;
-            animation: adminSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-        }
-        .admin-back-btn:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(253,185,19,0.55); color: #1A2A5C; }
-        .admin-back-btn .abtn-dot { width: 8px; height: 8px; border-radius: 50%; background: #1A2A5C; flex-shrink: 0; }
-        .admin-back-btn .abtn-label { letter-spacing: 0.02em; }
-        .admin-back-btn .abtn-arrow { width: 26px; height: 26px; border-radius: 50%; background: rgba(26,42,92,0.12); color: #1A2A5C; display: flex; align-items: center; justify-content: center; font-size: 1rem; font-weight: 900; flex-shrink: 0; transition: transform 0.25s ease; }
-        .admin-back-btn:hover .abtn-arrow { transform: translateX(-3px); }
-        @keyframes adminSlideIn { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
-    </style>
-    <a href="{{ route('admin.dashboard') }}" class="admin-back-btn" title="Return to Admin Dashboard">
-        <span class="abtn-arrow">&#8592;</span>
-        <span class="abtn-dot"></span>
-        <span class="abtn-label">Admin Dashboard</span>
-    </a>
-    @endif
+        @if(Auth::user()->isSuperAdmin())
+            <style>
+                .admin-back-btn {
+                    position: fixed;
+                    bottom: 32px;
+                    left: 32px;
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    background: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
+                    color: #1A2A5C;
+                    border: none;
+                    border-radius: 50px;
+                    padding: 13px 22px 13px 18px;
+                    font-family: 'Inter', sans-serif;
+                    font-weight: 800;
+                    font-size: 0.88rem;
+                    box-shadow: 0 8px 28px rgba(253, 185, 19, 0.45);
+                    cursor: pointer;
+                    text-decoration: none;
+                    transition: all 0.3s ease;
+                    animation: adminSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+                }
+
+                .admin-back-btn:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 14px 36px rgba(253, 185, 19, 0.55);
+                    color: #1A2A5C;
+                }
+
+                .admin-back-btn .abtn-dot {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: #1A2A5C;
+                    flex-shrink: 0;
+                }
+
+                .admin-back-btn .abtn-label {
+                    letter-spacing: 0.02em;
+                }
+
+                .admin-back-btn .abtn-arrow {
+                    width: 26px;
+                    height: 26px;
+                    border-radius: 50%;
+                    background: rgba(26, 42, 92, 0.12);
+                    color: #1A2A5C;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1rem;
+                    font-weight: 900;
+                    flex-shrink: 0;
+                    transition: transform 0.25s ease;
+                }
+
+                .admin-back-btn:hover .abtn-arrow {
+                    transform: translateX(-3px);
+                }
+
+                @keyframes adminSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            </style>
+            <a href="{{ route('superadmin.dashboard') }}" class="admin-back-btn" title="Return to Super Admin Dashboard">
+                <span class="abtn-arrow">&#8592;</span>
+                <span class="abtn-dot"></span>
+                <span class="abtn-label">Super Admin Dashboard</span>
+            </a>
+        @elseif(Auth::user()->isAdmin())
+            <style>
+                .admin-back-btn {
+                    position: fixed;
+                    bottom: 32px;
+                    left: 32px;
+                    z-index: 9999;
+                    display: flex;
+                    align-items: center;
+                    gap: 10px;
+                    background: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
+                    color: #1A2A5C;
+                    border: none;
+                    border-radius: 50px;
+                    padding: 13px 22px 13px 18px;
+                    font-family: 'Inter', sans-serif;
+                    font-weight: 800;
+                    font-size: 0.88rem;
+                    box-shadow: 0 8px 28px rgba(253, 185, 19, 0.45);
+                    cursor: pointer;
+                    text-decoration: none;
+                    transition: all 0.3s ease;
+                    animation: adminSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+                }
+
+                .admin-back-btn:hover {
+                    transform: translateY(-4px);
+                    box-shadow: 0 14px 36px rgba(253, 185, 19, 0.55);
+                    color: #1A2A5C;
+                }
+
+                .admin-back-btn .abtn-dot {
+                    width: 8px;
+                    height: 8px;
+                    border-radius: 50%;
+                    background: #1A2A5C;
+                    flex-shrink: 0;
+                }
+
+                .admin-back-btn .abtn-label {
+                    letter-spacing: 0.02em;
+                }
+
+                .admin-back-btn .abtn-arrow {
+                    width: 26px;
+                    height: 26px;
+                    border-radius: 50%;
+                    background: rgba(26, 42, 92, 0.12);
+                    color: #1A2A5C;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    font-size: 1rem;
+                    font-weight: 900;
+                    flex-shrink: 0;
+                    transition: transform 0.25s ease;
+                }
+
+                .admin-back-btn:hover .abtn-arrow {
+                    transform: translateX(-3px);
+                }
+
+                @keyframes adminSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(30px);
+                    }
+
+                    to {
+                        opacity: 1;
+                        transform: translateY(0);
+                    }
+                }
+            </style>
+            <a href="{{ route('admin.dashboard') }}" class="admin-back-btn" title="Return to Admin Dashboard">
+                <span class="abtn-arrow">&#8592;</span>
+                <span class="abtn-dot"></span>
+                <span class="abtn-label">Admin Dashboard</span>
+            </a>
+        @endif
     @endauth
 
 </body>
+
 </html>

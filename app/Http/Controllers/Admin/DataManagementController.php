@@ -7,6 +7,7 @@ use App\Models\Municipality;
 use App\Models\Barangay;
 use App\Models\SocialWelfareProgram;
 use App\Models\MunicipalityYearlySummary;
+use App\Models\MunicipalityMonthlySummary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -127,7 +128,7 @@ class DataManagementController extends Controller
             'year' => $request->year,
         ]);
 
-        $this->saveYearlySummary(
+        $this->saveYearlySummaryRecord(
             $municipality->name, 
             $request->year, 
             [
@@ -149,7 +150,7 @@ class DataManagementController extends Controller
             ->with('success', 'Municipality data updated successfully!');
     }
 
-    private function saveYearlySummary($municipality, $year, $demographics, $programs)
+    private function saveYearlySummaryRecord($municipality, $year, $demographics, $programs)
     {
         $summary = MunicipalityYearlySummary::where('municipality', $municipality)
             ->where('year', $year)
@@ -210,105 +211,129 @@ class DataManagementController extends Controller
         return $trends;
     }
 
-    public function barangays()
+    public function barangays(Request $request)
     {
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
-        
-        $barangays = Barangay::where('municipality', $user->municipality)
-            ->orderBy('name')
-            ->paginate(20);
-        
-        return view('admin.data.barangays', compact('barangays', 'municipality'));
+
+        $query = Barangay::where('municipality', $user->municipality);
+        if ($request->filled('year')) {
+            $query->where('year', $request->year);
+        }
+
+        $barangays = $query->orderBy('name')->orderBy('year', 'desc')->get();
+
+        $years = array_merge([2015, 2020], range(date('Y') - 3, date('Y') + 1));
+        $years = array_unique($years);
+        rsort($years);
+
+        $availableYears = Barangay::where('municipality', $user->municipality)
+            ->distinct()->orderByDesc('year')->pluck('year')->toArray();
+
+        return view('admin.data.barangays', compact('barangays', 'municipality', 'years', 'availableYears'));
     }
 
     public function updateBarangay(Request $request, $id)
     {
         try {
-            Log::info('Updating barangay ID: ' . $id);
-            
             $user = Auth::user();
-            
-            $validator = Validator::make($request->all(), [
-                'male_population' => 'required|integer|min:0',
-                'female_population' => 'required|integer|min:0',
-                'population_0_19' => 'required|integer|min:0',
-                'population_20_59' => 'required|integer|min:0',
-                'population_60_100' => 'required|integer|min:0',
-                'single_parent_count' => 'required|integer|min:0',
-                'total_households' => 'required|integer|min:0',
-                'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
-            ]);
 
-            if ($validator->fails()) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Validation failed',
-                    'errors' => $validator->errors()
-                ], 422);
-            }
-
-            // First, find the barangay by name and municipality for the specific year
             $barangay = Barangay::where('id', $id)
                 ->where('municipality', $user->municipality)
                 ->first();
 
             if (!$barangay) {
-                // If not found by ID, try to find by name
-                $inputData = $request->all();
-                if (isset($inputData['barangay_name'])) {
-                    $barangay = Barangay::where('name', $inputData['barangay_name'])
-                        ->where('municipality', $user->municipality)
-                        ->where('year', $request->year)
-                        ->first();
-                }
+                return response()->json(['success' => false, 'message' => 'Barangay not found.'], 404);
             }
 
-            if (!$barangay) {
-                // Create new record
-                $barangay = Barangay::create([
-                    'municipality' => $user->municipality,
-                    'name' => $request->barangay_name ?? 'Unknown',
-                    'year' => $request->year,
-                    'male_population' => $request->male_population,
-                    'female_population' => $request->female_population,
-                    'population_0_19' => $request->population_0_19,
-                    'population_20_59' => $request->population_20_59,
-                    'population_60_100' => $request->population_60_100,
-                    'single_parent_count' => $request->single_parent_count,
-                    'total_households' => $request->total_households,
-                    'total_approved_applications' => 0,
-                ]);
-
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Barangay data created successfully!'
-                ]);
-            }
-
-            // Update existing record
             $barangay->update([
-                'male_population' => $request->male_population,
-                'female_population' => $request->female_population,
-                'population_0_19' => $request->population_0_19,
-                'population_20_59' => $request->population_20_59,
-                'population_60_100' => $request->population_60_100,
-                'single_parent_count' => $request->single_parent_count,
-                'total_households' => $request->total_households,
+                'male_population'     => intval($request->total_population ?? 0),
+                'female_population'   => 0,
+                'single_parent_count' => intval($request->single_parent_count ?? 0),
+                'pwd_count'           => intval($request->pwd_count ?? 0),
+                'aics_count'          => intval($request->aics_count ?? 0),
+                'year'                => intval($request->year ?? date('Y')),
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Barangay data updated successfully!'
-            ]);
+            return response()->json(['success' => true, 'message' => 'Barangay updated successfully!']);
 
         } catch (\Exception $e) {
             Log::error('Barangay update error: ' . $e->getMessage());
-            return response()->json([
-                'success' => false,
-                'message' => 'Server error: ' . $e->getMessage()
-            ], 500);
+            return response()->json(['success' => false, 'message' => 'Server error: ' . $e->getMessage()], 500);
         }
+    }
+
+    public function bulkUpdateBarangays(Request $request)
+    {
+        $user = Auth::user();
+        $rows = $request->input('rows', []);
+        if (empty($rows)) {
+            return response()->json(['success' => false, 'message' => 'No data received.'], 422);
+        }
+
+        $updated = 0;
+        foreach ($rows as $row) {
+            $barangay = Barangay::where('id', $row['id'] ?? null)
+                ->where('municipality', $user->municipality)
+                ->first();
+            if (!$barangay) continue;
+            $barangay->update([
+                'male_population'     => intval($row['total_population'] ?? 0),
+                'female_population'   => 0,
+                'single_parent_count' => intval($row['single_parent_count'] ?? 0),
+                'pwd_count'           => intval($row['pwd_count'] ?? 0),
+                'aics_count'          => intval($row['aics_count'] ?? 0),
+                'year'                => intval($row['year'] ?? date('Y')),
+            ]);
+            $updated++;
+        }
+
+        return response()->json(['success' => true, 'updated' => $updated,
+            'message' => "{$updated} barangay record(s) updated successfully!"]);
+    }
+
+    public function bulkStoreBarangays(Request $request)
+    {
+        $user = Auth::user();
+        $request->validate([
+            'year'      => 'required|integer',
+            'barangays' => 'required|array|min:1',
+            'barangays.*' => 'required|string',
+        ]);
+
+        $created = 0; $restored = 0;
+        foreach ($request->barangays as $barangayName) {
+            $name = trim($barangayName);
+            $existing = Barangay::withTrashed()
+                ->where('municipality', $user->municipality)
+                ->where('name', $name)
+                ->where('year', $request->year)
+                ->first();
+
+            if ($existing) {
+                if ($existing->trashed()) { $existing->restore(); $restored++; }
+            } else {
+                Barangay::create([
+                    'municipality'               => $user->municipality,
+                    'name'                       => $name,
+                    'year'                       => $request->year,
+                    'male_population'            => 0,
+                    'female_population'          => 0,
+                    'single_parent_count'        => 0,
+                    'pwd_count'                  => 0,
+                    'aics_count'                 => 0,
+                    'total_households'           => 0,
+                    'total_approved_applications'=> 0,
+                ]);
+                $created++;
+            }
+        }
+
+        $msg = "{$created} barangay record(s) added";
+        if ($restored) $msg .= ", {$restored} archived record(s) restored";
+        $msg .= " for {$user->municipality} ({$request->year}).";
+
+        return response()->json(['success' => true, 'created' => $created, 'restored' => $restored, 'message' => $msg]);
     }
 
     public function findOrCreateBarangay(Request $request)
@@ -479,5 +504,85 @@ class DataManagementController extends Controller
         $program->delete();
         
         return redirect()->back()->with('success', 'Program data deleted successfully!');
+    }
+
+    // ─── Municipality Yearly Data ────────────────────────────────────────────
+
+    public function yearlyData()
+    {
+        $user = Auth::user();
+        $municipality = Municipality::where('name', $user->municipality)->firstOrFail();
+
+        $summaries = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->orderBy('year', 'desc')
+            ->get();
+
+        $chartData = [];
+        $rows = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->orderBy('year')
+            ->get();
+        $chartData[$user->municipality] = [
+            'years'      => $rows->pluck('year')->toArray(),
+            'population' => $rows->pluck('total_population')->toArray(),
+            'households' => $rows->pluck('total_households')->toArray(),
+        ];
+
+        $years = array_merge([2015, 2020], range(date('Y') - 3, date('Y') + 1));
+        $years = array_unique($years);
+        rsort($years);
+
+        return view('admin.data.yearly-data', compact('municipality', 'summaries', 'chartData', 'years'));
+    }
+
+    public function saveYearlySummary(Request $request)
+    {
+        $user = Auth::user();
+        $muniName = $user->municipality;
+
+        $validator = Validator::make($request->all(), [
+            'year'             => 'required|integer|min:2000|max:' . (date('Y') + 1),
+            'total_population' => 'required|integer|min:0',
+            'total_households' => 'required|integer|min:0',
+            'total_pwd'        => 'nullable|integer|min:0',
+            'total_aics'       => 'nullable|integer|min:0',
+            'total_solo_parent'=> 'nullable|integer|min:0',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        MunicipalityYearlySummary::updateOrCreate(
+            [
+                'municipality' => $muniName,
+                'year'         => $request->year,
+            ],
+            [
+                'total_population'  => $request->total_population,
+                'total_households'  => $request->total_households,
+                'total_4ps'         => $request->total_4ps ?? 0,
+                'total_pwd'         => $request->total_pwd ?? 0,
+                'total_senior'      => $request->total_senior ?? 0,
+                'total_aics'        => $request->total_aics ?? 0,
+                'total_esa'         => $request->total_esa ?? 0,
+                'total_slp'         => $request->total_slp ?? 0,
+                'total_solo_parent' => $request->total_solo_parent ?? 0,
+                'created_at'        => now(),
+            ]
+        );
+
+        return redirect()->route('admin.data.yearly')
+            ->with('success', "{$muniName} ({$request->year}) yearly data saved successfully!");
+    }
+
+    public function deleteYearlySummary($id)
+    {
+        $user = Auth::user();
+        $summary = MunicipalityYearlySummary::where('id', $id)
+            ->where('municipality', $user->municipality)
+            ->firstOrFail();
+        $summary->delete();
+        return redirect()->route('admin.data.yearly')
+            ->with('success', 'Yearly record deleted successfully.');
     }
 }

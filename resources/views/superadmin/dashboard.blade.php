@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -19,86 +20,476 @@
             --bg-light: #F8FAFC;
             --border-light: #E2E8F0;
         }
-        *, body { font-family: 'Inter', 'Segoe UI', sans-serif; }
-        body { background: var(--bg-light); display: flex; flex-direction: column; min-height: 100vh; }
+
+        *,
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: var(--bg-light);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
 
         /* ── NAVBAR ── */
-        .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
-        .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display:flex; align-items:center; gap:10px; }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.95rem; }
-        .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
-        .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-info { color: white; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.1); padding:9px 22px; border-radius:40px; font-size:0.92rem; font-weight:500; }
-        .logout-btn { background:transparent; border:2px solid rgba(255,255,255,0.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; transition:all 0.3s; font-size:0.88rem; cursor:pointer; }
-        .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
+        .navbar {
+            background: var(--primary-gradient) !important;
+            box-shadow: 0 4px 24px rgba(44, 62, 143, 0.18);
+            padding: 14px 0;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.55rem;
+            color: white !important;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, 0.88) !important;
+            font-weight: 600;
+            transition: all 0.25s;
+            border-radius: 8px;
+            padding: 10px 18px !important;
+            font-size: 0.95rem;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.15);
+            color: white !important;
+        }
+
+        .nav-link.active {
+            background: var(--secondary-yellow);
+            color: var(--primary-blue) !important;
+            font-weight: 700;
+        }
+
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 9px 22px;
+            border-radius: 40px;
+            font-size: 0.92rem;
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, 0.8);
+            color: white;
+            border-radius: 30px;
+            padding: 6px 18px;
+            font-weight: 700;
+            transition: all 0.3s;
+            font-size: 0.88rem;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: var(--secondary-yellow);
+            color: var(--primary-blue);
+            border-color: var(--secondary-yellow);
+        }
 
         /* ── HERO ── */
-        .hero-banner { background: var(--primary-gradient); color:white; padding:52px 0 42px; position:relative; overflow:hidden; }
-        .hero-banner::before { content:''; position:absolute; top:-70px; right:-70px; width:320px; height:320px; border-radius:50%; background:rgba(253,185,19,0.10); }
-        .hero-banner::after { content:''; position:absolute; bottom:-80px; left:-50px; width:250px; height:250px; border-radius:50%; background:rgba(255,255,255,0.05); }
-        .hero-badge { display:inline-block; background:rgba(253,185,19,0.18); color:var(--secondary-yellow); border:1px solid rgba(253,185,19,0.35); border-radius:30px; padding:5px 18px; font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; margin-bottom:18px; }
-        .hero-banner h1 { font-size:2.4rem; font-weight:800; line-height:1.2; margin-bottom:10px; }
-        .hero-divider { width:55px; height:4px; background:var(--secondary-yellow); border-radius:2px; margin:14px 0; }
-        .hero-banner p { font-size:1rem; opacity:0.87; max-width:580px; }
-        .municipality-badge { background:rgba(253,185,19,0.15); border:1px solid rgba(253,185,19,0.3); border-radius:16px; padding:20px 30px; text-align:center; }
-        .municipality-badge .badge-label { font-size:0.72rem; font-weight:700; letter-spacing:0.12em; text-transform:uppercase; color:var(--secondary-yellow); opacity:0.9; }
-        .municipality-badge .badge-name { font-size:1.4rem; font-weight:800; color:white; margin-top:4px; }
+        .hero-banner {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 52px 0 42px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            top: -70px;
+            right: -70px;
+            width: 320px;
+            height: 320px;
+            border-radius: 50%;
+            background: rgba(253, 185, 19, 0.10);
+        }
+
+        .hero-banner::after {
+            content: '';
+            position: absolute;
+            bottom: -80px;
+            left: -50px;
+            width: 250px;
+            height: 250px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(253, 185, 19, 0.18);
+            color: var(--secondary-yellow);
+            border: 1px solid rgba(253, 185, 19, 0.35);
+            border-radius: 30px;
+            padding: 5px 18px;
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            margin-bottom: 18px;
+        }
+
+        .hero-banner h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 10px;
+        }
+
+        .hero-divider {
+            width: 55px;
+            height: 4px;
+            background: var(--secondary-yellow);
+            border-radius: 2px;
+            margin: 14px 0;
+        }
+
+        .hero-banner p {
+            font-size: 1rem;
+            opacity: 0.87;
+            max-width: 580px;
+        }
+
+        .municipality-badge {
+            background: rgba(253, 185, 19, 0.15);
+            border: 1px solid rgba(253, 185, 19, 0.3);
+            border-radius: 16px;
+            padding: 20px 30px;
+            text-align: center;
+        }
+
+        .municipality-badge .badge-label {
+            font-size: 0.72rem;
+            font-weight: 700;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--secondary-yellow);
+            opacity: 0.9;
+        }
+
+        .municipality-badge .badge-name {
+            font-size: 1.4rem;
+            font-weight: 800;
+            color: white;
+            margin-top: 4px;
+        }
 
         /* ── MAIN CONTENT ── */
-        .main-content { flex: 1; }
-        .section-heading { font-size:1.35rem; font-weight:800; color:var(--primary-blue); margin-bottom:20px; display:flex; align-items:center; gap:10px; }
-        .section-heading::after { content:''; flex:1; height:2px; background:var(--border-light); border-radius:2px; }
+        .main-content {
+            flex: 1;
+        }
+
+        .section-heading {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-heading::after {
+            content: '';
+            flex: 1;
+            height: 2px;
+            background: var(--border-light);
+            border-radius: 2px;
+        }
 
         /* ── STAT CARDS ── */
-        .stat-card { background:white; border-radius:20px; padding:28px 24px; box-shadow:0 4px 15px rgba(0,0,0,0.03); border:1px solid var(--border-light); transition:all 0.3s ease; height:100%; position:relative; overflow:hidden; }
-        .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--primary-gradient); }
-        .stat-number { font-size:2.4rem; font-weight:800; color:var(--primary-blue); line-height:1; margin:12px 0 6px; }
-        .stat-label { font-size:0.88rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.06em; }
-        .stat-badge { display:inline-block; padding:4px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; margin-bottom:10px; }
-        .stat-badge.blue { background:var(--primary-blue-light); color:var(--primary-blue); }
-        .stat-badge.yellow { background:var(--secondary-yellow-light); color:#92600a; }
-        .stat-badge.gold { background:rgba(253,185,19,0.15); color:#92600a; }
-        .stat-badge.green { background:#e6f9f0; color:#1a7a4a; }
+        .stat-card {
+            background: white;
+            border-radius: 20px;
+            padding: 28px 24px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border-light);
+            transition: all 0.3s ease;
+            height: 100%;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .stat-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-gradient);
+        }
+
+        .stat-number {
+            font-size: 2.4rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            line-height: 1;
+            margin: 12px 0 6px;
+        }
+
+        .stat-label {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #64748b;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .stat-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+        }
+
+        .stat-badge.blue {
+            background: var(--primary-blue-light);
+            color: var(--primary-blue);
+        }
+
+        .stat-badge.yellow {
+            background: var(--secondary-yellow-light);
+            color: #92600a;
+        }
+
+        .stat-badge.gold {
+            background: rgba(253, 185, 19, 0.15);
+            color: #92600a;
+        }
+
+        .stat-badge.green {
+            background: #e6f9f0;
+            color: #1a7a4a;
+        }
 
         /* ── MENU CARDS ── */
-        .menu-card { background:white; border-radius:18px; padding:28px 24px; border:1px solid var(--border-light); box-shadow:0 4px 15px rgba(0,0,0,0.03); transition:all 0.3s ease; height:100%; cursor:pointer; text-decoration:none; display:block; position:relative; overflow:hidden; }
-        .menu-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--secondary-gradient); }
-        .menu-card:hover { transform:translateY(-5px); box-shadow:0 14px 32px rgba(44,62,143,0.12); border-color:var(--primary-blue-soft); }
-        .menu-card-num { font-size:0.75rem; font-weight:800; color:rgba(253,185,19,0.8); letter-spacing:0.15em; text-transform:uppercase; margin-bottom:10px; }
-        .menu-card-title { font-size:1.12rem; font-weight:800; color:var(--primary-blue); margin-bottom:6px; }
-        .menu-card-desc { font-size:0.85rem; color:#64748b; line-height:1.55; }
-        .menu-card-arrow { position:absolute; bottom:22px; right:22px; font-size:1.2rem; color:var(--secondary-yellow); font-weight:900; transition:transform 0.25s ease; }
-        .menu-card:hover .menu-card-arrow { transform:translateX(4px); }
+        .menu-card {
+            background: white;
+            border-radius: 18px;
+            padding: 28px 24px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            transition: all 0.3s ease;
+            height: 100%;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .menu-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--secondary-gradient);
+        }
+
+        .menu-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 14px 32px rgba(44, 62, 143, 0.12);
+            border-color: var(--primary-blue-soft);
+        }
+
+        .menu-card-num {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: rgba(253, 185, 19, 0.8);
+            letter-spacing: 0.15em;
+            text-transform: uppercase;
+            margin-bottom: 10px;
+        }
+
+        .menu-card-title {
+            font-size: 1.12rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            margin-bottom: 6px;
+        }
+
+        .menu-card-desc {
+            font-size: 0.85rem;
+            color: #64748b;
+            line-height: 1.55;
+        }
+
+        .menu-card-arrow {
+            position: absolute;
+            bottom: 22px;
+            right: 22px;
+            font-size: 1.2rem;
+            color: var(--secondary-yellow);
+            font-weight: 900;
+            transition: transform 0.25s ease;
+        }
+
+        .menu-card:hover .menu-card-arrow {
+            transform: translateX(4px);
+        }
 
         /* ── PANEL CARD ── */
-        .panel-card { background:white; border-radius:20px; box-shadow:0 4px 15px rgba(0,0,0,0.03); border:1px solid var(--border-light); overflow:hidden; }
-        .panel-header { background:var(--primary-gradient); color:white; padding:20px 28px; display:flex; align-items:center; justify-content:space-between; }
-        .panel-header h5 { font-weight:700; margin:0; font-size:1.05rem; }
-        .panel-header .count-badge { background:rgba(253,185,19,0.25); color:var(--secondary-yellow); border:1px solid rgba(253,185,19,0.4); border-radius:20px; padding:3px 12px; font-size:0.78rem; font-weight:700; }
-        .panel-body { padding:0; }
-        table.premium-table { width:100%; border-collapse:collapse; }
-        .premium-table thead th { background:var(--bg-light); color:var(--primary-blue); font-size:0.78rem; font-weight:700; letter-spacing:0.08em; text-transform:uppercase; padding:12px 20px; border-bottom:2px solid var(--border-light); }
-        .premium-table tbody td { padding:14px 20px; font-size:0.88rem; border-bottom:1px solid var(--border-light); vertical-align:middle; color:#334155; }
-        .premium-table tbody tr:last-child td { border-bottom:none; }
-        .premium-table tbody tr:hover { background:var(--primary-blue-light); }
+        .panel-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+        }
+
+        .panel-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 20px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-header h5 {
+            font-weight: 700;
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .panel-header .count-badge {
+            background: rgba(253, 185, 19, 0.25);
+            color: var(--secondary-yellow);
+            border: 1px solid rgba(253, 185, 19, 0.4);
+            border-radius: 20px;
+            padding: 3px 12px;
+            font-size: 0.78rem;
+            font-weight: 700;
+        }
+
+        .panel-body {
+            padding: 0;
+        }
+
+        table.premium-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .premium-table thead th {
+            background: var(--bg-light);
+            color: var(--primary-blue);
+            font-size: 0.78rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            padding: 12px 20px;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .premium-table tbody td {
+            padding: 14px 20px;
+            font-size: 0.88rem;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+            color: #334155;
+        }
+
+        .premium-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .premium-table tbody tr:hover {
+            background: var(--primary-blue-light);
+        }
 
         /* ── ROLE PILLS ── */
-        .role-pill { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; letter-spacing:0.04em; }
-        .role-pill.super-admin { background:rgba(196,30,36,0.12); color:#C41E24; border:1px solid rgba(196,30,36,0.2); }
-        .role-pill.admin { background:var(--secondary-yellow-light); color:#92600a; border:1px solid rgba(253,185,19,0.3); }
-        .role-pill.user { background:var(--primary-blue-light); color:var(--primary-blue); border:1px solid rgba(44,62,143,0.2); }
-        .status-pill { display:inline-block; padding:3px 12px; border-radius:20px; font-size:0.75rem; font-weight:700; }
-        .status-pill.active { background:#e6f9f0; color:#1a7a4a; }
-        .status-pill.inactive { background:#fef2f2; color:#991b1b; }
+        .role-pill {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.04em;
+        }
+
+        .role-pill.super-admin {
+            background: rgba(196, 30, 36, 0.12);
+            color: #C41E24;
+            border: 1px solid rgba(196, 30, 36, 0.2);
+        }
+
+        .role-pill.admin {
+            background: var(--secondary-yellow-light);
+            color: #92600a;
+            border: 1px solid rgba(253, 185, 19, 0.3);
+        }
+
+        .role-pill.user {
+            background: var(--primary-blue-light);
+            color: var(--primary-blue);
+            border: 1px solid rgba(44, 62, 143, 0.2);
+        }
+
+        .status-pill {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+        }
+
+        .status-pill.active {
+            background: #e6f9f0;
+            color: #1a7a4a;
+        }
+
+        .status-pill.inactive {
+            background: #fef2f2;
+            color: #991b1b;
+        }
 
         /* ── FOOTER ── */
-        .footer-strip { background:var(--primary-gradient); color:rgba(255,255,255,0.75); text-align:center; padding:18px 0; font-size:0.85rem; margin-top:auto; }
-        .footer-strip strong { color:white; }
+        .footer-strip {
+            background: var(--primary-gradient);
+            color: rgba(255, 255, 255, 0.75);
+            text-align: center;
+            padding: 18px 0;
+            font-size: 0.85rem;
+            margin-top: auto;
+        }
+
+        .footer-strip strong {
+            color: white;
+        }
 
         /* ── ALERT ── */
-        .alert-success { background:var(--primary-blue-light); color:var(--primary-blue); border-left:4px solid var(--primary-blue); border-radius:12px; border-color:transparent; border-left-color:var(--primary-blue); }
+        .alert-success {
+            background: var(--primary-blue-light);
+            color: var(--primary-blue);
+            border-left: 4px solid var(--primary-blue);
+            border-radius: 12px;
+            border-color: transparent;
+            border-left-color: var(--primary-blue);
+        }
     </style>
 </head>
+
 <body>
     <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark">
@@ -111,10 +502,13 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('superadmin.dashboard') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a></li>
+                    <li class="nav-item"><a class="nav-link active"
+                            href="{{ route('superadmin.dashboard') }}">Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a>
+                    </li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.data.dashboard') }}">Data Management</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.data.dashboard') }}">Data
+                            Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Public View</a></li>
                 </ul>
                 <div class="d-flex">
@@ -212,7 +606,8 @@
                     <a href="{{ route('superadmin.data.municipalities') }}" class="menu-card">
                         <div class="menu-card-num">03</div>
                         <div class="menu-card-title">Municipality Data</div>
-                        <div class="menu-card-desc">Update population, households, and demographics per municipality.</div>
+                        <div class="menu-card-desc">Update population, households, and demographics per municipality.
+                        </div>
                         <span class="menu-card-arrow">&#8594;</span>
                     </a>
                 </div>
@@ -231,7 +626,9 @@
             <div class="panel-card mb-5">
                 <div class="panel-header">
                     <h5>Recent Registrations</h5>
-                    <a href="{{ route('superadmin.users') }}" style="color:var(--secondary-yellow);font-size:0.85rem;font-weight:700;text-decoration:none;">View all &rarr;</a>
+                    <a href="{{ route('superadmin.users') }}"
+                        style="color:var(--secondary-yellow);font-size:0.85rem;font-weight:700;text-decoration:none;">View
+                        all &rarr;</a>
                 </div>
                 <div class="panel-body">
                     <table class="premium-table">
@@ -245,24 +642,24 @@
                         </thead>
                         <tbody>
                             @foreach($recentUsers as $user)
-                            <tr>
-                                <td style="font-weight:600;">{{ $user->full_name }}</td>
-                                <td>{{ $user->email }}</td>
-                                <td>
-                                    @if($user->role == 'super_admin')
-                                        <span class="role-pill super-admin">Super Admin</span>
-                                    @elseif($user->role == 'admin')
-                                        <span class="role-pill admin">Admin</span>
-                                    @else
-                                        <span class="role-pill user">User</span>
-                                    @endif
-                                </td>
-                                <td>
-                                    <span class="status-pill {{ $user->status == 'active' ? 'active' : 'inactive' }}">
-                                        {{ ucfirst($user->status) }}
-                                    </span>
-                                </td>
-                            </tr>
+                                <tr>
+                                    <td style="font-weight:600;">{{ $user->full_name }}</td>
+                                    <td>{{ $user->email }}</td>
+                                    <td>
+                                        @if($user->role == 'super_admin')
+                                            <span class="role-pill super-admin">Super Admin</span>
+                                        @elseif($user->role == 'admin')
+                                            <span class="role-pill admin">Admin</span>
+                                        @else
+                                            <span class="role-pill user">User</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <span class="status-pill {{ $user->status == 'active' ? 'active' : 'inactive' }}">
+                                            {{ ucfirst($user->status) }}
+                                        </span>
+                                    </td>
+                                </tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -287,11 +684,11 @@
                         </thead>
                         <tbody>
                             @foreach($municipalities as $m)
-                            <tr>
-                                <td style="font-weight:700;color:var(--primary-blue);">{{ $m->name }}</td>
-                                <td>{{ number_format($m->male_population + $m->female_population) }}</td>
-                                <td>{{ number_format($m->total_households) }}</td>
-                            </tr>
+                                <tr>
+                                    <td style="font-weight:700;color:var(--primary-blue);">{{ $m->name }}</td>
+                                    <td>{{ number_format($m->male_population + $m->female_population) }}</td>
+                                    <td>{{ number_format($m->total_households) }}</td>
+                                </tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -306,4 +703,5 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
+
 </html>

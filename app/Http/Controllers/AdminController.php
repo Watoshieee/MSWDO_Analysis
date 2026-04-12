@@ -43,12 +43,12 @@ class AdminController extends Controller
         // Applications by program type
         $applicationsByProgram = $applications->groupBy('program_type')
             ->map(function ($items) {
-            return [
-            'total' => $items->count(),
-            'pending' => $items->where('status', 'pending')->count(),
-            'approved' => $items->where('status', 'approved')->count(),
-            ];
-        });
+                return [
+                    'total' => $items->count(),
+                    'pending' => $items->where('status', 'pending')->count(),
+                    'approved' => $items->where('status', 'approved')->count(),
+                ];
+            });
 
         // Barangays
         $barangays = Barangay::where('municipality', $user->municipality)->get();
@@ -83,8 +83,9 @@ class AdminController extends Controller
         ));
     }
 
-    public function requirements() {
-        $admin        = Auth::user();
+    public function requirements()
+    {
+        $admin = Auth::user();
         $municipality = $admin->municipality;
 
         $applications = Application::where('municipality', $municipality)
@@ -110,8 +111,9 @@ class AdminController extends Controller
         return view('admin.view-requirement', compact('fileMonitoring', 'application'));
     }
 
-    
-public function updateFileStatus(Request $request, $id)    {
+
+    public function updateFileStatus(Request $request, $id)
+    {
         $admin = Auth::user();
 
         $request->validate([
@@ -122,8 +124,8 @@ public function updateFileStatus(Request $request, $id)    {
         $fileUpload = FileUpload::with(['fileMonitoring'])
             ->where('id', $id)
             ->whereHas('fileMonitoring', function ($q) use ($admin) {
-            $q->where('municipality', $admin->municipality);
-        })
+                $q->where('municipality', $admin->municipality);
+            })
             ->firstOrFail();
 
         $oldStatus = $fileUpload->status;
@@ -142,12 +144,10 @@ public function updateFileStatus(Request $request, $id)    {
 
         if ($rejectedFiles > 0) {
             $fileMonitoring->overall_status = 'rejected';
-        }
-        elseif ($approvedFiles == $totalFiles && $totalFiles > 0) {
+        } elseif ($approvedFiles == $totalFiles && $totalFiles > 0) {
             $fileMonitoring->overall_status = 'approved';
             $fileMonitoring->application->update(['status' => 'approved']);
-        }
-        else {
+        } else {
             $fileMonitoring->overall_status = 'in_review';
         }
         $fileMonitoring->save();
@@ -165,7 +165,8 @@ public function updateFileStatus(Request $request, $id)    {
             'created_at' => now()
         ]);
 
-        return redirect()->back()->with('success', 'File status updated successfully!');    }
+        return redirect()->back()->with('success', 'File status updated successfully!');
+    }
 
     /**
      * NEW METHOD: Detailed Analysis Page
@@ -197,13 +198,13 @@ public function updateFileStatus(Request $request, $id)    {
         // Applications by program
         $applicationsByProgram = $applications->groupBy('program_type')
             ->map(function ($items) {
-            return [
-            'total' => $items->count(),
-            'pending' => $items->where('status', 'pending')->count(),
-            'approved' => $items->where('status', 'approved')->count(),
-            'rejected' => $items->where('status', 'rejected')->count(),
-            ];
-        });
+                return [
+                    'total' => $items->count(),
+                    'pending' => $items->where('status', 'pending')->count(),
+                    'approved' => $items->where('status', 'approved')->count(),
+                    'rejected' => $items->where('status', 'rejected')->count(),
+                ];
+            });
 
         // Barangay statistics
         $barangays = Barangay::where('municipality', $user->municipality)->get();
@@ -277,7 +278,9 @@ public function updateFileStatus(Request $request, $id)    {
 
     /**
      * Show demographic data for the admin's municipality only
-     */    public function demographic()    {
+     */
+    public function demographic()
+    {
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->firstOrFail();
 
@@ -320,12 +323,13 @@ public function updateFileStatus(Request $request, $id)    {
             'municipality',
             'demographicData',
             'barangayData'
-        ));    }
+        ));
+    }
 
     public function updateApplicationStatus(Request $request, $id)
     {
         $request->validate([
-            'status'        => 'required|in:pending,approved,rejected',
+            'status' => 'required|in:pending,approved,rejected',
             'admin_remarks' => 'required_if:status,rejected|nullable|string|max:1000',
         ]);
 
@@ -336,7 +340,7 @@ public function updateFileStatus(Request $request, $id)    {
         }
 
         $oldStatus = $application->status;
-        $application->status        = $request->status;
+        $application->status = $request->status;
         $application->admin_remarks = $request->admin_remarks;
         $application->save();
 

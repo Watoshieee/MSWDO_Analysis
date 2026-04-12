@@ -209,6 +209,16 @@
                     <span class="menu-arrow">&rsaquo;</span>
                 </a>
             </div>
+            <div class="col-md-4">
+                <a href="{{ route('admin.data.yearly') }}" class="menu-card" style="background: linear-gradient(135deg,#1A5276 0%,#0D2E4E 100%);">
+                    <div class="menu-text">
+                        <span class="menu-num">04 &mdash; Yearly Summary</span>
+                        <span class="menu-title">Municipality Yearly Data</span>
+                        <span class="menu-desc">Add and manage yearly population, household, PWD, AICS, and Solo Parent summary records for {{ $municipality->name }}.</span>
+                    </div>
+                    <span class="menu-arrow">&rsaquo;</span>
+                </a>
+            </div>
         </div>
 
     </div>
