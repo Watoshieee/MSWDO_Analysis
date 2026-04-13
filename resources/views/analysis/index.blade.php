@@ -9,6 +9,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
             /* Blue as MAIN color */
             --primary-blue: #2C3E8F;
@@ -28,13 +30,13 @@
             --secondary-gradient: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
             
             /* Backgrounds */
-            --bg-light: #F8FAFC;
-            --bg-white: #FFFFFF;
-            --bg-soft-blue: #F0F5FF;
+            --bg-light: #f1f5f9;
+            --bg-white: #f8fafc;
+            --bg-soft-blue: #e0e7ff;
         }
 
         body {
-            background: var(--bg-light);
+            background: #e2e8f0;
             font-family: 'Inter', 'Segoe UI', sans-serif;
         }
 
@@ -42,6 +44,12 @@
         /* Navbar */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44, 62, 143, 0.18); padding: 14px 0; }
         .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display:flex; align-items:center; gap:10px; }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+        }
         .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.95rem; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
@@ -81,9 +89,9 @@
 
         /* Stat Cards — white with top accent bar */
         .stat-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 18px;
-            border: 1px solid #E2E8F0;
+            border: 1px solid #cbd5e1;
             overflow: hidden;
             transition: transform .28s, box-shadow .28s;
             height: 100%;
@@ -107,12 +115,12 @@
 
         /* Chart Cards */
         .chart-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
             padding: 20px;
             margin-bottom: 30px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-            border: 1px solid #E2E8F0;
+            border: 1px solid #cbd5e1;
             position: relative;
             overflow: hidden;
         }
@@ -154,9 +162,9 @@
 
         /* Municipality beneficiary cards — white with accent bar */
         .program-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 18px;
-            border: 1px solid #E2E8F0;
+            border: 1px solid #cbd5e1;
             overflow: hidden;
             height: 100%;
             transition: transform .28s, box-shadow .28s;
@@ -178,10 +186,10 @@
 
         /* Municipality Cards */
         .municipality-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-            border: 1px solid #E2E8F0;
+            border: 1px solid #cbd5e1;
             height: 100%;
             transition: all 0.3s ease;
             overflow: hidden;
@@ -539,7 +547,7 @@
 <!-- Comparative Analysis Card with Toggle Buttons -->
 <div class="row mb-4">
     <div class="col-12">
-        <div class="card stat-card" style="background:white; border:1px solid #E2E8F0;">
+        <div class="card stat-card" style="background:#f8fafc; border:1px solid #cbd5e1;">
             <div class="card-header text-white d-flex justify-content-between align-items-center" style="background:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%); border:none; padding:16px 20px;">
                 <h5 class="mb-0" style="font-weight:700; font-size:0.97rem;">Comparative Analysis: Population, Households &amp; Single Parents</h5>
                 <div class="btn-group" role="group" aria-label="Chart type toggle">
@@ -567,7 +575,7 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="chart-card">
-                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                    <div class="card-header" style="border-bottom:1px solid #cbd5e1; padding:18px 22px 16px; background:#f8fafc;">
                         <div class="sec-title">Program Beneficiaries Overview</div>
                         <div class="sec-sub">Total beneficiaries per municipality</div>
                     </div>
@@ -616,7 +624,7 @@
         <div class="row mb-4">
             <div class="col-12">
                 <div class="chart-card">
-                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                    <div class="card-header" style="border-bottom:1px solid #cbd5e1; padding:18px 22px 16px; background:#f8fafc;">
                         <div class="sec-title">Program Beneficiaries Comparison</div>
                         <div class="sec-sub">Breakdown by municipality and program type</div>
                     </div>
@@ -678,7 +686,7 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="chart-card">
-                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                    <div class="card-header" style="border-bottom:1px solid #cbd5e1; padding:18px 22px 16px; background:#f8fafc;">
                         <div class="sec-title">Population Distribution by Municipality</div>
                     </div>
                     <div class="card-body">
@@ -690,7 +698,7 @@
             </div>
             <div class="col-md-6">
                 <div class="chart-card">
-                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                    <div class="card-header" style="border-bottom:1px solid #cbd5e1; padding:18px 22px 16px; background:#f8fafc;">
                         <div class="sec-title">Gender Distribution</div>
                     </div>
                     <div class="card-body">
@@ -705,7 +713,7 @@
         <div class="row mt-4">
             <div class="col-md-6">
                 <div class="chart-card">
-                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                    <div class="card-header" style="border-bottom:1px solid #cbd5e1; padding:18px 22px 16px; background:#f8fafc;">
                         <div class="sec-title">Age Group Distribution</div>
                     </div>
                     <div class="card-body">
@@ -717,7 +725,7 @@
             </div>
             <div class="col-md-6">
                 <div class="chart-card">
-                    <div class="card-header" style="border-bottom:1px solid #E2E8F0; padding:18px 22px 16px; background:white;">
+                    <div class="card-header" style="border-bottom:1px solid #cbd5e1; padding:18px 22px 16px; background:#f8fafc;">
                         <div class="sec-title">Application Status</div>
                     </div>
                     <div class="card-body">
@@ -729,91 +737,92 @@
             </div>
         </div>
 
-        <!-- Municipality Details -->
-        <div class="row mt-4 g-3">
+        <!-- Municipality Summary Cards - Compact Design -->
+        <div class="row mt-5 mb-4">
+            <div class="col-12">
+                <div class="sec-title" style="font-size:1.3rem;">Municipality Overview</div>
+                <p class="sec-sub">Quick summary of key statistics per municipality</p>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-5">
             @foreach($comparisonData as $municipality => $data)
-            <div class="col-md-4 mb-4">
+            <div class="col-md-4">
                 <div class="municipality-card">
                     <div class="card-header">
                         <h5>{{ $municipality }}</h5>
                     </div>
                     <div class="card-body">
-                        <!-- Quick Stats -->
-                        <div class="row text-center mb-3">
+                        <!-- Key Stats Grid -->
+                        <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <h6 class="text-muted">Population</h6>
-                                <p class="h4" style="color: var(--primary-blue);">{{ number_format($data['total_population']) }}</p>
+                                <div style="background: #dbeafe; border-radius: 12px; padding: 12px; text-align: center;">
+                                    <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Population</div>
+                                    <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary-blue);">{{ number_format($data['total_population']) }}</div>
+                                </div>
                             </div>
                             <div class="col-6">
-                                <h6 class="text-muted">Households</h6>
-                                <p class="h4" style="color: var(--primary-blue);">{{ number_format($data['households']) }}</p>
+                                <div style="background: #fef3c7; border-radius: 12px; padding: 12px; text-align: center;">
+                                    <div style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">Households</div>
+                                    <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary-blue);">{{ number_format($data['households']) }}</div>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Demographics -->
-                        <h6 class="mt-3" style="color: var(--primary-blue); font-weight:700;">Demographics</h6>
-                        <table class="table table-sm">
-                            <tr>
-                                <td>Male:</td>
-                                <td class="text-end">{{ number_format($data['male']) }}</td>
-                                <td class="text-end"><span class="badge" style="background: var(--bg-soft-blue); color: var(--primary-blue);">{{ $data['total_population'] > 0 ? round(($data['male']/$data['total_population'])*100,1) : 0 }}%</span></td>
-                            </tr>
-                            <tr>
-                                <td>Female:</td>
-                                <td class="text-end">{{ number_format($data['female']) }}</td>
-                                <td class="text-end"><span class="badge" style="background: var(--bg-soft-blue); color: var(--primary-blue);">{{ $data['total_population'] > 0 ? round(($data['female']/$data['total_population'])*100,1) : 0 }}%</span></td>
-                            </tr>
-                            <tr>
-                                <td>Single Parents:</td>
-                                <td class="text-end">{{ number_format($data['single_parents']) }}</td>
-                                <td></td>
-                            </tr>
-                        </table>
-
-                        <!-- Age Distribution -->
-                        <h6 class="mt-3" style="color: var(--primary-blue); font-weight:700;">Age Groups</h6>
-                        <table class="table table-sm">
-                            @foreach($data['age_groups'] as $group => $count)
-                            <tr>
-                                <td>{{ $group }}:</td>
-                                <td class="text-end">{{ number_format($count) }}</td>
-                                <td class="text-end"><span class="badge" style="background: var(--bg-soft-blue); color: var(--primary-blue);">{{ $data['total_population'] > 0 ? round(($count/$data['total_population'])*100,1) : 0 }}%</span></td>
-                            </tr>
-                            @endforeach
-                        </table>
-
-                        <!-- Applications -->
-                        <h6 class="mt-3" style="color: var(--primary-blue); font-weight:700;">Applications</h6>
-                        <div class="row text-center mb-3">
-                            <div class="col-4">
-                                <span class="badge bg-warning">Pending</span>
-                                <p class="mt-1">{{ $data['pending_apps'] }}</p>
+                        <!-- Demographics Summary -->
+                        <div style="background: #f1f5f9; border-radius: 12px; padding: 14px; margin-bottom: 12px;">
+                            <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary-blue); margin-bottom: 8px;">Demographics</div>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span style="font-size: 0.85rem; color: #475569;">Male</span>
+                                <span style="font-size: 0.9rem; font-weight: 700; color: var(--primary-blue);">{{ number_format($data['male']) }} <small style="color: #64748b;">({{ $data['total_population'] > 0 ? round(($data['male']/$data['total_population'])*100,1) : 0 }}%)</small></span>
                             </div>
-                            <div class="col-4">
-                                <span class="badge bg-success">Approved</span>
-                                <p class="mt-1">{{ $data['approved_apps'] }}</p>
+                            <div class="d-flex justify-content-between align-items-center mb-2">
+                                <span style="font-size: 0.85rem; color: #475569;">Female</span>
+                                <span style="font-size: 0.9rem; font-weight: 700; color: var(--primary-blue);">{{ number_format($data['female']) }} <small style="color: #64748b;">({{ $data['total_population'] > 0 ? round(($data['female']/$data['total_population'])*100,1) : 0 }}%)</small></span>
                             </div>
-                            <div class="col-4">
-                                <span class="badge bg-danger">Rejected</span>
-                                <p class="mt-1">{{ $data['rejected_apps'] }}</p>
+                            <div class="d-flex justify-content-between align-items-center">
+                                <span style="font-size: 0.85rem; color: #475569;">Single Parents</span>
+                                <span style="font-size: 0.9rem; font-weight: 700; color: var(--primary-blue);">{{ number_format($data['single_parents']) }}</span>
                             </div>
                         </div>
 
-                        <!-- Programs -->
-                        <h6 class="mt-3" style="color: var(--primary-blue); font-weight:700;">Program Beneficiaries</h6>
-                        <div class="program-list">
-                            @forelse($data['programs'] as $program => $count)
-                            <div class="program-item">
-                                <span class="program-name">{{ str_replace('_', ' ', $program) }}:</span>
-                                <span class="program-count">{{ number_format($count) }}</span>
+                        <!-- Applications Summary -->
+                        <div style="background: #f1f5f9; border-radius: 12px; padding: 14px; margin-bottom: 12px;">
+                            <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary-blue); margin-bottom: 8px;">Application Status</div>
+                            <div class="d-flex justify-content-around text-center">
+                                <div>
+                                    <div style="font-size: 1.3rem; font-weight: 900; color: #f59e0b;">{{ $data['pending_apps'] }}</div>
+                                    <div style="font-size: 0.7rem; color: #64748b;">Pending</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.3rem; font-weight: 900; color: #28a745;">{{ $data['approved_apps'] }}</div>
+                                    <div style="font-size: 0.7rem; color: #64748b;">Approved</div>
+                                </div>
+                                <div>
+                                    <div style="font-size: 1.3rem; font-weight: 900; color: #C41E24;">{{ $data['rejected_apps'] }}</div>
+                                    <div style="font-size: 0.7rem; color: #64748b;">Rejected</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Top Programs -->
+                        <div style="background: #f1f5f9; border-radius: 12px; padding: 14px;">
+                            <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary-blue); margin-bottom: 8px;">Top Programs</div>
+                            @php
+                                $topPrograms = collect($data['programs'])->sortDesc()->take(3);
+                            @endphp
+                            @forelse($topPrograms as $program => $count)
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span style="font-size: 0.8rem; color: #475569;">{{ str_replace('_', ' ', $program) }}</span>
+                                <span style="font-size: 0.85rem; font-weight: 700; color: var(--primary-blue); background: var(--bg-soft-blue); padding: 2px 8px; border-radius: 10px;">{{ number_format($count) }}</span>
                             </div>
                             @empty
-                            <p class="text-muted text-center">No program data</p>
+                            <p style="font-size: 0.8rem; color: #94a3b8; text-align: center; margin: 0;">No program data</p>
                             @endforelse
                         </div>
                     </div>
                     <div class="card-footer bg-transparent border-0 pb-3 text-center">
-                        <a href="/analysis/municipality/{{ $municipality }}" class="btn-view">View Barangay Details &rarr;</a>
+                        <a href="/analysis/municipality/{{ $municipality }}" class="btn-view">View Full Details &rarr;</a>
                     </div>
                 </div>
             </div>
@@ -1224,6 +1233,8 @@
     @auth
     @if(!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin())
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         .back-dashboard-btn {
             position: fixed; bottom: 32px; left: 32px; z-index: 9999;
             display: flex; align-items: center; gap: 10px;
@@ -1255,6 +1266,8 @@
     @auth
     @if(Auth::user()->isSuperAdmin())
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         .admin-back-btn {
             position: fixed; bottom: 32px; left: 32px; z-index: 9999;
             display: flex; align-items: center; gap: 10px;
@@ -1282,6 +1295,8 @@
     {{-- ── Back button: admin ── --}}
     @elseif(Auth::user()->isAdmin())
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         .admin-back-btn {
             position: fixed; bottom: 32px; left: 32px; z-index: 9999;
             display: flex; align-items: center; gap: 10px;

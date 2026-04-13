@@ -531,7 +531,12 @@ class DataManagementController extends Controller
         $years = array_unique($years);
         rsort($years);
 
-        return view('admin.data.yearly-data', compact('municipality', 'summaries', 'chartData', 'years'));
+        // Load admin colors directly
+        $adminPrimaryColor = \App\Models\AdminSetting::where('user_id', $user->id)->where('setting_key', 'primary_color')->value('setting_value') ?? '#2C3E8F';
+        $adminSecondaryColor = \App\Models\AdminSetting::where('user_id', $user->id)->where('setting_key', 'secondary_color')->value('setting_value') ?? '#FDB913';
+        $adminAccentColor = \App\Models\AdminSetting::where('user_id', $user->id)->where('setting_key', 'accent_color')->value('setting_value') ?? '#C41E24';
+
+        return view('admin.data.yearly-data', compact('municipality', 'summaries', 'chartData', 'years', 'adminPrimaryColor', 'adminSecondaryColor', 'adminAccentColor'));
     }
 
     public function saveYearlySummary(Request $request)

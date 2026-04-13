@@ -1,15 +1,17 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Program Data – MSWDO Super Admin</title>
+    <title>Program Data � MSWDO Super Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
             --primary-blue: #2C3E8F;
             --primary-blue-light: #E5EEFF;
@@ -45,6 +47,12 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
 
         .nav-link {
@@ -693,7 +701,7 @@
         <div class="container py-5">
 
             @if(session('success'))
-                <div class="alert-success-custom">✅ {{ session('success') }}</div>
+                <div class="alert-success-custom">? {{ session('success') }}</div>
             @endif
             @if($errors->any())
                 <div class="alert-danger-custom">
@@ -703,8 +711,8 @@
 
             <!-- Tab Pills -->
             <div class="tab-pills">
-                <button class="tab-pill active" onclick="switchTab('records', this)">📋 Records</button>
-                <button class="tab-pill" onclick="switchTab('analysis', this)">📊 Analysis</button>
+                <button class="tab-pill active" onclick="switchTab('records', this)">?? Records</button>
+                <button class="tab-pill" onclick="switchTab('analysis', this)">?? Analysis</button>
             </div>
 
             <!-- ===================== RECORDS TAB ===================== -->
@@ -714,14 +722,14 @@
                     <div class="sync-panel">
                         <div class="sync-panel-header">
                             <div class="sync-title">
-                                🔗 Barangay-Computed Totals
+                                ?? Barangay-Computed Totals
                                 <span class="sync-badge">Auto-calculated from Barangay Data</span>
                             </div>
                             <form method="POST" action="{{ route('superadmin.data.programs.sync-barangays') }}">
                                 @csrf
                                 <button type="submit" class="btn-sync"
                                     onclick="return confirm('Sync barangay totals to programs table? Existing AICS, PWD, and Solo Parent records will be updated.')">
-                                    🔄 Sync to Programs Table
+                                    ?? Sync to Programs Table
                                 </button>
                             </form>
                         </div>
@@ -757,7 +765,7 @@
                                                 @if($stored['AICS'] !== null && $stored['AICS'] != $agg->total_aics)
                                                     <span class="warn-badge">DB: {{ number_format($stored['AICS']) }}</span>
                                                 @elseif($stored['AICS'] == $agg->total_aics)
-                                                    <span class="bgy-badge">✓ Synced</span>
+                                                    <span class="bgy-badge">? Synced</span>
                                                 @endif
                                             </td>
                                             <td>
@@ -765,7 +773,7 @@
                                                 @if($stored['PWD'] !== null && $stored['PWD'] != $agg->total_pwd)
                                                     <span class="warn-badge">DB: {{ number_format($stored['PWD']) }}</span>
                                                 @elseif($stored['PWD'] == $agg->total_pwd)
-                                                    <span class="bgy-badge">✓ Synced</span>
+                                                    <span class="bgy-badge">? Synced</span>
                                                 @endif
                                             </td>
                                             <td>
@@ -773,7 +781,7 @@
                                                 @if($stored['Solo'] !== null && $stored['Solo'] != $agg->total_solo_parent)
                                                     <span class="warn-badge">DB: {{ number_format($stored['Solo']) }}</span>
                                                 @elseif($stored['Solo'] == $agg->total_solo_parent)
-                                                    <span class="bgy-badge">✓ Synced</span>
+                                                    <span class="bgy-badge">? Synced</span>
                                                 @endif
                                             </td>
                                         </tr>
@@ -822,7 +830,7 @@
                             <div class="col-md-2 text-end d-flex gap-2 justify-content-end">
                                 <button class="btn-archive-view" data-bs-toggle="modal"
                                     data-bs-target="#archivedProgModal">
-                                    🗂 Archived (<span id="archivedProgCount">...</span>)
+                                    ?? Archived (<span id="archivedProgCount">...</span>)
                                 </button>
                                 <a href="#" class="btn-add" data-bs-toggle="modal" data-bs-target="#createModal">+ Add
                                     Data</a>
@@ -868,9 +876,9 @@
                                                         $bTotal = $barangayLookup[$bKey][$bField] ?? null;
                                                     @endphp
                                                     @if($bTotal !== null && $bTotal == $program->beneficiary_count)
-                                                        <span class="bgy-badge">🔗 Barangay</span>
+                                                        <span class="bgy-badge">?? Barangay</span>
                                                     @elseif($bTotal !== null && $bTotal != $program->beneficiary_count)
-                                                        <span class="warn-badge" title="Barangay total: {{ number_format($bTotal) }}">⚠
+                                                        <span class="warn-badge" title="Barangay total: {{ number_format($bTotal) }}">?
                                                             Bgy: {{ number_format($bTotal) }}</span>
                                                     @endif
                                                 @endif
@@ -987,7 +995,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">🗂 Archived Program Records</h5>
+                    <h5 class="modal-title">?? Archived Program Records</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -1052,7 +1060,7 @@
                 .then(data => {
                     document.getElementById('archivedProgCount').textContent = data.length;
                     if (!data.length) {
-                        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted"><div style="font-size:2rem;opacity:.3;">🗂</div><p class="mt-2 mb-0">No archived program records.</p></td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-5 text-muted"><div style="font-size:2rem;opacity:.3;">??</div><p class="mt-2 mb-0">No archived program records.</p></td></tr>';
                         return;
                     }
                     tbody.innerHTML = data.map(p => {
@@ -1086,7 +1094,7 @@
         }
 
         function permDeleteProgram(id) {
-            if (!confirm('⚠️ PERMANENTLY DELETE this program record?\n\nThis CANNOT be undone!')) return;
+            if (!confirm('?? PERMANENTLY DELETE this program record?\n\nThis CANNOT be undone!')) return;
             fetch('/superadmin/data/programs/' + id + '/force-delete', {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }

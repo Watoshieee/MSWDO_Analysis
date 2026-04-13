@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -9,6 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
             --primary-blue: #2C3E8F;
             --primary-blue-light: #E5EEFF;
@@ -47,6 +49,12 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
 
         .nav-link {
@@ -491,6 +499,26 @@
 </head>
 
 <body>
+    <script>
+        // Force scroll to top immediately
+        document.documentElement.scrollTop = 0;
+        document.body.scrollTop = 0;
+        window.scrollTo(0, 0);
+        
+        // Prevent scroll restoration
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        
+        // Lock scroll position during page load
+        window.addEventListener('DOMContentLoaded', function() {
+            window.scrollTo(0, 0);
+        });
+        
+        window.addEventListener('load', function() {
+            window.scrollTo(0, 0);
+        });
+    </script>
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid px-4">
             <a class="navbar-brand" href="{{ route('superadmin.dashboard') }}">
@@ -586,15 +614,8 @@
             <!-- Inline-Edit Table -->
             <div class="panel-card">
                 <div class="panel-header">
-                    <div>
-                        <h5 style="margin-bottom:2px;">Barangay Records</h5>
-                        <span style="font-size:.75rem;opacity:.7;font-weight:400;">Edit values directly in the table
-                            &mdash; click Save or Update All when done.</span>
-                    </div>
-                    <div class="d-flex align-items-center gap-3">
-                        <span class="count-badge">{{ $barangays->count() }} records</span>
-                        <button class="btn-update-all" id="btnUpdateAll" onclick="updateAll()">💾 Update All</button>
-                    </div>
+                    <h5>Barangay Records</h5>
+                    <span class="count-badge">{{ $barangays->count() }} records</span>
                 </div>
                 <div class="table-responsive" style="max-height:620px;overflow-y:auto;">
                     <table class="premium-table" id="barangayTable">
@@ -607,44 +628,26 @@
                                 <th style="text-align:center;">PWD</th>
                                 <th style="text-align:center;">AICS</th>
                                 <th style="text-align:center;">Solo Parent</th>
+                                <th style="text-align:center;">Households</th>
+                                <th style="text-align:center;">Approved Apps</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @forelse($barangays as $barangay)
                                 <tr class="bgy-row" data-id="{{ $barangay->id }}">
-                                    <td>
-                                        <select class="inline-select" name="year">
-                                            @foreach($years as $yr)
-                                                <option value="{{ $yr }}" {{ ($barangay->year ?? date('Y')) == $yr ? 'selected' : '' }}>{{ $yr }}</option>
-                                            @endforeach
-                                        </select>
-                                    </td>
-                                    <td><span style="font-size:.83rem;color:#64748b;">{{ $barangay->municipality }}</span>
-                                    </td>
-                                    <td style="font-weight:700;color:var(--primary-blue);font-size:.88rem;">
-                                        {{ $barangay->name }}
-                                    </td>
-                                    <td style="text-align:center;">
-                                        <input type="number" class="inline-input" name="total_population"
-                                            value="{{ $barangay->male_population }}" min="0">
-                                    </td>
-                                    <td style="text-align:center;">
-                                        <input type="number" class="inline-input" name="pwd_count"
-                                            value="{{ $barangay->pwd_count ?? 0 }}" min="0">
-                                    </td>
-                                    <td style="text-align:center;">
-                                        <input type="number" class="inline-input" name="aics_count"
-                                            value="{{ $barangay->aics_count ?? 0 }}" min="0">
-                                    </td>
-                                    <td style="text-align:center;">
-                                        <input type="number" class="inline-input" name="single_parent_count"
-                                            value="{{ $barangay->single_parent_count }}" min="0">
-                                    </td>
+                                    <td><span style="font-weight:700;color:var(--primary-blue);">{{ $barangay->year ?? date('Y') }}</span></td>
+                                    <td><span style="font-size:.83rem;color:#64748b;">{{ $barangay->municipality }}</span></td>
+                                    <td style="font-weight:700;color:var(--primary-blue);font-size:.88rem;">{{ $barangay->name }}</td>
+                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="male_population" value="{{ $barangay->male_population }}" min="0"></td>
+                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="pwd_count" value="{{ $barangay->pwd_count }}" min="0"></td>
+                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="aics_count" value="{{ $barangay->aics_count }}" min="0"></td>
+                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="single_parent_count" value="{{ $barangay->single_parent_count }}" min="0"></td>
+                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="total_households" value="{{ $barangay->total_households }}" min="0"></td>
+                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="total_approved_applications" value="{{ $barangay->total_approved_applications }}" min="0"></td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <button class="btn-save-row"
-                                                onclick="saveRow({{ $barangay->id }}, this)">Save</button>
+                                            <button class="btn-save-row" onclick="saveRow({{ $barangay->id }})">Save</button>
                                             <button class="btn-action-delete btn-archive-row" data-id="{{ $barangay->id }}"
                                                 data-name="{{ $barangay->name }}"
                                                 data-year="{{ $barangay->year }}">Archive</button>
@@ -653,7 +656,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="8" class="text-center py-5">
+                                    <td colspan="5" class="text-center py-5">
                                         <div style="font-size:2.8rem;opacity:.25;">📭</div>
                                         @if(request('municipality') && request('year'))
                                             <p class="mt-2 mb-1 fw-bold" style="color:#334155;">No records for <span
@@ -795,18 +798,7 @@
                                 <input type="number" name="total_population" class="form-control" required min="0"
                                     value="0">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Population 0–19</label>
-                                <input type="number" name="population_0_19" class="form-control" min="0" value="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Population 20–59</label>
-                                <input type="number" name="population_20_59" class="form-control" min="0" value="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Population 60–100</label>
-                                <input type="number" name="population_60_100" class="form-control" min="0" value="0">
-                            </div>
+
                             <div class="col-md-6">
                                 <label class="form-label">PWD Count</label>
                                 <input type="number" name="pwd_count" class="form-control" min="0" value="0">
@@ -828,9 +820,12 @@
         </div>
     </div>
 
+
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+        let dirtyRows = new Set();
 
         const barangayLists = {
             'Magdalena': [
@@ -1167,71 +1162,84 @@
             setTimeout(() => t.remove(), 3500);
         }
 
-        // ── Inline Editing ──────────────────────────────────────────────
-        const BULK_URL = '{{ route("superadmin.data.barangays.bulk-update") }}';
-
-        // Mark row yellow (dirty) when any input is changed
-        document.querySelectorAll('.bgy-row input, .bgy-row select').forEach(el => {
-            el.addEventListener('input', () => el.closest('tr').classList.add('dirty'));
+        // ── Inline Editing ───────────────────────────────────────────
+        document.addEventListener('input', function (e) {
+            if (e.target.classList.contains('inline-input') || e.target.classList.contains('inline-select')) {
+                const row = e.target.closest('.bgy-row');
+                if (row) {
+                    const id = row.dataset.id;
+                    dirtyRows.add(id);
+                    row.classList.add('dirty');
+                }
+            }
         });
 
-        function getRowData(tr) {
-            return {
-                id: parseInt(tr.dataset.id),
-                year: parseInt(tr.querySelector('[name="year"]').value),
-                total_population: parseInt(tr.querySelector('[name="total_population"]').value) || 0,
-                pwd_count: parseInt(tr.querySelector('[name="pwd_count"]').value) || 0,
-                aics_count: parseInt(tr.querySelector('[name="aics_count"]').value) || 0,
-                single_parent_count: parseInt(tr.querySelector('[name="single_parent_count"]').value) || 0,
-            };
+        function getRowData(id) {
+            const row = document.querySelector(`.bgy-row[data-id="${id}"]`);
+            if (!row) return null;
+            const data = { id };
+            row.querySelectorAll('.inline-input, .inline-select').forEach(inp => {
+                const field = inp.dataset.field;
+                data[field] = inp.type === 'number' ? parseInt(inp.value) || 0 : inp.value;
+            });
+            return data;
         }
 
-        function saveRow(id, btn) {
-            const tr = document.querySelector(`tr[data-id="${id}"]`);
+        function saveRow(id) {
+            const data = getRowData(id);
+            if (!data) return;
+            const btn = document.querySelector(`.bgy-row[data-id="${id}"] .btn-save-row`);
             const orig = btn.textContent;
-            btn.textContent = '...'; btn.disabled = true;
-            fetch(BULK_URL, {
+            btn.textContent = '⏳'; btn.disabled = true;
+
+            fetch('/superadmin/data/barangays/' + id, {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rows: [getRowData(tr)] })
+                body: JSON.stringify(data)
             })
                 .then(r => r.json())
-                .then(d => {
-                    if (d.success) {
-                        tr.classList.remove('dirty');
-                        showToast(d.message, 'success');
-                        btn.textContent = '✓ Saved';
-                        setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2000);
+                .then(res => {
+                    if (res.success) {
+                        showToast(res.message || 'Saved!', 'success');
+                        dirtyRows.delete(id);
+                        const row = document.querySelector(`.bgy-row[data-id="${id}"]`);
+                        if (row) row.classList.remove('dirty');
                     } else {
-                        showToast(d.message || 'Error saving.', 'danger');
-                        btn.textContent = orig; btn.disabled = false;
+                        showToast(res.message || 'Error saving.', 'danger');
                     }
+                    btn.textContent = orig; btn.disabled = false;
                 })
                 .catch(() => { showToast('Network error.', 'danger'); btn.textContent = orig; btn.disabled = false; });
         }
 
         function updateAll() {
-            const rows = [...document.querySelectorAll('.bgy-row')].map(tr => getRowData(tr));
-            if (!rows.length) { showToast('No records to update.', 'warning'); return; }
-            const btn = document.getElementById('btnUpdateAll');
+            if (!dirtyRows.size) { showToast('No changes to save.', 'warning'); return; }
+            const allData = [];
+            dirtyRows.forEach(id => {
+                const d = getRowData(id);
+                if (d) allData.push(d);
+            });
+            if (!allData.length) return;
+
+            const btn = document.getElementById('updateAllBtn');
             const orig = btn.textContent;
             btn.textContent = '⏳ Saving...'; btn.disabled = true;
-            fetch(BULK_URL, {
+
+            fetch('/superadmin/data/barangays/bulk-update', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ rows })
+                body: JSON.stringify({ records: allData })
             })
                 .then(r => r.json())
-                .then(d => {
-                    if (d.success) {
-                        document.querySelectorAll('.bgy-row').forEach(tr => tr.classList.remove('dirty'));
-                        showToast(d.message, 'success');
-                        btn.textContent = '✓ All Updated';
-                        setTimeout(() => { btn.textContent = orig; btn.disabled = false; }, 2500);
+                .then(res => {
+                    if (res.success) {
+                        showToast(res.message || 'All changes saved!', 'success');
+                        dirtyRows.clear();
+                        document.querySelectorAll('.bgy-row.dirty').forEach(r => r.classList.remove('dirty'));
                     } else {
-                        showToast(d.message || 'Error updating.', 'danger');
-                        btn.textContent = orig; btn.disabled = false;
+                        showToast(res.message || 'Error saving.', 'danger');
                     }
+                    btn.textContent = orig; btn.disabled = false;
                 })
                 .catch(() => { showToast('Network error.', 'danger'); btn.textContent = orig; btn.disabled = false; });
         }
