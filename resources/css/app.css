@@ -1,3 +1,10 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Disable overscroll/rubber band effect globally */
+html, body {
+    overscroll-behavior: none;
+    margin: 0;
+    padding: 0;
+}

@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
             --primary-blue: #2C3E8F;
             --primary-blue-light: #E5EEFF;
@@ -25,7 +27,7 @@
         }
 
         body {
-            background: var(--bg-light);
+            background: #e2e8f0 !important;
             font-family: 'Inter', 'Segoe UI', sans-serif;
         }
 
@@ -43,6 +45,13 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
 
         .nav-link {
@@ -221,10 +230,10 @@
 
         /* ===== VMG CARDS - NO HOVER ANIMATION ===== */
         .vmg-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
             padding: 34px 28px;
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
             height: 100%;
             position: relative;
@@ -271,10 +280,10 @@
 
         /* ===== GOALS - NO HOVER ANIMATION ===== */
         .goal-item {
-            background: white;
+            background: #f8fafc;
             border-radius: 16px;
             padding: 22px 24px;
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
             margin-bottom: 16px;
             display: flex;
@@ -312,9 +321,9 @@
 
         /* ===== PROGRAM CARDS - NO HOVER ANIMATION ===== */
         .program-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
             height: 100%;
             overflow: hidden;
@@ -390,20 +399,58 @@
         /* ===== SECTIONS ===== */
         .section-wrapper {
             padding: 54px 0;
+            background: #e2e8f0 !important;
         }
 
         .section-wrapper.alt {
-            background: white;
+            background: #f8fafc !important;
+        }
+
+        .section-wrapper .container,
+        .section-wrapper.alt .container,
+        .section-wrapper .row,
+        .section-wrapper.alt .row,
+        .section-wrapper [class*="col-"],
+        .section-wrapper.alt [class*="col-"] {
+            background: transparent !important;
         }
 
         /* ===== YEARLY ANALYSIS ===== */
         .yearly-section {
             padding: 60px 0;
-            background: var(--bg-light);
+            background: #e2e8f0 !important;
         }
 
         .yearly-section.alt {
-            background: white;
+            background: #f8fafc !important;
+        }
+
+        .yearly-section .container,
+        .yearly-section.alt .container,
+        .yearly-section .row,
+        .yearly-section.alt .row,
+        .yearly-section [class*="col-"],
+        .yearly-section.alt [class*="col-"] {
+            background: transparent !important;
+        }
+
+        /* Force all child divs in yearly sections to be transparent */
+        .yearly-section div:not(.chart-card):not(.stat-pill):not(.goal-number):not(.vmg-label):not(.program-card):not(.program-card-header),
+        .yearly-section.alt div:not(.chart-card):not(.stat-pill):not(.goal-number):not(.vmg-label):not(.program-card):not(.program-card-header) {
+            background-color: transparent !important;
+        }
+
+        /* Ultra specific override for yearly-section alt */
+        .yearly-section.alt * {
+            background-color: inherit !important;
+        }
+
+        .yearly-section.alt .chart-card {
+            background: #f8fafc !important;
+        }
+
+        .yearly-section.alt .stat-pill {
+            background: #f8fafc !important;
         }
 
         .section-title {
@@ -434,11 +481,11 @@
         }
 
         .chart-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
             padding: 28px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, .04);
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             position: relative;
             overflow: hidden;
             margin-bottom: 28px;
@@ -485,8 +532,8 @@
         }
 
         .stat-pill {
-            background: white;
-            border: 1px solid var(--border-light);
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
             border-radius: 14px;
             padding: 16px 22px;
             text-align: center;
@@ -518,6 +565,13 @@
 
         .border-light {
             border-color: var(--border-light) !important;
+        }
+
+        /* Force transparent backgrounds on all Bootstrap grid elements */
+        .container,
+        .row,
+        [class*="col-"] {
+            background-color: transparent !important;
         }
 
         @media (max-width: 768px) {
@@ -678,11 +732,11 @@
     </section>
 
     <!-- ===== STRATEGIC GOALS ===== -->
-    <section class="section-wrapper alt">
-        <div class="container">
+    <section class="section-wrapper alt" style="background: #e2e8f0 !important;">
+        <div class="container" style="background: transparent !important;">
             <h2 class="section-title">Strategic Goals</h2>
-            <div class="row">
-                <div class="col-lg-6">
+            <div class="row" style="background: transparent !important;">
+                <div class="col-lg-6" style="background: transparent !important;">
                     <div class="goal-item">
                         <div class="goal-number">01</div>
                         <div class="goal-content">
@@ -708,7 +762,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-6">
+                <div class="col-lg-6" style="background: transparent !important;">
                     <div class="goal-item">
                         <div class="goal-number">04</div>
                         <div class="goal-content">
@@ -918,20 +972,20 @@
             </div>
         </section>
 
-        <section class="yearly-section alt">
-            <div class="container">
+        <section class="yearly-section alt" style="background: #e2e8f0 !important;">
+            <div class="container" style="background: transparent !important;">
                 <h2 class="section-title">Program Trends by Year</h2>
                 <p class="section-sub">Breakdown of total beneficiaries per social welfare program across all years and
                     municipalities.</p>
-                <div class="row g-4">
-                    <div class="col-lg-7">
+                <div class="row g-4" style="background: transparent !important;">
+                    <div class="col-lg-7" style="background: transparent !important;">
                         <div class="chart-card">
                             <h5>Beneficiaries per Program Type (Yearly)</h5>
                             <p class="csub">Stacked view of all program types per year</p>
                             <div class="chart-wrap" style="height:340px;"><canvas id="yearlyProgramChart"></canvas></div>
                         </div>
                     </div>
-                    <div class="col-lg-5">
+                    <div class="col-lg-5" style="background: transparent !important;">
                         <div class="chart-card">
                             <h5>Per-Program Totals</h5>
                             <p class="csub">Aggregated across all years &amp; municipalities</p>
@@ -1069,6 +1123,8 @@
 
     @auth
         <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
             .back-dashboard-btn {
                 position: fixed;
                 bottom: 32px;
@@ -1154,6 +1210,8 @@
     @auth
         @if(Auth::user()->isSuperAdmin())
             <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
                 .admin-back-btn {
                     position: fixed;
                     bottom: 32px;
@@ -1233,6 +1291,8 @@
             </a>
         @elseif(Auth::user()->isAdmin())
             <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
                 .admin-back-btn {
                     position: fixed;
                     bottom: 32px;

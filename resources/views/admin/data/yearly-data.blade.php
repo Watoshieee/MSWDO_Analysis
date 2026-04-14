@@ -8,13 +8,12 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    @include('components.admin-colors')
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
-            --primary-blue: #2C3E8F;
             --primary-blue-light: #E5EEFF;
-            --secondary-yellow: #FDB913;
-            --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
-            --secondary-gradient: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
             --bg-light: #F8FAFC;
             --border-light: #E2E8F0;
         }
@@ -25,6 +24,12 @@
         /* NAVBAR */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,.18); padding: 14px 0; }
         .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display: flex; align-items: center; gap: 12px; }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+        }
         .nav-link { color: rgba(255,255,255,.88) !important; font-weight: 600; transition: all .25s; border-radius: 8px; padding: 10px 18px !important; font-size: .93rem; }
         .nav-link:hover { background: rgba(255,255,255,.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
@@ -368,6 +373,9 @@
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </footer>
 
+    @include('components.admin-settings-modal')
+    @include('components.admin-chat-modal')
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function switchTab(name, el) {
@@ -389,6 +397,11 @@
             const cd = chartData[muniName];
             if (!cd || !cd.years.length) return;
 
+            // Get colors from CSS variables
+            const primaryColor = getComputedStyle(document.documentElement).getPropertyValue('--primary-blue').trim();
+            const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-yellow').trim();
+            const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim();
+
             // Population & Households Chart
             new Chart(document.getElementById('popChart'), {
                 type: 'bar',
@@ -398,14 +411,14 @@
                         {
                             label: 'Population',
                             data: cd.population,
-                            backgroundColor: '#2C3E8F',
+                            backgroundColor: primaryColor,
                             borderRadius: 6,
                             barPercentage: 0.7
                         },
                         {
                             label: 'Households',
                             data: cd.households,
-                            backgroundColor: '#FDB913',
+                            backgroundColor: secondaryColor,
                             borderRadius: 6,
                             barPercentage: 0.7
                         }
@@ -427,14 +440,22 @@
             const aics      = summaries.map(r => r.total_aics).reverse();
             const solo      = summaries.map(r => r.total_solo_parent).reverse();
 
+            // Convert hex to rgba for transparency
+            function hexToRgba(hex, alpha) {
+                const r = parseInt(hex.slice(1, 3), 16);
+                const g = parseInt(hex.slice(3, 5), 16);
+                const b = parseInt(hex.slice(5, 7), 16);
+                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+            }
+
             new Chart(document.getElementById('progChart'), {
                 type: 'line',
                 data: {
                     labels: years,
                     datasets: [
-                        { label: 'PWD Assistance', data: pwd,  borderColor: '#2C3E8F', backgroundColor: 'rgba(44,62,143,.1)', fill: true, tension: 0.4, pointRadius: 5, borderWidth: 3 },
-                        { label: 'AICS',            data: aics, borderColor: '#FDB913', backgroundColor: 'rgba(253,185,19,.1)', fill: true, tension: 0.4, pointRadius: 5, borderWidth: 3 },
-                        { label: 'Solo Parent',     data: solo, borderColor: '#C41E24', backgroundColor: 'rgba(196,30,36,.1)',  fill: true, tension: 0.4, pointRadius: 5, borderWidth: 3 }
+                        { label: 'PWD Assistance', data: pwd,  borderColor: primaryColor, backgroundColor: hexToRgba(primaryColor, 0.1), fill: true, tension: 0.4, pointRadius: 5, borderWidth: 3 },
+                        { label: 'AICS',            data: aics, borderColor: secondaryColor, backgroundColor: hexToRgba(secondaryColor, 0.1), fill: true, tension: 0.4, pointRadius: 5, borderWidth: 3 },
+                        { label: 'Solo Parent',     data: solo, borderColor: accentColor, backgroundColor: hexToRgba(accentColor, 0.1),  fill: true, tension: 0.4, pointRadius: 5, borderWidth: 3 }
                     ]
                 },
                 options: {
@@ -449,3 +470,4 @@
     </script>
 </body>
 </html>
+

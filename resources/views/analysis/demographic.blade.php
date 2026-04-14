@@ -13,6 +13,8 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
             --primary-blue: #2C3E8F;
             --primary-blue-light: #E5EEFF;
@@ -29,7 +31,7 @@
         }
 
         body {
-            background: var(--bg-light);
+            background: #e2e8f0;
             font-family: 'Inter', 'Segoe UI', sans-serif;
         }
 
@@ -47,6 +49,13 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
 
         .nav-link {
@@ -207,7 +216,7 @@
         }
 
         .section-wrapper.alt {
-            background: white;
+            background: #f8fafc;
         }
 
         .section-title {
@@ -233,13 +242,12 @@
 
         /* ===== STAT CARDS ===== */
         .stat-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
             padding: 26px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             height: 100%;
-            transition: all 0.3s ease;
             position: relative;
             overflow: hidden;
         }
@@ -252,12 +260,6 @@
             right: 0;
             height: 4px;
             background: var(--primary-gradient);
-        }
-
-        .stat-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 14px 32px rgba(44, 62, 143, 0.11);
-            border-color: var(--primary-blue-soft);
         }
 
         .stat-card.accent-yellow::before {
@@ -310,7 +312,7 @@
         #municipalityMap {
             height: 450px;
             border-radius: 16px;
-            border: 2px solid var(--border-light);
+            border: 2px solid #cbd5e1;
             z-index: 1;
         }
 
@@ -320,9 +322,9 @@
             flex-wrap: wrap;
             margin-top: 16px;
             padding: 14px 18px;
-            background: white;
+            background: #f8fafc;
             border-radius: 12px;
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
         }
 
@@ -343,9 +345,9 @@
         }
 
         .map-info-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 16px;
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
             padding: 20px;
             height: 100%;
@@ -403,12 +405,11 @@
 
         /* ===== CHART CARDS ===== */
         .chart-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
             padding: 26px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-            border: 1px solid var(--border-light);
-            transition: all 0.3s ease;
+            border: 1px solid #cbd5e1;
             position: relative;
             overflow: hidden;
         }
@@ -421,11 +422,6 @@
             right: 0;
             height: 4px;
             background: var(--primary-gradient);
-        }
-
-        .chart-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 14px 32px rgba(44, 62, 143, 0.1);
         }
 
         .chart-card h5 {
@@ -475,11 +471,11 @@
 
         /* ===== TABLE ===== */
         .data-table-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
             padding: 26px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             position: relative;
             overflow: hidden;
         }
@@ -524,11 +520,7 @@
         }
 
         .table tbody tr {
-            transition: background 0.2s ease;
-        }
-
-        .table tbody tr:hover {
-            background: var(--bg-soft-blue);
+            /* No hover effect */
         }
 
         .table tbody td {
@@ -728,15 +720,15 @@
     </section>
 
     <!-- ===== MAP ===== -->
-    <section class="section-wrapper alt">
-        <div class="container">
+    <section class="section-wrapper alt" style="background: #e2e8f0 !important;">
+        <div class="container" style="background: transparent !important;">
             <h2 class="section-title">Geographic Location</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">
                 The three municipalities are located in southern Laguna, Philippines.
                 Click on a marker to see municipality details.
             </p>
-            <div class="row g-4 align-items-stretch">
-                <div class="col-lg-8">
+            <div class="row g-4 align-items-stretch" style="background: transparent !important;">
+                <div class="col-lg-8" style="background: transparent !important;">
                     <div id="municipalityMap"></div>
                     <div class="map-legend">
                         <div class="legend-item"><span class="legend-dot" style="background:#2C3E8F;"></span> Magdalena
@@ -747,7 +739,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-4">
+                <div class="col-lg-4" style="background: transparent !important;">
                     <div class="map-info-card">
                         <h6>Municipality Breakdown</h6>
                         @foreach($demographicData as $name => $data)
@@ -866,11 +858,11 @@
     </section>
 
     <!-- ===== GENDER DISTRIBUTION ===== -->
-    <section class="section-wrapper alt">
-        <div class="container">
+    <section class="section-wrapper alt" style="background: #e2e8f0 !important;">
+        <div class="container" style="background: transparent !important;">
             <h2 class="section-title">Gender Distribution</h2>
-            <div class="row g-4">
-                <div class="col-lg-7">
+            <div class="row g-4" style="background: transparent !important;">
+                <div class="col-lg-7" style="background: transparent !important;">
                     <div class="chart-card">
                         <h5>Male vs. Female Population</h5>
                         <p class="chart-sub">By municipality comparison</p>
@@ -879,7 +871,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-lg-5">
+                <div class="col-lg-5" style="background: transparent !important;">
                     <div class="chart-card h-100">
                         <h5>Gender Ratio Summary</h5>
                         <p class="chart-sub">Combined overall ratio</p>
@@ -1237,6 +1229,8 @@
     </script>
     @auth
         <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
             .back-dashboard-btn {
                 position: fixed;
                 bottom: 32px;
@@ -1322,6 +1316,8 @@
     @auth
         @if(Auth::user()->isSuperAdmin())
             <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
                 .admin-back-btn {
                     position: fixed;
                     bottom: 32px;
@@ -1401,6 +1397,8 @@
             </a>
         @elseif(Auth::user()->isAdmin())
             <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
                 .admin-back-btn {
                     position: fixed;
                     bottom: 32px;

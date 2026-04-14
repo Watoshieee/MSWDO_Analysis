@@ -6,13 +6,22 @@
     <title>Program Data – {{ $municipality->name }} – MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    @include('components.admin-colors')
     <style>
-        :root { --primary-blue:#2C3E8F; --secondary-yellow:#FDB913; --primary-gradient:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%); --bg-light:#F8FAFC; --bg-white:#FFFFFF; --bg-soft-blue:#F0F5FF; --border-light:#E2E8F0; --text-dark:#1E293B; }
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
+        :root { --bg-light:#F8FAFC; --bg-white:#FFFFFF; --bg-soft-blue:#F0F5FF; --border-light:#E2E8F0; --text-dark:#1E293B; }
         * { box-sizing:border-box; }
         body { background:var(--bg-light); font-family:'Inter',sans-serif; color:var(--text-dark); display:flex; flex-direction:column; min-height:100vh; margin:0; }
         a { text-decoration:none; }
         .navbar { background:var(--primary-gradient) !important; box-shadow:0 4px 24px rgba(44,62,143,0.18); padding:14px 0; }
         .navbar-brand { font-weight:800; font-size:1.55rem; color:white !important; display:flex; align-items:center; gap:12px; }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+        }
         .nav-link { color:rgba(255,255,255,0.88) !important; font-weight:600; transition:all 0.25s; border-radius:8px; padding:10px 18px !important; font-size:0.93rem; }
         .nav-link:hover { background:rgba(255,255,255,0.15); color:white !important; }
         .nav-link.active { background:var(--secondary-yellow); color:var(--primary-blue) !important; font-weight:700; }
@@ -224,5 +233,8 @@
             }
         }
     </script>
+@include('components.admin-settings-modal')
+@include('components.admin-chat-modal')
 </body>
 </html>
+

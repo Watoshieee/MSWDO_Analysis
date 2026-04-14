@@ -30,6 +30,12 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::post('/user/pwd-upload-requirement', [UserController::class, 'uploadPwdRequirement'])->name('user.pwd-upload-requirement');
     Route::post('/user/aics-medical-upload', [UserController::class, 'uploadAicsMedical'])->name('user.aics-medical-upload');
     Route::post('/user/aics-burial-upload', [UserController::class, 'uploadAicsBurial'])->name('user.aics-burial-upload');
+    
+    // Chat routes
+    Route::get('/chat/admins', [App\Http\Controllers\ChatController::class, 'getAdmins'])->name('chat.admins');
+    Route::get('/chat/messages/{adminId}', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.messages');
+    Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.send');
+    Route::get('/chat/unread-count', [App\Http\Controllers\ChatController::class, 'getUnreadCount'])->name('chat.unread');
 });
 
 // [Duplicate route block removed — user management is handled in the main superadmin group below]
@@ -92,6 +98,14 @@ Route::middleware('guest')->group(function () {
     Route::post('/reset-password', [App\Http\Controllers\Auth\NewPasswordController::class, 'store'])
         ->name('password.update');
 });
+
+// Change Password Routes (after email verification)
+Route::middleware('guest')->group(function () {
+    Route::get('/change-password', [App\Http\Controllers\Auth\ChangePasswordController::class, 'showChangeForm'])
+        ->name('password.change');
+    Route::post('/change-password', [App\Http\Controllers\Auth\ChangePasswordController::class, 'change'])
+        ->name('password.change.submit');
+});
 // LOGOUT
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
@@ -147,6 +161,7 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('superadmin')->name('sup
         Route::get('/barangays', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'barangays'])->name('barangays');
         Route::post('/barangays', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'storeBarangay'])->name('barangays.store');
         // Specific routes BEFORE {id} wildcard to prevent conflicts
+        Route::get('/barangays/{id}/edit', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'editBarangay'])->name('barangays.edit');
         Route::post('/barangays/bulk-delete', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'bulkArchiveBarangays'])->name('barangays.bulk-delete');
         Route::post('/barangays/bulk-store', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'bulkStoreBarangays'])->name('barangays.bulk-store');
         Route::get('/barangays/archived', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'getArchivedBarangays'])->name('barangays.archived');
@@ -204,6 +219,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/requirements', [App\Http\Controllers\AdminController::class, 'requirements'])->name('requirements');
     Route::get('/requirements/{id}', [App\Http\Controllers\AdminController::class, 'viewRequirement'])->name('view-requirement');
     Route::post('/requirements/{id}/status', [App\Http\Controllers\AdminController::class, 'updateFileStatus'])->name('update-file-status');
+
+    // Chat routes for admin
+    Route::get('/chat/users', [App\Http\Controllers\ChatController::class, 'getUsers'])->name('chat.users');
+    Route::get('/chat/messages/{userId}', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.messages');
+    Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.send');
+    Route::get('/chat/unread-count', [App\Http\Controllers\ChatController::class, 'getUnreadCount'])->name('chat.unread');
+
+    // Admin Settings Routes
+    Route::get('/settings', [App\Http\Controllers\AdminSettingsController::class, 'index'])->name('settings');
+    Route::get('/settings/get', [App\Http\Controllers\AdminSettingsController::class, 'get'])->name('settings.get');
+    Route::post('/settings/update', [App\Http\Controllers\AdminSettingsController::class, 'update'])->name('settings.update');
+    Route::post('/settings/reset', [App\Http\Controllers\AdminSettingsController::class, 'reset'])->name('settings.reset');
 
     // Admin Data Management Routes
     Route::prefix('data')->name('data.')->group(

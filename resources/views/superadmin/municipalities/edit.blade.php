@@ -9,6 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
             --primary-blue: #2C3E8F;
             --primary-blue-light: #E5EEFF;
@@ -44,6 +46,12 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
         .nav-link {
             color: rgba(255,255,255,.88) !important;

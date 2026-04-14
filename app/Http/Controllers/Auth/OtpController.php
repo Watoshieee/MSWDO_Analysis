@@ -52,7 +52,8 @@ class OtpController extends Controller
                 return back()->withErrors(['otp' => 'Account creation failed. Please try again.']);
             }
 
-            // Clear all pending session data
+            // Clear all pending session data except temp password
+            $tempPassword = session('temp_password');
             session()->forget([
                 'pending_registration',
                 'pending_otp',
@@ -61,10 +62,14 @@ class OtpController extends Controller
                 'pending_full_name',
             ]);
 
-            Auth::login($user);
+            // Store user ID and temp password for change password page
+            session([
+                'change_password_user_id' => $user->id,
+                'must_change_password' => true,
+            ]);
 
-            return redirect()->route('user.dashboard')
-                ->with('success', 'Email verified successfully! Welcome to MSWDO.');
+            return redirect()->route('password.change')
+                ->with('success', 'Email verified successfully! Please set your new password.');
         }
 
         // ------------------------------------------------------------------

@@ -7,6 +7,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
             --primary-blue: #2C3E8F;
             --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);

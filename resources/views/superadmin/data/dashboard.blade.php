@@ -1,13 +1,15 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Management – MSWDO Super Admin</title>
+    <title>Data Management � MSWDO Super Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
             --primary-blue: #2C3E8F;
             --primary-blue-light: #E5EEFF;
@@ -27,7 +29,7 @@
         }
 
         body {
-            background: var(--bg-light);
+            background: #e2e8f0;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -46,6 +48,12 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
 
         .nav-link {
@@ -202,10 +210,10 @@
         }
 
         .menu-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 18px;
             padding: 32px 26px;
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             box-shadow: 0 4px 15px rgba(0, 0, 0, .03);
             transition: all .3s ease;
             height: 100%;

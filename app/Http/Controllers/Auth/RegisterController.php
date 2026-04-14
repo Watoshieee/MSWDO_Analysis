@@ -53,11 +53,12 @@ class RegisterController extends Controller
                 ],
                 'mobile_number' => [
                     'required', 'string',
-                    'regex:/^(\+639|09)\d{9}$/',
+                    'regex:/^9\d{9}$/',
                 ],
                 'birthdate' => [
                     'required', 'date',
                     'before:' . now()->subYears(18)->format('Y-m-d'),
+                    'after:' . now()->subYears(150)->format('Y-m-d'),
                 ],
                 'municipality' => [
                     'required', 'string',
@@ -66,10 +67,6 @@ class RegisterController extends Controller
                 'barangay' => [
                     'required', 'string',
                     'exists:barangays,name',
-                ],
-                'password' => [
-                    'required', 'string', 'min:8', 'confirmed',
-                    'regex:/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&#_\-\.])[A-Za-z\d@$!%*?&#_\-\.]{8,}$/',
                 ],
             ], [
                 'full_name.min'           => 'Full name must be at least 3 characters.',
@@ -80,13 +77,18 @@ class RegisterController extends Controller
                 'username.unique'         => 'This username is already taken. Please choose another.',
                 'email.unique'            => 'This email address is already registered.',
                 'mobile_number.required'  => 'Mobile number is required.',
-                'mobile_number.regex'     => 'Mobile number must be in Philippine format: 09XXXXXXXXX or +639XXXXXXXXX.',
+                'mobile_number.regex'     => 'Mobile number must be 10 digits starting with 9 (e.g., 9171234567).',
                 'birthdate.before'        => 'You must be at least 18 years old to register.',
+                'birthdate.after'         => 'Birthdate cannot be more than 150 years ago.',
                 'municipality.in'         => 'Please select a valid municipality.',
                 'barangay.exists'         => 'Please select a valid barangay.',
-                'password.regex'          => 'Password must include at least one uppercase letter, one lowercase letter, one number, and one special character.',
-                'password.confirmed'      => 'Password confirmation does not match.',
             ]);
+
+            // Prepend +63 to mobile number for storage
+            $validated['mobile_number'] = '+63' . $validated['mobile_number'];
+
+            // Generate random temporary password
+            $tempPassword = bin2hex(random_bytes(6)); // 12 character random password
 
             // Calculate age
             $birthdate = Carbon::parse($validated['birthdate']);
@@ -96,13 +98,13 @@ class RegisterController extends Controller
             $otp = rand(100000, 999999);
             $otpExpiresAt = now()->addMinutes(10)->toDateTimeString();
 
-            // Store all registration data + OTP in session (NO DB write yet)
+            // Store all registration data + OTP + temp password in session (NO DB write yet)
             session([
                 'pending_registration' => [
                     'username'      => trim($validated['username']),
                     'email'         => strtolower(trim($validated['email'])),
                     'mobile_number' => trim($validated['mobile_number']),
-                    'password'      => Hash::make($validated['password']),
+                    'password'      => Hash::make($tempPassword),
                     'full_name'     => trim($validated['full_name']),
                     'birthdate'     => $validated['birthdate'],
                     'age'           => $age,
@@ -113,13 +115,15 @@ class RegisterController extends Controller
                 'pending_otp_expires_at' => $otpExpiresAt,
                 'pending_email'          => strtolower(trim($validated['email'])),
                 'pending_full_name'      => trim($validated['full_name']),
+                'temp_password'          => $tempPassword,
             ]);
 
-            // Send OTP email — user does NOT exist in DB yet
+            // Send OTP + temp password email
             try {
                 Mail::send('emails.otp', [
-                    'full_name' => trim($validated['full_name']),
-                    'otp'       => $otp,
+                    'full_name'     => trim($validated['full_name']),
+                    'otp'           => $otp,
+                    'temp_password' => $tempPassword,
                 ], function ($message) use ($validated) {
                     $message->from(config('mail.from.address'), 'MSWDO Member Portal')
                         ->to(strtolower(trim($validated['email'])), trim($validated['full_name']))

@@ -27,10 +27,16 @@
         }
 
         body {
-            background: var(--bg-light);
+            background: #e2e8f0;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+        }
+
+        html, body {
+            overscroll-behavior: none;
+            margin: 0;
+            padding: 0;
         }
 
         /* ── NAVBAR ── */
@@ -47,6 +53,12 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
 
         .nav-link {
@@ -214,15 +226,20 @@
 
         /* ── STAT CARDS ── */
         .stat-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
             padding: 28px 24px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             transition: all 0.3s ease;
             height: 100%;
             position: relative;
             overflow: hidden;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(44, 62, 143, 0.15);
         }
 
         .stat-card::before {
@@ -282,10 +299,10 @@
 
         /* ── MENU CARDS ── */
         .menu-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 18px;
             padding: 28px 24px;
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
             transition: all 0.3s ease;
             height: 100%;
@@ -350,10 +367,10 @@
 
         /* ── PANEL CARD ── */
         .panel-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             overflow: hidden;
         }
 
@@ -392,20 +409,20 @@
         }
 
         .premium-table thead th {
-            background: var(--bg-light);
+            background: #f1f5f9;
             color: var(--primary-blue);
             font-size: 0.78rem;
             font-weight: 700;
             letter-spacing: 0.08em;
             text-transform: uppercase;
             padding: 12px 20px;
-            border-bottom: 2px solid var(--border-light);
+            border-bottom: 2px solid #cbd5e1;
         }
 
         .premium-table tbody td {
             padding: 14px 20px;
             font-size: 0.88rem;
-            border-bottom: 1px solid var(--border-light);
+            border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
             color: #334155;
         }
@@ -415,7 +432,7 @@
         }
 
         .premium-table tbody tr:hover {
-            background: var(--primary-blue-light);
+            background: #f1f5f9;
         }
 
         /* ── ROLE PILLS ── */
@@ -554,31 +571,35 @@
             <div class="section-heading">System Overview</div>
             <div class="row g-4 mb-5">
                 <div class="col-md-3">
-                    <div class="stat-card">
+                    <div class="stat-card" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#allUsersModal">
                         <div class="stat-badge blue">Total Users</div>
                         <div class="stat-number">{{ $totalUsers }}</div>
                         <div class="stat-label">Registered Accounts</div>
+                        <small style="color: #94a3b8; font-size: 0.75rem; margin-top: 8px; display: block;">Click to view all</small>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="stat-card">
+                    <div class="stat-card" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#superAdminsModal">
                         <div class="stat-badge yellow">Super Admins</div>
                         <div class="stat-number">{{ $totalSuperAdmins }}</div>
                         <div class="stat-label">System Administrators</div>
+                        <small style="color: #94a3b8; font-size: 0.75rem; margin-top: 8px; display: block;">Click to view all</small>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="stat-card">
+                    <div class="stat-card" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#adminsModal">
                         <div class="stat-badge gold">Admins</div>
                         <div class="stat-number">{{ $totalAdmins }}</div>
                         <div class="stat-label">Municipal Admins</div>
+                        <small style="color: #94a3b8; font-size: 0.75rem; margin-top: 8px; display: block;">Click to view all</small>
                     </div>
                 </div>
                 <div class="col-md-3">
-                    <div class="stat-card">
+                    <div class="stat-card" style="cursor: pointer;" data-bs-toggle="modal" data-bs-target="#regularUsersModal">
                         <div class="stat-badge green">Users</div>
                         <div class="stat-number">{{ $totalRegularUsers }}</div>
                         <div class="stat-label">Regular Users</div>
+                        <small style="color: #94a3b8; font-size: 0.75rem; margin-top: 8px; display: block;">Click to view all</small>
                     </div>
                 </div>
             </div>
@@ -700,6 +721,203 @@
     <footer class="footer-strip">
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </footer>
+
+    <!-- All Users Modal -->
+    <div class="modal fade" id="allUsersModal" tabindex="-1" aria-labelledby="allUsersModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="background: var(--primary-gradient); color: white; padding: 24px 32px; border: none;">
+                    <div>
+                        <h5 class="modal-title" id="allUsersModalLabel" style="font-weight: 700; font-size: 1.3rem; margin: 0;">All Users</h5>
+                        <small style="opacity: 0.85; font-size: 0.88rem;">{{ $totalUsers }} total registered users</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 0; background: #f8fafc;">
+                    <div style="overflow-x: auto;">
+                        <table class="table" style="margin: 0; background: white;">
+                            <thead style="background: #f1f5f9; position: sticky; top: 0; z-index: 10;">
+                                <tr>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Name</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Email</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Role</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Municipality</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($allUsers as $user)
+                                <tr style="transition: all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+                                    <td style="padding: 16px 24px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #e2e8f0;">{{ $user->full_name }}</td>
+                                    <td style="padding: 16px 24px; color: #64748b; border-bottom: 1px solid #e2e8f0;">{{ $user->email }}</td>
+                                    <td style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0;">
+                                        @if($user->role == 'super_admin')
+                                            <span class="role-pill super-admin">Super Admin</span>
+                                        @elseif($user->role == 'admin')
+                                            <span class="role-pill admin">Admin</span>
+                                        @else
+                                            <span class="role-pill user">User</span>
+                                        @endif
+                                    </td>
+                                    <td style="padding: 16px 24px; color: #64748b; border-bottom: 1px solid #e2e8f0;">{{ $user->municipality ?? 'N/A' }}</td>
+                                    <td style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0;">
+                                        <span class="status-pill {{ $user->status == 'active' ? 'active' : 'inactive' }}">
+                                            {{ ucfirst($user->status) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 20px 32px; background: white; border-top: 1px solid #e2e8f0;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px; padding: 10px 24px; font-weight: 600;">Close</button>
+                    <a href="{{ route('superadmin.users') }}" class="btn btn-primary" style="background: var(--primary-blue); border: none; border-radius: 8px; padding: 10px 24px; font-weight: 600;">Manage Users</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Super Admins Modal -->
+    <div class="modal fade" id="superAdminsModal" tabindex="-1" aria-labelledby="superAdminsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #FDB913 0%, #E5A500 100%); color: #1A2A5C; padding: 24px 32px; border: none;">
+                    <div>
+                        <h5 class="modal-title" id="superAdminsModalLabel" style="font-weight: 700; font-size: 1.3rem; margin: 0;">Super Admins</h5>
+                        <small style="opacity: 0.85; font-size: 0.88rem;">{{ $totalSuperAdmins }} system administrators</small>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 0; background: #f8fafc;">
+                    <div style="overflow-x: auto;">
+                        <table class="table" style="margin: 0; background: white;">
+                            <thead style="background: #f1f5f9; position: sticky; top: 0; z-index: 10;">
+                                <tr>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Name</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Email</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Username</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($allUsers->where('role', 'super_admin') as $user)
+                                <tr style="transition: all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+                                    <td style="padding: 16px 24px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #e2e8f0;">{{ $user->full_name }}</td>
+                                    <td style="padding: 16px 24px; color: #64748b; border-bottom: 1px solid #e2e8f0;">{{ $user->email }}</td>
+                                    <td style="padding: 16px 24px; color: #64748b; border-bottom: 1px solid #e2e8f0;">{{ $user->username }}</td>
+                                    <td style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0;">
+                                        <span class="status-pill {{ $user->status == 'active' ? 'active' : 'inactive' }}">
+                                            {{ ucfirst($user->status) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 20px 32px; background: white; border-top: 1px solid #e2e8f0;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px; padding: 10px 24px; font-weight: 600;">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admins Modal -->
+    <div class="modal fade" id="adminsModal" tabindex="-1" aria-labelledby="adminsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px 32px; border: none;">
+                    <div>
+                        <h5 class="modal-title" id="adminsModalLabel" style="font-weight: 700; font-size: 1.3rem; margin: 0;">Municipal Admins</h5>
+                        <small style="opacity: 0.9; font-size: 0.88rem;">{{ $totalAdmins }} municipal administrators</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 0; background: #f8fafc;">
+                    <div style="overflow-x: auto;">
+                        <table class="table" style="margin: 0; background: white;">
+                            <thead style="background: #f1f5f9; position: sticky; top: 0; z-index: 10;">
+                                <tr>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Name</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Email</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Municipality</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($allUsers->where('role', 'admin') as $user)
+                                <tr style="transition: all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+                                    <td style="padding: 16px 24px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #e2e8f0;">{{ $user->full_name }}</td>
+                                    <td style="padding: 16px 24px; color: #64748b; border-bottom: 1px solid #e2e8f0;">{{ $user->email }}</td>
+                                    <td style="padding: 16px 24px; color: #64748b; border-bottom: 1px solid #e2e8f0;">{{ $user->municipality ?? 'N/A' }}</td>
+                                    <td style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0;">
+                                        <span class="status-pill {{ $user->status == 'active' ? 'active' : 'inactive' }}">
+                                            {{ ucfirst($user->status) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 20px 32px; background: white; border-top: 1px solid #e2e8f0;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px; padding: 10px 24px; font-weight: 600;">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Regular Users Modal -->
+    <div class="modal fade" id="regularUsersModal" tabindex="-1" aria-labelledby="regularUsersModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); color: white; padding: 24px 32px; border: none;">
+                    <div>
+                        <h5 class="modal-title" id="regularUsersModalLabel" style="font-weight: 700; font-size: 1.3rem; margin: 0;">Regular Users</h5>
+                        <small style="opacity: 0.9; font-size: 0.88rem;">{{ $totalRegularUsers }} registered users</small>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 0; background: #f8fafc;">
+                    <div style="overflow-x: auto;">
+                        <table class="table" style="margin: 0; background: white;">
+                            <thead style="background: #f1f5f9; position: sticky; top: 0; z-index: 10;">
+                                <tr>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Name</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Email</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Municipality</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Barangay</th>
+                                    <th style="padding: 16px 24px; font-size: 0.8rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: #475569; border: none;">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($allUsers->where('role', 'user') as $user)
+                                <tr style="transition: all 0.2s;" onmouseover="this.style.background='#f1f5f9'" onmouseout="this.style.background='white'">
+                                    <td style="padding: 16px 24px; font-weight: 600; color: #1e293b; border-bottom: 1px solid #e2e8f0;">{{ $user->full_name }}</td>
+                                    <td style="padding: 16px 24px; color: #64748b; border-bottom: 1px solid #e2e8f0;">{{ $user->email }}</td>
+                                    <td style="padding: 16px 24px; color: #64748b; border-bottom: 1px solid #e2e8f0;">{{ $user->municipality ?? 'N/A' }}</td>
+                                    <td style="padding: 16px 24px; color: #64748b; border-bottom: 1px solid #e2e8f0;">{{ $user->barangay ?? 'N/A' }}</td>
+                                    <td style="padding: 16px 24px; border-bottom: 1px solid #e2e8f0;">
+                                        <span class="status-pill {{ $user->status == 'active' ? 'active' : 'inactive' }}">
+                                            {{ ucfirst($user->status) }}
+                                        </span>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="modal-footer" style="padding: 20px 32px; background: white; border-top: 1px solid #e2e8f0;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius: 8px; padding: 10px 24px; font-weight: 600;">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

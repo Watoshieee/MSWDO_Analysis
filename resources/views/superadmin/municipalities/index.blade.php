@@ -9,6 +9,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
             --primary-blue: #2C3E8F;
             --primary-blue-light: #E5EEFF;
@@ -25,7 +27,7 @@
         }
 
         body {
-            background: var(--bg-light);
+            background: #e2e8f0;
             display: flex;
             flex-direction: column;
             min-height: 100vh;
@@ -44,6 +46,12 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
 
         .nav-link {
@@ -169,10 +177,10 @@
         }
 
         .panel-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
             box-shadow: 0 4px 15px rgba(0, 0, 0, .03);
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             overflow: hidden;
         }
 
@@ -207,20 +215,20 @@
         }
 
         .premium-table thead th {
-            background: var(--bg-light);
+            background: #f1f5f9;
             color: var(--primary-blue);
             font-size: .78rem;
             font-weight: 700;
             letter-spacing: .08em;
             text-transform: uppercase;
             padding: 12px 20px;
-            border-bottom: 2px solid var(--border-light);
+            border-bottom: 2px solid #cbd5e1;
         }
 
         .premium-table tbody td {
             padding: 14px 20px;
             font-size: .88rem;
-            border-bottom: 1px solid var(--border-light);
+            border-bottom: 1px solid #e2e8f0;
             vertical-align: middle;
             color: #334155;
         }
@@ -230,7 +238,7 @@
         }
 
         .premium-table tbody tr:hover {
-            background: var(--primary-blue-light);
+            background: #f1f5f9;
         }
 
         .btn-add {
@@ -529,7 +537,7 @@
                     </li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a>
                     </li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.data.dashboard') }}">Data
                             Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Public View</a></li>

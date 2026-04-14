@@ -206,6 +206,15 @@ class DataManagementController extends Controller
     /**
      * Update barangay data
      */
+    public function editBarangay($id)
+    {
+        $barangay = Barangay::findOrFail($id);
+        return response()->json([
+            'success' => true,
+            'barangay' => $barangay
+        ]);
+    }
+
     public function updateBarangay(Request $request, $id)
     {
         $validator = Validator::make($request->all(), [
