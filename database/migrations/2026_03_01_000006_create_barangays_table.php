@@ -8,11 +8,11 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('social_welfare_programs', function (Blueprint $table) {
+        Schema::create('barangays', function (Blueprint $table) {
             $table->id();
             $table->string('name');
             $table->string('code')->unique();
-            $table->text('description')->nullable();
+            $table->foreignId('municipality_id')->constrained('municipalities');
             $table->timestamps();
             $table->softDeletes();
         });
@@ -20,6 +20,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('social_welfare_programs');
+        Schema::dropIfExists('barangays');
     }
 };
