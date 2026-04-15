@@ -327,6 +327,30 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
             height: 100%;
             overflow: hidden;
+            cursor: pointer;
+            transition: transform 0.3s, box-shadow 0.3s;
+            position: relative;
+        }
+
+        .program-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 28px rgba(44, 62, 143, 0.15);
+        }
+
+        .card-hint {
+            position: absolute;
+            bottom: 15px;
+            right: 15px;
+            color: #3b82f6;
+            font-size: 0.75rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            pointer-events: none;
+        }
+
+        .program-card:hover .card-hint {
+            color: #eab308;
+            transform: scale(1.05);
         }
 
         .program-card-header {
@@ -583,6 +607,127 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 font-size: 1.3rem;
             }
         }
+        /* Modal Styles */
+        .modal-content {
+            border-radius: 20px;
+            border: none;
+        }
+
+        .modal-header {
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 20px 20px 0 0;
+            padding: 24px 28px;
+        }
+
+        .modal-header .modal-title {
+            font-weight: 800;
+            font-size: 1.3rem;
+        }
+
+        .modal-header .btn-close {
+            filter: brightness(0) invert(1);
+            opacity: 0.8;
+        }
+
+        .modal-body {
+            padding: 28px;
+        }
+
+        .req-section {
+            margin-bottom: 24px;
+        }
+
+        .req-section h6 {
+            font-weight: 700;
+            color: var(--primary-blue);
+            font-size: 1rem;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .req-list, .elig-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .req-list li {
+            padding: 10px 14px;
+            background: #f8fafc;
+            border-left: 3px solid var(--secondary-yellow);
+            margin-bottom: 8px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #475569;
+        }
+
+        .elig-list li {
+            padding: 10px 14px;
+            background: #EEF2FF;
+            border-left: 3px solid var(--primary-blue);
+            margin-bottom: 8px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            color: #475569;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .elig-list li::before {
+            content: '✓';
+            color: #16a34a;
+            font-weight: 800;
+            font-size: 0.9rem;
+            flex-shrink: 0;
+        }
+
+        .program-badge {
+            display: inline-block;
+            background: rgba(253, 185, 19, 0.15);
+            color: var(--secondary-yellow);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+        }
+
+        /* AICS Tab Styles */
+        .aics-tab-btn {
+            flex: 1;
+            padding: 8px 16px;
+            border: 2px solid #E2E8F0;
+            background: white;
+            color: #64748b;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .aics-tab-btn.active {
+            background: var(--primary-blue);
+            color: white;
+            border-color: var(--primary-blue);
+        }
+
+        .aics-tab-btn:hover:not(.active) {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+
+        .aics-tab-content {
+            display: none;
+        }
+
+        .aics-tab-content.active {
+            display: block;
+        }
     </style>
 </head>
 
@@ -800,7 +945,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                 <!-- 4Ps -->
                 <div class="col-md-6 col-xl-4">
-                    <div class="program-card">
+                    <div class="program-card" onclick="showProgramModal('4ps')">
+                        <div class="card-hint">View Details →</div>
                         <div class="program-card-header">
                             <div class="program-abbr">4Ps</div>
                             <h5>Pantawid Pamilyang Pilipino Program</h5>
@@ -818,7 +964,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                 <!-- Senior Citizen Pension -->
                 <div class="col-md-6 col-xl-4">
-                    <div class="program-card">
+                    <div class="program-card" onclick="showProgramModal('scp')">
+                        <div class="card-hint">View Details →</div>
                         <div class="program-card-header">
                             <div class="program-abbr">SCP</div>
                             <h5>Senior Citizen Pension</h5>
@@ -835,7 +982,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                 <!-- PWD Assistance -->
                 <div class="col-md-6 col-xl-4">
-                    <div class="program-card">
+                    <div class="program-card" onclick="showProgramModal('pwd')">
+                        <div class="card-hint">View Details →</div>
                         <div class="program-card-header">
                             <div class="program-abbr">PWD</div>
                             <h5>PWD Assistance</h5>
@@ -852,7 +1000,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                 <!-- Solo Parent -->
                 <div class="col-md-6 col-xl-4">
-                    <div class="program-card">
+                    <div class="program-card" onclick="showProgramModal('solo')">
+                        <div class="card-hint">View Details →</div>
                         <div class="program-card-header">
                             <div class="program-abbr">SPA</div>
                             <h5>Solo Parent Assistance</h5>
@@ -869,7 +1018,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                 <!-- AICS -->
                 <div class="col-md-6 col-xl-4">
-                    <div class="program-card">
+                    <div class="program-card" onclick="showProgramModal('aics')">
+                        <div class="card-hint">View Details →</div>
                         <div class="program-card-header">
                             <div class="program-abbr">AICS</div>
                             <h5>Assistance to Individuals in Crisis Situation</h5>
@@ -886,7 +1036,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                 <!-- SLP -->
                 <div class="col-md-6 col-xl-4">
-                    <div class="program-card">
+                    <div class="program-card" onclick="showProgramModal('slp')">
+                        <div class="card-hint">View Details →</div>
                         <div class="program-card-header">
                             <div class="program-abbr">SLP</div>
                             <h5>Sustainable Livelihood Program</h5>
@@ -903,7 +1054,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                 <!-- ESA -->
                 <div class="col-md-6 col-xl-4 mx-auto">
-                    <div class="program-card">
+                    <div class="program-card" onclick="showProgramModal('esa')">
+                        <div class="card-hint">View Details →</div>
                         <div class="program-card-header">
                             <div class="program-abbr">ESA</div>
                             <h5>Emergency Shelter Assistance</h5>
@@ -1016,7 +1168,302 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         MSWDO &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
+    <!-- Program Modal -->
+    <div class="modal fade" id="programModal" tabindex="-1">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalTitle"></h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="modalBody"></div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const programData = {
+            '4ps': {
+                title: 'Pantawid Pamilyang Pilipino Program (4Ps)',
+                badge: 'Conditional Cash Transfer',
+                description: 'A national poverty reduction initiative that provides conditional cash grants to qualified low-income households. The program improves health, nutrition, and education of children aged 0–18 by requiring regular school attendance, health check-ups, and family development sessions.',
+                eligibility: [
+                    'Filipino citizen aged 60 or older',
+                    'Indigent — no regular income or pension',
+                    'Frail, sickly, or with disability'
+                ],
+                requirements: [
+                    'Birth Certificates (all family members)',
+                    'School IDs / Report Cards',
+                    'Barangay Certificate',
+                    'Valid ID',
+                    '1x1 Pictures',
+                    'Health Records (0-5 yrs old)'
+                ]
+            },
+            'scp': {
+                title: 'Senior Citizen Pension',
+                badge: 'Financial Assistance Program',
+                description: 'Monthly social pension for indigent senior citizens 60 years and above who are frail, sickly, or with disabilities, and have no regular source of income.',
+                eligibility: [
+                    'Filipino citizen aged 60 or older',
+                    'Indigent — no regular income or pension',
+                    'Frail, sickly, or with disability'
+                ],
+                requirements: [
+                    'OSCA Application Form',
+                    'ID Photos',
+                    'Birth Certificate / Valid ID',
+                    'Barangay Certificate (if needed)',
+                    "Voter's Certification (if needed)",
+                    'Authorization Letter (if applicable)'
+                ]
+            },
+            'pwd': {
+                title: 'PWD Assistance',
+                badge: 'Persons with Disabilities Program',
+                description: 'Financial and social support services for persons with disability (PWD), including ID issuance for discounts, medical aid, and livelihood opportunities.',
+                eligibility: [
+                    'Filipino citizen with recognized disability',
+                    'Resident of Majayjay, Liliw, or Magdalena',
+                    'With medical certificate of disability'
+                ],
+                applicationSteps: [
+                    '<strong>Visit Official PWD Website:</strong> pwd.doh.gov.ph',
+                    '<strong>Download Application Form:</strong> Get the PRPWD form from the website',
+                    '<strong>Fill Out & Submit:</strong> Complete form + Certificate of Disability',
+                    '<strong>Submit ID Pictures:</strong> Two (2) 1×1 photos to MSWDO',
+                    '<strong>Wait for ID:</strong> MSWDO will process your physical PWD ID'
+                ],
+                whatToBring: [
+                    'Completed PRPWD Application Form',
+                    'Certificate of Disability (original + 1 photocopy)',
+                    'Two (2) recent 1×1 ID pictures',
+                    'Valid government-issued ID'
+                ],
+                officeInfo: 'MSWDO Office, Municipal Hall Ground Floor · Mon-Fri 8AM-5PM'
+            },
+            'solo': {
+                title: 'Solo Parent Assistance',
+                badge: 'Solo Parents Welfare Act',
+                description: 'Assistance and special privileges for solo parents raising children independently — including livelihood support, flexible work arrangements, and educational benefits.',
+                eligibility: [
+                    'Solo parent with child/ren below 18',
+                    'Annual income below ₱250,000',
+                    'With valid Solo Parent ID'
+                ],
+                applicationSteps: [
+                    '<strong>Schedule Appointment:</strong> Apply for face-to-face or online interview',
+                    '<strong>Wait for Confirmation:</strong> Admin will send notification via email',
+                    '<strong>Attend Interview:</strong> At MSWDO office or online',
+                    '<strong>Eligibility Notification:</strong> Receive result via email',
+                    '<strong>Requirements Submission:</strong> List will be sent if approved',
+                    '<strong>Submit Documents:</strong> Bring hard copies to MSWDO',
+                    '<strong>ID Processing:</strong> Wait for notification when ready'
+                ],
+                whatToBring: [
+                    'Application Form',
+                    'Cedula',
+                    "Voter's ID",
+                    'Birth Certificate (minor)',
+                    'Barangay Certification'
+                ],
+                officeInfo: 'MSWDO Office, Municipal Hall Ground Floor · Mon-Fri 8AM-5PM · Interview options: Face-to-face or Online'
+            },
+            'aics': {
+                title: 'Assistance to Individuals in Crisis Situation (AICS)',
+                badge: 'Crisis Response Program',
+                description: 'Emergency financial aid for individuals and families facing crisis situations — covers medical, burial, food, transportation, and educational assistance.',
+                eligibility: [
+                    'Filipino in crisis / emergency situation',
+                    'Residing in the covered municipalities',
+                    'Below poverty threshold income'
+                ],
+                hasTabs: true,
+                medicalRequirements: [
+                    'Certificate of Indigency (Original)',
+                    'Medical Certificate / Medical Abstract',
+                    'Hospital Bills / Prescriptions',
+                    'Photocopy of ID (patient & claimant)',
+                    'Marriage Contract (if spouse)',
+                    'Birth Certificate (if parent/children)',
+                    'Authorization Letter (if applicable)'
+                ],
+                burialRequirements: [
+                    'Certificate of Indigency (Original)',
+                    'Death Certificate (Original)',
+                    'Funeral Contract / Billing Statement',
+                    'Marriage Contract (if spouse)',
+                    'Birth Certificate (if parent/children)',
+                    'Photocopy of ID (deceased & claimant)',
+                    'Authorization Letter (if applicable)'
+                ]
+            },
+            'slp': {
+                title: 'Sustainable Livelihood Program (SLP)',
+                badge: 'Capacity-Building Initiative',
+                description: 'A capacity-building initiative that improves the socio-economic status of poor and vulnerable households. It provides skills training, capital assistance, and livelihood opportunities to help beneficiaries establish sustainable sources of income.',
+                eligibility: [
+                    'Filipino citizen',
+                    'Indigent or low-income household',
+                    'Willing to participate in training programs'
+                ],
+                requirements: [
+                    'Valid ID (any government-issued ID)',
+                    'Certificate of Indigency from Barangay',
+                    'Barangay Clearance',
+                    'Proof of residence',
+                    'Business plan or livelihood proposal',
+                    'Proof of income or ITR'
+                ]
+            },
+            'esa': {
+                title: 'Emergency Shelter Assistance (ESA)',
+                badge: 'Disaster Relief Program',
+                description: 'Provides financial aid to families whose homes were partially or totally damaged due to natural or human-induced disasters. The program helps affected families repair or rebuild their houses and restore safe living conditions.',
+                eligibility: [
+                    'Filipino citizen',
+                    'Affected by natural or human-induced disaster',
+                    'House partially or totally damaged'
+                ],
+                requirements: [
+                    'Valid ID (any government-issued ID)',
+                    'Barangay Certification of damage',
+                    'Certificate of Indigency from Barangay',
+                    'Photos of damaged house',
+                    'Proof of ownership or occupancy',
+                    'Incident report from Barangay or MDRRMO'
+                ]
+            }
+        };
+
+        function showProgramModal(programKey) {
+            const data = programData[programKey];
+            if (!data) return;
+
+            document.getElementById('modalTitle').textContent = data.title;
+            
+            let reqHtml = '<div class="program-badge">' + data.badge + '</div>';
+            reqHtml += '<p style="color: #475569; line-height: 1.7; margin-bottom: 24px;">' + data.description + '</p>';
+            
+            // Check if AICS with tabs
+            if (data.hasTabs) {
+                // AICS with tabs layout
+                reqHtml += '<div class="row g-3">';
+                reqHtml += '<div class="col-md-6">';
+                reqHtml += '<div class="req-section">';
+                reqHtml += '<h6>✓ Key Eligibility</h6>';
+                reqHtml += '<ul class="elig-list">';
+                data.eligibility.forEach(elig => {
+                    reqHtml += '<li>' + elig + '</li>';
+                });
+                reqHtml += '</ul></div></div>';
+                
+                reqHtml += '<div class="col-md-6">';
+                reqHtml += '<div class="req-section">';
+                reqHtml += '<h6>📋 Required Documents</h6>';
+                reqHtml += '<div style="display: flex; gap: 8px; margin-bottom: 12px;">';
+                reqHtml += '<button class="aics-tab-btn active" onclick="switchAicsTab(event, \'medical\')">Medical Assistance</button>';
+                reqHtml += '<button class="aics-tab-btn" onclick="switchAicsTab(event, \'burial\')">Burial Assistance</button>';
+                reqHtml += '</div>';
+                reqHtml += '<div id="aics-medical" class="aics-tab-content active">';
+                reqHtml += '<ul class="req-list">';
+                data.medicalRequirements.forEach(req => {
+                    reqHtml += '<li>' + req + '</li>';
+                });
+                reqHtml += '</ul></div>';
+                reqHtml += '<div id="aics-burial" class="aics-tab-content">';
+                reqHtml += '<ul class="req-list">';
+                data.burialRequirements.forEach(req => {
+                    reqHtml += '<li>' + req + '</li>';
+                });
+                reqHtml += '</ul></div>';
+                reqHtml += '</div></div></div>';
+            } else if (data.applicationSteps) {
+                // PWD & Solo Parent: Row 1 (Eligibility + What to Bring), Row 2 (Application Process full width)
+                reqHtml += '<div class="row g-3">';
+                
+                // Left: Key Eligibility
+                reqHtml += '<div class="col-md-6">';
+                reqHtml += '<div class="req-section">';
+                reqHtml += '<h6>✓ Key Eligibility</h6>';
+                reqHtml += '<ul class="elig-list">';
+                data.eligibility.forEach(elig => {
+                    reqHtml += '<li>' + elig + '</li>';
+                });
+                reqHtml += '</ul></div></div>';
+                
+                // Right: What to Bring
+                reqHtml += '<div class="col-md-6">';
+                reqHtml += '<div class="req-section">';
+                reqHtml += '<h6>📦 What to Bring</h6>';
+                reqHtml += '<ul class="req-list">';
+                data.whatToBring.forEach(item => {
+                    reqHtml += '<li>' + item + '</li>';
+                });
+                reqHtml += '</ul></div></div>';
+                
+                reqHtml += '</div>'; // close row
+                
+                // Application Process - full width below
+                reqHtml += '<div class="row g-3" style="margin-top: 20px; border-top: 1px solid #E2E8F0; padding-top: 20px;">';
+                reqHtml += '<div class="col-12">';
+                reqHtml += '<div class="req-section">';
+                reqHtml += '<h6>📝 Application Process</h6>';
+                reqHtml += '<ul class="req-list" style="font-size: 0.85rem;">';
+                data.applicationSteps.forEach((step, index) => {
+                    reqHtml += '<li style="padding: 8px 12px;">' + step + '</li>';
+                });
+                reqHtml += '</ul></div></div></div>';
+            } else {
+                // Regular programs (4Ps, SCP, SLP, ESA): 2 columns (Eligibility + Requirements)
+                reqHtml += '<div class="row g-3">';
+                
+                // Left column: Key Eligibility
+                reqHtml += '<div class="col-md-6">';
+                reqHtml += '<div class="req-section">';
+                reqHtml += '<h6>✓ Key Eligibility</h6>';
+                reqHtml += '<ul class="elig-list">';
+                data.eligibility.forEach(elig => {
+                    reqHtml += '<li>' + elig + '</li>';
+                });
+                reqHtml += '</ul></div>';
+                reqHtml += '</div>';
+                
+                // Right column: Required Documents
+                reqHtml += '<div class="col-md-6">';
+                reqHtml += '<div class="req-section">';
+                reqHtml += '<h6>📋 Required Documents</h6>';
+                reqHtml += '<ul class="req-list">';
+                data.requirements.forEach(req => {
+                    reqHtml += '<li>' + req + '</li>';
+                });
+                reqHtml += '</ul>';
+                reqHtml += '</div>';
+                reqHtml += '</div>';
+                
+                reqHtml += '</div>'; // close row
+            }
+            
+            if (data.officeInfo) {
+                reqHtml += '<div style="background: #FFF3D6; border-left: 3px solid var(--secondary-yellow); border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.88rem; color: #856404;">';
+                reqHtml += '<strong>🏢 Office Info:</strong> ' + data.officeInfo;
+                reqHtml += '</div>';
+            }
+            
+            document.getElementById('modalBody').innerHTML = reqHtml;
+            
+            new bootstrap.Modal(document.getElementById('programModal')).show();
+        }
+
+        function switchAicsTab(event, tabType) {
+            document.querySelectorAll('.aics-tab-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            document.querySelectorAll('.aics-tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById('aics-' + tabType).classList.add('active');
+        }
+    </script>
 
     @if(isset($allYears) && count($allYears))
         <script>
