@@ -627,6 +627,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <th style="text-align:center;">Total Population</th>
                                 <th style="text-align:center;">PWD</th>
                                 <th style="text-align:center;">AICS</th>
+                                <th style="text-align:center;">4PS</th>
+                                <th style="text-align:center;">Senior</th>
                                 <th style="text-align:center;">Solo Parent</th>
                                 <th style="text-align:center;">Households</th>
                                 <th style="text-align:center;">Approved Apps</th>
@@ -639,9 +641,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     <td><span style="font-weight:700;color:var(--primary-blue);">{{ $barangay->year ?? date('Y') }}</span></td>
                                     <td><span style="font-size:.83rem;color:#64748b;">{{ $barangay->municipality }}</span></td>
                                     <td style="font-weight:700;color:var(--primary-blue);font-size:.88rem;">{{ $barangay->name }}</td>
-                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="male_population" value="{{ $barangay->male_population }}" min="0"></td>
+                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="total_population" value="{{ $barangay->total_population ?? 0 }}" min="0"></td>
                                     <td style="text-align:center;"><input type="number" class="inline-input" data-field="pwd_count" value="{{ $barangay->pwd_count }}" min="0"></td>
                                     <td style="text-align:center;"><input type="number" class="inline-input" data-field="aics_count" value="{{ $barangay->aics_count }}" min="0"></td>
+                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="four_ps_count" value="{{ $barangay->four_ps_count ?? 0 }}" min="0"></td>
+                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="senior_count" value="{{ $barangay->senior_count ?? 0 }}" min="0"></td>
                                     <td style="text-align:center;"><input type="number" class="inline-input" data-field="single_parent_count" value="{{ $barangay->single_parent_count }}" min="0"></td>
                                     <td style="text-align:center;"><input type="number" class="inline-input" data-field="total_households" value="{{ $barangay->total_households }}" min="0"></td>
                                     <td style="text-align:center;"><input type="number" class="inline-input" data-field="total_approved_applications" value="{{ $barangay->total_approved_applications }}" min="0"></td>
@@ -795,8 +799,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Total Population</label>
-                                <input type="number" name="total_population" class="form-control" required min="0"
-                                    value="0">
+                                <input type="number" name="total_population" class="form-control" required min="0" value="0">
                             </div>
 
                             <div class="col-md-6">
@@ -807,6 +810,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <label class="form-label">AICS Count</label>
                                 <input type="number" name="aics_count" class="form-control" min="0" value="0">
                             </div>
+                            <div class="col-md-6">
+                                <label class="form-label">4PS Count</label>
+                                <input type="number" name="four_ps_count" class="form-control" min="0" value="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Senior Count</label>
+                                <input type="number" name="senior_count" class="form-control" min="0" value="0">
+                            </div
                         </div>
                         <small class="text-muted mt-3 d-block">💡 If a record for this barangay + year already exists,
                             it will be updated.</small>

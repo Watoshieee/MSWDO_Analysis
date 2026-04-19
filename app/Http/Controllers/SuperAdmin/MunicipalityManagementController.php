@@ -4,6 +4,7 @@ namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
 use App\Models\Municipality;
+use App\Models\MunicipalityYearlySummary;
 use App\Models\Barangay;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
@@ -17,7 +18,14 @@ class MunicipalityManagementController extends Controller
     public function index()
     {
         $municipalities = Municipality::orderBy('name')->paginate(20);
-        return view('superadmin.municipalities.index', compact('municipalities'));
+
+        // Load the most recent non-archived yearly summary per municipality
+        $yearlySummaries = MunicipalityYearlySummary::orderBy('year', 'desc')
+            ->get()
+            ->groupBy('municipality')
+            ->map(fn($g) => $g->first());
+
+        return view('superadmin.municipalities.index', compact('municipalities', 'yearlySummaries'));
     }
 
     /**
@@ -36,6 +44,7 @@ class MunicipalityManagementController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100|unique:municipalities,name',
             'total_households' => 'required|integer|min:0',
+            'total_population' => 'nullable|integer|min:0',
             'male_population' => 'required|integer|min:0',
             'female_population' => 'required|integer|min:0',
             'population_0_19' => 'required|integer|min:0',
@@ -55,6 +64,7 @@ class MunicipalityManagementController extends Controller
         $municipality = Municipality::create([
             'name' => $request->name,
             'total_households' => $request->total_households,
+            'total_population' => $request->total_population ?? ($request->male_population + $request->female_population),
             'male_population' => $request->male_population,
             'female_population' => $request->female_population,
             'population_0_19' => $request->population_0_19,
@@ -417,6 +427,7 @@ class MunicipalityManagementController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100|unique:municipalities,name,' . $id,
             'total_households' => 'required|integer|min:0',
+            'total_population' => 'nullable|integer|min:0',
             'male_population' => 'required|integer|min:0',
             'female_population' => 'required|integer|min:0',
             'population_0_19' => 'required|integer|min:0',
@@ -435,6 +446,7 @@ class MunicipalityManagementController extends Controller
         $municipality->update([
             'name' => $request->name,
             'total_households' => $request->total_households,
+            'total_population' => $request->total_population ?? ($request->male_population + $request->female_population),
             'male_population' => $request->male_population,
             'female_population' => $request->female_population,
             'population_0_19' => $request->population_0_19,

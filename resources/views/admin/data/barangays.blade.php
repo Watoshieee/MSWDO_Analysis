@@ -169,6 +169,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <th style="text-align:center;">PWD</th>
                             <th style="text-align:center;">AICS</th>
                             <th style="text-align:center;">Solo Parent</th>
+                            <th style="text-align:center;">Households</th>
+                            <th style="text-align:center;">4PS</th>
+                            <th style="text-align:center;">Senior</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
@@ -182,7 +185,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <td><strong>{{ $barangay->name }}</strong></td>
                             <td style="text-align:center;">
                                 <input type="number" class="inline-input" name="total_population"
-                                    value="{{ $barangay->male_population }}" min="0">
+                                    value="{{ $barangay->total_population ?? 0 }}" min="0">
                             </td>
                             <td style="text-align:center;">
                                 <input type="number" class="inline-input" name="pwd_count"
@@ -195,6 +198,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <td style="text-align:center;">
                                 <input type="number" class="inline-input" name="single_parent_count"
                                     value="{{ $barangay->single_parent_count ?? 0 }}" min="0">
+                            </td>
+                            <td style="text-align:center;">
+                                <input type="number" class="inline-input" name="total_households"
+                                    value="{{ $barangay->total_households ?? 0 }}" min="0">
+                            </td>
+                            <td style="text-align:center;">
+                                <input type="number" class="inline-input" name="four_ps_count"
+                                    value="{{ $barangay->four_ps_count ?? 0 }}" min="0">
+                            </td>
+                            <td style="text-align:center;">
+                                <input type="number" class="inline-input" name="senior_count"
+                                    value="{{ $barangay->senior_count ?? 0 }}" min="0">
                             </td>
                             <td>
                                 <button class="btn-save-row" onclick="saveRow(this)">💾 Save</button>
@@ -383,6 +398,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 pwd_count: parseInt(tr.querySelector('[name="pwd_count"]').value) || 0,
                 aics_count: parseInt(tr.querySelector('[name="aics_count"]').value) || 0,
                 single_parent_count: parseInt(tr.querySelector('[name="single_parent_count"]').value) || 0,
+                total_households: parseInt(tr.querySelector('[name="total_households"]').value) || 0,
+                four_ps_count: parseInt(tr.querySelector('[name="four_ps_count"]').value) || 0,
+                senior_count: parseInt(tr.querySelector('[name="senior_count"]').value) || 0,
             };
         }
 
@@ -453,4 +471,3 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 @include('components.admin-chat-modal')
 </body>
 </html>
-

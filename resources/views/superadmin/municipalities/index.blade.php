@@ -591,21 +591,29 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <tr>
                                 <th>Municipality</th>
                                 <th>Total Population</th>
+                                <th>Male</th>
+                                <th>Female</th>
+                                <th>0-19</th>
+                                <th>20-59</th>
+                                <th>60-100</th>
                                 <th>Households</th>
-                                <th>Single Parents</th>
                                 <th>Year</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($municipalities as $municipality)
+                                @php $s = $yearlySummaries->get($municipality->name); @endphp
                                 <tr>
                                     <td style="font-weight:700;color:var(--primary-blue);">{{ $municipality->name }}</td>
-                                    <td>{{ number_format($municipality->male_population + $municipality->female_population) }}
-                                    </td>
-                                    <td>{{ number_format($municipality->total_households) }}</td>
-                                    <td>{{ number_format($municipality->single_parent_count) }}</td>
-                                    <td>{{ $municipality->year ?? date('Y') }}</td>
+                                    <td>{{ number_format($s->total_population ?? 0) }}</td>
+                                    <td>{{ number_format($s->male_population ?? 0) }}</td>
+                                    <td>{{ number_format($s->female_population ?? 0) }}</td>
+                                    <td style="font-size:.82rem;">{{ number_format($s->population_0_19 ?? 0) }}</td>
+                                    <td style="font-size:.82rem;">{{ number_format($s->population_20_59 ?? 0) }}</td>
+                                    <td style="font-size:.82rem;">{{ number_format($s->population_60_100 ?? 0) }}</td>
+                                    <td>{{ number_format($s->total_households ?? $municipality->total_households) }}</td>
+                                    <td>{{ $s->year ?? $municipality->year ?? date('Y') }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
                                             <a href="{{ route('superadmin.municipalities.barangays', $municipality->id) }}"
@@ -614,14 +622,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                                 onclick="openEditModal({
                                                     id: {{ $municipality->id }},
                                                     name: '{{ addslashes($municipality->name) }}',
-                                                    year: {{ $municipality->year ?? date('Y') }},
-                                                    male_population: {{ $municipality->male_population ?? 0 }},
-                                                    female_population: {{ $municipality->female_population ?? 0 }},
-                                                    population_0_19: {{ $municipality->population_0_19 ?? 0 }},
-                                                    population_20_59: {{ $municipality->population_20_59 ?? 0 }},
-                                                    population_60_100: {{ $municipality->population_60_100 ?? 0 }},
-                                                    total_households: {{ $municipality->total_households ?? 0 }},
-                                                    single_parent_count: {{ $municipality->single_parent_count ?? 0 }}
+                                                    total_population: {{ $s->total_population ?? 0 }},
+                                                    year: {{ $s->year ?? $municipality->year ?? date('Y') }},
+                                                    male_population: {{ $s->male_population ?? 0 }},
+                                                    female_population: {{ $s->female_population ?? 0 }},
+                                                    population_0_19: {{ $s->population_0_19 ?? 0 }},
+                                                    population_20_59: {{ $s->population_20_59 ?? 0 }},
+                                                    population_60_100: {{ $s->population_60_100 ?? 0 }},
                                                 })">&#9998; Edit
                                             </button>
                                             <button class="btn-action-archive"
@@ -695,16 +702,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <div class="row g-3">
                                     <div class="col-md-4">
                                         <label class="modal-form-label">Male Population</label>
-                                        <input type="number" name="male_population" id="edit_male" class="form-control" min="0" required oninput="calcEditTotal()">
+                                        <input type="number" name="male_population" id="edit_male" class="form-control" min="0" required>
                                     </div>
                                     <div class="col-md-4">
                                         <label class="modal-form-label">Female Population</label>
-                                        <input type="number" name="female_population" id="edit_female" class="form-control" min="0" required oninput="calcEditTotal()">
+                                        <input type="number" name="female_population" id="edit_female" class="form-control" min="0" required>
                                     </div>
                                     <div class="col-md-4">
-                                        <label class="modal-form-label">Total Population <span style="font-size:.65rem;text-transform:none;">(auto)</span></label>
-                                        <input type="number" id="edit_total" class="form-control readonly-total" readonly tabindex="-1">
-                                        <div class="input-hint-sm">Male + Female</div>
+                                        <label class="modal-form-label">Total Population <span style="font-size:.65rem;text-transform:none;"></span></label>
+                                        <input type="number" name="total_population" id="edit_total" class="form-control" min="0" required>
                                     </div>
                                 </div>
                             </div>
@@ -742,13 +748,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             </div>
                             <div class="edit-section-body">
                                 <div class="row g-3">
-                                    <div class="col-md-6">
+                                    <div class="col-md-12">
                                         <label class="modal-form-label">Total Households</label>
                                         <input type="number" name="total_households" id="edit_households" class="form-control" min="0" required>
-                                    </div>
-                                    <div class="col-md-6">
-                                        <label class="modal-form-label">Single Parents</label>
-                                        <input type="number" name="single_parent_count" id="edit_singleparent" class="form-control" min="0" required>
                                     </div>
                                 </div>
                             </div>
@@ -814,12 +816,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             document.getElementById('edit_name').value         = m.name;
             document.getElementById('edit_male').value         = m.male_population;
             document.getElementById('edit_female').value       = m.female_population;
-            document.getElementById('edit_total').value        = m.male_population + m.female_population;
+            document.getElementById('edit_total').value        = m.total_population;
             document.getElementById('edit_p019').value         = m.population_0_19;
             document.getElementById('edit_p2059').value        = m.population_20_59;
             document.getElementById('edit_p60100').value       = m.population_60_100;
             document.getElementById('edit_households').value   = m.total_households;
-            document.getElementById('edit_singleparent').value = m.single_parent_count;
 
             // Set year dropdown
             const yearSel = document.getElementById('edit_year');
@@ -834,11 +835,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             new bootstrap.Modal(document.getElementById('editMuniModal')).show();
         }
 
-        function calcEditTotal() {
-            const male   = parseInt(document.getElementById('edit_male').value)   || 0;
-            const female = parseInt(document.getElementById('edit_female').value) || 0;
-            document.getElementById('edit_total').value = male + female;
-        }
+        function calcEditTotal() { /* total is now manually entered */ }
+
+
+
+
 
         const CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
 
@@ -933,3 +934,4 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 </body>
 
 </html>
+

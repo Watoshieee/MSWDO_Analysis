@@ -5,12 +5,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Municipality Data – MSWDO Super Admin</title>
+    <title>Municipality Data ï¿½ MSWDO Super Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+        html,
+        body {
+            overscroll-behavior: none;
+            margin: 0;
+            padding: 0;
+        }
 
         :root {
             --primary-blue: #2C3E8F;
@@ -48,11 +53,27 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             align-items: center;
             gap: 10px;
         }
-        .navbar-toggler { order: -1; }
-        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+
+        .navbar-toggler {
+            order: -1;
+        }
+
+        .navbar-brand {
+            order: 0;
+            margin-left: auto !important;
+            margin-right: 0 !important;
+        }
+
         @media (min-width: 992px) {
-            .navbar-toggler { order: 0; }
-            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+            .navbar-toggler {
+                order: 0;
+            }
+
+            .navbar-brand {
+                order: 0;
+                margin-left: 0 !important;
+                margin-right: auto !important;
+            }
         }
 
         .nav-link {
@@ -533,7 +554,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a>
                     </li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
+                    <li class="nav-item"><a class="nav-link"
+                            href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('superadmin.data.dashboard') }}">Data
                             Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Public View</a></li>
@@ -575,7 +597,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <!-- Tab Pills -->
             <div class="tab-pills">
                 <button class="tab-pill active" onclick="switchTab('records')">?? Records</button>
-                <button class="tab-pill" onclick="switchTab('monthly')">?? Monthly</button>
                 <button class="tab-pill" onclick="switchTab('analysis')">?? Analysis</button>
             </div>
 
@@ -611,13 +632,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         <tr>
                                             <th>Year</th>
                                             <th>Population</th>
-                                            <th style="text-align:center;">Age 0–19</th>
-                                            <th style="text-align:center;">Age 20–59</th>
+                                            <th>Male</th>
+                                            <th>Female</th>
+                                            <th style="text-align:center;">Age 0ï¿½19</th>
+                                            <th style="text-align:center;">Age 20ï¿½59</th>
                                             <th style="text-align:center;">Age 60+</th>
                                             <th>Households</th>
-                                            <th>PWD</th>
-                                            <th>AICS</th>
-                                            <th>Solo Parent</th>
                                             <th>Actions</th>
                                         </tr>
                                     </thead>
@@ -626,16 +646,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                             <tr>
                                                 <td><strong>{{ $row->year }}</strong></td>
                                                 <td>{{ number_format($row->total_population) }}</td>
+                                                <td>{{ number_format($row->male_population ?? 0) }}</td>
+                                                <td>{{ number_format($row->female_population ?? 0) }}</td>
                                                 <td style="text-align:center;font-size:.82rem;color:#64748b;">
-                                                    {{ number_format($row->population_0_19 ?? 0) }}</td>
+                                                    {{ number_format($row->population_0_19 ?? 0) }}
+                                                </td>
                                                 <td style="text-align:center;font-size:.82rem;color:#64748b;">
-                                                    {{ number_format($row->population_20_59 ?? 0) }}</td>
+                                                    {{ number_format($row->population_20_59 ?? 0) }}
+                                                </td>
                                                 <td style="text-align:center;font-size:.82rem;color:#64748b;">
-                                                    {{ number_format($row->population_60_100 ?? 0) }}</td>
+                                                    {{ number_format($row->population_60_100 ?? 0) }}
+                                                </td>
                                                 <td>{{ number_format($row->total_households) }}</td>
-                                                <td>{{ number_format($row->total_pwd) }}</td>
-                                                <td>{{ number_format($row->total_aics) }}</td>
-                                                <td>{{ number_format($row->total_solo_parent) }}</td>
                                                 <td>
                                                     <div class="d-flex gap-2">
                                                         <button class="btn-edit" data-bs-toggle="modal"
@@ -651,7 +673,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                                 <div class="modal-dialog modal-lg modal-dialog-centered">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title">Edit {{ $muniName }} – {{ $row->year }}</h5>
+                                                            <h5 class="modal-title">Edit {{ $muniName }} ï¿½ {{ $row->year }}</h5>
                                                             <button type="button" class="btn-close"
                                                                 data-bs-dismiss="modal"></button>
                                                         </div>
@@ -663,11 +685,23 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                                             <input type="hidden" name="year" value="{{ $row->year }}">
                                                             <div class="modal-body p-4">
                                                                 <div class="row g-3">
-                                                                    <div class="col-md-6">
+                                                                    <div class="col-md-4">
                                                                         <label class="form-label">Total Population</label>
                                                                         <input type="number" name="total_population"
                                                                             class="form-control"
                                                                             value="{{ $row->total_population }}" required min="0">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Male Population</label>
+                                                                        <input type="number" name="male_population"
+                                                                            class="form-control"
+                                                                            value="{{ $row->male_population ?? 0 }}" min="0">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Female Population</label>
+                                                                        <input type="number" name="female_population"
+                                                                            class="form-control"
+                                                                            value="{{ $row->female_population ?? 0 }}" min="0">
                                                                     </div>
                                                                     <div class="col-md-6">
                                                                         <label class="form-label">Total Households</label>
@@ -676,13 +710,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                                                             value="{{ $row->total_households }}" required min="0">
                                                                     </div>
                                                                     <div class="col-md-4">
-                                                                        <label class="form-label">Population Age 0–19</label>
+                                                                        <label class="form-label">Population Age 0ï¿½19</label>
                                                                         <input type="number" name="population_0_19"
                                                                             class="form-control"
                                                                             value="{{ $row->population_0_19 ?? 0 }}" min="0">
                                                                     </div>
                                                                     <div class="col-md-4">
-                                                                        <label class="form-label">Population Age 20–59</label>
+                                                                        <label class="form-label">Population Age 20ï¿½59</label>
                                                                         <input type="number" name="population_20_59"
                                                                             class="form-control"
                                                                             value="{{ $row->population_20_59 ?? 0 }}" min="0">
@@ -692,22 +726,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                                                         <input type="number" name="population_60_100"
                                                                             class="form-control"
                                                                             value="{{ $row->population_60_100 ?? 0 }}" min="0">
-                                                                    </div>
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label">PWD Assistance</label>
-                                                                        <input type="number" name="total_pwd" class="form-control"
-                                                                            value="{{ $row->total_pwd }}" min="0">
-                                                                    </div>
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label">AICS</label>
-                                                                        <input type="number" name="total_aics" class="form-control"
-                                                                            value="{{ $row->total_aics }}" min="0">
-                                                                    </div>
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label">Solo Parent</label>
-                                                                        <input type="number" name="total_solo_parent"
-                                                                            class="form-control"
-                                                                            value="{{ $row->total_solo_parent }}" min="0">
                                                                     </div>
                                                                     {{-- Preserve existing values silently --}}
                                                                     <input type="hidden" name="total_4ps"
@@ -738,95 +756,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 @endforeach
             </div>
 
-            <!-- ===================== MONTHLY TAB ===================== -->
-            <div class="section-tab" id="tab-monthly">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0 fw-bold" style="color:var(--primary-blue);">Monthly Beneficiary Records</h6>
-                    <div class="d-flex gap-2 align-items-center">
-                        <button class="btn-archive-view" data-bs-toggle="modal"
-                            data-bs-target="#archivedMonthlyModal">?? Archived Monthly</button>
-                        <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addMonthlyModal">+ Add Monthly
-                            Data</button>
-                    </div>
-                </div>
-
-                @foreach($coreNames as $muniName)
-                    @php $mRows = $monthlySummaries->get($muniName, collect()); @endphp
-                    <div class="panel-card mb-3">
-                        <div class="panel-header">
-                            <h5>{{ $muniName }}</h5>
-                            <span class="count-badge">{{ $mRows->count() }} monthly records</span>
-                        </div>
-                        @if($mRows->isEmpty())
-                            <div style="padding:28px;text-align:center;color:#94a3b8;font-size:.9rem;">No monthly records yet
-                                for {{ $muniName }}. Click "+ Add Monthly Data" to start tracking.</div>
-                        @else
-                            <div class="table-responsive">
-                                <table class="premium-table">
-                                    <thead>
-                                        <tr>
-                                            <th>Year</th>
-                                            <th>Month</th>
-                                            <th>PWD</th>
-                                            <th>AICS</th>
-                                            <th>Solo Parent</th>
-                                            <th>Notes</th>
-                                            <th>Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($mRows as $mr)
-                                            @php $monthLabel = \Carbon\Carbon::createFromDate(null, $mr->month, 1)->format('F'); @endphp
-                                            <tr>
-                                                <td><strong>{{ $mr->year }}</strong></td>
-                                                <td>{{ $monthLabel }}</td>
-                                                <td>{{ number_format($mr->total_pwd) }}</td>
-                                                <td>{{ number_format($mr->total_aics) }}</td>
-                                                <td>{{ number_format($mr->total_solo_parent) }}</td>
-                                                <td style="font-size:.82rem;color:#64748b;">{{ $mr->notes ?: '—' }}</td>
-                                                <td>
-                                                    <div class="d-flex gap-2">
-                                                        <button class="btn-edit"
-                                                            onclick="openEditMonthly({{ $mr->id }}, {{ $mr->total_pwd }}, {{ $mr->total_aics }}, {{ $mr->total_solo_parent }})">Edit</button>
-                                                        <button class="btn-del"
-                                                            onclick="archiveMonthly({{ $mr->id }}, '{{ $muniName }} {{ $monthLabel }} {{ $mr->year }}')">Archive</button>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        @endif
-                    </div>
-                @endforeach
-
-                {{-- Monthly trend chart for selected year --}}
-                <div class="chart-card mt-4">
-                    <div class="d-flex justify-content-between align-items-center mb-3">
-                        <div class="chart-title mb-0">Monthly Program Beneficiaries</div>
-                        <form method="GET" action="" class="d-flex gap-2 align-items-center">
-                            <label class="form-label mb-0 fw-bold" style="font-size:.85rem;">Year:</label>
-                            <select name="chart_year" class="form-select form-select-sm" style="width:auto;"
-                                onchange="this.form.submit()">
-                                @foreach($availableYears as $ay)
-                                    <option value="{{ $ay }}" {{ $ay == $selectedYear ? 'selected' : '' }}>{{ $ay }}</option>
-                                @endforeach
-                            </select>
-                            <input type="hidden" name="#monthly" value="1">
-                        </form>
-                    </div>
-                    <canvas id="monthlyTrendChart" height="100"></canvas>
-                </div>
-            </div>
-
             <!-- ===================== ANALYSIS TAB ===================== -->
             <div class="section-tab" id="tab-analysis">
                 @foreach($coreNames as $muniName)
                     @php $cd = $chartData[$muniName]; @endphp
                     @if(!empty($cd['years']))
                         <div class="chart-card">
-                            <div class="chart-title">{{ $muniName }} — Population & Households per Year</div>
+                            <div class="chart-title">{{ $muniName }} ï¿½ Population & Households per Year</div>
                             <canvas id="chart-{{ $muniName }}" height="80"></canvas>
                         </div>
                     @endif
@@ -834,7 +770,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                 <!-- Combined comparison chart -->
                 <div class="chart-card">
-                    <div class="chart-title">All Municipalities — Population Comparison</div>
+                    <div class="chart-title">All Municipalities ï¿½ Population Comparison</div>
                     <canvas id="chart-comparison" height="90"></canvas>
                 </div>
             </div>
@@ -868,9 +804,19 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     @foreach($years as $y)<option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>@endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Total Population</label>
                                 <input type="number" name="total_population" class="form-control" required min="0"
+                                    placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Male Population</label>
+                                <input type="number" name="male_population" class="form-control" min="0"
+                                    placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Female Population</label>
+                                <input type="number" name="female_population" class="form-control" min="0"
                                     placeholder="0">
                             </div>
                             <div class="col-md-6">
@@ -879,12 +825,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     placeholder="0">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Population Age 0–19</label>
+                                <label class="form-label">Population Age 0ï¿½19</label>
                                 <input type="number" name="population_0_19" class="form-control" min="0" placeholder="0"
                                     value="0">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Population Age 20–59</label>
+                                <label class="form-label">Population Age 20ï¿½59</label>
                                 <input type="number" name="population_20_59" class="form-control" min="0"
                                     placeholder="0" value="0">
                             </div>
@@ -892,19 +838,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <label class="form-label">Population Age 60+</label>
                                 <input type="number" name="population_60_100" class="form-control" min="0"
                                     placeholder="0" value="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">PWD Assistance</label>
-                                <input type="number" name="total_pwd" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">AICS</label>
-                                <input type="number" name="total_aics" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Solo Parent</label>
-                                <input type="number" name="total_solo_parent" class="form-control" min="0"
-                                    placeholder="0">
                             </div>
                             {{-- Hidden defaults for removed fields --}}
                             <input type="hidden" name="total_4ps" value="0">
@@ -925,153 +858,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     </div>
 
     <!-- Add Monthly Modal -->
-    <div class="modal fade" id="addMonthlyModal" tabindex="-1">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Add Monthly Data</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form method="POST" action="{{ route('superadmin.data.municipalities.monthly.save') }}">
-                    @csrf
-                    <div class="modal-body p-4">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <label class="form-label">Municipality</label>
-                                <select name="municipality" class="form-select" required>
-                                    <option value="">Select Municipality</option>
-                                    @foreach($coreNames as $n)<option value="{{ $n }}">{{ $n }}</option>@endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Year</label>
-                                <select name="year" class="form-select" required>
-                                    <option value="">Select Year</option>
-                                    @foreach($years as $y)<option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>@endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Month</label>
-                                <select name="month" class="form-select" required>
-                                    <option value="">Select Month</option>
-                                    @php $mn = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']; @endphp
-                                    @foreach($mn as $mi => $ml)<option value="{{ $mi + 1 }}" {{ ($mi + 1) == date('n') ? 'selected' : '' }}>{{ $ml }}</option>@endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">PWD Assistance</label>
-                                <input type="number" name="total_pwd" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">AICS</label>
-                                <input type="number" name="total_aics" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Solo Parent</label>
-                                <input type="number" name="total_solo_parent" class="form-control" min="0"
-                                    placeholder="0">
-                            </div>
-                            <div class="col-12">
-                                <label class="form-label">Notes <span
-                                        class="text-muted fw-normal">(optional)</span></label>
-                                <textarea name="notes" class="form-control" rows="2"
-                                    placeholder="Any notes for this month..."></textarea>
-                            </div>
-                        </div>
-                        <small class="text-muted mt-2 d-block">?? If a record for this municipality + month + year
-                            already exists, it will be updated.</small>
-                    </div>
-                    <div class="modal-footer border-0 px-4 pb-4 gap-2">
-                        <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn-modal-submit">Save Monthly Data</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Monthly Modal -->
-    <div class="modal fade" id="editMonthlyModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Edit Monthly Record</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-4">
-                    <div class="row g-3">
-                        <div class="col-md-4">
-                            <label class="form-label">PWD Assistance</label>
-                            <input type="number" id="em_pwd" class="form-control" min="0">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">AICS</label>
-                            <input type="number" id="em_aics" class="form-control" min="0">
-                        </div>
-                        <div class="col-md-4">
-                            <label class="form-label">Solo Parent</label>
-                            <input type="number" id="em_solo" class="form-control" min="0">
-                        </div>
-                        <div class="col-12">
-                            <label class="form-label">Notes</label>
-                            <textarea id="em_notes" class="form-control" rows="2"></textarea>
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer border-0 px-4 pb-4 gap-2">
-                    <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn-modal-submit" onclick="saveEditMonthly()">Save Changes</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Archived Monthly Modal -->
-    <div class="modal fade" id="archivedMonthlyModal" tabindex="-1">
-        <div class="modal-dialog modal-xl modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">?? Archived Monthly Records</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body p-0">
-                    <div class="table-responsive" style="max-height:420px;">
-                        <table class="premium-table" style="margin-bottom:0;">
-                            <thead style="position:sticky;top:0;z-index:1;">
-                                <tr>
-                                    <th>Municipality</th>
-                                    <th>Year</th>
-                                    <th>Month</th>
-                                    <th>PWD</th>
-                                    <th>AICS</th>
-                                    <th>Solo Parent</th>
-                                    <th>Archived</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody id="archivedMonthlyList">
-                                <tr>
-                                    <td colspan="8" class="text-center py-4">
-                                        <div class="spinner-border text-primary" role="status"></div>
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary"
-                        data-bs-dismiss="modal">Close</button></div>
-            </div>
-        </div>
-    </div>
-
-    <footer class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- ========== ARCHIVED SUMMARIES MODAL ========== -->
     <div class="modal fade" id="archivedSummaryModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
@@ -1117,7 +903,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             document.getElementById('tab-' + name).classList.add('active');
             event.currentTarget.classList.add('active');
             if (name === 'analysis') initCharts();
-            if (name === 'monthly') initMonthlyChart();
         }
 
         // Archive summary (AJAX)
@@ -1282,170 +1067,22 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         }
 
         // --- MONTHLY DATA ---------------------------------------------------
-        const monthlyChartData = @json($monthlyChartData);
-        const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        const MUNI_COLORS = { 'Magdalena': '#2C3E8F', 'Liliw': '#FDB913', 'Majayjay': '#C41E24' };
-        let monthlyChartInstance = null;
-
-        function initMonthlyChart() {
-            const ctx = document.getElementById('monthlyTrendChart');
-            if (!ctx) return;
-            if (monthlyChartInstance) { monthlyChartInstance.destroy(); monthlyChartInstance = null; }
-
-            const datasets = [];
-            const munis = Object.keys(monthlyChartData);
-            const programKeys = [
-                { key: 'pwd', label: 'PWD Assistance', dash: [] },
-                { key: 'aics', label: 'AICS', dash: [6, 3] },
-                { key: 'solo_parent', label: 'Solo Parent', dash: [2, 4] }
-            ];
-            const baseColors = ['#2C3E8F', '#FDB913', '#C41E24'];
-
-            munis.forEach((muni, mi) => {
-                programKeys.forEach(prog => {
-                    datasets.push({
-                        label: `${muni} – ${prog.label}`,
-                        data: monthlyChartData[muni][prog.key],
-                        borderColor: baseColors[mi],
-                        backgroundColor: baseColors[mi] + '18',
-                        borderDash: prog.dash,
-                        borderWidth: 2,
-                        pointRadius: 4,
-                        tension: 0.35,
-                        fill: false
-                    });
-                });
-            });
-
-            monthlyChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: { labels: MONTH_NAMES, datasets },
-                options: {
-                    responsive: true,
-                    interaction: { mode: 'index', intersect: false },
-                    plugins: {
-                        legend: { position: 'top', labels: { font: { size: 11 }, boxWidth: 24 } },
-                        tooltip: { callbacks: { label: ctx => `${ctx.dataset.label}: ${ctx.parsed.y.toLocaleString()}` } }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } }
-                    }
                 }
             });
         }
 
         // Open Edit Monthly modal
-        let editMonthlyId = null;
-        function openEditMonthly(id, pwd, aics, solo) {
-            editMonthlyId = id;
-            document.getElementById('em_pwd').value = pwd;
-            document.getElementById('em_aics').value = aics;
-            document.getElementById('em_solo').value = solo;
-            document.getElementById('em_notes').value = '';
-            const modal = new bootstrap.Modal(document.getElementById('editMonthlyModal'));
-            modal.show();
-        }
 
         // Save edit via AJAX
-        function saveEditMonthly() {
-            if (!editMonthlyId) return;
-            const payload = new FormData();
-            payload.append('_token', CSRF);
-            payload.append('total_pwd', document.getElementById('em_pwd').value);
-            payload.append('total_aics', document.getElementById('em_aics').value);
-            payload.append('total_solo_parent', document.getElementById('em_solo').value);
-            payload.append('notes', document.getElementById('em_notes').value);
-
-            fetch(`/superadmin/data/municipalities/monthly/${editMonthlyId}/edit`, {
-                method: 'POST', body: payload
-            })
-                .then(r => r.json())
-                .then(d => {
-                    if (d.success) {
-                        bootstrap.Modal.getInstance(document.getElementById('editMonthlyModal')).hide();
-                        location.reload();
-                    } else { alert(d.message || 'Error saving.'); }
-                })
-                .catch(() => alert('Network error.'));
-        }
 
         // Archive monthly record
-        function archiveMonthly(id, label) {
-            if (!confirm(`Archive "${label}"?\n\nThis record will be hidden but can be restored later.`)) return;
-            fetch(`/superadmin/data/municipalities/monthly/${id}/archive`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
-            })
-                .then(r => r.json())
-                .then(d => { if (d.success) location.reload(); else alert(d.message || 'Error.'); })
-                .catch(() => alert('Network error.'));
-        }
 
         // Load archived monthly records modal
-        function loadArchivedMonthly() {
-            const tbody = document.getElementById('archivedMonthlyList');
-            tbody.innerHTML = '<tr><td colspan="8" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></td></tr>';
-            fetch('/superadmin/data/municipalities/monthly/archived', { headers: { 'Accept': 'application/json' } })
-                .then(r => r.json())
-                .then(data => {
-                    if (!data.length) {
-                        tbody.innerHTML = '<tr><td colspan="8" class="text-center py-5 text-muted"><div style="font-size:2rem;opacity:.3;">??</div><p class="mt-2 mb-0">No archived monthly records.</p></td></tr>';
-                        return;
-                    }
-                    const mnames = ['', 'January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
-                    tbody.innerHTML = data.map(r => {
-                        const date = r.deleted_at ? new Date(r.deleted_at).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
-                        return `<tr>
-                            <td><strong>${r.municipality}</strong></td>
-                            <td>${r.year}</td>
-                            <td>${mnames[r.month]}</td>
-                            <td>${(r.total_pwd || 0).toLocaleString()}</td>
-                            <td>${(r.total_aics || 0).toLocaleString()}</td>
-                            <td>${(r.total_solo_parent || 0).toLocaleString()}</td>
-                            <td style="font-size:.8rem;">${date}</td>
-                            <td>
-                                <div class="d-flex gap-2">
-                                    <button class="btn-restore" onclick="restoreMonthly(${r.id}, this)">Restore</button>
-                                    <button class="btn-perm-del" onclick="permDeleteMonthly(${r.id}, this)">Delete</button>
-                                </div>
-                            </td>
-                        </tr>`;
-                    }).join('');
-                });
-        }
 
-        function restoreMonthly(id, btn) {
-            if (!confirm('Restore this monthly record?')) return;
-            fetch(`/superadmin/data/municipalities/monthly/${id}/restore`, {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
-            })
-                .then(r => r.json())
-                .then(d => { if (d.success) { loadArchivedMonthly(); location.reload(); } else alert(d.message); });
-        }
 
-        function permDeleteMonthly(id, btn) {
-            if (!confirm('?? Permanently delete this monthly record? This cannot be undone.')) return;
-            fetch(`/superadmin/data/municipalities/monthly/${id}/force-delete`, {
-                method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
-            })
-                .then(r => r.json())
-                .then(d => { if (d.success) loadArchivedMonthly(); else alert(d.message); });
-        }
 
         // Auto-load archived monthly count on modal open
-        document.getElementById('archivedMonthlyModal')?.addEventListener('show.bs.modal', loadArchivedMonthly);
 
-        // Auto-open to monthly tab if page reloaded via chart_year selector
-        if (window.location.hash === '#monthly' || new URLSearchParams(window.location.search).has('chart_year')) {
-            document.querySelectorAll('.tab-pill').forEach(p => p.classList.remove('active'));
-            document.querySelectorAll('.section-tab').forEach(s => s.classList.remove('active'));
-            document.getElementById('tab-monthly')?.classList.add('active');
-            document.querySelectorAll('.tab-pill')[1]?.classList.add('active');
-            initMonthlyChart();
-        }
-    </script>
 </body>
 
 </html>

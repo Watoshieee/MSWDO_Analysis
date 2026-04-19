@@ -154,7 +154,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="inner">
                         <span class="stat-pill">Population</span>
                         <div class="stat-label">Total Residents</div>
-                        <div class="stat-value">{{ number_format($municipality->male_population + $municipality->female_population) }}</div>
+                        <div class="stat-value">{{ number_format($totalPopulation ?? 0) }}</div>
                         <div class="stat-sub">Male &amp; female combined</div>
                     </div>
                 </div>

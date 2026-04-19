@@ -252,6 +252,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::get('/yearly', [App\Http\Controllers\Admin\DataManagementController::class, 'yearlyData'])->name('yearly');
             Route::post('/yearly/save', [App\Http\Controllers\Admin\DataManagementController::class, 'saveYearlySummary'])->name('yearly.save');
             Route::delete('/yearly/{id}/delete', [App\Http\Controllers\Admin\DataManagementController::class, 'deleteYearlySummary'])->name('yearly.delete');
+            Route::post('/yearly/{id}/archive', [App\Http\Controllers\Admin\DataManagementController::class, 'archiveYearlySummary'])->name('yearly.archive');
+            Route::post('/yearly/{id}/restore', [App\Http\Controllers\Admin\DataManagementController::class, 'restoreYearlySummary'])->name('yearly.restore');
+            Route::delete('/yearly/{id}/force-delete', [App\Http\Controllers\Admin\DataManagementController::class, 'forceDeleteYearlySummary'])->name('yearly.forceDelete');
         }
     );
 

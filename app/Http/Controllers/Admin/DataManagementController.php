@@ -19,16 +19,26 @@ class DataManagementController extends Controller
     {
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
-        
-        $barangays = Barangay::where('municipality', $user->municipality)->count();
-        $programs = SocialWelfareProgram::where('municipality', $user->municipality)->count();
+
+        // Load the most recent yearly summary for this municipality
+        $latestSummary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->orderBy('year', 'desc')
+            ->first();
+
+        // Use yearly summary total_population as the displayed figure (source of truth)
+        $totalPopulation = $latestSummary->total_population
+            ?? ($municipality->male_population + $municipality->female_population);
+
+        $barangays    = Barangay::where('municipality', $user->municipality)->count();
+        $programs     = SocialWelfareProgram::where('municipality', $user->municipality)->count();
         $beneficiaries = SocialWelfareProgram::where('municipality', $user->municipality)->sum('beneficiary_count');
-        
+
         return view('admin.data.dashboard', compact(
             'municipality',
             'barangays',
             'programs',
-            'beneficiaries'
+            'beneficiaries',
+            'totalPopulation'
         ));
     }
 
@@ -36,31 +46,58 @@ class DataManagementController extends Controller
     {
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->firstOrFail();
-        
-        $currentYear = date('Y');
-        $summary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+
+        // Load the yearly summary for the current year and sync into $municipality
+        // so the form always shows data consistent with the yearly records page
+        $currentYear = $municipality->year ?? date('Y');
+        $currentSummary = MunicipalityYearlySummary::where('municipality', $user->municipality)
             ->where('year', $currentYear)
             ->first();
-        
-        $total4ps = $summary->total_4ps ?? 0;
-        $totalPwd = $summary->total_pwd ?? 0;
-        $totalSenior = $summary->total_senior ?? 0;
-        $totalAics = $summary->total_aics ?? 0;
-        $totalEsa = $summary->total_esa ?? 0;
-        $totalSlp = $summary->total_slp ?? 0;
-        $totalSoloParent = $summary->total_solo_parent ?? 0;
-        
+
+        // If the stored year has no summary (e.g. it was archived/deleted),
+        // fall back to the most recent available non-archived summary
+        if (!$currentSummary) {
+            $currentSummary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+                ->orderBy('year', 'desc')
+                ->first();
+
+            if ($currentSummary) {
+                // Quietly update municipalities.year to the actual latest year
+                $municipality->year = $currentSummary->year;
+                $municipality->saveQuietly();
+                $currentYear = $currentSummary->year;
+            }
+        }
+
+        if ($currentSummary) {
+            // Override municipality fields with yearly summary values (source of truth)
+            $municipality->male_population   = $currentSummary->male_population   ?: $municipality->male_population;
+            $municipality->female_population = $currentSummary->female_population ?: $municipality->female_population;
+            $municipality->population_0_19   = $currentSummary->population_0_19   ?: $municipality->population_0_19;
+            $municipality->population_20_59  = $currentSummary->population_20_59  ?: $municipality->population_20_59;
+            $municipality->population_60_100 = $currentSummary->population_60_100 ?: $municipality->population_60_100;
+            $municipality->total_households  = $currentSummary->total_households  ?: $municipality->total_households;
+        }
+
+        // Total population shown in the manual input field
+        $currentTotalPopulation = $currentSummary->total_population
+            ?? ($municipality->male_population + $municipality->female_population);
+
         $years = MunicipalityYearlySummary::where('municipality', $user->municipality)
             ->orderBy('year', 'desc')
             ->pluck('year')
             ->toArray();
-        
+
+        // Full summary objects for the Yearly History tab table (shows all years incl. 2015, 2020, etc.)
+        $allSummaries = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->orderBy('year', 'desc')
+            ->get();
+
         $yearlyData = [];
         foreach ($years as $year) {
             $data = MunicipalityYearlySummary::where('municipality', $user->municipality)
                 ->where('year', $year)
                 ->first();
-                
             if ($data) {
                 $yearlyData[$year] = [
                     'total_population' => $data->total_population,
@@ -68,19 +105,14 @@ class DataManagementController extends Controller
                 ];
             }
         }
-        
+
         $trends = $this->calculateYearlyTrends($yearlyData);
-        
+
         return view('admin.data.municipality', compact(
-            'municipality', 
-            'total4ps', 
-            'totalPwd', 
-            'totalSenior', 
-            'totalAics', 
-            'totalEsa', 
-            'totalSlp', 
-            'totalSoloParent',
+            'municipality',
+            'currentTotalPopulation',
             'years',
+            'allSummaries',
             'yearlyData',
             'trends'
         ));
@@ -92,21 +124,14 @@ class DataManagementController extends Controller
         $municipality = Municipality::where('name', $user->municipality)->firstOrFail();
 
         $validator = Validator::make($request->all(), [
-            'male_population' => 'required|integer|min:0',
-            'female_population' => 'required|integer|min:0',
-            'population_0_19' => 'required|integer|min:0',
-            'population_20_59' => 'required|integer|min:0',
-            'population_60_100' => 'required|integer|min:0',
-            'total_households' => 'required|integer|min:0',
-            'single_parent_count' => 'required|integer|min:0',
-            'total_4ps' => 'required|integer|min:0',
-            'total_pwd' => 'required|integer|min:0',
-            'total_senior' => 'required|integer|min:0',
-            'total_aics' => 'required|integer|min:0',
-            'total_esa' => 'required|integer|min:0',
-            'total_slp' => 'required|integer|min:0',
-            'total_solo_parent' => 'required|integer|min:0',
-            'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
+            'total_population'    => 'required|integer|min:0',
+            'male_population'     => 'required|integer|min:0',
+            'female_population'   => 'required|integer|min:0',
+            'population_0_19'    => 'required|integer|min:0',
+            'population_20_59'   => 'required|integer|min:0',
+            'population_60_100'  => 'required|integer|min:0',
+            'total_households'    => 'required|integer|min:0',
+            'year'                => 'required|integer|min:2000|max:' . (date('Y') + 1),
         ]);
 
         if ($validator->fails()) {
@@ -115,34 +140,31 @@ class DataManagementController extends Controller
                 ->withInput();
         }
 
-        $totalPopulation = $request->male_population + $request->female_population;
+        $totalPopulation = (int) $request->total_population;
 
+        // 1. Update the municipalities table (current live record)
         $municipality->update([
-            'male_population' => $request->male_population,
-            'female_population' => $request->female_population,
-            'population_0_19' => $request->population_0_19,
-            'population_20_59' => $request->population_20_59,
-            'population_60_100' => $request->population_60_100,
-            'total_households' => $request->total_households,
-            'single_parent_count' => $request->single_parent_count,
-            'year' => $request->year,
+            'male_population'     => $request->male_population,
+            'female_population'   => $request->female_population,
+            'population_0_19'    => $request->population_0_19,
+            'population_20_59'   => $request->population_20_59,
+            'population_60_100'  => $request->population_60_100,
+            'total_households'    => $request->total_households,
+            'year'                => $request->year,
         ]);
 
-        $this->saveYearlySummaryRecord(
-            $municipality->name, 
-            $request->year, 
+        // 2. Mirror all fields into the yearly summary so /admin/data/yearly stays in sync
+        MunicipalityYearlySummary::updateOrCreate(
+            ['municipality' => $municipality->name, 'year' => $request->year],
             [
-                'total_population' => $totalPopulation,
-                'total_households' => $request->total_households,
-            ],
-            [
-                'total_4ps' => $request->total_4ps,
-                'total_pwd' => $request->total_pwd,
-                'total_senior' => $request->total_senior,
-                'total_aics' => $request->total_aics,
-                'total_esa' => $request->total_esa,
-                'total_slp' => $request->total_slp,
-                'total_solo_parent' => $request->total_solo_parent,
+                'total_population'  => $totalPopulation,
+                'male_population'   => $request->male_population,
+                'female_population' => $request->female_population,
+                'population_0_19'   => $request->population_0_19,
+                'population_20_59'  => $request->population_20_59,
+                'population_60_100' => $request->population_60_100,
+                'total_households'  => $request->total_households,
+                'created_at'        => now(),
             ]
         );
 
@@ -252,6 +274,9 @@ class DataManagementController extends Controller
                 'single_parent_count' => intval($request->single_parent_count ?? 0),
                 'pwd_count'           => intval($request->pwd_count ?? 0),
                 'aics_count'          => intval($request->aics_count ?? 0),
+                'four_ps_count'       => intval($request->four_ps_count ?? 0),
+                'senior_count'        => intval($request->senior_count ?? 0),
+                'total_households'    => intval($request->total_households ?? 0),
                 'year'                => intval($request->year ?? date('Y')),
             ]);
 
@@ -283,6 +308,9 @@ class DataManagementController extends Controller
                 'single_parent_count' => intval($row['single_parent_count'] ?? 0),
                 'pwd_count'           => intval($row['pwd_count'] ?? 0),
                 'aics_count'          => intval($row['aics_count'] ?? 0),
+                'four_ps_count'       => intval($row['four_ps_count'] ?? 0),
+                'senior_count'        => intval($row['senior_count'] ?? 0),
+                'total_households'    => intval($row['total_households'] ?? 0),
                 'year'                => intval($row['year'] ?? date('Y')),
             ]);
             $updated++;
@@ -317,11 +345,12 @@ class DataManagementController extends Controller
                     'municipality'               => $user->municipality,
                     'name'                       => $name,
                     'year'                       => $request->year,
-                    'male_population'            => 0,
-                    'female_population'          => 0,
+                    'total_population'           => 0,
                     'single_parent_count'        => 0,
                     'pwd_count'                  => 0,
                     'aics_count'                 => 0,
+                    'four_ps_count'              => 0,
+                    'senior_count'               => 0,
                     'total_households'           => 0,
                     'total_approved_applications'=> 0,
                 ]);
@@ -371,8 +400,7 @@ class DataManagementController extends Controller
                 'municipality' => $request->municipality,
                 'name' => $request->name,
                 'year' => $request->year,
-                'male_population' => 0,
-                'female_population' => 0,
+                'total_population'           => 0,
                 'population_0_19' => 0,
                 'population_20_59' => 0,
                 'population_60_100' => 0,
@@ -536,7 +564,12 @@ class DataManagementController extends Controller
         $adminSecondaryColor = \App\Models\AdminSetting::where('user_id', $user->id)->where('setting_key', 'secondary_color')->value('setting_value') ?? '#FDB913';
         $adminAccentColor = \App\Models\AdminSetting::where('user_id', $user->id)->where('setting_key', 'accent_color')->value('setting_value') ?? '#C41E24';
 
-        return view('admin.data.yearly-data', compact('municipality', 'summaries', 'chartData', 'years', 'adminPrimaryColor', 'adminSecondaryColor', 'adminAccentColor'));
+        $archivedSummaries = MunicipalityYearlySummary::onlyTrashed()
+            ->where('municipality', $user->municipality)
+            ->orderBy('year', 'desc')
+            ->get();
+
+        return view('admin.data.yearly-data', compact('municipality', 'summaries', 'archivedSummaries', 'chartData', 'years', 'adminPrimaryColor', 'adminSecondaryColor', 'adminAccentColor'));
     }
 
     public function saveYearlySummary(Request $request)
@@ -545,12 +578,17 @@ class DataManagementController extends Controller
         $muniName = $user->municipality;
 
         $validator = Validator::make($request->all(), [
-            'year'             => 'required|integer|min:2000|max:' . (date('Y') + 1),
-            'total_population' => 'required|integer|min:0',
-            'total_households' => 'required|integer|min:0',
-            'total_pwd'        => 'nullable|integer|min:0',
-            'total_aics'       => 'nullable|integer|min:0',
-            'total_solo_parent'=> 'nullable|integer|min:0',
+            'year'              => 'required|integer|min:2000|max:' . (date('Y') + 1),
+            'total_population'  => 'required|integer|min:0',
+            'male_population'   => 'nullable|integer|min:0',
+            'female_population' => 'nullable|integer|min:0',
+            'population_0_19'   => 'nullable|integer|min:0',
+            'population_20_59'  => 'nullable|integer|min:0',
+            'population_60_100' => 'nullable|integer|min:0',
+            'total_households'  => 'required|integer|min:0',
+            'total_pwd'         => 'nullable|integer|min:0',
+            'total_aics'        => 'nullable|integer|min:0',
+            'total_solo_parent' => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -564,17 +602,36 @@ class DataManagementController extends Controller
             ],
             [
                 'total_population'  => $request->total_population,
+                'male_population'   => $request->male_population   ?? 0,
+                'female_population' => $request->female_population ?? 0,
+                'population_0_19'   => $request->population_0_19   ?? 0,
+                'population_20_59'  => $request->population_20_59  ?? 0,
+                'population_60_100' => $request->population_60_100 ?? 0,
                 'total_households'  => $request->total_households,
-                'total_4ps'         => $request->total_4ps ?? 0,
-                'total_pwd'         => $request->total_pwd ?? 0,
-                'total_senior'      => $request->total_senior ?? 0,
-                'total_aics'        => $request->total_aics ?? 0,
-                'total_esa'         => $request->total_esa ?? 0,
-                'total_slp'         => $request->total_slp ?? 0,
+                'total_4ps'         => $request->total_4ps         ?? 0,
+                'total_pwd'         => $request->total_pwd         ?? 0,
+                'total_senior'      => $request->total_senior      ?? 0,
+                'total_aics'        => $request->total_aics        ?? 0,
+                'total_esa'         => $request->total_esa         ?? 0,
+                'total_slp'         => $request->total_slp         ?? 0,
                 'total_solo_parent' => $request->total_solo_parent ?? 0,
                 'created_at'        => now(),
             ]
         );
+
+        // Mirror back to municipalities table so /admin/data/municipality stays in sync
+        $municipality = Municipality::where('name', $muniName)->first();
+        if ($municipality) {
+            $municipality->update([
+                'male_population'   => $request->male_population   ?? $municipality->male_population,
+                'female_population' => $request->female_population ?? $municipality->female_population,
+                'population_0_19'   => $request->population_0_19   ?? $municipality->population_0_19,
+                'population_20_59'  => $request->population_20_59  ?? $municipality->population_20_59,
+                'population_60_100' => $request->population_60_100 ?? $municipality->population_60_100,
+                'total_households'  => $request->total_households,
+                'year'              => $request->year,
+            ]);
+        }
 
         return redirect()->route('admin.data.yearly')
             ->with('success', "{$muniName} ({$request->year}) yearly data saved successfully!");
@@ -586,8 +643,43 @@ class DataManagementController extends Controller
         $summary = MunicipalityYearlySummary::where('id', $id)
             ->where('municipality', $user->municipality)
             ->firstOrFail();
-        $summary->delete();
+        $summary->delete(); // soft delete
         return redirect()->route('admin.data.yearly')
-            ->with('success', 'Yearly record deleted successfully.');
+            ->with('success', 'Yearly record archived successfully.');
+    }
+
+    public function archiveYearlySummary($id)
+    {
+        $user = Auth::user();
+        $summary = MunicipalityYearlySummary::where('id', $id)
+            ->where('municipality', $user->municipality)
+            ->firstOrFail();
+        $summary->delete(); // soft delete → moves to archive
+        return redirect()->route('admin.data.yearly')
+            ->with('success', "Year {$summary->year} record archived successfully.");
+    }
+
+    public function restoreYearlySummary($id)
+    {
+        $user = Auth::user();
+        $summary = MunicipalityYearlySummary::onlyTrashed()
+            ->where('id', $id)
+            ->where('municipality', $user->municipality)
+            ->firstOrFail();
+        $summary->restore();
+        return redirect()->route('admin.data.yearly')
+            ->with('success', "Year {$summary->year} record restored successfully.");
+    }
+
+    public function forceDeleteYearlySummary($id)
+    {
+        $user = Auth::user();
+        $summary = MunicipalityYearlySummary::onlyTrashed()
+            ->where('id', $id)
+            ->where('municipality', $user->municipality)
+            ->firstOrFail();
+        $summary->forceDelete();
+        return redirect()->route('admin.data.yearly')
+            ->with('success', "Year {$summary->year} record permanently deleted.");
     }
 }

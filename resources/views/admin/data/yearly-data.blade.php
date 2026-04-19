@@ -141,7 +141,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="hero-badge">Data Management</div>
             <h1>Municipality Yearly Data</h1>
             <div class="hero-divider"></div>
-            <p>Manage population, household, and program beneficiary summary records per year for <strong>{{ $municipality->name }}</strong>.</p>
+            <p>Manage population and household summary records per year for <strong>{{ $municipality->name }}</strong>.</p>
         </div>
     </section>
 
@@ -165,7 +165,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="section-tab active" id="tab-records">
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h6 class="mb-0 fw-bold" style="color:var(--primary-blue);">Yearly Summary Records — {{ $municipality->name }}</h6>
-                    <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Year Data</button>
+                    <div class="d-flex gap-2">
+                        @if($archivedSummaries->count() > 0)
+                        <button class="btn-add" style="background:rgba(196,30,36,.10);color:#C41E24;border:1.5px solid rgba(196,30,36,.25);" data-bs-toggle="modal" data-bs-target="#archiveModal">
+                            🗄️ Archived ({{ $archivedSummaries->count() }})
+                        </button>
+                        @endif
+                        <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Year Data</button>
+                    </div>
                 </div>
 
                 <div class="panel-card">
@@ -185,11 +192,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     <tr>
                                         <th>Year</th>
                                         <th>Population</th>
+                                        <th>Male</th>
+                                        <th>Female</th>
+                                        <th>0–19</th>
+                                        <th>20–59</th>
+                                        <th>60–100</th>
                                         <th>Households</th>
-                                        <th>PWD</th>
-                                        <th>AICS</th>
-                                        <th>Solo Parent</th>
-                                        <th>4Ps</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -198,18 +206,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         <tr>
                                             <td><strong>{{ $row->year }}</strong></td>
                                             <td>{{ number_format($row->total_population) }}</td>
+                                            <td>{{ number_format($row->male_population) }}</td>
+                                            <td>{{ number_format($row->female_population) }}</td>
+                                            <td>{{ number_format($row->population_0_19) }}</td>
+                                            <td>{{ number_format($row->population_20_59) }}</td>
+                                            <td>{{ number_format($row->population_60_100) }}</td>
                                             <td>{{ number_format($row->total_households) }}</td>
-                                            <td>{{ number_format($row->total_pwd) }}</td>
-                                            <td>{{ number_format($row->total_aics) }}</td>
-                                            <td>{{ number_format($row->total_solo_parent) }}</td>
-                                            <td>{{ number_format($row->total_4ps) }}</td>
                                             <td>
                                                 <div class="d-flex gap-2">
                                                     <button class="btn-edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $row->id }}">Edit</button>
-                                                    <form method="POST" action="{{ route('admin.data.yearly.delete', $row->id) }}" onsubmit="return confirm('Delete this {{ $row->year }} record? This cannot be undone.')">
+                                                    <form method="POST" action="{{ route('admin.data.yearly.archive', $row->id) }}" onsubmit="return confirm('Archive the {{ $row->year }} record? You can restore it later.')">
                                                         @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn-del">Delete</button>
+                                                        <button type="submit" class="btn-del" style="background:rgba(245,158,11,.1);color:#b45309;border-color:rgba(245,158,11,.3);">Archive</button>
                                                     </form>
                                                 </div>
                                             </td>
@@ -228,39 +236,41 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                                         <input type="hidden" name="year" value="{{ $row->year }}">
                                                         <div class="modal-body p-4">
                                                             <div class="row g-3">
-                                                                <div class="col-md-6">
+                                                                <div class="col-md-4">
                                                                     <label class="form-label">Total Population</label>
                                                                     <input type="number" name="total_population" class="form-control" value="{{ $row->total_population }}" required min="0">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label">Male Population</label>
+                                                                    <input type="number" name="male_population" class="form-control" value="{{ $row->male_population }}" min="0">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label">Female Population</label>
+                                                                    <input type="number" name="female_population" class="form-control" value="{{ $row->female_population }}" min="0">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label">Age 0–19</label>
+                                                                    <input type="number" name="population_0_19" class="form-control" value="{{ $row->population_0_19 }}" min="0">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label">Age 20–59</label>
+                                                                    <input type="number" name="population_20_59" class="form-control" value="{{ $row->population_20_59 }}" min="0">
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label">Age 60–100</label>
+                                                                    <input type="number" name="population_60_100" class="form-control" value="{{ $row->population_60_100 }}" min="0">
                                                                 </div>
                                                                 <div class="col-md-6">
                                                                     <label class="form-label">Total Households</label>
                                                                     <input type="number" name="total_households" class="form-control" value="{{ $row->total_households }}" required min="0">
                                                                 </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">PWD Assistance</label>
-                                                                    <input type="number" name="total_pwd" class="form-control" value="{{ $row->total_pwd }}" min="0">
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">AICS</label>
-                                                                    <input type="number" name="total_aics" class="form-control" value="{{ $row->total_aics }}" min="0">
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Solo Parent</label>
-                                                                    <input type="number" name="total_solo_parent" class="form-control" value="{{ $row->total_solo_parent }}" min="0">
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">4Ps</label>
-                                                                    <input type="number" name="total_4ps" class="form-control" value="{{ $row->total_4ps }}" min="0">
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Senior Citizen</label>
-                                                                    <input type="number" name="total_senior" class="form-control" value="{{ $row->total_senior }}" min="0">
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">SLP</label>
-                                                                    <input type="number" name="total_slp" class="form-control" value="{{ $row->total_slp }}" min="0">
-                                                                </div>
-                                                                <input type="hidden" name="total_esa" value="{{ $row->total_esa }}">
+                                                                <input type="hidden" name="total_pwd"         value="{{ $row->total_pwd }}">
+                                                                <input type="hidden" name="total_aics"        value="{{ $row->total_aics }}">
+                                                                <input type="hidden" name="total_solo_parent" value="{{ $row->total_solo_parent }}">
+                                                                <input type="hidden" name="total_4ps"         value="{{ $row->total_4ps }}">
+                                                                <input type="hidden" name="total_senior"      value="{{ $row->total_senior }}">
+                                                                <input type="hidden" name="total_slp"         value="{{ $row->total_slp }}">
+                                                                <input type="hidden" name="total_esa"         value="{{ $row->total_esa }}">
                                                             </div>
                                                         </div>
                                                         <div class="modal-footer border-0 px-4 pb-4 gap-2">
@@ -290,12 +300,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 @else
                     <div class="chart-card">
-                        <div class="chart-title">{{ $municipality->name }} — Population & Households per Year</div>
+                        <div class="chart-title">{{ $municipality->name }} — Population &amp; Households per Year</div>
                         <canvas id="popChart" height="90"></canvas>
-                    </div>
-                    <div class="chart-card">
-                        <div class="chart-title">{{ $municipality->name }} — PWD, AICS & Solo Parent per Year</div>
-                        <canvas id="progChart" height="90"></canvas>
                     </div>
                 @endif
             </div>
@@ -324,39 +330,41 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Total Population</label>
                                 <input type="number" name="total_population" class="form-control" required min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Male Population</label>
+                                <input type="number" name="male_population" class="form-control" min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Female Population</label>
+                                <input type="number" name="female_population" class="form-control" min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Age 0–19</label>
+                                <input type="number" name="population_0_19" class="form-control" min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Age 20–59</label>
+                                <input type="number" name="population_20_59" class="form-control" min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Age 60–100</label>
+                                <input type="number" name="population_60_100" class="form-control" min="0" placeholder="0">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Total Households</label>
                                 <input type="number" name="total_households" class="form-control" required min="0" placeholder="0">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">PWD Assistance</label>
-                                <input type="number" name="total_pwd" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">AICS</label>
-                                <input type="number" name="total_aics" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Solo Parent</label>
-                                <input type="number" name="total_solo_parent" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">4Ps</label>
-                                <input type="number" name="total_4ps" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Senior Citizen</label>
-                                <input type="number" name="total_senior" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">SLP</label>
-                                <input type="number" name="total_slp" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <input type="hidden" name="total_esa" value="0">
+                            <input type="hidden" name="total_pwd"         value="0">
+                            <input type="hidden" name="total_aics"        value="0">
+                            <input type="hidden" name="total_solo_parent" value="0">
+                            <input type="hidden" name="total_4ps"         value="0">
+                            <input type="hidden" name="total_senior"      value="0">
+                            <input type="hidden" name="total_slp"         value="0">
+                            <input type="hidden" name="total_esa"         value="0">
                         </div>
                         <small class="text-muted mt-2 d-block">💡 If a record for this year already exists, it will be updated automatically.</small>
                     </div>
@@ -365,6 +373,73 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <button type="submit" class="btn-modal-submit">Save Data</button>
                     </div>
                 </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== ARCHIVED RECORDS MODAL ===== -->
+    <div class="modal fade" id="archiveModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content">
+                <div class="modal-header" style="background:#1E293B;">
+                    <h5 class="modal-title">🗄️ Archived Year Records — {{ $municipality->name }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-0">
+                    @if($archivedSummaries->isEmpty())
+                        <div style="padding:48px;text-align:center;color:#94a3b8;">
+                            <div style="font-size:2.5rem;opacity:.3;margin-bottom:8px;">🗄️</div>
+                            No archived records found.
+                        </div>
+                    @else
+                        <div style="padding:12px 20px;background:#fef9ec;border-bottom:1px solid #fde68a;font-size:.83rem;color:#92400e;">
+                            ⚠️ Archived records are hidden from the main table. You can <strong>Restore</strong> them to make them active again, or <strong>Permanently Delete</strong> to remove them forever.
+                        </div>
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th>Year</th>
+                                    <th>Population</th>
+                                    <th>Male</th>
+                                    <th>Female</th>
+                                    <th>Households</th>
+                                    <th>Archived On</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($archivedSummaries as $archived)
+                                <tr>
+                                    <td><strong>{{ $archived->year }}</strong></td>
+                                    <td>{{ number_format($archived->total_population) }}</td>
+                                    <td>{{ number_format($archived->male_population) }}</td>
+                                    <td>{{ number_format($archived->female_population) }}</td>
+                                    <td>{{ number_format($archived->total_households) }}</td>
+                                    <td style="font-size:.8rem;color:#64748b;">{{ $archived->deleted_at->format('M d, Y') }}</td>
+                                    <td>
+                                        <div class="d-flex gap-2">
+                                            {{-- Restore --}}
+                                            <form method="POST" action="{{ route('admin.data.yearly.restore', $archived->id) }}">
+                                                @csrf
+                                                <button type="submit" class="btn-edit" style="background:rgba(16,185,129,.12);color:#065f46;border:1px solid rgba(16,185,129,.3);">Restore</button>
+                                            </form>
+                                            {{-- Permanently Delete --}}
+                                            <form method="POST" action="{{ route('admin.data.yearly.forceDelete', $archived->id) }}" onsubmit="return confirm('Permanently delete the {{ $archived->year }} record? This CANNOT be undone.')">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn-del">Delete Forever</button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    @endif
+                </div>
+                <div class="modal-footer border-0 px-4 pb-3">
+                    <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Close</button>
+                </div>
             </div>
         </div>
     </div>
@@ -402,7 +477,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             const secondaryColor = getComputedStyle(document.documentElement).getPropertyValue('--secondary-yellow').trim();
             const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-red').trim();
 
-            // Population & Households Chart
+            // Population & Households Chart only
             new Chart(document.getElementById('popChart'), {
                 type: 'bar',
                 data: {
@@ -422,40 +497,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             borderRadius: 6,
                             barPercentage: 0.7
                         }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    plugins: { legend: { position: 'top' } },
-                    scales: {
-                        y: { beginAtZero: true, ticks: { callback: v => v.toLocaleString() } }
-                    }
-                }
-            });
-
-            // Program Summary Chart (PWD, AICS, Solo Parent) from summaries JSON
-            const summaries = @json($summaries);
-            const years     = summaries.map(r => r.year).reverse();
-            const pwd       = summaries.map(r => r.total_pwd).reverse();
-            const aics      = summaries.map(r => r.total_aics).reverse();
-            const solo      = summaries.map(r => r.total_solo_parent).reverse();
-
-            // Convert hex to rgba for transparency
-            function hexToRgba(hex, alpha) {
-                const r = parseInt(hex.slice(1, 3), 16);
-                const g = parseInt(hex.slice(3, 5), 16);
-                const b = parseInt(hex.slice(5, 7), 16);
-                return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-            }
-
-            new Chart(document.getElementById('progChart'), {
-                type: 'line',
-                data: {
-                    labels: years,
-                    datasets: [
-                        { label: 'PWD Assistance', data: pwd,  borderColor: primaryColor, backgroundColor: hexToRgba(primaryColor, 0.1), fill: true, tension: 0.4, pointRadius: 5, borderWidth: 3 },
-                        { label: 'AICS',            data: aics, borderColor: secondaryColor, backgroundColor: hexToRgba(secondaryColor, 0.1), fill: true, tension: 0.4, pointRadius: 5, borderWidth: 3 },
-                        { label: 'Solo Parent',     data: solo, borderColor: accentColor, backgroundColor: hexToRgba(accentColor, 0.1),  fill: true, tension: 0.4, pointRadius: 5, borderWidth: 3 }
                     ]
                 },
                 options: {

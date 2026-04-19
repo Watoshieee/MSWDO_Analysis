@@ -162,7 +162,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <div class="hero-badge">Municipality Profile</div>
                 <h1>{{ $municipality->name }}</h1>
                 <div class="hero-divider"></div>
-                <p>Update population, demographics, households, and program beneficiary data.</p>
+                <p>Update population, demographics, and household data for this municipality.</p>
             </div>
         </div>
     </section>
@@ -183,7 +183,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="tab-nav">
             <button class="tab-btn active" onclick="switchTab('current')">Current Year</button>
             <button class="tab-btn" onclick="switchTab('yearly')">Yearly History</button>
-            <button class="tab-btn" onclick="switchTab('barangay')">Barangay Data</button>
         </div>
 
         <!-- ════════════════════════════════════
@@ -194,38 +193,30 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <div class="panel-header">
                     <div>
                         <div class="panel-header-title">Current Year Data — {{ $municipality->year ?? date('Y') }}</div>
-                        <div class="panel-header-sub">Update the demographic and program beneficiary figures below</div>
+                        <div class="panel-header-sub">Update the demographic and household data below</div>
                     </div>
                 </div>
                 <div class="panel-body">
-
-                    <!-- Total Population Display -->
-                    <div class="total-box">
-                        <div>
-                            <div class="total-box-label">Total Population</div>
-                            <div class="total-box-value" id="totalPopulation">
-                                {{ number_format($municipality->male_population + $municipality->female_population) }}
-                            </div>
-                        </div>
-                        <div style="font-size:0.8rem;color:#64748b;text-align:right;">
-                            Male: <strong>{{ number_format($municipality->male_population) }}</strong><br>
-                            Female: <strong>{{ number_format($municipality->female_population) }}</strong>
-                        </div>
-                    </div>
 
                     <form method="POST" action="{{ route('admin.data.municipality.update') }}">
                         @csrf
 
                         <div class="section-title">Demographics</div>
                         <div class="row g-3 mb-0">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <label class="f-label">Total Population</label>
+                                <input type="number" name="total_population" class="f-input"
+                                       value="{{ $currentTotalPopulation }}"
+                                       required min="0" placeholder="e.g. 45000">
+                            </div>
+                            <div class="col-md-4">
                                 <label class="f-label">Male Population</label>
-                                <input type="number" name="male_population" class="f-input population-input"
+                                <input type="number" name="male_population" class="f-input"
                                        value="{{ $municipality->male_population }}" required min="0">
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="f-label">Female Population</label>
-                                <input type="number" name="female_population" class="f-input population-input"
+                                <input type="number" name="female_population" class="f-input"
                                        value="{{ $municipality->female_population }}" required min="0">
                             </div>
                             <div class="col-md-4">
@@ -240,46 +231,26 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <label class="f-label">Senior (60–100)</label>
                                 <input type="number" name="population_60_100" class="f-input" value="{{ $municipality->population_60_100 }}" required min="0">
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <label class="f-label">Total Households</label>
                                 <input type="number" name="total_households" class="f-input" value="{{ $municipality->total_households }}" required min="0">
                             </div>
-                            <div class="col-md-6">
-                                <label class="f-label">Single Parents</label>
-                                <input type="number" name="single_parent_count" class="f-input" value="{{ $municipality->single_parent_count }}" required min="0">
-                            </div>
-                        </div>
-
-                        <div class="section-title mt-4">Program Beneficiaries</div>
-                        <div class="row g-3 mb-0">
-                            @php
-                                $programs = [
-                                    '4Ps'         => ['name' => 'total_4ps',         'val' => $total4ps],
-                                    'PWD'         => ['name' => 'total_pwd',         'val' => $totalPwd],
-                                    'Senior'      => ['name' => 'total_senior',      'val' => $totalSenior],
-                                    'AICS'        => ['name' => 'total_aics',        'val' => $totalAics],
-                                    'ESA'         => ['name' => 'total_esa',         'val' => $totalEsa],
-                                    'SLP'         => ['name' => 'total_slp',         'val' => $totalSlp],
-                                    'Solo Parent' => ['name' => 'total_solo_parent', 'val' => $totalSoloParent],
-                                ];
-                            @endphp
-                            @foreach($programs as $label => $prog)
-                            <div class="col-md-3 col-sm-4">
-                                <div class="program-box">
-                                    <span class="p-name">{{ $label }}</span>
-                                    <input type="number" name="{{ $prog['name'] }}" class="f-input" value="{{ $prog['val'] }}" required min="0">
-                                </div>
-                            </div>
-                            @endforeach
                         </div>
 
                         <div class="row g-3 mt-1">
                             <div class="col-md-3">
                                 <label class="f-label">Data Year</label>
                                 <select name="year" class="f-input" required>
-                                    @foreach(range(date('Y') - 2, date('Y') + 1) as $yearOption)
+                                    @php
+                                        $dropdownYears = array_unique(array_merge(
+                                            $years,
+                                            range(date('Y') - 1, date('Y') + 2)
+                                        ));
+                                        rsort($dropdownYears);
+                                    @endphp
+                                    @foreach($dropdownYears as $yearOption)
                                         <option value="{{ $yearOption }}" {{ ($municipality->year ?? date('Y')) == $yearOption ? 'selected' : '' }}>
-                                            {{ $yearOption }}
+                                            {{ $yearOption }}{{ in_array($yearOption, $years) ? ' ✓' : '' }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -302,7 +273,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="panel-header-title">Historical Population Data</div>
                         <div class="panel-header-sub">Population trends across recorded years</div>
                     </div>
-                    <a href="{{ route('admin.yearly.compare') }}" style="font-size:0.78rem;color:rgba(255,255,255,0.80);font-weight:700;">Compare Years</a>
+                    <a href="{{ route('admin.data.yearly') }}" style="font-size:0.78rem;color:rgba(255,255,255,0.80);font-weight:700;">Manage Yearly Records &rarr;</a>
                 </div>
                 <div class="panel-body">
                     @if(empty($years))
@@ -311,45 +282,35 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div style="height:220px;position:relative;margin-bottom:22px;">
                             <canvas id="yearlyPopulationChart"></canvas>
                         </div>
-                        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:8px;">
-                            @foreach($years as $year)
-                                <a href="{{ route('admin.yearly.view', $year) }}" class="year-pill">{{ $year }}</a>
-                            @endforeach
-                        </div>
+                        <table style="width:100%;border-collapse:collapse;font-size:0.85rem;margin-top:8px;">
+                            <thead>
+                                <tr style="background:#f8fafc;">
+                                    <th style="padding:10px 14px;text-align:left;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Year</th>
+                                    <th style="padding:10px 14px;text-align:right;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Population</th>
+                                    <th style="padding:10px 14px;text-align:right;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Households</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($allSummaries as $summary)
+                                <tr style="border-bottom:1px solid #E2E8F0;{{ $summary->year == ($municipality->year ?? date('Y')) ? 'background:#EEF2FF;' : '' }}">
+                                    <td style="padding:11px 14px;font-weight:700;color:#334155;">
+                                        {{ $summary->year }}
+                                        @if($summary->year == ($municipality->year ?? date('Y')))
+                                            <span style="background:#2C3E8F;color:white;font-size:0.65rem;padding:2px 8px;border-radius:20px;margin-left:6px;">Current</span>
+                                        @endif
+                                    </td>
+                                    <td style="padding:11px 14px;text-align:right;color:#334155;">{{ number_format($summary->total_population) }}</td>
+                                    <td style="padding:11px 14px;text-align:right;color:#334155;">{{ number_format($summary->total_households) }}</td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
                     @endif
                 </div>
             </div>
         </div>
 
-        <!-- ════════════════════════════════════
-             TAB 3 — BARANGAY DATA
-        ════════════════════════════════════ -->
-        <div id="barangay-tab" style="display:none;">
-            <div class="panel-card">
-                <div class="panel-header">
-                    <div>
-                        <div class="panel-header-title">Barangay Data Entry</div>
-                        <div class="panel-header-sub">Select a year then fill in each barangay's data</div>
-                    </div>
-                </div>
-                <div class="panel-body">
-                    <!-- Year Selector -->
-                    <div class="year-selector">
-                        @foreach(range(date('Y') - 2, date('Y') + 1) as $yearOption)
-                            <input type="radio" name="barangay_year" id="yr{{ $yearOption }}" class="yr-radio"
-                                   value="{{ $yearOption }}" {{ $yearOption == date('Y') ? 'checked' : '' }}
-                                   onchange="loadBarangayData({{ $yearOption }})">
-                            <label for="yr{{ $yearOption }}" class="yr-label">{{ $yearOption }}</label>
-                        @endforeach
-                    </div>
 
-                    <!-- Barangay Cards Container -->
-                    <div id="barangay-data-container">
-                        <div class="loading-spin">Select a year above to load barangay data...</div>
-                    </div>
-                </div>
-            </div>
-        </div>
 
     </div>
     </div>
@@ -373,139 +334,56 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         // ── Tab Switch ──
         function switchTab(tabName) {
-            ['current-tab','yearly-tab','barangay-tab'].forEach(id => {
+            ['current-tab','yearly-tab'].forEach(id => {
                 document.getElementById(id).style.display = 'none';
             });
             document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
 
-            const map = { current: 0, yearly: 1, barangay: 2 };
+            const map = { current: 0, yearly: 1 };
             document.getElementById(tabName + '-tab').style.display = 'block';
             document.querySelectorAll('.tab-btn')[map[tabName]].classList.add('active');
 
             if (tabName === 'yearly' && typeof yearlyChart === 'undefined' && document.getElementById('yearlyPopulationChart')) {
                 initializeYearlyChart();
             }
-            if (tabName === 'barangay') {
-                const yr = document.querySelector('input[name="barangay_year"]:checked');
-                if (yr) loadBarangayData(yr.value);
-            }
         }
 
-        // ── Load Barangay Data ──
-        function loadBarangayData(year) {
-            const container = document.getElementById('barangay-data-container');
-            container.innerHTML = `<div class="loading-spin">Loading barangay data for ${year}...</div>`;
 
-            const timeout = setTimeout(() => {
-                container.innerHTML = `<div class="loading-spin">Request timed out. <button style="margin-left:8px;" class="btn-save-bgy" style="width:auto;padding:6px 16px;" onclick="loadBarangayData(${year})">Retry</button></div>`;
-            }, 10000);
 
-            fetch(`/api/barangays/{{ $municipality->name }}/${year}`)
-                .then(r => { clearTimeout(timeout); if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
-                .then(data => {
-                    if (Array.isArray(data) && data.length > 0) renderBarangayCards(year, data);
-                    else throw new Error('No data');
-                })
-                .catch(err => {
-                    clearTimeout(timeout);
-                    container.innerHTML = `<div class="loading-spin">Error: ${err.message}. <button onclick="loadBarangayData(${year})" style="margin-left:8px;padding:6px 16px;background:var(--primary-blue);color:white;border:none;border-radius:8px;cursor:pointer;font-weight:700;font-size:0.82rem;">Retry</button></div>`;
-                });
-        }
+        // ── Year Switcher ──
+        // Index all yearly summaries by year so we can fill the form instantly on dropdown change
+        const yearlySummaries = {};
+        @foreach($allSummaries as $s)
+        yearlySummaries[{{ $s->year }}] = {
+            total_population:  {{ $s->total_population ?? 0 }},
+            male_population:   {{ $s->male_population ?? 0 }},
+            female_population: {{ $s->female_population ?? 0 }},
+            population_0_19:   {{ $s->population_0_19 ?? 0 }},
+            population_20_59:  {{ $s->population_20_59 ?? 0 }},
+            population_60_100: {{ $s->population_60_100 ?? 0 }},
+            total_households:  {{ $s->total_households ?? 0 }},
+        };
+        @endforeach
 
-        // ── Render Barangay Cards ──
-        function renderBarangayCards(year, barangays) {
-            const container = document.getElementById('barangay-data-container');
-            let html = `<p style="font-size:0.82rem;color:#64748b;margin-bottom:14px;">Editing <strong>${barangays.length} barangays</strong> for year <strong>${year}</strong>. Fill in data and click Save for each.</p><div class="bgy-grid">`;
+        document.querySelector('select[name="year"]').addEventListener('change', function() {
+            const yr = parseInt(this.value);
+            const data = yearlySummaries[yr];
+            if (!data) return; // no saved data for this year — leave fields blank for new entry
+            document.querySelector('input[name="total_population"]').value  = data.total_population;
+            document.querySelector('input[name="male_population"]').value   = data.male_population;
+            document.querySelector('input[name="female_population"]').value = data.female_population;
+            document.querySelector('input[name="population_0_19"]').value   = data.population_0_19;
+            document.querySelector('input[name="population_20_59"]').value  = data.population_20_59;
+            document.querySelector('input[name="population_60_100"]').value = data.population_60_100;
+            document.querySelector('input[name="total_households"]').value  = data.total_households;
 
-            barangays.forEach(b => {
-                html += `
-                <div class="bgy-card">
-                    <div class="bgy-card-name">${b.name}</div>
-                    <div class="bgy-grid-2">
-                        <div class="bgy-field"><label>Male</label><input type="number" class="male-input" data-barangay="${b.name}" value="${b.male_population || 0}" min="0"></div>
-                        <div class="bgy-field"><label>Female</label><input type="number" class="female-input" data-barangay="${b.name}" value="${b.female_population || 0}" min="0"></div>
-                    </div>
-                    <div class="bgy-grid-2">
-                        <div class="bgy-field"><label>Age 0–19</label><input type="number" id="age0_19_${b.name.replace(/\s+/g,'_')}" value="${b.population_0_19 || 0}" min="0"></div>
-                        <div class="bgy-field"><label>Age 20–59</label><input type="number" id="age20_59_${b.name.replace(/\s+/g,'_')}" value="${b.population_20_59 || 0}" min="0"></div>
-                    </div>
-                    <div class="bgy-grid-2">
-                        <div class="bgy-field"><label>Age 60–100</label><input type="number" id="age60_100_${b.name.replace(/\s+/g,'_')}" value="${b.population_60_100 || 0}" min="0"></div>
-                        <div class="bgy-field"><label>Households</label><input type="number" id="households_${b.name.replace(/\s+/g,'_')}" value="${b.total_households || 0}" min="0"></div>
-                    </div>
-                    <div class="bgy-grid-2">
-                        <div class="bgy-field"><label>Single Parents</label><input type="number" id="single_parents_${b.name.replace(/\s+/g,'_')}" value="${b.single_parent_count || 0}" min="0"></div>
-                    </div>
-                    <button class="btn-save-bgy" onclick="saveBarangayData('${b.name}', ${year}, this)">Save ${b.name}</button>
-                </div>`;
-            });
-
-            html += '</div>';
-            container.innerHTML = html;
-        }
-
-        // ── Save Barangay Data ──
-        function saveBarangayData(barangayName, year, button) {
-            const card = button.closest('.bgy-card');
-            const data = {
-                male_population:    card.querySelector('.male-input')?.value || 0,
-                female_population:  card.querySelector('.female-input')?.value || 0,
-                population_0_19:    card.querySelector('[id*="age0_19"]')?.value || 0,
-                population_20_59:   card.querySelector('[id*="age20_59"]')?.value || 0,
-                population_60_100:  card.querySelector('[id*="age60_100"]')?.value || 0,
-                total_households:   card.querySelector('[id*="households"]')?.value || 0,
-                single_parent_count:card.querySelector('[id*="single_parents"]')?.value || 0,
-                year: year,
-                barangay_name: barangayName
-            };
-
-            const orig = button.textContent;
-            button.textContent = 'Saving…';
-            button.disabled = true;
-
-            fetch('/admin/data/barangays/find-or-create', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-                body: JSON.stringify({ name: barangayName, municipality: '{{ $municipality->name }}', year })
-            })
-            .then(r => r.json())
-            .then(res => {
-                if (!res.success || !res.barangay_id) throw new Error(res.message || 'Could not locate barangay');
-                return fetch(`/admin/data/barangays/${res.barangay_id}/update`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': csrfToken, 'Accept': 'application/json' },
-                    body: JSON.stringify(data)
-                });
-            })
-            .then(async r => {
-                const txt = await r.text();
-                try { return JSON.parse(txt); } catch(e) { throw new Error('Invalid response'); }
-            })
-            .then(res => {
-                if (res.success) {
-                    showToast(`Saved: ${barangayName} (${year})`, 'success');
-                    button.textContent = '✓ Saved';
-                    button.style.background = '#28a745';
-                    setTimeout(() => { button.textContent = orig; button.style.background = ''; button.disabled = false; }, 2200);
-                } else {
-                    throw new Error(res.message || 'Save failed');
-                }
-            })
-            .catch(err => {
-                showToast('Error: ' + err.message, 'error');
-                button.textContent = orig;
-                button.disabled = false;
-            });
-        }
-
-        // ── Population Auto-Calc ──
-        document.querySelectorAll('.population-input').forEach(el => {
-            el.addEventListener('input', () => {
-                const m = parseInt(document.querySelector('input[name="male_population"]').value) || 0;
-                const f = parseInt(document.querySelector('input[name="female_population"]').value) || 0;
-                document.getElementById('totalPopulation').textContent = (m + f).toLocaleString();
-            });
+            // Update the panel header to reflect selected year
+            const headerTitle = document.querySelector('.panel-header-title');
+            if (headerTitle) headerTitle.textContent = 'Current Year Data — ' + yr;
         });
+
+        // ── Population Auto-Calc ── (removed — total population is now manually entered)
+
 
         // ── Yearly Chart ──
         let yearlyChart;
