@@ -223,9 +223,6 @@ class DataManagementController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'total_population' => 'required|integer|min:0',
-            'population_0_19' => 'nullable|integer|min:0',
-            'population_20_59' => 'nullable|integer|min:0',
-            'population_60_100' => 'nullable|integer|min:0',
             'pwd_count' => 'nullable|integer|min:0',
             'aics_count' => 'nullable|integer|min:0',
             'year' => 'nullable|integer|min:2000',
@@ -237,11 +234,7 @@ class DataManagementController extends Controller
 
         $barangay = Barangay::findOrFail($id);
         $barangay->update([
-            'male_population' => $request->male_population ?? 0,
-            'female_population' => $request->female_population ?? 0,
-            'population_0_19' => $request->population_0_19 ?? 0,
-            'population_20_59' => $request->population_20_59 ?? 0,
-            'population_60_100' => $request->population_60_100 ?? 0,
+            'total_population' => $request->total_population,
             'single_parent_count' => $request->single_parent_count ?? 0,
             'pwd_count' => $request->pwd_count ?? 0,
             'aics_count' => $request->aics_count ?? 0,
@@ -267,9 +260,6 @@ class DataManagementController extends Controller
             'name' => 'required|string|max:100',
             'year' => 'required|integer|min:2000',
             'total_population' => 'required|integer|min:0',
-            'population_0_19' => 'nullable|integer|min:0',
-            'population_20_59' => 'nullable|integer|min:0',
-            'population_60_100' => 'nullable|integer|min:0',
             'pwd_count' => 'nullable|integer|min:0',
             'aics_count' => 'nullable|integer|min:0',
         ]);
@@ -286,17 +276,13 @@ class DataManagementController extends Controller
                 'year' => $request->year,
             ],
             [
-                'male_population' => $request->male_population ?? 0,
-                'female_population' => $request->female_population ?? 0,
-                'population_0_19' => $request->population_0_19 ?? 0,
-                'population_20_59' => $request->population_20_59 ?? 0,
-                'population_60_100' => $request->population_60_100 ?? 0,
+                'total_population' => $request->total_population,
                 'single_parent_count' => $request->single_parent_count ?? 0,
                 'pwd_count' => $request->pwd_count ?? 0,
                 'aics_count' => $request->aics_count ?? 0,
                 'four_ps_count' => $request->four_ps_count ?? 0,
                 'senior_count' => $request->senior_count ?? 0,
-                'total_households' => 0,
+                'total_households' => $request->total_households ?? 0,
                 'total_approved_applications' => 0,
             ]
         );
@@ -343,11 +329,7 @@ class DataManagementController extends Controller
                     'municipality'               => $request->municipality,
                     'name'                       => $name,
                     'year'                       => $request->year,
-                    'male_population'            => 0,
-                    'female_population'          => $request->female_population ?? 0,
-                    'population_0_19'            => 0,
-                    'population_20_59'           => 0,
-                    'population_60_100'          => 0,
+                    'total_population'           => 0,
                     'single_parent_count'        => 0,
                     'pwd_count'                  => 0,
                     'aics_count'                 => 0,
@@ -383,14 +365,14 @@ class DataManagementController extends Controller
             if (!$barangay)
                 continue;
             $barangay->update([
-                'male_population'     => intval($row['total_population'] ?? 0),
-                'female_population'   => $request->female_population ?? 0,
+                'total_population'    => intval($row['total_population'] ?? 0),
                 'single_parent_count' => intval($row['single_parent_count'] ?? 0),
                 'pwd_count'           => intval($row['pwd_count'] ?? 0),
                 'aics_count'          => intval($row['aics_count'] ?? 0),
                 'four_ps_count'       => intval($row['four_ps_count'] ?? 0),
                 'senior_count'        => intval($row['senior_count'] ?? 0),
                 'total_households'    => intval($row['total_households'] ?? 0),
+                'total_approved_applications' => intval($row['total_approved_applications'] ?? 0),
                 'year'                => intval($row['year'] ?? date('Y')),
             ]);
             $updated++;
@@ -885,8 +867,7 @@ class DataManagementController extends Controller
                 'municipality',
                 'name',
                 'year',
-                'male_population',
-                'female_population',
+                'total_population',
                 'pwd_count',
                 'single_parent_count',
                 'aics_count',

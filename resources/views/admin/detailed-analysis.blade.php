@@ -301,15 +301,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </div>
                     </div>
                     <div class="panel-body">
-                        @php $maxProg = $applicationsByProgram->max('total') ?: 1; $pIdx = 1; @endphp
-                        @forelse($applicationsByProgram as $program => $stats)
+                        @php $maxProg = $programShareOverview->max('total') ?: 1; $pIdx = 1; @endphp
+                        @forelse($programShareOverview as $program => $stats)
                         <div class="prog-row">
                             <span class="prog-num">{{ str_pad($pIdx++, 2, '0', STR_PAD_LEFT) }}</span>
                             <span class="prog-name">{{ str_replace('_', ' ', $program) }}</span>
                             <div class="prog-bar-wrap">
                                 <div class="prog-bar" style="width:{{ ($stats['total']/$maxProg)*100 }}%"></div>
                             </div>
-                            <span class="prog-count">{{ $stats['total'] }}</span>
+                            <span class="prog-count">{{ number_format($stats['total']) }}</span>
                         </div>
                         @empty
                         <div class="no-data">No program data available.</div>

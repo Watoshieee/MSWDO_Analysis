@@ -90,10 +90,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             border-radius: 18px;
             border: 1px solid var(--border-light);
             overflow: hidden;
-            transition: transform .28s, box-shadow .28s;
             position: relative;
         }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 14px 32px rgba(44,62,143,0.11); }
         .stat-card .accent-bar { height: 4px; }
         .acc-blue   { background: linear-gradient(90deg, #2C3E8F, #5578d9); }
         .acc-green  { background: linear-gradient(90deg, #16a34a, #22c55e); }
@@ -257,8 +255,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="accent-bar acc-blue"></div>
                         <div class="sc-body">
                             <div class="sc-label">Total Population</div>
-                            <div class="sc-value">{{ number_format($municipality->male_population + $municipality->female_population) }}</div>
-                            <div class="sc-sub">{{ $barangays->count() }} Barangays</div>
+                            <div class="sc-value">{{ number_format($totalPopulation) }}</div>
+                            <div class="sc-sub">From barangay data</div>
                         </div>
                     </div>
                 </div>
@@ -267,7 +265,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="accent-bar acc-green"></div>
                         <div class="sc-body">
                             <div class="sc-label">Total Households</div>
-                            <div class="sc-value">{{ number_format($municipality->total_households) }}</div>
+                            <div class="sc-value">{{ number_format($totalHouseholds) }}</div>
                             <div class="sc-sub">Registered households</div>
                         </div>
                     </div>
@@ -276,9 +274,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="stat-card">
                         <div class="accent-bar acc-yellow"></div>
                         <div class="sc-body">
-                            <div class="sc-label">Single Parents</div>
-                            <div class="sc-value">{{ number_format($municipality->single_parent_count) }}</div>
-                            <div class="sc-sub">Solo parent households</div>
+                            <div class="sc-label">Total Barangays</div>
+                            <div class="sc-value">{{ $barangays->count() }}</div>
+                            <div class="sc-sub">In {{ $municipality->name }}</div>
                         </div>
                     </div>
                 </div>
@@ -287,14 +285,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="accent-bar acc-teal"></div>
                         <div class="sc-body">
                             <div class="sc-label">Approved Applications</div>
-                            <div class="sc-value">{{ number_format($barangays->sum('total_approved_applications')) }}</div>
+                            <div class="sc-value">{{ number_format($totalApprovedApps) }}</div>
                             <div class="sc-sub">Total approved</div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- CHARTS ROW 1 -->
+            <!-- CHARTS ROW -->
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <div class="chart-card">
@@ -310,37 +308,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <div class="col-md-6">
                     <div class="chart-card">
                         <div class="section-hdr">
-                            <h5>Population Distribution by Age Group</h5>
-                            <p>Proportion across youth, adult, and senior age brackets</p>
+                            <h5>Program Beneficiaries by Type</h5>
+                            <p>Distribution of beneficiaries across programs</p>
                         </div>
                         <div class="chart-container">
-                            <canvas id="ageDistributionChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- CHARTS ROW 2 -->
-            <div class="row g-3 mb-4">
-                <div class="col-md-6">
-                    <div class="chart-card">
-                        <div class="section-hdr">
-                            <h5>Gender Distribution per Barangay</h5>
-                            <p>Male vs. Female breakdown across top barangays</p>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="genderChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-                <div class="col-md-6">
-                    <div class="chart-card">
-                        <div class="section-hdr">
-                            <h5>Single Parents per Barangay</h5>
-                            <p>Trend of solo-parent households across barangays</p>
-                        </div>
-                        <div class="chart-container">
-                            <canvas id="singleParentsChart"></canvas>
+                            <canvas id="programBeneficiariesChart"></canvas>
                         </div>
                     </div>
                 </div>
@@ -349,59 +321,59 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <!-- DETAILED TABLE -->
             <div class="table-card mb-4">
                 <div class="table-card-header">
-                    <div class="section-hdr" style="margin-bottom:0;">
-                        <h5>Detailed Barangay Information</h5>
-                        <p>Click any row to view full barangay details</p>
+                    <div class="row align-items-center">
+                        <div class="col-md-6">
+                            <div class="section-hdr" style="margin-bottom:0;">
+                                <h5>Detailed Barangay Information</h5>
+                                <p>Click any row to view full barangay details</p>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="search-box">
+                                <input type="text" id="barangaySearch" class="form-control" placeholder="🔍 Search barangay..." style="border-radius:10px;border:1.5px solid var(--border-light);padding:10px 16px;font-size:0.88rem;">
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="table-responsive">
-                    <table class="mswdo-table">
+                    <table class="mswdo-table" id="barangayTable">
                         <thead>
                             <tr>
-                                <th>Barangay</th>
-                                <th>Population</th>
-                                <th>Male</th>
-                                <th>Female</th>
-                                <th>Households</th>
-                                <th>Single Parents</th>
-                                <th>Approved Apps</th>
-                                <th style="min-width:180px;">Age Distribution</th>
+                                <th style="cursor:pointer;" onclick="sortTable(0)">Barangay ↕</th>
+                                <th style="cursor:pointer;" onclick="sortTable(1)">Population ↕</th>
+                                <th style="cursor:pointer;" onclick="sortTable(2)">Households ↕</th>
+                                <th style="cursor:pointer;" onclick="sortTable(3)">PWD ↕</th>
+                                <th style="cursor:pointer;" onclick="sortTable(4)">AICS ↕</th>
+                                <th style="cursor:pointer;" onclick="sortTable(5)">4PS ↕</th>
+                                <th style="cursor:pointer;" onclick="sortTable(6)">Senior ↕</th>
+                                <th style="cursor:pointer;" onclick="sortTable(7)">Single Parents ↕</th>
+                                <th style="cursor:pointer;" onclick="sortTable(8)">Approved Apps ↕</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="barangayTableBody">
                             @foreach($barangayData as $barangay => $data)
                             <tr onclick="showBarangayDetails('{{ $barangay }}')">
                                 <td><strong>{{ $barangay }}</strong></td>
-                                <td>{{ number_format($data['population']) }}</td>
-                                <td>{{ number_format($data['male']) }}</td>
-                                <td>{{ number_format($data['female']) }}</td>
-                                <td>{{ number_format($data['households']) }}</td>
-                                <td>{{ number_format($data['single_parents']) }}</td>
+                                <td data-value="{{ $data['population'] }}">{{ number_format($data['population']) }}</td>
+                                <td data-value="{{ $data['households'] }}">{{ number_format($data['households']) }}</td>
+                                <td data-value="{{ $data['pwd'] }}">{{ number_format($data['pwd']) }}</td>
+                                <td data-value="{{ $data['aics'] }}">{{ number_format($data['aics']) }}</td>
+                                <td data-value="{{ $data['four_ps'] }}">{{ number_format($data['four_ps']) }}</td>
+                                <td data-value="{{ $data['senior'] }}">{{ number_format($data['senior']) }}</td>
+                                <td data-value="{{ $data['single_parents'] }}">{{ number_format($data['single_parents']) }}</td>
                                 <td>
                                     <span class="badge-approved">{{ $data['approved_apps'] }}</span>
-                                </td>
-                                <td>
-                                    @php
-                                        $total = $data['age_0_19'] + $data['age_20_59'] + $data['age_60_100'];
-                                        $pct0_19   = $total > 0 ? ($data['age_0_19']   / $total) * 100 : 0;
-                                        $pct20_59  = $total > 0 ? ($data['age_20_59']  / $total) * 100 : 0;
-                                        $pct60_100 = $total > 0 ? ($data['age_60_100'] / $total) * 100 : 0;
-                                    @endphp
-                                    <div class="age-bar">
-                                        <div class="ab-youth"  style="width:{{ $pct0_19 }}%" title="0-19: {{ number_format($data['age_0_19']) }}"></div>
-                                        <div class="ab-adult"  style="width:{{ $pct20_59 }}%" title="20-59: {{ number_format($data['age_20_59']) }}"></div>
-                                        <div class="ab-senior" style="width:{{ $pct60_100 }}%" title="60+: {{ number_format($data['age_60_100']) }}"></div>
-                                    </div>
-                                    <div class="age-label">
-                                        0-19: {{ number_format($data['age_0_19']) }} &nbsp;·&nbsp;
-                                        20-59: {{ number_format($data['age_20_59']) }} &nbsp;·&nbsp;
-                                        60+: {{ number_format($data['age_60_100']) }}
-                                    </div>
                                 </td>
                             </tr>
                             @endforeach
                         </tbody>
                     </table>
+                </div>
+                <div class="table-footer" style="padding:14px 22px;border-top:1px solid var(--border-light);background:#F8FAFC;">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <span style="font-size:0.82rem;color:var(--text-muted);">Showing <strong id="visibleCount">{{ count($barangayData) }}</strong> of <strong>{{ count($barangayData) }}</strong> barangays</span>
+                        <button onclick="resetTable()" class="btn btn-sm" style="background:var(--primary-gradient);color:white;border-radius:8px;padding:6px 16px;font-size:0.8rem;font-weight:700;">Reset Filters</button>
+                    </div>
                 </div>
             </div>
 
@@ -468,12 +440,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         document.addEventListener('DOMContentLoaded', function () {
             const barangayNames  = {!! json_encode(array_keys($barangayData)) !!};
             const populations    = {!! json_encode(array_column($barangayData, 'population')) !!};
-            const males          = {!! json_encode(array_column($barangayData, 'male')) !!};
-            const females        = {!! json_encode(array_column($barangayData, 'female')) !!};
+            const pwdCounts      = {!! json_encode(array_column($barangayData, 'pwd')) !!};
+            const aicsCounts     = {!! json_encode(array_column($barangayData, 'aics')) !!};
+            const fourPsCounts   = {!! json_encode(array_column($barangayData, 'four_ps')) !!};
+            const seniorCounts   = {!! json_encode(array_column($barangayData, 'senior')) !!};
             const singleParents  = {!! json_encode(array_column($barangayData, 'single_parents')) !!};
-            const age0_19        = {!! json_encode(array_column($barangayData, 'age_0_19')) !!};
-            const age20_59       = {!! json_encode(array_column($barangayData, 'age_20_59')) !!};
-            const age60_100      = {!! json_encode(array_column($barangayData, 'age_60_100')) !!};
 
             /* -- Top 10 Barangays by Population (horizontal bar) -- */
             const top10 = barangayNames.slice(0, 10).map((name, i) => ({ name, pop: populations[i] }));
@@ -486,74 +457,110 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 options: { ...chartDefaults, indexAxis: 'y', scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' } }, y: { grid: { display: false } } } }
             });
 
-            /* -- Age Distribution (Doughnut) -- */
-            const totalAge0_19   = age0_19.reduce((a, b) => a + b, 0);
-            const totalAge20_59  = age20_59.reduce((a, b) => a + b, 0);
-            const totalAge60_100 = age60_100.reduce((a, b) => a + b, 0);
-            new Chart(document.getElementById('ageDistributionChart'), {
+            /* -- Program Beneficiaries (Doughnut) -- */
+            const totalPWD = {{ $totalPWD }};
+            const totalAICS = {{ $totalAICS }};
+            const total4PS = {{ $total4PS }};
+            const totalSenior = {{ $totalSenior }};
+            const totalSoloParent = {{ $totalSingleParents }};
+            
+            new Chart(document.getElementById('programBeneficiariesChart'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['0–19 years', '20–59 years', '60+ years'],
-                    datasets: [{ data: [totalAge0_19, totalAge20_59, totalAge60_100], backgroundColor: [BLUE, GREEN, YELLOW], borderWidth: 2, borderColor: '#fff' }]
+                    labels: ['PWD', 'AICS', '4PS', 'Senior', 'Solo Parent'],
+                    datasets: [{ 
+                        data: [totalPWD, totalAICS, total4PS, totalSenior, totalSoloParent], 
+                        backgroundColor: [BLUE, GREEN, YELLOW, PINK, TEAL], 
+                        borderWidth: 2, 
+                        borderColor: '#fff' 
+                    }]
                 },
                 options: { ...chartDefaults, cutout: '60%', plugins: { ...chartDefaults.plugins, legend: { ...chartDefaults.plugins.legend, position: 'bottom' } } }
             });
-
-            /* -- Gender Distribution (grouped bar) -- */
-            new Chart(document.getElementById('genderChart'), {
-                type: 'bar',
-                data: {
-                    labels: barangayNames.slice(0, 8),
-                    datasets: [
-                        { label: 'Male',   data: males.slice(0, 8),   backgroundColor: BLUE, borderRadius: 4 },
-                        { label: 'Female', data: females.slice(0, 8), backgroundColor: PINK, borderRadius: 4 }
-                    ]
-                },
-                options: { ...chartDefaults, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
-            });
-
-            /* -- Single Parents (smooth area line) -- */
-            new Chart(document.getElementById('singleParentsChart'), {
-                type: 'line',
-                data: {
-                    labels: barangayNames.slice(0, 8),
-                    datasets: [{
-                        label: 'Single Parents',
-                        data: singleParents.slice(0, 8),
-                        borderColor: 'rgba(253,185,19,1)',
-                        backgroundColor: 'rgba(253,185,19,0.10)',
-                        tension: 0.4, fill: true,
-                        pointBackgroundColor: 'rgba(253,185,19,1)', pointRadius: 5
-                    }]
-                },
-                options: { ...chartDefaults, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' } }, x: { grid: { display: false } } } }
-            });
         });
+
+        // ── Search functionality ──
+        document.getElementById('barangaySearch').addEventListener('keyup', function() {
+            const searchValue = this.value.toLowerCase();
+            const rows = document.querySelectorAll('#barangayTableBody tr');
+            let visibleCount = 0;
+
+            rows.forEach(row => {
+                const barangayName = row.cells[0].textContent.toLowerCase();
+                if (barangayName.includes(searchValue)) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            document.getElementById('visibleCount').textContent = visibleCount;
+        });
+
+        // ── Sort table functionality ──
+        let sortDirection = {};
+        function sortTable(columnIndex) {
+            const table = document.getElementById('barangayTable');
+            const tbody = document.getElementById('barangayTableBody');
+            const rows = Array.from(tbody.querySelectorAll('tr'));
+            
+            // Toggle sort direction
+            sortDirection[columnIndex] = sortDirection[columnIndex] === 'asc' ? 'desc' : 'asc';
+            const direction = sortDirection[columnIndex];
+
+            rows.sort((a, b) => {
+                let aValue, bValue;
+                
+                if (columnIndex === 0) {
+                    // Barangay name (text)
+                    aValue = a.cells[columnIndex].textContent.trim();
+                    bValue = b.cells[columnIndex].textContent.trim();
+                    return direction === 'asc' 
+                        ? aValue.localeCompare(bValue)
+                        : bValue.localeCompare(aValue);
+                } else {
+                    // Numeric columns
+                    aValue = parseInt(a.cells[columnIndex].dataset.value || a.cells[columnIndex].textContent.replace(/,/g, '')) || 0;
+                    bValue = parseInt(b.cells[columnIndex].dataset.value || b.cells[columnIndex].textContent.replace(/,/g, '')) || 0;
+                    return direction === 'asc' ? aValue - bValue : bValue - aValue;
+                }
+            });
+
+            // Re-append sorted rows
+            rows.forEach(row => tbody.appendChild(row));
+        }
+
+        // ── Reset table ──
+        function resetTable() {
+            document.getElementById('barangaySearch').value = '';
+            const rows = document.querySelectorAll('#barangayTableBody tr');
+            rows.forEach(row => row.style.display = '');
+            document.getElementById('visibleCount').textContent = rows.length;
+            sortDirection = {};
+        }
 
         function showBarangayDetails(barangayName) {
             const data  = {!! json_encode($barangayData) !!}[barangayName];
             const modal = new bootstrap.Modal(document.getElementById('barangayModal'));
             document.getElementById('modalTitle').textContent = `${barangayName} — Detailed Analysis`;
 
-            const pct = (v, t) => t > 0 ? ((v / t) * 100).toFixed(1) + '%' : '—';
-
             document.getElementById('modalBody').innerHTML = `
                 <div class="row g-3">
                     <div class="col-md-6">
                         <p class="fw-700 mb-2" style="font-weight:800;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;">Demographics</p>
                         <div class="modal-stat"><div class="ms-label">Total Population</div><div class="ms-val">${data.population.toLocaleString()}</div></div>
-                        <div class="modal-stat"><div class="ms-label">Male</div><div class="ms-val">${data.male.toLocaleString()} <span style="font-size:.8rem;font-weight:600;color:#64748b;">(${pct(data.male,data.population)})</span></div></div>
-                        <div class="modal-stat"><div class="ms-label">Female</div><div class="ms-val">${data.female.toLocaleString()} <span style="font-size:.8rem;font-weight:600;color:#64748b;">(${pct(data.female,data.population)})</span></div></div>
                         <div class="modal-stat"><div class="ms-label">Households</div><div class="ms-val">${data.households.toLocaleString()}</div></div>
                         <div class="modal-stat"><div class="ms-label">Single Parents</div><div class="ms-val">${data.single_parents.toLocaleString()}</div></div>
                     </div>
                     <div class="col-md-6">
-                        <p class="fw-700 mb-2" style="font-weight:800;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;">Age Distribution</p>
-                        <div class="modal-stat"><div class="ms-label">0–19 years (Youth)</div><div class="ms-val">${data.age_0_19.toLocaleString()} <span style="font-size:.8rem;font-weight:600;color:#64748b;">(${pct(data.age_0_19,data.population)})</span></div></div>
-                        <div class="modal-stat"><div class="ms-label">20–59 years (Adult)</div><div class="ms-val">${data.age_20_59.toLocaleString()} <span style="font-size:.8rem;font-weight:600;color:#64748b;">(${pct(data.age_20_59,data.population)})</span></div></div>
-                        <div class="modal-stat"><div class="ms-label">60+ years (Senior)</div><div class="ms-val">${data.age_60_100.toLocaleString()} <span style="font-size:.8rem;font-weight:600;color:#64748b;">(${pct(data.age_60_100,data.population)})</span></div></div>
+                        <p class="fw-700 mb-2" style="font-weight:800;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;">Program Beneficiaries</p>
+                        <div class="modal-stat"><div class="ms-label">PWD</div><div class="ms-val">${data.pwd.toLocaleString()}</div></div>
+                        <div class="modal-stat"><div class="ms-label">AICS</div><div class="ms-val">${data.aics.toLocaleString()}</div></div>
+                        <div class="modal-stat"><div class="ms-label">4PS</div><div class="ms-val">${data.four_ps.toLocaleString()}</div></div>
+                        <div class="modal-stat"><div class="ms-label">Senior Citizen</div><div class="ms-val">${data.senior.toLocaleString()}</div></div>
                         <p class="fw-700 mb-2 mt-3" style="font-weight:800;font-size:.8rem;text-transform:uppercase;letter-spacing:.08em;color:#64748b;">Applications</p>
-                        <div class="modal-stat"><div class="ms-label">Approved Applications</div><div class="ms-val">${data.approved_apps} <span style="font-size:.8rem;font-weight:600;color:#64748b;">(${pct(data.approved_apps,data.households)} of households)</span></div></div>
+                        <div class="modal-stat"><div class="ms-label">Approved Applications</div><div class="ms-val">${data.approved_apps}</div></div>
                     </div>
                 </div>
             `;

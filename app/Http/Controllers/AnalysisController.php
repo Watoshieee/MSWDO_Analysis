@@ -67,25 +67,68 @@ class AnalysisController extends Controller
     public function municipality($name)
     {
         $municipality = Municipality::where('name', $name)->firstOrFail();
-        $barangays    = Barangay::where('municipality', $name)->get();
+        
+        // Get unique barangays (not counting per year)
+        $barangays = Barangay::where('municipality', $name)
+            ->select('name')
+            ->distinct()
+            ->get();
+        
+        // Get all barangay records for data aggregation
+        $allBarangayRecords = Barangay::where('municipality', $name)->get();
+        
         $programs     = SocialWelfareProgram::where('municipality', $name)->get();
+        $applications = Application::where('municipality', $name)->get();
+
+        // Calculate totals from barangay data (use latest year data for each barangay)
+        $latestBarangayData = [];
+        foreach ($barangays as $barangay) {
+            $latestRecord = Barangay::where('municipality', $name)
+                ->where('name', $barangay->name)
+                ->orderBy('year', 'desc')
+                ->first();
+            if ($latestRecord) {
+                $latestBarangayData[] = $latestRecord;
+            }
+        }
+        
+        $totalPopulation = collect($latestBarangayData)->sum('total_population');
+        $totalHouseholds = collect($latestBarangayData)->sum('total_households');
+        $totalSingleParents = collect($latestBarangayData)->sum('single_parent_count');
+        $totalPWD = collect($latestBarangayData)->sum('pwd_count');
+        $totalAICS = collect($latestBarangayData)->sum('aics_count');
+        $total4PS = collect($latestBarangayData)->sum('four_ps_count');
+        $totalSenior = collect($latestBarangayData)->sum('senior_count');
+        $totalApprovedApps = $applications->where('status', 'approved')->count();
 
         $barangayData = [];
-        foreach ($barangays as $barangay) {
+        foreach ($latestBarangayData as $barangay) {
             $barangayData[$barangay->name] = [
-                'population'     => $barangay->male_population + $barangay->female_population,
-                'male'           => $barangay->male_population,
-                'female'         => $barangay->female_population,
-                'single_parents' => $barangay->single_parent_count,
+                'population'     => $barangay->total_population ?? 0,
                 'households'     => $barangay->total_households,
-                'approved_apps'  => $barangay->total_approved_applications,
-                'age_0_19'       => $barangay->population_0_19,
-                'age_20_59'      => $barangay->population_20_59,
-                'age_60_100'     => $barangay->population_60_100,
+                'single_parents' => $barangay->single_parent_count,
+                'pwd'            => $barangay->pwd_count,
+                'aics'           => $barangay->aics_count,
+                'four_ps'        => $barangay->four_ps_count,
+                'senior'         => $barangay->senior_count,
+                'approved_apps'  => $applications->where('barangay', $barangay->name)->where('status', 'approved')->count(),
             ];
         }
 
-        return view('analysis.municipality', compact('municipality', 'barangays', 'programs', 'barangayData'));
+        return view('analysis.municipality', compact(
+            'municipality',
+            'barangays',
+            'programs',
+            'barangayData',
+            'totalPopulation',
+            'totalHouseholds',
+            'totalSingleParents',
+            'totalPWD',
+            'totalAICS',
+            'total4PS',
+            'totalSenior',
+            'totalApprovedApps'
+        ));
     }
 
     /**

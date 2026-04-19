@@ -29,7 +29,11 @@ class DataManagementController extends Controller
         $totalPopulation = $latestSummary->total_population
             ?? ($municipality->male_population + $municipality->female_population);
 
-        $barangays    = Barangay::where('municipality', $user->municipality)->count();
+        // Count unique barangay names (not per year)
+        $barangays = Barangay::where('municipality', $user->municipality)
+            ->distinct('name')
+            ->count('name');
+        
         $programs     = SocialWelfareProgram::where('municipality', $user->municipality)->count();
         $beneficiaries = SocialWelfareProgram::where('municipality', $user->municipality)->sum('beneficiary_count');
 
@@ -244,6 +248,11 @@ class DataManagementController extends Controller
         }
 
         $barangays = $query->orderBy('name')->orderBy('year', 'desc')->get();
+        
+        // Count unique barangays
+        $uniqueBarangayCount = Barangay::where('municipality', $user->municipality)
+            ->distinct('name')
+            ->count('name');
 
         $years = array_merge([2015, 2020], range(date('Y') - 3, date('Y') + 1));
         $years = array_unique($years);
@@ -252,7 +261,7 @@ class DataManagementController extends Controller
         $availableYears = Barangay::where('municipality', $user->municipality)
             ->distinct()->orderByDesc('year')->pluck('year')->toArray();
 
-        return view('admin.data.barangays', compact('barangays', 'municipality', 'years', 'availableYears'));
+        return view('admin.data.barangays', compact('barangays', 'municipality', 'years', 'availableYears', 'uniqueBarangayCount'));
     }
 
     public function updateBarangay(Request $request, $id)
@@ -269,8 +278,7 @@ class DataManagementController extends Controller
             }
 
             $barangay->update([
-                'male_population'     => intval($request->total_population ?? 0),
-                'female_population'   => 0,
+                'total_population'    => intval($request->total_population ?? 0),
                 'single_parent_count' => intval($request->single_parent_count ?? 0),
                 'pwd_count'           => intval($request->pwd_count ?? 0),
                 'aics_count'          => intval($request->aics_count ?? 0),
@@ -303,8 +311,7 @@ class DataManagementController extends Controller
                 ->first();
             if (!$barangay) continue;
             $barangay->update([
-                'male_population'     => intval($row['total_population'] ?? 0),
-                'female_population'   => 0,
+                'total_population'    => intval($row['total_population'] ?? 0),
                 'single_parent_count' => intval($row['single_parent_count'] ?? 0),
                 'pwd_count'           => intval($row['pwd_count'] ?? 0),
                 'aics_count'          => intval($row['aics_count'] ?? 0),

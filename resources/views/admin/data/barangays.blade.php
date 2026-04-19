@@ -152,10 +152,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="panel-header">
                 <div>
                     <h5>Barangay Records — {{ $municipality->name }}</h5>
-                    <p>Edit values directly in the table — click Save or Update All when done.</p>
+                    <p>{{ $uniqueBarangayCount }} barangays · {{ $barangays->count() }} total records (across all years)</p>
                 </div>
                 <div class="d-flex align-items-center gap-3">
-                    <span class="count-badge" id="recordCount">{{ $barangays->count() }} records</span>
                     <button class="btn-update-all" onclick="updateAll()">⬆ Update All</button>
                 </div>
             </div>
