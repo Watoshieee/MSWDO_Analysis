@@ -10,7 +10,12 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+        html,
+        body {
+            overscroll-behavior: none;
+            margin: 0;
+            padding: 0;
+        }
 
         :root {
             --primary-blue: #2C3E8F;
@@ -47,11 +52,26 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             gap: 10px;
         }
 
-        .navbar-toggler { order: -1; }
-        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        .navbar-toggler {
+            order: -1;
+        }
+
+        .navbar-brand {
+            order: 0;
+            margin-left: auto !important;
+            margin-right: 0 !important;
+        }
+
         @media (min-width: 992px) {
-            .navbar-toggler { order: 0; }
-            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+            .navbar-toggler {
+                order: 0;
+            }
+
+            .navbar-brand {
+                order: 0;
+                margin-left: 0 !important;
+                margin-right: auto !important;
+            }
         }
 
         .nav-link {
@@ -228,7 +248,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             border-radius: 2px;
         }
 
-        /* ===== VMG CARDS - NO HOVER ANIMATION ===== */
+        /* ===== VMG CARDS - NO HOVER ===== */
         .vmg-card {
             background: #f8fafc;
             border-radius: 20px;
@@ -278,7 +298,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             margin: 0;
         }
 
-        /* ===== GOALS - NO HOVER ANIMATION ===== */
+        /* ===== GOALS - NO HOVER ===== */
         .goal-item {
             background: #f8fafc;
             border-radius: 16px;
@@ -319,7 +339,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             line-height: 1.65;
         }
 
-        /* ===== PROGRAM CARDS - NO HOVER ANIMATION ===== */
+        /* ===== PROGRAM CARDS - CLICKABLE WITH HOVER ===== */
         .program-card {
             background: #f8fafc;
             border-radius: 20px;
@@ -607,6 +627,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 font-size: 1.3rem;
             }
         }
+
         /* Modal Styles */
         .modal-content {
             border-radius: 20px;
@@ -648,7 +669,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             gap: 8px;
         }
 
-        .req-list, .elig-list {
+        .req-list,
+        .elig-list {
             list-style: none;
             padding: 0;
             margin: 0;
@@ -1255,10 +1277,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             if (!data) return;
 
             document.getElementById('modalTitle').textContent = data.title;
-            
+
             let reqHtml = '<div class="program-badge">' + data.badge + '</div>';
             reqHtml += '<p style="color: #475569; line-height: 1.7; margin-bottom: 24px;">' + data.description + '</p>';
-            
+
             // Check if AICS with tabs
             if (data.hasTabs) {
                 // AICS with tabs layout
@@ -1271,7 +1293,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     reqHtml += '<li>' + elig + '</li>';
                 });
                 reqHtml += '</ul></div></div>';
-                
+
                 reqHtml += '<div class="col-md-6">';
                 reqHtml += '<div class="req-section">';
                 reqHtml += '<h6>📋 Required Documents</h6>';
@@ -1295,7 +1317,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             } else if (data.applicationSteps) {
                 // PWD & Solo Parent: Row 1 (Eligibility + What to Bring), Row 2 (Application Process full width)
                 reqHtml += '<div class="row g-3">';
-                
+
                 // Left: Key Eligibility
                 reqHtml += '<div class="col-md-6">';
                 reqHtml += '<div class="req-section">';
@@ -1305,7 +1327,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     reqHtml += '<li>' + elig + '</li>';
                 });
                 reqHtml += '</ul></div></div>';
-                
+
                 // Right: What to Bring
                 reqHtml += '<div class="col-md-6">';
                 reqHtml += '<div class="req-section">';
@@ -1315,9 +1337,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     reqHtml += '<li>' + item + '</li>';
                 });
                 reqHtml += '</ul></div></div>';
-                
+
                 reqHtml += '</div>'; // close row
-                
+
                 // Application Process - full width below
                 reqHtml += '<div class="row g-3" style="margin-top: 20px; border-top: 1px solid #E2E8F0; padding-top: 20px;">';
                 reqHtml += '<div class="col-12">';
@@ -1331,7 +1353,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             } else {
                 // Regular programs (4Ps, SCP, SLP, ESA): 2 columns (Eligibility + Requirements)
                 reqHtml += '<div class="row g-3">';
-                
+
                 // Left column: Key Eligibility
                 reqHtml += '<div class="col-md-6">';
                 reqHtml += '<div class="req-section">';
@@ -1342,7 +1364,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 });
                 reqHtml += '</ul></div>';
                 reqHtml += '</div>';
-                
+
                 // Right column: Required Documents
                 reqHtml += '<div class="col-md-6">';
                 reqHtml += '<div class="req-section">';
@@ -1354,18 +1376,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 reqHtml += '</ul>';
                 reqHtml += '</div>';
                 reqHtml += '</div>';
-                
+
                 reqHtml += '</div>'; // close row
             }
-            
+
             if (data.officeInfo) {
                 reqHtml += '<div style="background: #FFF3D6; border-left: 3px solid var(--secondary-yellow); border-radius: 8px; padding: 12px 16px; margin-top: 16px; font-size: 0.88rem; color: #856404;">';
                 reqHtml += '<strong>🏢 Office Info:</strong> ' + data.officeInfo;
                 reqHtml += '</div>';
             }
-            
+
             document.getElementById('modalBody').innerHTML = reqHtml;
-            
+
             new bootstrap.Modal(document.getElementById('programModal')).show();
         }
 
@@ -1482,7 +1504,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
     @auth
         <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+            html,
+            body {
+                overscroll-behavior: none;
+                margin: 0;
+                padding: 0;
+            }
 
             .back-dashboard-btn {
                 position: fixed;
@@ -1569,7 +1596,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     @auth
         @if(Auth::user()->isSuperAdmin())
             <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+                html,
+                body {
+                    overscroll-behavior: none;
+                    margin: 0;
+                    padding: 0;
+                }
 
                 .admin-back-btn {
                     position: fixed;
@@ -1650,7 +1682,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             </a>
         @elseif(Auth::user()->isAdmin())
             <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+                html,
+                body {
+                    overscroll-behavior: none;
+                    margin: 0;
+                    padding: 0;
+                }
 
                 .admin-back-btn {
                     position: fixed;

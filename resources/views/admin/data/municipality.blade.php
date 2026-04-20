@@ -201,46 +201,26 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <form method="POST" action="{{ route('admin.data.municipality.update') }}">
                         @csrf
 
-                        <div class="section-title">Demographics</div>
+                        <div class="section-title">Demographics (Auto-calculated from Barangay Data)</div>
                         <div class="row g-3 mb-0">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="f-label">Total Population</label>
                                 <input type="number" name="total_population" class="f-input"
                                        value="{{ $currentTotalPopulation }}"
                                        required min="0" placeholder="e.g. 45000">
+                                <small class="text-muted" style="font-size:.75rem;">💡 Auto-calculated from barangay data for year {{ $municipality->year ?? date('Y') }}</small>
                             </div>
-                            <div class="col-md-4">
-                                <label class="f-label">Male Population</label>
-                                <input type="number" name="male_population" class="f-input"
-                                       value="{{ $municipality->male_population }}" required min="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="f-label">Female Population</label>
-                                <input type="number" name="female_population" class="f-input"
-                                       value="{{ $municipality->female_population }}" required min="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="f-label">Youth (0–19)</label>
-                                <input type="number" name="population_0_19" class="f-input" value="{{ $municipality->population_0_19 }}" required min="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="f-label">Adult (20–59)</label>
-                                <input type="number" name="population_20_59" class="f-input" value="{{ $municipality->population_20_59 }}" required min="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="f-label">Senior (60–100)</label>
-                                <input type="number" name="population_60_100" class="f-input" value="{{ $municipality->population_60_100 }}" required min="0">
-                            </div>
-                            <div class="col-md-12">
+                            <div class="col-md-6">
                                 <label class="f-label">Total Households</label>
-                                <input type="number" name="total_households" class="f-input" value="{{ $municipality->total_households }}" required min="0">
+                                <input type="number" name="total_households" class="f-input" value="{{ $currentTotalHouseholds }}" required min="0">
+                                <small class="text-muted" style="font-size:.75rem;">💡 Auto-calculated from barangay data for year {{ $municipality->year ?? date('Y') }}</small>
                             </div>
                         </div>
 
-                        <div class="row g-3 mt-1">
+                        <div class="row g-3 mt-3">
                             <div class="col-md-3">
                                 <label class="f-label">Data Year</label>
-                                <select name="year" class="f-input" required>
+                                <select name="year" class="f-input" required id="yearSelect">
                                     @php
                                         $dropdownYears = array_unique(array_merge(
                                             $years,
@@ -250,7 +230,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     @endphp
                                     @foreach($dropdownYears as $yearOption)
                                         <option value="{{ $yearOption }}" {{ ($municipality->year ?? date('Y')) == $yearOption ? 'selected' : '' }}>
-                                            {{ $yearOption }}{{ in_array($yearOption, $years) ? ' ✓' : '' }}
+                                            {{ $yearOption }}{{ in_array($yearOption, $years) && $allSummaries->where('year', $yearOption)->isNotEmpty() ? ' ✓' : '' }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -351,38 +331,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
 
         // ── Year Switcher ──
-        // Index all yearly summaries by year so we can fill the form instantly on dropdown change
-        const yearlySummaries = {};
-        @foreach($allSummaries as $s)
-        yearlySummaries[{{ $s->year }}] = {
-            total_population:  {{ $s->total_population ?? 0 }},
-            male_population:   {{ $s->male_population ?? 0 }},
-            female_population: {{ $s->female_population ?? 0 }},
-            population_0_19:   {{ $s->population_0_19 ?? 0 }},
-            population_20_59:  {{ $s->population_20_59 ?? 0 }},
-            population_60_100: {{ $s->population_60_100 ?? 0 }},
-            total_households:  {{ $s->total_households ?? 0 }},
-        };
-        @endforeach
-
-        document.querySelector('select[name="year"]').addEventListener('change', function() {
+        document.getElementById('yearSelect').addEventListener('change', function() {
             const yr = parseInt(this.value);
-            const data = yearlySummaries[yr];
-            if (!data) return; // no saved data for this year — leave fields blank for new entry
-            document.querySelector('input[name="total_population"]').value  = data.total_population;
-            document.querySelector('input[name="male_population"]').value   = data.male_population;
-            document.querySelector('input[name="female_population"]').value = data.female_population;
-            document.querySelector('input[name="population_0_19"]').value   = data.population_0_19;
-            document.querySelector('input[name="population_20_59"]').value  = data.population_20_59;
-            document.querySelector('input[name="population_60_100"]').value = data.population_60_100;
-            document.querySelector('input[name="total_households"]').value  = data.total_households;
-
-            // Update the panel header to reflect selected year
-            const headerTitle = document.querySelector('.panel-header-title');
-            if (headerTitle) headerTitle.textContent = 'Current Year Data — ' + yr;
+            window.location.href = '{{ route("admin.data.municipality") }}?year=' + yr;
         });
-
-        // ── Population Auto-Calc ── (removed — total population is now manually entered)
 
 
         // ── Yearly Chart ──

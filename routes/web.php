@@ -30,7 +30,7 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::post('/user/pwd-upload-requirement', [UserController::class, 'uploadPwdRequirement'])->name('user.pwd-upload-requirement');
     Route::post('/user/aics-medical-upload', [UserController::class, 'uploadAicsMedical'])->name('user.aics-medical-upload');
     Route::post('/user/aics-burial-upload', [UserController::class, 'uploadAicsBurial'])->name('user.aics-burial-upload');
-    
+
     // Chat routes
     Route::get('/chat/admins', [App\Http\Controllers\ChatController::class, 'getAdmins'])->name('chat.admins');
     Route::get('/chat/messages/{adminId}', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.messages');

@@ -472,29 +472,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .bgy-row.dirty td {
             background: transparent;
         }
-
-        .btn-update-all {
-            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
-            color: white;
-            border: none;
-            border-radius: 10px;
-            padding: 8px 20px;
-            font-size: .82rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all .3s;
-            white-space: nowrap;
-        }
-
-        .btn-update-all:hover {
-            opacity: .9;
-            transform: translateY(-1px);
-        }
-
-        .btn-update-all:disabled {
-            opacity: .55;
-            transform: none;
-        }
     </style>
 </head>
 
@@ -566,56 +543,52 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <div class="alert alert-success mb-4">{{ session('success') }}</div>
             @endif
 
-            <div class="filter-card">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0 fw-bold" style="color:var(--primary-blue);">Filter Barangay Records</h6>
-                    <div class="d-flex gap-2">
-                        <button class="btn-action-delete" onclick="bulkArchiveByYear()" style="padding:8px 20px;">🗑
-                            Archive by Year</button>
-                        <button class="btn-action-edit" onclick="openArchivedModal()"
-                            style="background:rgba(44,62,143,.12);color:var(--primary-blue);border:1.5px solid rgba(44,62,143,.25);border-radius:8px;padding:8px 20px;font-size:.8rem;font-weight:700;cursor:pointer;">📂
-                            Archived Barangays</button>
-                        <button class="btn-action-edit" data-bs-toggle="modal" data-bs-target="#addBarangayModal"
-                            style="background:var(--secondary-gradient);padding:8px 20px;">+ Add Barangay Data</button>
-                    </div>
-                </div>
-                <form method="GET" action="{{ route('superadmin.data.barangays') }}" id="filterForm">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-4">
-                            <label class="form-label">Municipality</label>
-                            <select name="municipality" id="filterMunicipality" class="form-select">
-                                <option value="">All Municipalities</option>
-                                @foreach($municipalities as $municipality)
-                                    <option value="{{ $municipality }}" {{ request('municipality') == $municipality ? 'selected' : '' }}>{{ $municipality }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="form-label">Year</label>
-                            <select name="year" id="filterYear" class="form-select">
-                                <option value="">All Years</option>
-                                @foreach($years as $yr)
-                                    <option value="{{ $yr }}" {{ request('year') == $yr ? 'selected' : '' }}>{{ $yr }}
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn-filter w-100">Apply Filter</button>
-                        </div>
-                        <div class="col-md-3">
-                            <a href="{{ route('superadmin.data.barangays') }}" class="btn btn-outline-secondary w-100"
-                                style="padding:10px;">Clear Filters</a>
-                        </div>
-                    </div>
-                </form>
+            <!-- Action Buttons Row -->
+            <div class="d-flex justify-content-end gap-2 mb-3">
+                <button onclick="bulkArchiveByYear()" style="background:rgba(196,30,36,0.1);border:1px solid rgba(196,30,36,0.25);color:#C41E24;border-radius:10px;padding:10px 20px;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.25s;">
+                    🗑 Archive by Year
+                </button>
+                <button onclick="openArchivedModal()" style="background:rgba(44,62,143,0.1);border:1px solid rgba(44,62,143,0.25);color:var(--primary-blue);border-radius:10px;padding:10px 20px;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.25s;">
+                    📂 Archived
+                </button>
+                <button data-bs-toggle="modal" data-bs-target="#addBarangayModal" style="background:var(--secondary-gradient);color:var(--primary-blue);border:none;border-radius:10px;padding:10px 20px;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.25s;">
+                    + Add Data
+                </button>
             </div>
 
             <!-- Inline-Edit Table -->
             <div class="panel-card">
-                <div class="panel-header">
-                    <h5>Barangay Records</h5>
-                    <span class="count-badge">{{ $barangays->count() }} records</span>
+                <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
+                    <div class="d-flex align-items-center gap-3">
+                        <h5>Barangay Records</h5>
+                        <span class="count-badge">{{ $barangays->count() }} records</span>
+                    </div>
+                    <div class="d-flex align-items-center gap-2" style="flex-wrap:wrap;">
+                        <!-- Search Bar -->
+                        <input type="text" id="searchInput" placeholder="🔍 Search barangay..." style="background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;font-size:0.85rem;padding:6px 14px;border-radius:8px;min-width:200px;" oninput="searchTable()">
+                        
+                        <div style="width:1px;height:24px;background:rgba(255,255,255,0.2);margin:0 4px;"></div>
+                        
+                        <!-- Municipality Filter -->
+                        <select id="filterMunicipality" class="form-select form-select-sm" style="width:auto;min-width:160px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;font-size:0.85rem;padding:6px 12px;border-radius:8px;" onchange="applyFilters()">
+                            <option value="" style="color:#334155;">All Municipalities</option>
+                            @foreach($municipalities as $municipality)
+                                <option value="{{ $municipality }}" {{ request('municipality') == $municipality ? 'selected' : '' }} style="color:#334155;">{{ $municipality }}</option>
+                            @endforeach
+                        </select>
+                        
+                        <!-- Year Filter -->
+                        <select id="filterYear" class="form-select form-select-sm" style="width:auto;min-width:120px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;font-size:0.85rem;padding:6px 12px;border-radius:8px;" onchange="applyFilters()">
+                            <option value="" style="color:#334155;">All Years</option>
+                            @foreach($years as $yr)
+                                <option value="{{ $yr }}" {{ request('year') == $yr ? 'selected' : '' }} style="color:#334155;">{{ $yr }}</option>
+                            @endforeach
+                        </select>
+                        
+                        @if(request('municipality') || request('year'))
+                        <button onclick="clearFilters()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:8px;padding:6px 14px;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap;">Clear</button>
+                        @endif
+                    </div>
                 </div>
                 <div class="table-responsive" style="max-height:620px;overflow-y:auto;">
                     <table class="premium-table" id="barangayTable">
@@ -627,11 +600,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <th style="text-align:center;">Total Population</th>
                                 <th style="text-align:center;">PWD</th>
                                 <th style="text-align:center;">AICS</th>
-                                <th style="text-align:center;">4PS</th>
-                                <th style="text-align:center;">Senior</th>
                                 <th style="text-align:center;">Solo Parent</th>
                                 <th style="text-align:center;">Households</th>
-                                <th style="text-align:center;">Approved Apps</th>
+                                <th style="text-align:center;">4PS</th>
+                                <th style="text-align:center;">Senior</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -644,11 +616,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     <td style="text-align:center;"><input type="number" class="inline-input" data-field="total_population" value="{{ $barangay->total_population ?? 0 }}" min="0"></td>
                                     <td style="text-align:center;"><input type="number" class="inline-input" data-field="pwd_count" value="{{ $barangay->pwd_count }}" min="0"></td>
                                     <td style="text-align:center;"><input type="number" class="inline-input" data-field="aics_count" value="{{ $barangay->aics_count }}" min="0"></td>
-                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="four_ps_count" value="{{ $barangay->four_ps_count ?? 0 }}" min="0"></td>
-                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="senior_count" value="{{ $barangay->senior_count ?? 0 }}" min="0"></td>
                                     <td style="text-align:center;"><input type="number" class="inline-input" data-field="single_parent_count" value="{{ $barangay->single_parent_count }}" min="0"></td>
                                     <td style="text-align:center;"><input type="number" class="inline-input" data-field="total_households" value="{{ $barangay->total_households }}" min="0"></td>
-                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="total_approved_applications" value="{{ $barangay->total_approved_applications }}" min="0"></td>
+                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="four_ps_count" value="{{ $barangay->four_ps_count ?? 0 }}" min="0"></td>
+                                    <td style="text-align:center;"><input type="number" class="inline-input" data-field="senior_count" value="{{ $barangay->senior_count ?? 0 }}" min="0"></td>
                                     <td>
                                         <div class="d-flex gap-2">
                                             <button class="btn-save-row" onclick="saveRow({{ $barangay->id }})">Save</button>
@@ -836,7 +807,23 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const CSRF = document.querySelector('meta[name="csrf-token"]').content;
-        let dirtyRows = new Set();
+
+        // ── Search function ──────────────────────────────────────────
+        function searchTable() {
+            const searchValue = document.getElementById('searchInput').value.toLowerCase();
+            const rows = document.querySelectorAll('#barangayTable tbody tr');
+            
+            rows.forEach(row => {
+                const barangayName = row.cells[2]?.textContent.toLowerCase() || '';
+                const municipality = row.cells[1]?.textContent.toLowerCase() || '';
+                
+                if (barangayName.includes(searchValue) || municipality.includes(searchValue)) {
+                    row.style.display = '';
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+        }
 
         const barangayLists = {
             'Magdalena': [
@@ -937,22 +924,24 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 .catch(() => { showToast('Network error.', 'danger'); btn.textContent = orig; btn.disabled = false; });
         });
 
-        // ── Filter form: always reset to page 1 when filters change ─────────
-        document.getElementById('filterForm').addEventListener('submit', function (e) {
-            // Remove 'page' from form values so we always go to page 1 on new filters
-            const existing = this.querySelector('input[name="page"]');
-            if (existing) existing.remove();
-        });
-
-        // Auto-submit when municipality dropdown changes
-        document.getElementById('filterMunicipality').addEventListener('change', function () {
-            document.getElementById('filterForm').submit();
-        });
-
-        // Auto-submit when year dropdown changes
-        document.getElementById('filterYear').addEventListener('change', function () {
-            document.getElementById('filterForm').submit();
-        });
+        // ── Filter functions ─────────────────────────────────────────
+        function applyFilters() {
+            const municipality = document.getElementById('filterMunicipality').value;
+            const year = document.getElementById('filterYear').value;
+            const url = new URL(window.location.href);
+            
+            if (municipality) url.searchParams.set('municipality', municipality);
+            else url.searchParams.delete('municipality');
+            
+            if (year) url.searchParams.set('year', year);
+            else url.searchParams.delete('year');
+            
+            window.location.href = url.toString();
+        }
+        
+        function clearFilters() {
+            window.location.href = '{{ route("superadmin.data.barangays") }}';
+        }
 
         // ── Custom confirmation modal logic ──────────────────────────
         let _pendingAction = null;
@@ -1178,8 +1167,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             if (e.target.classList.contains('inline-input') || e.target.classList.contains('inline-select')) {
                 const row = e.target.closest('.bgy-row');
                 if (row) {
-                    const id = row.dataset.id;
-                    dirtyRows.add(id);
                     row.classList.add('dirty');
                 }
             }
@@ -1212,41 +1199,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 .then(res => {
                     if (res.success) {
                         showToast(res.message || 'Saved!', 'success');
-                        dirtyRows.delete(id);
                         const row = document.querySelector(`.bgy-row[data-id="${id}"]`);
                         if (row) row.classList.remove('dirty');
-                    } else {
-                        showToast(res.message || 'Error saving.', 'danger');
-                    }
-                    btn.textContent = orig; btn.disabled = false;
-                })
-                .catch(() => { showToast('Network error.', 'danger'); btn.textContent = orig; btn.disabled = false; });
-        }
-
-        function updateAll() {
-            if (!dirtyRows.size) { showToast('No changes to save.', 'warning'); return; }
-            const allData = [];
-            dirtyRows.forEach(id => {
-                const d = getRowData(id);
-                if (d) allData.push(d);
-            });
-            if (!allData.length) return;
-
-            const btn = document.getElementById('updateAllBtn');
-            const orig = btn.textContent;
-            btn.textContent = '⏳ Saving...'; btn.disabled = true;
-
-            fetch('/superadmin/data/barangays/bulk-update', {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                body: JSON.stringify({ records: allData })
-            })
-                .then(r => r.json())
-                .then(res => {
-                    if (res.success) {
-                        showToast(res.message || 'All changes saved!', 'success');
-                        dirtyRows.clear();
-                        document.querySelectorAll('.bgy-row.dirty').forEach(r => r.classList.remove('dirty'));
                     } else {
                         showToast(res.message || 'Error saving.', 'danger');
                     }

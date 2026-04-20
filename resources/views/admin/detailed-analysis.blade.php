@@ -53,12 +53,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .muni-badge-lg .muni-sub  { font-size: 0.72rem; opacity: 0.75; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
 
         /* ── STAT CARDS ── */
-        .stat-card { background: var(--bg-white); border-radius: 18px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); height: 100%; transition: all 0.3s; position: relative; overflow: hidden; }
+        .stat-card { background: var(--bg-white); border-radius: 18px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); height: 100%; position: relative; overflow: hidden; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary-gradient); }
         .stat-card.yellow::before { background: var(--secondary-gradient); }
         .stat-card.green::before  { background: linear-gradient(135deg,#28a745,#1e7e34); }
         .stat-card.red::before    { background: linear-gradient(135deg,#C41E24,#8B0000); }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(44,62,143,0.10); }
         .stat-card .inner { padding: 24px 26px; }
         .stat-pill  { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 20px; padding: 3px 10px; display: inline-block; margin-bottom: 8px; background: #E5EEFF; color: var(--primary-blue); }
         .stat-pill.y { background: #FFF3D6; color: #856404; }
@@ -301,15 +300,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </div>
                     </div>
                     <div class="panel-body">
-                        @php $maxProg = $programShareOverview->max('total') ?: 1; $pIdx = 1; @endphp
-                        @forelse($programShareOverview as $program => $stats)
+                        @php $maxProg = $programShareOverview->max() ?: 1; $pIdx = 1; @endphp
+                        @forelse($programShareOverview as $program => $count)
                         <div class="prog-row">
                             <span class="prog-num">{{ str_pad($pIdx++, 2, '0', STR_PAD_LEFT) }}</span>
                             <span class="prog-name">{{ str_replace('_', ' ', $program) }}</span>
                             <div class="prog-bar-wrap">
-                                <div class="prog-bar" style="width:{{ ($stats['total']/$maxProg)*100 }}%"></div>
+                                <div class="prog-bar" style="width:{{ ($count/$maxProg)*100 }}%"></div>
                             </div>
-                            <span class="prog-count">{{ number_format($stats['total']) }}</span>
+                            <span class="prog-count">{{ number_format($count) }}</span>
                         </div>
                         @empty
                         <div class="no-data">No program data available.</div>

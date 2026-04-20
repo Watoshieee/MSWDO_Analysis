@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Program Data � MSWDO Super Admin</title>
+    <title>Program Data � MSWDO Super Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -792,58 +792,44 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 @endif
 
-                <!-- Filter + Add -->
-                <div class="filter-card">
-                    <form method="GET" action="{{ route('superadmin.data.programs') }}">
-                        <div class="row g-3 align-items-end">
-                            <div class="col-md-3">
-                                <label class="form-label">Municipality</label>
-                                <select name="municipality" class="form-select">
-                                    <option value="">All Municipalities</option>
-                                    @foreach($municipalities as $municipality)
-                                        <option value="{{ $municipality }}" {{ request('municipality') == $municipality ? 'selected' : '' }}>{{ $municipality }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-3">
-                                <label class="form-label">Program Type</label>
-                                <select name="program_type" class="form-select">
-                                    <option value="">All Programs</option>
-                                    @foreach($programTypes as $value => $label)
-                                        <option value="{{ $value }}" {{ request('program_type') == $value ? 'selected' : '' }}>{{ $label }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <label class="form-label">Year</label>
-                                <select name="year" class="form-select">
-                                    <option value="">All Years</option>
-                                    @foreach($years as $year)
-                                        <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>
-                                            {{ $year }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-2">
-                                <button type="submit" class="btn-filter w-100">Apply Filter</button>
-                            </div>
-                            <div class="col-md-2 text-end d-flex gap-2 justify-content-end">
-                                <button class="btn-archive-view" data-bs-toggle="modal"
-                                    data-bs-target="#archivedProgModal">
-                                    ?? Archived (<span id="archivedProgCount">...</span>)
-                                </button>
-                                <a href="#" class="btn-add" data-bs-toggle="modal" data-bs-target="#createModal">+ Add
-                                    Data</a>
-                            </div>
-                        </div>
-                    </form>
+                <!-- Action Buttons Row -->
+                <div class="d-flex justify-content-end gap-2 mb-3">
+                    <button class="btn-archive-view" data-bs-toggle="modal" data-bs-target="#archivedProgModal">
+                        📂 Archived (<span id="archivedProgCount">...</span>)
+                    </button>
+                    <a href="#" class="btn-add" data-bs-toggle="modal" data-bs-target="#createModal">+ Add Data</a>
                 </div>
 
                 <!-- Table -->
                 <div class="panel-card">
-                    <div class="panel-header">
-                        <h5>Program Records</h5>
-                        <span class="count-badge">{{ $programs->total() }} records</span>
+                    <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
+                        <div class="d-flex align-items-center gap-3">
+                            <h5>Program Records</h5>
+                            <span class="count-badge">{{ $programs->total() }} records</span>
+                        </div>
+                        <div class="d-flex align-items-center gap-2" style="flex-wrap:wrap;">
+                            <select id="filterMunicipality" class="form-select form-select-sm" style="width:auto;min-width:160px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;font-size:0.85rem;padding:6px 12px;border-radius:8px;" onchange="applyFilters()">
+                                <option value="" style="color:#334155;">All Municipalities</option>
+                                @foreach($municipalities as $municipality)
+                                    <option value="{{ $municipality }}" {{ request('municipality') == $municipality ? 'selected' : '' }} style="color:#334155;">{{ $municipality }}</option>
+                                @endforeach
+                            </select>
+                            <select id="filterProgramType" class="form-select form-select-sm" style="width:auto;min-width:160px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;font-size:0.85rem;padding:6px 12px;border-radius:8px;" onchange="applyFilters()">
+                                <option value="" style="color:#334155;">All Programs</option>
+                                @foreach($programTypes as $value => $label)
+                                    <option value="{{ $value }}" {{ request('program_type') == $value ? 'selected' : '' }} style="color:#334155;">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <select id="filterYear" class="form-select form-select-sm" style="width:auto;min-width:120px;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.3);color:white;font-size:0.85rem;padding:6px 12px;border-radius:8px;" onchange="applyFilters()">
+                                <option value="" style="color:#334155;">All Years</option>
+                                @foreach($years as $year)
+                                    <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }} style="color:#334155;">{{ $year }}</option>
+                                @endforeach
+                            </select>
+                            @if(request('municipality') || request('program_type') || request('year'))
+                            <button onclick="clearFilters()" style="background:rgba(255,255,255,0.2);border:1px solid rgba(255,255,255,0.3);color:white;border-radius:8px;padding:6px 14px;font-size:0.8rem;font-weight:600;cursor:pointer;white-space:nowrap;">Clear</button>
+                            @endif
+                        </div>
                     </div>
                     <div class="table-responsive">
                         <table class="premium-table">
@@ -897,17 +883,48 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                                     <!-- Edit Modal -->
                                     <div class="modal fade" id="editProg{{ $program->id }}" tabindex="-1">
-                                        <div class="modal-dialog modal-dialog-centered">
+                                        <div class="modal-dialog modal-lg modal-dialog-centered">
                                             <div class="modal-content">
                                                 <div class="modal-header">
-                                                    <h5 class="modal-title">Edit Program Data</h5>
+                                                    <h5 class="modal-title">Edit Program - {{ str_replace('_', ' ', $program->program_type) }} ({{ $program->year }})</h5>
                                                     <button type="button" class="btn-close"
                                                         data-bs-dismiss="modal"></button>
                                                 </div>
                                                 <form method="POST"
-                                                    action="{{ route('superadmin.data.programs.update', $program->id) }}">
+                                                    action="{{ route('superadmin.data.programs.update', $program->id) }}" id="editForm{{ $program->id }}" onsubmit="handleFormSubmit(event, {{ $program->id }})">
                                                     @csrf
+                                                    <input type="hidden" name="beneficiary_count" id="totalCountHidden{{ $program->id }}" value="{{ $program->beneficiary_count }}">
                                                     <div class="modal-body p-4">
+                                                        @if(isset($barangayBreakdown[$program->id]) && $barangayBreakdown[$program->id]->count() > 0)
+                                                        <!-- Total Display -->
+                                                        <div class="mb-3" style="background:var(--primary-gradient);color:white;padding:16px;border-radius:12px;text-align:center;">
+                                                            <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;opacity:0.85;">Total Beneficiaries</div>
+                                                            <div id="totalCountDisplay{{ $program->id }}" style="font-size:2.2rem;font-weight:900;margin-top:4px;">{{ number_format($program->beneficiary_count) }}</div>
+                                                        </div>
+                                                        
+                                                        <!-- Barangay Breakdown -->
+                                                        <div class="mb-3">
+                                                            <label style="font-weight:600;color:var(--primary-blue);font-size:0.88rem;margin-bottom:8px;display:block;">Edit by Barangay</label>
+                                                            <div style="max-height:300px;overflow-y:auto;border:1.5px solid var(--border-light);border-radius:10px;padding:8px;">
+                                                                @foreach($barangayBreakdown[$program->id] as $brgy)
+                                                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px;background:#F8FAFC;border-radius:8px;">
+                                                                    <div style="flex:1;font-size:0.9rem;font-weight:600;color:var(--primary-blue);">{{ $brgy['name'] }}</div>
+                                                                    <input type="hidden" name="barangay_data[{{ $loop->index }}][id]" value="{{ $brgy['id'] }}">
+                                                                    <input type="number" 
+                                                                           name="barangay_data[{{ $loop->index }}][count]" 
+                                                                           value="{{ $brgy['count'] }}" 
+                                                                           min="0"
+                                                                           class="inline-input barangay-count-input" 
+                                                                           data-program-id="{{ $program->id }}"
+                                                                           style="width:120px;padding:8px 12px;font-size:0.95rem;font-weight:600;text-align:center;border:1.5px solid var(--border-light);border-radius:8px;">
+                                                                </div>
+                                                                @endforeach
+                                                            </div>
+                                                            <div style="font-size:0.75rem;color:#64748b;margin-top:8px;font-style:italic;">
+                                                                💡 Total will auto-calculate as you edit the counts above.
+                                                            </div>
+                                                        </div>
+                                                        @else
                                                         <div class="mb-3">
                                                             <label class="form-label">Municipality</label>
                                                             <input type="text" class="form-control"
@@ -927,13 +944,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                                         </div>
                                                         <div class="mb-3">
                                                             <label class="form-label">Year</label>
-                                                            <select name="year" class="form-select" required>
-                                                                @foreach(range(date('Y') - 3, date('Y') + 1) as $yearOption)
-                                                                    <option value="{{ $yearOption }}" {{ $program->year == $yearOption ? 'selected' : '' }}>
-                                                                        {{ $yearOption }}</option>
-                                                                @endforeach
-                                                            </select>
+                                                            <input type="text" class="form-control" value="{{ $program->year }}" readonly disabled>
                                                         </div>
+                                                        @endif
                                                     </div>
                                                     <div class="modal-footer border-0 px-4 pb-4 gap-2">
                                                         <button type="button" class="btn-modal-cancel"
@@ -944,6 +957,41 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    <script>
+                                    (function() {
+                                        const modalId = 'editProg{{ $program->id }}';
+                                        const programId = '{{ $program->id }}';
+                                        
+                                        function calculateTotal() {
+                                            const inputs = document.querySelectorAll('.barangay-count-input[data-program-id="' + programId + '"]');
+                                            const totalDisplay = document.getElementById('totalCountDisplay' + programId);
+                                            const totalHidden = document.getElementById('totalCountHidden' + programId);
+                                            
+                                            if (inputs.length > 0 && totalDisplay && totalHidden) {
+                                                let total = 0;
+                                                inputs.forEach(inp => {
+                                                    total += parseInt(inp.value) || 0;
+                                                });
+                                                totalDisplay.textContent = total.toLocaleString();
+                                                totalHidden.value = total;
+                                            }
+                                        }
+                                        
+                                        // Attach event listeners on modal show
+                                        document.getElementById(modalId).addEventListener('shown.bs.modal', function() {
+                                            const inputs = document.querySelectorAll('.barangay-count-input[data-program-id="' + programId + '"]');
+                                            
+                                            // Calculate initial total
+                                            calculateTotal();
+                                            
+                                            // Attach input listeners
+                                            inputs.forEach(input => {
+                                                input.addEventListener('input', calculateTotal);
+                                            });
+                                        });
+                                    })();
+                                    </script>
                                 @empty
                                     <tr>
                                         <td colspan="6" style="text-align:center;padding:48px;color:#94a3b8;">No program
@@ -1030,6 +1078,25 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+        
+        // Preserve scroll position on page reload
+        if ('scrollRestoration' in history) {
+            history.scrollRestoration = 'manual';
+        }
+        
+        // Save scroll position before page unload
+        window.addEventListener('beforeunload', function() {
+            sessionStorage.setItem('programsScrollY', window.scrollY);
+        });
+        
+        // Restore scroll position immediately after page load
+        (function() {
+            const savedScroll = sessionStorage.getItem('programsScrollY');
+            if (savedScroll !== null) {
+                window.scrollTo(0, parseInt(savedScroll));
+                sessionStorage.removeItem('programsScrollY');
+            }
+        })();
 
         function switchTab(name, btn) {
             document.querySelectorAll('.section-tab').forEach(el => el.classList.remove('active'));
@@ -1111,6 +1178,50 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             .catch(() => { });
 
         document.getElementById('archivedProgModal').addEventListener('show.bs.modal', loadArchivedPrograms);
+
+        // Handle form submission with reload
+        function handleFormSubmit(event, programId) {
+            event.preventDefault();
+            const form = event.target;
+            const formData = new FormData(form);
+            
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 
+                    'X-CSRF-TOKEN': CSRF,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    window.location.href = window.location.href.split('?')[0] + '?t=' + Date.now();
+                } else {
+                    alert(data.message || 'Error updating program.');
+                }
+            })
+            .catch(() => {
+                alert('Error updating program.');
+            });
+        }
+
+        function applyFilters() {
+            const municipality = document.getElementById('filterMunicipality').value;
+            const programType = document.getElementById('filterProgramType').value;
+            const year = document.getElementById('filterYear').value;
+            const url = new URL(window.location.href);
+            if (municipality) url.searchParams.set('municipality', municipality);
+            else url.searchParams.delete('municipality');
+            if (programType) url.searchParams.set('program_type', programType);
+            else url.searchParams.delete('program_type');
+            if (year) url.searchParams.set('year', year);
+            else url.searchParams.delete('year');
+            window.location.href = url.toString();
+        }
+        function clearFilters() {
+            window.location.href = '{{ route("superadmin.data.programs") }}';
+        }
 
         let chartsInited = false;
         function initCharts() {

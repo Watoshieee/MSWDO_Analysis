@@ -54,8 +54,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .panel-header p { margin: 0; opacity: .75; font-size: .82rem; }
         .count-badge { background: rgba(253,185,19,.25); color: var(--secondary-yellow); border: 1px solid rgba(253,185,19,.4); border-radius: 20px; padding: 3px 12px; font-size: .78rem; font-weight: 700; }
         table.premium-table { width: 100%; border-collapse: collapse; }
-        .premium-table thead th { background: var(--bg-light); color: var(--primary-blue); font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 12px 20px; border-bottom: 2px solid var(--border-light); white-space: nowrap; }
-        .premium-table tbody td { padding: 10px 20px; font-size: .88rem; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
+        .premium-table thead th { background: var(--bg-light); color: var(--primary-blue); font-size: .78rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; padding: 12px 16px; border-bottom: 2px solid var(--border-light); white-space: nowrap; }
+        .premium-table tbody td { padding: 10px 16px; font-size: .88rem; border-bottom: 1px solid var(--border-light); vertical-align: middle; }
         .premium-table tbody tr:last-child td { border-bottom: none; }
         .premium-table tbody tr:hover td { background: var(--primary-blue-light); }
         .bgy-row.dirty td { background: #FFFBEB !important; }
@@ -65,7 +65,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .btn-save-row:hover { transform: translateY(-1px); }
         .btn-update-all { background: linear-gradient(135deg, #10B981, #059669); color: white; border: none; border-radius: 10px; padding: 8px 20px; font-size: .85rem; font-weight: 700; cursor: pointer; transition: all .3s; }
         .btn-update-all:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(16,185,129,.35); }
-        .btn-add-bgy { background: var(--secondary-gradient); color: var(--primary-blue); border: none; border-radius: 30px; padding: 9px 24px; font-weight: 800; font-size: .88rem; cursor: pointer; transition: all .3s; }
+        .btn-add-bgy { background: var(--secondary-gradient); color: var(--primary-blue); border: none; border-radius: 30px; padding: 7px 20px; font-weight: 700; font-size: .82rem; cursor: pointer; transition: all .3s; }
         .btn-add-bgy:hover { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(253,185,19,.4); }
         .modal-content { border-radius: 16px; border: none; box-shadow: 0 20px 60px rgba(44,62,143,.2); }
         .modal-header { background: var(--primary-gradient); color: white; border-radius: 16px 16px 0 0; }
@@ -124,27 +124,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="main-content">
     <div class="container mt-4">
 
-        {{-- FILTER --}}
-        <div class="filter-card">
-            <div class="d-flex align-items-end gap-3 flex-wrap justify-content-between">
-                <form method="GET" action="{{ route('admin.data.barangays') }}" class="d-flex align-items-end gap-3 flex-wrap">
-                    <div>
-                        <label class="form-label mb-1">Year</label>
-                        <select name="year" class="form-select" style="min-width:130px;">
-                            <option value="">All Years</option>
-                            @foreach($years as $yr)
-                                <option value="{{ $yr }}" {{ request('year') == $yr ? 'selected' : '' }}>{{ $yr }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <button type="submit" class="btn-filter">Apply Filter</button>
-                    <a href="{{ route('admin.data.barangays') }}" class="btn-clear">Clear</a>
-                </form>
-                <div class="d-flex gap-2">
-                    <button class="btn-update-all" id="updateAllBtn" onclick="updateAll()">⬆ Update All</button>
-                    <button class="btn-add-bgy" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Barangay Data</button>
-                </div>
-            </div>
+        {{-- ADD BUTTON --}}
+        <div class="mb-3 text-end">
+            <button class="btn-add-bgy" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Barangay Data</button>
         </div>
 
         {{-- TABLE --}}
@@ -152,18 +134,43 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="panel-header">
                 <div>
                     <h5>Barangay Records — {{ $municipality->name }}</h5>
-                    <p>{{ $uniqueBarangayCount }} barangays · {{ $barangays->count() }} total records (across all years)</p>
+                    <p>{{ $uniqueBarangayCount }} barangays · {{ $barangays->count() }} records
+                        @if($selectedYear)
+                            in {{ $selectedYear }}
+                        @else
+                            (across all years)
+                        @endif
+                    </p>
                 </div>
-                <div class="d-flex align-items-center gap-3">
-                    <button class="btn-update-all" onclick="updateAll()">⬆ Update All</button>
+                <div class="d-flex align-items-center gap-2">
+                    <button class="btn-update-all" id="updateAllBtn" onclick="updateAll()">⬆ Update All</button>
+                    <form method="GET" action="{{ route('admin.data.barangays') }}" class="d-flex align-items-center gap-2">
+                        <label for="yearFilter" class="form-label mb-0" style="color: rgba(255,255,255,.9); font-size: .82rem; font-weight: 600; white-space: nowrap;">Filter by Year:</label>
+                        <select name="year" id="yearFilter" class="form-select" style="min-width:110px; font-size:.85rem;" onchange="this.form.submit()">
+                            <option value="" {{ !$selectedYear ? 'selected' : '' }}>All Years</option>
+                            @php
+                                $dropdownYears = array_unique(array_merge(
+                                    $years,
+                                    [2015, 2020, 2024],
+                                    range(date('Y') - 1, date('Y') + 1)
+                                ));
+                                rsort($dropdownYears);
+                            @endphp
+                            @foreach($dropdownYears as $yr)
+                                <option value="{{ $yr }}" {{ $selectedYear == $yr ? 'selected' : '' }}>{{ $yr }}</option>
+                            @endforeach
+                        </select>
+                        @if($selectedYear)
+                            <a href="{{ route('admin.data.barangays') }}" class="btn-clear" style="background: rgba(255,255,255,.2); color: white; border: 1.5px solid rgba(255,255,255,.4); padding: 5px 14px; font-size: .8rem; text-decoration: none; border-radius: 8px; white-space: nowrap;">Clear</a>
+                        @endif
+                    </form>
                 </div>
             </div>
             <div class="table-responsive" style="max-height:520px;overflow-y:auto;">
                 <table class="premium-table" style="position:relative;">
-                    <thead style="position:sticky;top:0;z-index:2;">
+                    <thead style="position:sticky;top:0;z-index:3;">
                         <tr>
-                            <th>Year</th>
-                            <th>Barangay</th>
+                            <th style="min-width:160px;">Barangay</th>
                             <th style="text-align:center;">Total Population</th>
                             <th style="text-align:center;">PWD</th>
                             <th style="text-align:center;">AICS</th>
@@ -171,17 +178,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <th style="text-align:center;">Households</th>
                             <th style="text-align:center;">4PS</th>
                             <th style="text-align:center;">Senior</th>
-                            <th>Actions</th>
+                            <th style="width:100px;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @forelse($barangays as $barangay)
-                        <tr class="bgy-row" data-id="{{ $barangay->id }}">
+                        <tr class="bgy-row" data-id="{{ $barangay->id }}" data-year="{{ $barangay->year ?? date('Y') }}">
                             <td>
-                                <input type="number" class="inline-input" name="year"
-                                    value="{{ $barangay->year ?? date('Y') }}" min="2000" max="{{ date('Y') + 1 }}" style="width:72px;">
+                                <strong>{{ $barangay->name }}</strong>
+                                <div style="font-size:.7rem;color:#64748b;margin-top:2px;">Year: {{ $barangay->year ?? date('Y') }}</div>
                             </td>
-                            <td><strong>{{ $barangay->name }}</strong></td>
                             <td style="text-align:center;">
                                 <input type="number" class="inline-input" name="total_population"
                                     value="{{ $barangay->total_population ?? 0 }}" min="0">
@@ -392,7 +398,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         function getRowData(tr) {
             return {
                 id: parseInt(tr.dataset.id),
-                year: parseInt(tr.querySelector('[name="year"]').value),
+                year: parseInt(tr.dataset.year),
                 total_population: parseInt(tr.querySelector('[name="total_population"]').value) || 0,
                 pwd_count: parseInt(tr.querySelector('[name="pwd_count"]').value) || 0,
                 aics_count: parseInt(tr.querySelector('[name="aics_count"]').value) || 0,
@@ -407,6 +413,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         function saveRow(btn) {
             const tr = btn.closest('tr');
             const d  = getRowData(tr);
+            
             btn.textContent = '⏳';
             btn.disabled = true;
 
@@ -421,7 +428,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 btn.disabled = false;
                 if (res.success) {
                     tr.classList.remove('dirty');
-                    showToast('Saved!', 'success');
+                    showToast('Saved! Year: ' + d.year, 'success');
+                    // Keep the current year filter when reloading
+                    const currentYear = new URLSearchParams(window.location.search).get('year') || d.year;
+                    setTimeout(() => window.location.href = window.location.pathname + '?year=' + currentYear, 800);
                 } else {
                     showToast(res.message || 'Error saving row.', 'danger');
                 }
@@ -435,6 +445,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             if (!dirtyRows.length) { showToast('No changes to save.', 'warning'); return; }
 
             const rows = dirtyRows.map(getRowData);
+            console.log('Updating rows:', rows);
+            
             const btn  = document.getElementById('updateAllBtn');
             btn.disabled = true; btn.textContent = '⏳ Saving…';
 
@@ -445,10 +457,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             })
             .then(r => r.json())
             .then(d => {
+                console.log('Update response:', d);
                 btn.disabled = false; btn.textContent = '⬆ Update All';
                 if (d.success) {
                     dirtyRows.forEach(tr => tr.classList.remove('dirty'));
                     showToast(d.message, 'success');
+                    // Keep the current year filter when reloading
+                    const currentYear = new URLSearchParams(window.location.search).get('year');
+                    if (currentYear) {
+                        setTimeout(() => window.location.href = window.location.pathname + '?year=' + currentYear, 800);
+                    } else {
+                        setTimeout(() => location.reload(), 800);
+                    }
                 } else {
                     showToast(d.message || 'Error updating records.', 'danger');
                 }

@@ -206,76 +206,28 @@ class AdminController extends Controller
                 ];
             });
 
-        // Get barangay data totals for PWD, AICS, Solo Parent, 4PS, Senior
-        $barangays = Barangay::where('municipality', $user->municipality)->get();
-        $barangayProgramTotals = [
-            'PWD_Assistance' => $barangays->sum('pwd_count'),
-            'AICS' => $barangays->sum('aics_count'),
-            'Solo_Parent' => $barangays->sum('single_parent_count'),
-            '4Ps' => $barangays->sum('four_ps_count'),
-            'Senior_Citizen_Pension' => $barangays->sum('senior_count'),
-        ];
-
-        // Get social welfare programs data
-        $socialPrograms = SocialWelfareProgram::where('municipality', $user->municipality)->get();
-        $socialProgramTotals = [];
+        // Get social welfare programs data (CURRENT YEAR ONLY - 2024)
+        $currentYear = 2024;
+        $socialPrograms = SocialWelfareProgram::where('municipality', $user->municipality)
+            ->where('year', $currentYear)
+            ->get();
+        
+        $programShareOverview = [];
         foreach ($socialPrograms as $program) {
             $programType = $program->program_type;
-            if (!isset($socialProgramTotals[$programType])) {
-                $socialProgramTotals[$programType] = 0;
+            if (!isset($programShareOverview[$programType])) {
+                $programShareOverview[$programType] = 0;
             }
-            $socialProgramTotals[$programType] += $program->beneficiary_count;
+            $programShareOverview[$programType] += $program->beneficiary_count;
         }
+        
+        // Convert to collection and sort by total descending
+        $programShareOverview = collect($programShareOverview)->sortByDesc(function($count) {
+            return $count;
+        });
 
-        // Merge all three sources for Program Share Overview
-        $programShareOverview = [];
-        
-        // Add programs from applications
-        foreach ($applicationsByProgram as $program => $stats) {
-            $programShareOverview[$program] = [
-                'total' => $stats['total'],
-                'from_applications' => $stats['total'],
-                'from_barangay_data' => 0,
-                'from_social_programs' => 0,
-            ];
-        }
-        
-        // Add/merge programs from barangay data
-        foreach ($barangayProgramTotals as $program => $count) {
-            if ($count > 0) {
-                if (isset($programShareOverview[$program])) {
-                    $programShareOverview[$program]['from_barangay_data'] = $count;
-                    $programShareOverview[$program]['total'] += $count;
-                } else {
-                    $programShareOverview[$program] = [
-                        'total' => $count,
-                        'from_applications' => 0,
-                        'from_barangay_data' => $count,
-                        'from_social_programs' => 0,
-                    ];
-                }
-            }
-        }
-        
-        // Add/merge programs from social welfare programs
-        foreach ($socialProgramTotals as $program => $count) {
-            if ($count > 0) {
-                if (isset($programShareOverview[$program])) {
-                    $programShareOverview[$program]['from_social_programs'] = $count;
-                    $programShareOverview[$program]['total'] += $count;
-                } else {
-                    $programShareOverview[$program] = [
-                        'total' => $count,
-                        'from_applications' => 0,
-                        'from_barangay_data' => 0,
-                        'from_social_programs' => $count,
-                    ];
-                }
-            }
-        }
-        
-        // Sort by total descending and convert to collection
-        $programShareOverview = collect($programShareOverview)->sortByDesc('total');
+        // Get barangays
+        $barangays = Barangay::where('municipality', $user->municipality)->get();
 
         // Barangay statistics
         $barangayStats = [];

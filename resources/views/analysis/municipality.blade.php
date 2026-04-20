@@ -178,9 +178,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .prog-benefit-card {
             background: var(--bg-white);
             border-radius: 14px; border: 1px solid var(--border-light);
-            padding: 18px 20px; transition: transform .2s, box-shadow .2s;
+            padding: 18px 20px;
         }
-        .prog-benefit-card:hover { transform: translateY(-3px); box-shadow: 0 10px 24px rgba(44,62,143,0.09); }
         .prog-benefit-card .pbc-type { font-size: 0.68rem; font-weight: 800; text-transform: uppercase; letter-spacing: .1em; color: var(--text-muted); margin-bottom: 6px; }
         .prog-benefit-card .pbc-count { font-size: 1.6rem; font-weight: 900; color: var(--primary-blue); line-height: 1.1; }
         .prog-benefit-card .pbc-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 2px; }
@@ -307,9 +306,17 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 </div>
                 <div class="col-md-6">
                     <div class="chart-card">
-                        <div class="section-hdr">
-                            <h5>Program Beneficiaries by Type</h5>
-                            <p>Distribution of beneficiaries across programs</p>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="section-hdr" style="margin-bottom:0;">
+                                <h5>Program Beneficiaries by Type</h5>
+                                <p>Distribution of beneficiaries across programs</p>
+                            </div>
+                            <div class="year-filter-buttons" style="display:flex;gap:6px;flex-wrap:wrap;">
+                                <button class="year-btn" data-year="all" onclick="filterByYear('all')" style="background:#E2E8F0;color:#64748b;border:none;border-radius:8px;padding:6px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">All</button>
+                                @foreach($availableYears as $year)
+                                <button class="year-btn {{ $year == 2024 ? 'active' : '' }}" data-year="{{ $year }}" onclick="filterByYear('{{ $year }}')" style="background:{{ $year == 2024 ? 'var(--primary-gradient)' : '#E2E8F0' }};color:{{ $year == 2024 ? 'white' : '#64748b' }};border:none;border-radius:8px;padding:6px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">{{ $year }}</button>
+                                @endforeach
+                            </div>
                         </div>
                         <div class="chart-container">
                             <canvas id="programBeneficiariesChart"></canvas>
@@ -322,20 +329,28 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="table-card mb-4">
                 <div class="table-card-header">
                     <div class="row align-items-center">
-                        <div class="col-md-6">
+                        <div class="col-md-4">
                             <div class="section-hdr" style="margin-bottom:0;">
                                 <h5>Detailed Barangay Information</h5>
                                 <p>Click any row to view full barangay details</p>
                             </div>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-md-4">
+                            <div class="year-filter-buttons" style="display:flex;gap:6px;flex-wrap:wrap;justify-content:center;">
+                                <button class="year-btn-table active" data-year="all" onclick="filterTableByYear('all')" style="background:var(--primary-gradient);color:white;border:none;border-radius:8px;padding:6px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">All</button>
+                                @foreach($availableYears as $year)
+                                <button class="year-btn-table" data-year="{{ $year }}" onclick="filterTableByYear('{{ $year }}')" style="background:#E2E8F0;color:#64748b;border:none;border-radius:8px;padding:6px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">{{ $year }}</button>
+                                @endforeach
+                            </div>
+                        </div>
+                        <div class="col-md-4">
                             <div class="search-box">
                                 <input type="text" id="barangaySearch" class="form-control" placeholder="🔍 Search barangay..." style="border-radius:10px;border:1.5px solid var(--border-light);padding:10px 16px;font-size:0.88rem;">
                             </div>
                         </div>
                     </div>
                 </div>
-                <div class="table-responsive">
+                <div class="table-responsive" style="max-height: 500px; overflow-y: auto;">
                     <table class="mswdo-table" id="barangayTable">
                         <thead>
                             <tr>
@@ -378,26 +393,39 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             </div>
 
             <!-- SOCIAL WELFARE PROGRAMS -->
-            @if($programs->count() > 0)
             <div class="mb-4">
-                <div class="section-hdr">
-                    <h5>Social Welfare Programs in {{ $municipality->name }}</h5>
-                    <p>Program beneficiary breakdown by type</p>
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div class="section-hdr" style="margin-bottom:0;">
+                        <h5>Social Welfare Programs in {{ $municipality->name }}</h5>
+                        <p>Program beneficiary breakdown by type</p>
+                    </div>
+                    <div class="year-filter-buttons" style="display:flex;gap:6px;flex-wrap:wrap;">
+                        <button class="year-btn-programs" data-year="all" onclick="filterProgramsByYear('all')" style="background:#E2E8F0;color:#64748b;border:none;border-radius:8px;padding:6px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">All</button>
+                        @foreach($programYears as $year)
+                        <button class="year-btn-programs {{ $year == $defaultProgramYear ? 'active' : '' }}" data-year="{{ $year }}" onclick="filterProgramsByYear('{{ $year }}')" style="background:{{ $year == $defaultProgramYear ? 'var(--primary-gradient)' : '#E2E8F0' }};color:{{ $year == $defaultProgramYear ? 'white' : '#64748b' }};border:none;border-radius:8px;padding:6px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">{{ $year }}</button>
+                        @endforeach
+                    </div>
                 </div>
-                <div class="row g-3">
-                    @foreach($programs->groupBy('program_type') as $type => $programsByType)
+                <div class="row g-3" id="programsContainer">
+                    @php
+                        $defaultPrograms = $programsByYear[$defaultProgramYear] ?? [];
+                    @endphp
+                    @forelse($defaultPrograms as $type => $count)
                     <div class="col-md-4 col-sm-6">
                         <div class="prog-benefit-card">
                             <div class="pbc-type">{{ str_replace('_', ' ', $type) }}</div>
-                            <div class="pbc-count">{{ number_format($programsByType->sum('beneficiary_count')) }}</div>
+                            <div class="pbc-count">{{ number_format($count) }}</div>
                             <div class="pbc-sub">Beneficiaries</div>
                             <div class="pbc-bar"></div>
                         </div>
                     </div>
-                    @endforeach
+                    @empty
+                    <div class="col-12">
+                        <p style="text-align:center;color:var(--text-muted);padding:20px;">No program data available for {{ $defaultProgramYear }}</p>
+                    </div>
+                    @endforelse
                 </div>
             </div>
-            @endif
 
         </div>
     </div>
@@ -437,14 +465,20 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
         };
 
+        let programBeneficiariesChart;
+        const dataByYear = {!! json_encode($dataByYear) !!};
+        const allYearsData = {
+            totalPWD: {{ $totalPWD_All }},
+            totalAICS: {{ $totalAICS_All }},
+            total4PS: {{ $total4PS_All }},
+            totalSenior: {{ $totalSenior_All }},
+            totalSingleParents: {{ $totalSingleParents_All }},
+            barangayData: {!! json_encode($barangayData) !!}
+        };
+
         document.addEventListener('DOMContentLoaded', function () {
             const barangayNames  = {!! json_encode(array_keys($barangayData)) !!};
             const populations    = {!! json_encode(array_column($barangayData, 'population')) !!};
-            const pwdCounts      = {!! json_encode(array_column($barangayData, 'pwd')) !!};
-            const aicsCounts     = {!! json_encode(array_column($barangayData, 'aics')) !!};
-            const fourPsCounts   = {!! json_encode(array_column($barangayData, 'four_ps')) !!};
-            const seniorCounts   = {!! json_encode(array_column($barangayData, 'senior')) !!};
-            const singleParents  = {!! json_encode(array_column($barangayData, 'single_parents')) !!};
 
             /* -- Top 10 Barangays by Population (horizontal bar) -- */
             const top10 = barangayNames.slice(0, 10).map((name, i) => ({ name, pop: populations[i] }));
@@ -458,18 +492,24 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             });
 
             /* -- Program Beneficiaries (Doughnut) -- */
-            const totalPWD = {{ $totalPWD }};
-            const totalAICS = {{ $totalAICS }};
-            const total4PS = {{ $total4PS }};
-            const totalSenior = {{ $totalSenior }};
-            const totalSoloParent = {{ $totalSingleParents }};
+            const ctx = document.getElementById('programBeneficiariesChart');
             
-            new Chart(document.getElementById('programBeneficiariesChart'), {
+            // Default to 2024 data if available, otherwise use all years
+            const defaultYear = dataByYear[2024] ? 2024 : 'all';
+            let initialData;
+            if (defaultYear === 2024 && dataByYear[2024]) {
+                const yearData = dataByYear[2024];
+                initialData = [yearData.totalPWD, yearData.totalAICS, yearData.total4PS, yearData.totalSenior, yearData.totalSingleParents];
+            } else {
+                initialData = [allYearsData.totalPWD, allYearsData.totalAICS, allYearsData.total4PS, allYearsData.totalSenior, allYearsData.totalSingleParents];
+            }
+            
+            programBeneficiariesChart = new Chart(ctx, {
                 type: 'doughnut',
                 data: {
                     labels: ['PWD', 'AICS', '4PS', 'Senior', 'Solo Parent'],
                     datasets: [{ 
-                        data: [totalPWD, totalAICS, total4PS, totalSenior, totalSoloParent], 
+                        data: initialData, 
                         backgroundColor: [BLUE, GREEN, YELLOW, PINK, TEAL], 
                         borderWidth: 2, 
                         borderColor: '#fff' 
@@ -478,6 +518,120 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 options: { ...chartDefaults, cutout: '60%', plugins: { ...chartDefaults.plugins, legend: { ...chartDefaults.plugins.legend, position: 'bottom' } } }
             });
         });
+
+        // ── Year filter for chart ──
+        function filterByYear(year) {
+            // Update button styles
+            document.querySelectorAll('.year-btn').forEach(btn => {
+                if (btn.dataset.year === year) {
+                    btn.style.background = 'var(--primary-gradient)';
+                    btn.style.color = 'white';
+                    btn.classList.add('active');
+                } else {
+                    btn.style.background = '#E2E8F0';
+                    btn.style.color = '#64748b';
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Update chart data
+            let data;
+            if (year === 'all') {
+                data = [allYearsData.totalPWD, allYearsData.totalAICS, allYearsData.total4PS, allYearsData.totalSenior, allYearsData.totalSingleParents];
+            } else {
+                const yearData = dataByYear[year];
+                data = [yearData.totalPWD, yearData.totalAICS, yearData.total4PS, yearData.totalSenior, yearData.totalSingleParents];
+            }
+
+            programBeneficiariesChart.data.datasets[0].data = data;
+            programBeneficiariesChart.update();
+        }
+
+        // ── Year filter for table ──
+        function filterTableByYear(year) {
+            // Update button styles
+            document.querySelectorAll('.year-btn-table').forEach(btn => {
+                if (btn.dataset.year === year) {
+                    btn.style.background = 'var(--primary-gradient)';
+                    btn.style.color = 'white';
+                    btn.classList.add('active');
+                } else {
+                    btn.style.background = '#E2E8F0';
+                    btn.style.color = '#64748b';
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Update table data
+            const tbody = document.getElementById('barangayTableBody');
+            const data = year === 'all' ? allYearsData.barangayData : dataByYear[year].barangayData;
+            
+            tbody.innerHTML = '';
+            Object.keys(data).forEach(barangayName => {
+                const d = data[barangayName];
+                const row = `
+                    <tr onclick="showBarangayDetails('${barangayName}')">
+                        <td><strong>${barangayName}</strong></td>
+                        <td data-value="${d.population}">${d.population.toLocaleString()}</td>
+                        <td data-value="${d.households}">${d.households.toLocaleString()}</td>
+                        <td data-value="${d.pwd}">${d.pwd.toLocaleString()}</td>
+                        <td data-value="${d.aics}">${d.aics.toLocaleString()}</td>
+                        <td data-value="${d.four_ps}">${d.four_ps.toLocaleString()}</td>
+                        <td data-value="${d.senior}">${d.senior.toLocaleString()}</td>
+                        <td data-value="${d.single_parents}">${d.single_parents.toLocaleString()}</td>
+                        <td><span class="badge-approved">${d.approved_apps}</span></td>
+                    </tr>
+                `;
+                tbody.innerHTML += row;
+            });
+
+            // Update visible count
+            document.getElementById('visibleCount').textContent = Object.keys(data).length;
+        }
+
+        // ── Year filter for programs ──
+        const programsByYear = {!! json_encode($programsByYear) !!};
+        
+        function filterProgramsByYear(year) {
+            // Update button styles
+            document.querySelectorAll('.year-btn-programs').forEach(btn => {
+                if (btn.dataset.year === year) {
+                    btn.style.background = 'var(--primary-gradient)';
+                    btn.style.color = 'white';
+                    btn.classList.add('active');
+                } else {
+                    btn.style.background = '#E2E8F0';
+                    btn.style.color = '#64748b';
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Update programs display
+            const container = document.getElementById('programsContainer');
+            const programs = programsByYear[year] || {};
+            
+            if (Object.keys(programs).length === 0) {
+                const displayYear = year === 'all' ? 'all years' : year;
+                container.innerHTML = '<div class="col-12"><p style="text-align:center;color:var(--text-muted);padding:20px;">No program data available for ' + displayYear + '</p></div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            Object.keys(programs).forEach(type => {
+                const count = programs[type];
+                const card = `
+                    <div class="col-md-4 col-sm-6">
+                        <div class="prog-benefit-card">
+                            <div class="pbc-type">${type.replace(/_/g, ' ')}</div>
+                            <div class="pbc-count">${count.toLocaleString()}</div>
+                            <div class="pbc-sub">Beneficiaries</div>
+                            <div class="pbc-bar"></div>
+                        </div>
+                    </div>
+                `;
+                container.innerHTML += card;
+            });
+        }
 
         // ── Search functionality ──
         document.getElementById('barangaySearch').addEventListener('keyup', function() {

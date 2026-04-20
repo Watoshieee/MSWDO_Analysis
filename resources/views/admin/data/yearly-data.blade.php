@@ -55,8 +55,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         /* Panel */
         .panel-card { background: white; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,.03); border: 1px solid var(--border-light); overflow: hidden; margin-bottom: 28px; }
-        .panel-header { background: var(--primary-gradient); color: white; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; }
-        .panel-header h5 { font-weight: 800; margin: 0; font-size: 1.05rem; }
+        .panel-header { background: var(--primary-gradient); color: white; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 12px; }
+        .panel-header h5 { font-weight: 800; margin: 0; font-size: 1.05rem; margin-right: 8px; }
         .count-badge { background: rgba(253,185,19,.25); color: var(--secondary-yellow); border: 1px solid rgba(253,185,19,.4); border-radius: 20px; padding: 3px 12px; font-size: .78rem; font-weight: 700; }
 
         /* Table */
@@ -139,7 +139,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="container" style="position:relative;z-index:2;">
             <a href="{{ route('admin.data.dashboard') }}" class="back-link">&#8592; Back to Data Management</a>
             <div class="hero-badge">Data Management</div>
-            <h1>Municipality Yearly Data</h1>
+            <h1>📊 Municipality Yearly Data</h1>
             <div class="hero-divider"></div>
             <p>Manage population and household summary records per year for <strong>{{ $municipality->name }}</strong>.</p>
         </div>
@@ -157,28 +157,26 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
             <!-- Tab Pills -->
             <div class="tab-pills">
-                <button class="tab-pill active" onclick="switchTab('records', this)">📋 Records</button>
+                <button class="tab-pill active" onclick="switchTab('records', this)">📋 Yearly Records</button>
                 <button class="tab-pill" onclick="switchTab('analysis', this)">📊 Analysis</button>
             </div>
 
             <!-- ===== RECORDS TAB ===== -->
             <div class="section-tab active" id="tab-records">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h6 class="mb-0 fw-bold" style="color:var(--primary-blue);">Yearly Summary Records — {{ $municipality->name }}</h6>
-                    <div class="d-flex gap-2">
-                        @if($archivedSummaries->count() > 0)
-                        <button class="btn-add" style="background:rgba(196,30,36,.10);color:#C41E24;border:1.5px solid rgba(196,30,36,.25);" data-bs-toggle="modal" data-bs-target="#archiveModal">
-                            🗄️ Archived ({{ $archivedSummaries->count() }})
-                        </button>
-                        @endif
-                        <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Year Data</button>
-                    </div>
-                </div>
-
                 <div class="panel-card">
                     <div class="panel-header">
-                        <h5>{{ $municipality->name }}</h5>
-                        <span class="count-badge">{{ $summaries->count() }} year records</span>
+                        <div>
+                            <h5>Yearly Summary Records — {{ $municipality->name }}</h5>
+                            <span class="count-badge">{{ $summaries->count() }} year records</span>
+                        </div>
+                        <div class="d-flex gap-2">
+                            @if($archivedSummaries->count() > 0)
+                            <button class="btn-add" style="background:rgba(196,30,36,.10);color:#C41E24;border:1.5px solid rgba(196,30,36,.25);" data-bs-toggle="modal" data-bs-target="#archiveModal">
+                                🗄️ Archived ({{ $archivedSummaries->count() }})
+                            </button>
+                            @endif
+                            <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Year Data</button>
+                        </div>
                     </div>
                     <div class="table-responsive">
                         @if($summaries->isEmpty())
@@ -192,11 +190,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     <tr>
                                         <th>Year</th>
                                         <th>Population</th>
-                                        <th>Male</th>
-                                        <th>Female</th>
-                                        <th>0–19</th>
-                                        <th>20–59</th>
-                                        <th>60–100</th>
                                         <th>Households</th>
                                         <th>Actions</th>
                                     </tr>
@@ -206,11 +199,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         <tr>
                                             <td><strong>{{ $row->year }}</strong></td>
                                             <td>{{ number_format($row->total_population) }}</td>
-                                            <td>{{ number_format($row->male_population) }}</td>
-                                            <td>{{ number_format($row->female_population) }}</td>
-                                            <td>{{ number_format($row->population_0_19) }}</td>
-                                            <td>{{ number_format($row->population_20_59) }}</td>
-                                            <td>{{ number_format($row->population_60_100) }}</td>
                                             <td>{{ number_format($row->total_households) }}</td>
                                             <td>
                                                 <div class="d-flex gap-2">
@@ -236,34 +224,19 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                                         <input type="hidden" name="year" value="{{ $row->year }}">
                                                         <div class="modal-body p-4">
                                                             <div class="row g-3">
-                                                                <div class="col-md-4">
+                                                                <div class="col-md-6">
                                                                     <label class="form-label">Total Population</label>
                                                                     <input type="number" name="total_population" class="form-control" value="{{ $row->total_population }}" required min="0">
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Male Population</label>
-                                                                    <input type="number" name="male_population" class="form-control" value="{{ $row->male_population }}" min="0">
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Female Population</label>
-                                                                    <input type="number" name="female_population" class="form-control" value="{{ $row->female_population }}" min="0">
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Age 0–19</label>
-                                                                    <input type="number" name="population_0_19" class="form-control" value="{{ $row->population_0_19 }}" min="0">
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Age 20–59</label>
-                                                                    <input type="number" name="population_20_59" class="form-control" value="{{ $row->population_20_59 }}" min="0">
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <label class="form-label">Age 60–100</label>
-                                                                    <input type="number" name="population_60_100" class="form-control" value="{{ $row->population_60_100 }}" min="0">
                                                                 </div>
                                                                 <div class="col-md-6">
                                                                     <label class="form-label">Total Households</label>
                                                                     <input type="number" name="total_households" class="form-control" value="{{ $row->total_households }}" required min="0">
                                                                 </div>
+                                                                <input type="hidden" name="male_population" value="{{ $row->male_population }}">
+                                                                <input type="hidden" name="female_population" value="{{ $row->female_population }}">
+                                                                <input type="hidden" name="population_0_19" value="{{ $row->population_0_19 }}">
+                                                                <input type="hidden" name="population_20_59" value="{{ $row->population_20_59 }}">
+                                                                <input type="hidden" name="population_60_100" value="{{ $row->population_60_100 }}">
                                                                 <input type="hidden" name="total_pwd"         value="{{ $row->total_pwd }}">
                                                                 <input type="hidden" name="total_aics"        value="{{ $row->total_aics }}">
                                                                 <input type="hidden" name="total_solo_parent" value="{{ $row->total_solo_parent }}">
@@ -330,34 +303,19 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     @endforeach
                                 </select>
                             </div>
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <label class="form-label">Total Population</label>
                                 <input type="number" name="total_population" class="form-control" required min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Male Population</label>
-                                <input type="number" name="male_population" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Female Population</label>
-                                <input type="number" name="female_population" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Age 0–19</label>
-                                <input type="number" name="population_0_19" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Age 20–59</label>
-                                <input type="number" name="population_20_59" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Age 60–100</label>
-                                <input type="number" name="population_60_100" class="form-control" min="0" placeholder="0">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Total Households</label>
                                 <input type="number" name="total_households" class="form-control" required min="0" placeholder="0">
                             </div>
+                            <input type="hidden" name="male_population" value="0">
+                            <input type="hidden" name="female_population" value="0">
+                            <input type="hidden" name="population_0_19" value="0">
+                            <input type="hidden" name="population_20_59" value="0">
+                            <input type="hidden" name="population_60_100" value="0">
                             <input type="hidden" name="total_pwd"         value="0">
                             <input type="hidden" name="total_aics"        value="0">
                             <input type="hidden" name="total_solo_parent" value="0">
@@ -400,8 +358,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <tr>
                                     <th>Year</th>
                                     <th>Population</th>
-                                    <th>Male</th>
-                                    <th>Female</th>
                                     <th>Households</th>
                                     <th>Archived On</th>
                                     <th>Actions</th>
@@ -412,8 +368,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <tr>
                                     <td><strong>{{ $archived->year }}</strong></td>
                                     <td>{{ number_format($archived->total_population) }}</td>
-                                    <td>{{ number_format($archived->male_population) }}</td>
-                                    <td>{{ number_format($archived->female_population) }}</td>
                                     <td>{{ number_format($archived->total_households) }}</td>
                                     <td style="font-size:.8rem;color:#64748b;">{{ $archived->deleted_at->format('M d, Y') }}</td>
                                     <td>

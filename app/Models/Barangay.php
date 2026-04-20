@@ -16,6 +16,7 @@ class Barangay extends Model
     protected $fillable = [
         'municipality',
         'name',
+        'total_population',
         'male_population',
         'female_population',
         'population_0_19',

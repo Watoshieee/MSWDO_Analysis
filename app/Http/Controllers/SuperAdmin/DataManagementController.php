@@ -225,7 +225,6 @@ class DataManagementController extends Controller
             'total_population' => 'required|integer|min:0',
             'pwd_count' => 'nullable|integer|min:0',
             'aics_count' => 'nullable|integer|min:0',
-            'year' => 'nullable|integer|min:2000',
         ]);
 
         if ($validator->fails()) {
@@ -241,8 +240,10 @@ class DataManagementController extends Controller
             'four_ps_count' => $request->four_ps_count ?? 0,
             'senior_count' => $request->senior_count ?? 0,
             'total_households' => $request->total_households ?? 0,
-            'year' => $request->year ?? date('Y'),
         ]);
+        
+        // Sync to Programs table
+        $this->syncBarangayYearToPrograms($barangay->municipality, $barangay->year);
 
         if (request()->wantsJson()) {
             return response()->json(['success' => true, 'message' => 'Barangay updated.']);
@@ -373,7 +374,6 @@ class DataManagementController extends Controller
                 'senior_count'        => intval($row['senior_count'] ?? 0),
                 'total_households'    => intval($row['total_households'] ?? 0),
                 'total_approved_applications' => intval($row['total_approved_applications'] ?? 0),
-                'year'                => intval($row['year'] ?? date('Y')),
             ]);
             $updated++;
         }
@@ -486,6 +486,34 @@ class DataManagementController extends Controller
                 'Solo_Parent' => (int) $row->total_solo_parent,
             ];
         }
+        
+        // Get barangay breakdown for each program
+        $fieldMapping = [
+            'PWD_Assistance' => 'pwd_count',
+            'AICS' => 'aics_count',
+            '4Ps' => 'four_ps_count',
+            'Senior_Citizen_Pension' => 'senior_count',
+            'Solo_Parent' => 'single_parent_count',
+        ];
+        
+        $barangayBreakdown = [];
+        foreach ($programs as $program) {
+            $field = $fieldMapping[$program->program_type] ?? null;
+            if ($field) {
+                $barangays = Barangay::where('municipality', $program->municipality)
+                    ->where('year', $program->year)
+                    ->where($field, '>', 0)
+                    ->get();
+                
+                $barangayBreakdown[$program->id] = $barangays->map(function($b) use ($field) {
+                    return [
+                        'id' => $b->id,
+                        'name' => $b->name,
+                        'count' => $b->$field ?? 0,
+                    ];
+                });
+            }
+        }
 
         // Chart: beneficiaries per year per municipality (all programs combined)
         $allYears = SocialWelfareProgram::select('year')
@@ -533,7 +561,8 @@ class DataManagementController extends Controller
             'chartDatasets',
             'programChartData',
             'barangayAggregates',
-            'barangayLookup'
+            'barangayLookup',
+            'barangayBreakdown'
         ));
     }
 
@@ -589,19 +618,67 @@ class DataManagementController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'beneficiary_count' => 'required|integer|min:0',
-            'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
+            'barangay_data' => 'nullable|array',
+            'barangay_data.*.id' => 'required|integer',
+            'barangay_data.*.count' => 'required|integer|min:0',
         ]);
 
         if ($validator->fails()) {
+            if ($request->wantsJson()) {
+                return response()->json(['success' => false, 'errors' => $validator->errors()], 422);
+            }
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
         $program = SocialWelfareProgram::findOrFail($id);
-        $program->update([
-            'beneficiary_count' => $request->beneficiary_count,
-            'year' => $request->year,
-        ]);
+        
+        // Update barangay data if provided
+        if ($request->has('barangay_data') && is_array($request->barangay_data)) {
+            $fieldMapping = [
+                'PWD_Assistance' => 'pwd_count',
+                'AICS' => 'aics_count',
+                '4Ps' => 'four_ps_count',
+                'Senior_Citizen_Pension' => 'senior_count',
+                'Solo_Parent' => 'single_parent_count',
+            ];
+            
+            $field = $fieldMapping[$program->program_type] ?? null;
+            
+            if ($field) {
+                // Update each barangay
+                foreach ($request->barangay_data as $data) {
+                    if (isset($data['id']) && isset($data['count'])) {
+                        $barangay = Barangay::find($data['id']);
+                        if ($barangay) {
+                            $barangay->{$field} = $data['count'];
+                            $saved = $barangay->save();
+                            \Log::info('Barangay save result', [
+                                'barangay_id' => $barangay->id,
+                                'field' => $field,
+                                'value' => $data['count'],
+                                'saved' => $saved,
+                                'after_save' => $barangay->{$field},
+                            ]);
+                        }
+                    }
+                }
+                
+                // Re-sync to SocialWelfareProgram (this will auto-calculate the correct total)
+                $this->syncBarangayYearToPrograms($program->municipality, $program->year);
+                
+                // Force refresh the program model to get updated data
+                $program->refresh();
+            }
+        } else {
+            // No barangay data - direct update for programs without barangay breakdown
+            $program->update([
+                'beneficiary_count' => $request->beneficiary_count,
+            ]);
+        }
 
+        if ($request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Program data updated successfully!']);
+        }
         return redirect()->back()->with('success', 'Program data updated successfully!');
     }
 
@@ -932,5 +1009,58 @@ class DataManagementController extends Controller
             'count' => $count,
             'message' => "Permanently deleted {$count} archived barangay record(s).",
         ]);
+    }
+    
+    // Helper function to sync barangay data for a specific year to SocialWelfareProgram table
+    private function syncBarangayYearToPrograms($municipality, $year)
+    {
+        $barangayData = Barangay::where('municipality', $municipality)
+            ->where('year', $year)
+            ->get();
+        
+        \Log::info('syncBarangayYearToPrograms called', [
+            'municipality' => $municipality,
+            'year' => $year,
+            'barangay_count' => $barangayData->count(),
+        ]);
+        
+        $fieldMapping = [
+            'PWD_Assistance' => 'pwd_count',
+            'AICS' => 'aics_count',
+            '4Ps' => 'four_ps_count',
+            'Senior_Citizen_Pension' => 'senior_count',
+            'Solo_Parent' => 'single_parent_count',
+        ];
+        
+        $aggregated = [];
+        foreach ($barangayData as $barangay) {
+            foreach ($fieldMapping as $programType => $field) {
+                if (!isset($aggregated[$programType])) {
+                    $aggregated[$programType] = 0;
+                }
+                $aggregated[$programType] += $barangay->$field ?? 0;
+            }
+        }
+        
+        \Log::info('Aggregated totals', $aggregated);
+        
+        foreach ($aggregated as $programType => $count) {
+            $updated = SocialWelfareProgram::updateOrCreate(
+                [
+                    'municipality' => $municipality,
+                    'program_type' => $programType,
+                    'year' => $year,
+                ],
+                [
+                    'beneficiary_count' => $count,
+                    'barangay' => null,
+                ]
+            );
+            \Log::info('Program updated', [
+                'program_type' => $programType,
+                'count' => $count,
+                'was_recently_created' => $updated->wasRecentlyCreated,
+            ]);
+        }
     }
 }

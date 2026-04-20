@@ -13,7 +13,12 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+        html,
+        body {
+            overscroll-behavior: none;
+            margin: 0;
+            padding: 0;
+        }
 
         :root {
             --primary-blue: #2C3E8F;
@@ -51,11 +56,26 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             gap: 10px;
         }
 
-        .navbar-toggler { order: -1; }
-        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        .navbar-toggler {
+            order: -1;
+        }
+
+        .navbar-brand {
+            order: 0;
+            margin-left: auto !important;
+            margin-right: 0 !important;
+        }
+
         @media (min-width: 992px) {
-            .navbar-toggler { order: 0; }
-            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+            .navbar-toggler {
+                order: 0;
+            }
+
+            .navbar-brand {
+                order: 0;
+                margin-left: 0 !important;
+                margin-right: auto !important;
+            }
         }
 
         .nav-link {
@@ -275,17 +295,20 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         }
 
         .stat-icon {
-            width: 52px;
+            min-width: 80px;
+            width: auto;
             height: 52px;
             border-radius: 14px;
             background: var(--bg-soft-blue);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 1.5rem;
+            font-size: 0.65rem;
             margin-bottom: 16px;
             font-weight: 800;
             color: var(--primary-blue);
+            padding: 0 10px;
+            letter-spacing: 0.03em;
         }
 
         .stat-card h2 {
@@ -666,13 +689,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
     @php
         $totalPop = array_sum(array_column($demographicData, 'total'));
-        $totalMale = array_sum(array_column($demographicData, 'male'));
-        $totalFemale = array_sum(array_column($demographicData, 'female'));
+        $totalHouseholds = array_sum(array_column($demographicData, 'households'));
+        $totalBeneficiaries = array_sum(array_column($demographicData, 'beneficiaries'));
         $totalYouth = array_sum(array_column($demographicData, 'age_0_19'));
         $totalAdult = array_sum(array_column($demographicData, 'age_20_59'));
         $totalSenior = array_sum(array_column($demographicData, 'age_60_100'));
-        $malePct = $totalPop > 0 ? round(($totalMale / $totalPop) * 100, 1) : 0;
-        $femalePct = $totalPop > 0 ? round(($totalFemale / $totalPop) * 100, 1) : 0;
+        $householdsPct = $totalPop > 0 ? round(($totalHouseholds / $totalPop) * 100, 1) : 0;
+        $beneficiariesPct = $totalPop > 0 ? round(($totalBeneficiaries / $totalPop) * 100, 1) : 0;
         $youthPct = $totalPop > 0 ? round(($totalYouth / $totalPop) * 100, 1) : 0;
         $adultPct = $totalPop > 0 ? round(($totalAdult / $totalPop) * 100, 1) : 0;
         $seniorPct = $totalPop > 0 ? round(($totalSenior / $totalPop) * 100, 1) : 0;
@@ -685,7 +708,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="row g-4">
                 <div class="col-6 col-md-3">
                     <div class="stat-card">
-                        <div class="stat-icon" style="font-size:1rem;letter-spacing:-0.02em;">POP</div>
+                        <div class="stat-icon">POPULATION</div>
                         <h2>{{ number_format($totalPop) }}</h2>
                         <p class="stat-label">Total Population</p>
                         <p class="stat-sub">Across 3 municipalities</p>
@@ -693,23 +716,23 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="stat-card accent-yellow">
-                        <div class="stat-icon" style="background:#FFF3D6;color:#B37A00;font-size:0.9rem;">MALE</div>
-                        <h2 style="color:#2C3E8F;">{{ number_format($totalMale) }}</h2>
-                        <p class="stat-label">Male Population</p>
-                        <p class="stat-sub">{{ $malePct }}% of total</p>
+                        <div class="stat-icon" style="background:#FFF3D6;color:#B37A00;">HOUSEHOLD</div>
+                        <h2 style="color:#2C3E8F;">{{ number_format($totalHouseholds) }}</h2>
+                        <p class="stat-label">Total Households</p>
+                        <p class="stat-sub">{{ $householdsPct }}% of population</p>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="stat-card accent-green">
-                        <div class="stat-icon" style="background:#e8f5e9;color:#1e7e34;font-size:0.85rem;">FEMALE</div>
-                        <h2 style="color:#2C3E8F;">{{ number_format($totalFemale) }}</h2>
-                        <p class="stat-label">Female Population</p>
-                        <p class="stat-sub">{{ $femalePct }}% of total</p>
+                        <div class="stat-icon" style="background:#e8f5e9;color:#1e7e34;">BENEFICIARIES</div>
+                        <h2 style="color:#2C3E8F;">{{ number_format($totalBeneficiaries) }}</h2>
+                        <p class="stat-label">Total Beneficiaries</p>
+                        <p class="stat-sub">{{ $beneficiariesPct }}% of population</p>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="stat-card accent-red">
-                        <div class="stat-icon" style="background:#fce8e8;color:#C41E24;font-size:0.85rem;">60+</div>
+                        <div class="stat-icon" style="background:#fce8e8;color:#C41E24;">60+</div>
                         <h2 style="color:#2C3E8F;">{{ number_format($totalSenior) }}</h2>
                         <p class="stat-label">Senior Citizens</p>
                         <p class="stat-sub">{{ $seniorPct }}% of total</p>
@@ -752,8 +775,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <div>
                                     <div class="muni-name">{{ $name }}</div>
                                     <div class="muni-pop">{{ number_format($data['total']) }} total population</div>
-                                    <div class="muni-pop">{{ $data['male_pct'] }}% male &bull; {{ $data['female_pct'] }}%
-                                        female</div>
+                                    <div class="muni-pop">{{ number_format($data['households']) }} households &bull;
+                                        {{ number_format($data['beneficiaries']) }} beneficiaries</div>
                                 </div>
                             </div>
                         @endforeach
@@ -819,7 +842,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <div style="margin-bottom:10px;">
                                 <div
                                     style="font-size:0.85rem;font-weight:700;color:{{ $colors2[$name] ?? '#333' }};margin-bottom:6px;">
-                                    {{ $name }}</div>
+                                    {{ $name }}
+                                </div>
                                 <div style="display:flex;gap:6px;">
                                     <div
                                         style="flex:{{ $data['age_0_19'] }};background:#E5EEFF;border-radius:4px;height:8px;">
@@ -857,14 +881,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </section>
 
-    <!-- ===== GENDER DISTRIBUTION ===== -->
+    <!-- ===== HOUSEHOLDS & BENEFICIARIES DISTRIBUTION ===== -->
     <section class="section-wrapper alt" style="background: #e2e8f0 !important;">
         <div class="container" style="background: transparent !important;">
-            <h2 class="section-title">Gender Distribution</h2>
+            <h2 class="section-title">Households & Beneficiaries Distribution</h2>
             <div class="row g-4" style="background: transparent !important;">
                 <div class="col-lg-7" style="background: transparent !important;">
                     <div class="chart-card">
-                        <h5>Male vs. Female Population</h5>
+                        <h5>Households vs. Beneficiaries</h5>
                         <p class="chart-sub">By municipality comparison</p>
                         <div class="chart-container">
                             <canvas id="genderChart"></canvas>
@@ -873,7 +897,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 </div>
                 <div class="col-lg-5" style="background: transparent !important;">
                     <div class="chart-card h-100">
-                        <h5>Gender Ratio Summary</h5>
+                        <h5>Distribution Summary</h5>
                         <p class="chart-sub">Combined overall ratio</p>
                         <div class="chart-container" style="height:240px;">
                             <canvas id="genderPieChart"></canvas>
@@ -888,8 +912,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                             style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ $c[$name] ?? '#333' }};margin-right:6px;"></span>
                                         {{ $name }}
                                     </span>
-                                    <span style="font-size:0.82rem;color:#64748b;">{{ $data['male_pct'] }}% M &bull;
-                                        {{ $data['female_pct'] }}% F</span>
+                                    <span style="font-size:0.82rem;color:#64748b;">{{ number_format($data['households']) }}
+                                        HH &bull;
+                                        {{ number_format($data['beneficiaries']) }} Ben</span>
                                 </div>
                             @endforeach
                         </div>
@@ -912,8 +937,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <tr>
                                 <th>Municipality</th>
                                 <th class="text-center">Total Population</th>
-                                <th class="text-center">Male</th>
-                                <th class="text-center">Female</th>
+                                <th class="text-center">Households</th>
+                                <th class="text-center">Beneficiaries</th>
                                 <th class="text-center">Youth (0–19)</th>
                                 <th class="text-center">Adults (20–59)</th>
                                 <th class="text-center">Seniors (60+)</th>
@@ -929,10 +954,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         <strong>{{ $municipality }}</strong>
                                     </td>
                                     <td class="text-center"><strong>{{ number_format($data['total']) }}</strong></td>
-                                    <td class="text-center">{{ number_format($data['male']) }} <small
-                                            class="text-muted">({{ $data['male_pct'] }}%)</small></td>
-                                    <td class="text-center">{{ number_format($data['female']) }} <small
-                                            class="text-muted">({{ $data['female_pct'] }}%)</small></td>
+                                    <td class="text-center">{{ number_format($data['households']) }} <small
+                                            class="text-muted">({{ $data['households_pct'] }}%)</small></td>
+                                    <td class="text-center">{{ number_format($data['beneficiaries']) }} <small
+                                            class="text-muted">({{ $data['beneficiaries_pct'] }}%)</small></td>
                                     <td class="text-center">{{ number_format($data['age_0_19']) }} <small
                                             class="text-muted">({{ $data['age_0_19_pct'] }}%)</small></td>
                                     <td class="text-center">{{ number_format($data['age_20_59']) }} <small
@@ -944,10 +969,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <tr style="background:#f8fafc;font-weight:700;">
                                 <td><strong>Total</strong></td>
                                 <td class="text-center"><strong>{{ number_format($totalPop) }}</strong></td>
-                                <td class="text-center">{{ number_format($totalMale) }} <small
-                                        class="text-muted">({{ $malePct }}%)</small></td>
-                                <td class="text-center">{{ number_format($totalFemale) }} <small
-                                        class="text-muted">({{ $femalePct }}%)</small></td>
+                                <td class="text-center">{{ number_format($totalHouseholds) }} <small
+                                        class="text-muted">({{ $householdsPct }}%)</small></td>
+                                <td class="text-center">{{ number_format($totalBeneficiaries) }} <small
+                                        class="text-muted">({{ $beneficiariesPct }}%)</small></td>
                                 <td class="text-center">{{ number_format($totalYouth) }} <small
                                         class="text-muted">({{ $youthPct }}%)</small></td>
                                 <td class="text-center">{{ number_format($totalAdult) }} <small
@@ -997,8 +1022,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     lat: 14.1341, lng: 121.4536,
                     color: '#2C3E8F',
                     pop: {{ $demographicData['Magdalena']['total'] ?? 0 }},
-                    male_pct: {{ $demographicData['Magdalena']['male_pct'] ?? 0 }},
-                    female_pct: {{ $demographicData['Magdalena']['female_pct'] ?? 0 }},
+                    households: {{ $demographicData['Magdalena']['households'] ?? 0 }},
+                    beneficiaries: {{ $demographicData['Magdalena']['beneficiaries'] ?? 0 }},
                     polygonLayer: null,
                     bounds: null
                 },
@@ -1008,8 +1033,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     lat: 14.1291, lng: 121.4250,
                     color: '#D4A00D',
                     pop: {{ $demographicData['Liliw']['total'] ?? 0 }},
-                    male_pct: {{ $demographicData['Liliw']['male_pct'] ?? 0 }},
-                    female_pct: {{ $demographicData['Liliw']['female_pct'] ?? 0 }},
+                    households: {{ $demographicData['Liliw']['households'] ?? 0 }},
+                    beneficiaries: {{ $demographicData['Liliw']['beneficiaries'] ?? 0 }},
                     polygonLayer: null,
                     bounds: null
                 },
@@ -1019,8 +1044,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     lat: 14.0337, lng: 121.4714,
                     color: '#28a745',
                     pop: {{ $demographicData['Majayjay']['total'] ?? 0 }},
-                    male_pct: {{ $demographicData['Majayjay']['male_pct'] ?? 0 }},
-                    female_pct: {{ $demographicData['Majayjay']['female_pct'] ?? 0 }},
+                    households: {{ $demographicData['Majayjay']['households'] ?? 0 }},
+                    beneficiaries: {{ $demographicData['Majayjay']['beneficiaries'] ?? 0 }},
                     polygonLayer: null,
                     bounds: null
                 }
@@ -1115,8 +1140,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div style="font-family:'Inter',sans-serif;min-width:175px;padding:4px 2px;">
                         <div style="font-weight:800;font-size:1rem;color:${m.color};margin-bottom:8px;padding-bottom:6px;border-bottom:2px solid ${m.color}20;">${m.name}</div>
                         <div style="font-size:0.84rem;color:#334155;margin-bottom:3px;"><b>Population:</b> ${m.pop.toLocaleString()}</div>
-                        <div style="font-size:0.84rem;color:#334155;margin-bottom:3px;"><b>Male:</b> ${m.male_pct}%</div>
-                        <div style="font-size:0.84rem;color:#334155;margin-bottom:6px;"><b>Female:</b> ${m.female_pct}%</div>
+                        <div style="font-size:0.84rem;color:#334155;margin-bottom:3px;"><b>Households:</b> ${m.households.toLocaleString()}</div>
+                        <div style="font-size:0.84rem;color:#334155;margin-bottom:6px;"><b>Beneficiaries:</b> ${m.beneficiaries.toLocaleString()}</div>
                         <div style="font-size:0.76rem;color:#94a3b8;">Laguna, Philippines</div>
                     </div>
                 `, { maxWidth: 210 });
@@ -1132,21 +1157,21 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 });
             });
 
-            // ===== GENDER BAR CHART =====
+            // ===== HOUSEHOLDS & BENEFICIARIES BAR CHART =====
             new Chart(document.getElementById('genderChart'), {
                 type: 'bar',
                 data: {
                     labels: {!! json_encode(array_keys($demographicData)) !!},
                     datasets: [
                         {
-                            label: 'Male',
-                            data: {!! json_encode(array_column($demographicData, 'male')) !!},
+                            label: 'Households',
+                            data: {!! json_encode(array_column($demographicData, 'households')) !!},
                             backgroundColor: '#2C3E8F',
                             borderRadius: 6
                         },
                         {
-                            label: 'Female',
-                            data: {!! json_encode(array_column($demographicData, 'female')) !!},
+                            label: 'Beneficiaries',
+                            data: {!! json_encode(array_column($demographicData, 'beneficiaries')) !!},
                             backgroundColor: '#FDB913',
                             borderRadius: 6
                         }
@@ -1159,13 +1184,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 }
             });
 
-            // ===== GENDER PIE CHART =====
+            // ===== HOUSEHOLDS & BENEFICIARIES PIE CHART =====
             new Chart(document.getElementById('genderPieChart'), {
                 type: 'doughnut',
                 data: {
-                    labels: ['Male', 'Female'],
+                    labels: ['Households', 'Beneficiaries'],
                     datasets: [{
-                        data: [{{ $totalMale }}, {{ $totalFemale }}],
+                        data: [{{ $totalHouseholds }}, {{ $totalBeneficiaries }}],
                         backgroundColor: ['#2C3E8F', '#FDB913'],
                         borderWidth: 0,
                         hoverOffset: 8
@@ -1229,7 +1254,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     </script>
     @auth
         <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+            html,
+            body {
+                overscroll-behavior: none;
+                margin: 0;
+                padding: 0;
+            }
 
             .back-dashboard-btn {
                 position: fixed;
@@ -1316,7 +1346,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     @auth
         @if(Auth::user()->isSuperAdmin())
             <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+                html,
+                body {
+                    overscroll-behavior: none;
+                    margin: 0;
+                    padding: 0;
+                }
 
                 .admin-back-btn {
                     position: fixed;
@@ -1397,7 +1432,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             </a>
         @elseif(Auth::user()->isAdmin())
             <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+                html,
+                body {
+                    overscroll-behavior: none;
+                    margin: 0;
+                    padding: 0;
+                }
 
                 .admin-back-btn {
                     position: fixed;
