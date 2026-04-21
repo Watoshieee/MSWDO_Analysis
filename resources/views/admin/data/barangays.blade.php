@@ -48,6 +48,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .btn-filter:hover { opacity: .9; }
         .btn-clear { background: white; color: #64748b; border: 1.5px solid var(--border-light); border-radius: 10px; padding: 10px 24px; font-weight: 600; cursor: pointer; transition: all .2s; }
         .btn-clear:hover { border-color: #94a3b8; }
+        .btn-clear-data { background: #fee2e2; color: #dc2626; border: 1px solid #fca5a5; padding: 6px 14px; border-radius: 8px; font-size: .85rem; font-weight: 700; transition: all .2s; cursor: pointer; }
+        .btn-clear-data:hover { background: #fecaca; color: #b91c1c; border-color: #f87171; box-shadow: 0 4px 12px rgba(220,38,38,.15); transform: translateY(-1px); }
         .panel-card { background: white; border-radius: 20px; box-shadow: 0 4px 15px rgba(0,0,0,.03); border: 1px solid var(--border-light); overflow: hidden; }
         .panel-header { background: var(--primary-gradient); color: white; padding: 20px 28px; display: flex; align-items: center; justify-content: space-between; }
         .panel-header h5 { font-weight: 700; margin: 0; font-size: 1.05rem; }
@@ -124,8 +126,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="main-content">
     <div class="container mt-4">
 
-        {{-- ADD BUTTON --}}
-        <div class="mb-3 text-end">
+        {{-- TOP ACTION BAR --}}
+        <div class="mb-3 d-flex justify-content-end align-items-center gap-3">
+            <div class="d-inline-flex align-items-center bg-white rounded-pill px-4 py-2 shadow-sm" style="border: 1px solid rgba(44,62,143,0.15);">
+                <div style="width: 8px; height: 8px; background-color: #fbbf24; border-radius: 50%; margin-right: 10px;"></div>
+                <span class="fw-bold text-muted me-2" style="font-size: 0.85rem; letter-spacing: 0.5px; text-transform: uppercase;">Total Beneficiaries:</span>
+                <span class="fs-5 fw-bolder" style="color: var(--primary-blue);" id="grand-total-beneficiaries">0</span>
+            </div>
             <button class="btn-add-bgy" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Barangay Data</button>
         </div>
 
@@ -143,6 +150,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </p>
                 </div>
                 <div class="d-flex align-items-center gap-2">
+                    <!-- Search Feature -->
+                    <div class="position-relative">
+                        <input type="text" id="brgySearchInput" list="brgyDatalist" class="form-control fw-bold" style="min-width:180px; font-size:.85rem; border-radius:8px; padding-left:32px; border:none; box-shadow:0 2px 5px rgba(0,0,0,0.1);" autocomplete="off" placeholder="Quick Search Brgy..." onchange="openBrgyModal(this.value)">
+                        <span style="position:absolute; left:10px; top:6px; font-size:.9rem; opacity:0.6;">🔍</span>
+                    </div>
+                    <datalist id="brgyDatalist">
+                        @foreach($barangays as $b)
+                            <option value="{{ $b->name }}">
+                        @endforeach
+                    </datalist>
+
+                    <button class="btn-clear-data" onclick="zeroOutInputs()">⊘ Clear data</button>
                     <button class="btn-update-all" id="updateAllBtn" onclick="updateAll()">⬆ Update All</button>
                     <form method="GET" action="{{ route('admin.data.barangays') }}" class="d-flex align-items-center gap-2">
                         <label for="yearFilter" class="form-label mb-0" style="color: rgba(255,255,255,.9); font-size: .82rem; font-weight: 600; white-space: nowrap;">Filter by Year:</label>
@@ -161,7 +180,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             @endforeach
                         </select>
                         @if($selectedYear)
-                            <a href="{{ route('admin.data.barangays') }}" class="btn-clear" style="background: rgba(255,255,255,.2); color: white; border: 1.5px solid rgba(255,255,255,.4); padding: 5px 14px; font-size: .8rem; text-decoration: none; border-radius: 8px; white-space: nowrap;">Clear</a>
+                            <a href="{{ route('admin.data.barangays') }}" class="btn-clear" style="background: rgba(255,255,255,.2); color: white; border: 1.5px solid rgba(255,255,255,.4); padding: 5px 14px; font-size: .8rem; text-decoration: none; border-radius: 8px; white-space: nowrap;">Clear Filter</a>
                         @endif
                     </form>
                 </div>
@@ -178,7 +197,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <th style="text-align:center;">Households</th>
                             <th style="text-align:center;">4PS</th>
                             <th style="text-align:center;">Senior</th>
-                            <th style="width:100px;">Actions</th>
+                            <th style="min-width:140px; text-align:center; color:var(--primary-blue); font-weight:800;">Total Beneficiaries</th>
+                            <th style="width:100px; position:sticky; right:0; background:var(--bg-light); z-index:4; border-left:1px solid var(--border-light);">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -193,15 +213,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     value="{{ $barangay->total_population ?? 0 }}" min="0">
                             </td>
                             <td style="text-align:center;">
-                                <input type="number" class="inline-input" name="pwd_count"
+                                <input type="number" class="inline-input program-input" name="pwd_count"
                                     value="{{ $barangay->pwd_count ?? 0 }}" min="0">
                             </td>
                             <td style="text-align:center;">
-                                <input type="number" class="inline-input" name="aics_count"
+                                <input type="number" class="inline-input program-input" name="aics_count"
                                     value="{{ $barangay->aics_count ?? 0 }}" min="0">
                             </td>
                             <td style="text-align:center;">
-                                <input type="number" class="inline-input" name="single_parent_count"
+                                <input type="number" class="inline-input program-input" name="single_parent_count"
                                     value="{{ $barangay->single_parent_count ?? 0 }}" min="0">
                             </td>
                             <td style="text-align:center;">
@@ -209,20 +229,23 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     value="{{ $barangay->total_households ?? 0 }}" min="0">
                             </td>
                             <td style="text-align:center;">
-                                <input type="number" class="inline-input" name="four_ps_count"
+                                <input type="number" class="inline-input program-input" name="four_ps_count"
                                     value="{{ $barangay->four_ps_count ?? 0 }}" min="0">
                             </td>
                             <td style="text-align:center;">
-                                <input type="number" class="inline-input" name="senior_count"
+                                <input type="number" class="inline-input program-input" name="senior_count"
                                     value="{{ $barangay->senior_count ?? 0 }}" min="0">
                             </td>
-                            <td>
+                            <td style="text-align:center; font-weight:800; color:var(--primary-blue); font-size:.95rem; background:rgba(44,62,143,0.05);" class="row-total-beneficiaries">
+                                {{ ($barangay->pwd_count ?? 0) + ($barangay->aics_count ?? 0) + ($barangay->single_parent_count ?? 0) + ($barangay->four_ps_count ?? 0) + ($barangay->senior_count ?? 0) }}
+                            </td>
+                            <td style="text-align:center; position:sticky; right:0; background:white; border-left:1px solid var(--border-light); z-index:2; box-shadow:-4px 0 10px rgba(0,0,0,0.02);">
                                 <button class="btn-save-row" onclick="saveRow(this)">💾 Save</button>
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="7" class="text-center py-5">
+                            <td colspan="10" class="text-center py-5">
                                 <div style="font-size:2.8rem;opacity:.25;">📭</div>
                                 @if(request('year'))
                                     <p class="mt-2 mb-1 fw-bold" style="color:#334155;">No records for {{ $municipality->name }} in {{ request('year') }}</p>
@@ -273,6 +296,63 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <div class="modal-footer border-0 px-4 pb-4">
                     <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
                     <button type="button" class="btn-modal-submit" id="addBtnSubmit" onclick="submitAdd()">Add Barangay Data</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- QUICK EDIT MODAL --}}
+    <div class="modal fade" id="quickEditModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow-lg" style="border-radius:14px; overflow:hidden;">
+                <div class="modal-header bg-primary text-white p-4">
+                    <h5 class="modal-title fw-bolder">Update: <span id="editMdl-name" class="text-warning"></span></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4 bg-light">
+                    <div class="row g-3 bg-white p-3 rounded shadow-sm border mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label text-muted fw-bold" style="font-size:0.75rem; letter-spacing:0.5px;">TOTAL POPULATION</label>
+                            <input type="number" id="editMdl-pop" class="form-control text-center fw-bolder" min="0">
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label text-muted fw-bold" style="font-size:0.75rem; letter-spacing:0.5px;">HOUSEHOLDS</label>
+                            <input type="number" id="editMdl-house" class="form-control text-center fw-bolder" min="0">
+                        </div>
+                    </div>
+                    <h6 class="fw-bolder mb-3 text-secondary text-uppercase" style="font-size:0.8rem; letter-spacing:1px;">Program Beneficiaries</h6>
+                    <div class="row g-3 bg-white p-3 rounded shadow-sm border">
+                        <div class="col-6 col-md-4">
+                            <label class="form-label text-muted fw-bold" style="font-size:0.75rem;">PWD</label>
+                            <input type="number" id="editMdl-pwd" class="form-control text-center q-prog" min="0" oninput="recalcEditModal()">
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label text-muted fw-bold" style="font-size:0.75rem;">AICS</label>
+                            <input type="number" id="editMdl-aics" class="form-control text-center q-prog" min="0" oninput="recalcEditModal()">
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label text-muted fw-bold" style="font-size:0.75rem;">SOLO PARENT</label>
+                            <input type="number" id="editMdl-solo" class="form-control text-center q-prog" min="0" oninput="recalcEditModal()">
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label text-muted fw-bold" style="font-size:0.75rem;">4PS</label>
+                            <input type="number" id="editMdl-4ps" class="form-control text-center q-prog" min="0" oninput="recalcEditModal()">
+                        </div>
+                        <div class="col-6 col-md-4">
+                            <label class="form-label text-muted fw-bold" style="font-size:0.75rem;">SENIOR</label>
+                            <input type="number" id="editMdl-senior" class="form-control text-center q-prog" min="0" oninput="recalcEditModal()">
+                        </div>
+                        <div class="col-12 col-md-4 d-flex">
+                            <div class="w-100 p-2 rounded text-center d-flex flex-column justify-content-center align-items-center" style="background: rgba(44,62,143,0.08); border:1px solid rgba(44,62,143,0.15);">
+                                <span class="d-block text-muted" style="font-size:0.6rem; font-weight:800; letter-spacing:1px;">TOTAL HERE</span>
+                                <span id="editMdl-total" style="font-size:1.5rem; font-weight:900; color:var(--primary-blue); line-height:1;">0</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer border-0 p-3 bg-white d-flex justify-content-between">
+                    <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-warning rounded-pill px-4 fw-bolder shadow-sm" onclick="saveQuickEdit()">💾 Confirm & Update</button>
                 </div>
             </div>
         </div>
@@ -389,10 +469,31 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
         }
 
-        // ── Mark row dirty on input change ──────────────────────────────────
+        // ── Mark row dirty on input change and recalculate total ────────────
+        function calculateGrandTotalBeneficiaries() {
+            let grandTotal = 0;
+            document.querySelectorAll('.row-total-beneficiaries').forEach(el => {
+                grandTotal += parseInt(el.textContent.trim()) || 0;
+            });
+            const grandTotalEl = document.getElementById('grand-total-beneficiaries');
+            if (grandTotalEl) grandTotalEl.textContent = grandTotal.toLocaleString();
+        }
+
         document.querySelectorAll('.bgy-row input').forEach(el => {
-            el.addEventListener('input', () => el.closest('tr').classList.add('dirty'));
+            el.addEventListener('input', () => {
+                const tr = el.closest('tr');
+                tr.classList.add('dirty');
+                if (el.classList.contains('program-input')) {
+                    let sum = 0;
+                    tr.querySelectorAll('.program-input').forEach(inp => sum += parseInt(inp.value) || 0);
+                    tr.querySelector('.row-total-beneficiaries').textContent = sum;
+                    calculateGrandTotalBeneficiaries();
+                }
+            });
         });
+        
+        // Calculate initially
+        document.addEventListener('DOMContentLoaded', calculateGrandTotalBeneficiaries);
 
         // ── Get row data ────────────────────────────────────────────────────
         function getRowData(tr) {
@@ -414,6 +515,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             const tr = btn.closest('tr');
             const d  = getRowData(tr);
             
+            if (d.total_households > d.total_population) {
+                return showToast("Validation Error: Households cannot exceed Total Population.", "danger");
+            }
+            if (d.pwd_count > d.total_population || d.aics_count > d.total_population || d.single_parent_count > d.total_population || d.four_ps_count > d.total_population || d.senior_count > d.total_population) {
+                return showToast("Validation Error: Program count cannot exceed Total Population.", "danger");
+            }
+
             btn.textContent = '⏳';
             btn.disabled = true;
 
@@ -439,12 +547,40 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             .catch(() => { btn.textContent = '💾 Save'; btn.disabled = false; showToast('Network error.', 'danger'); });
         }
 
+        // ── Zero Out Data ───────────────────────────────────────────────────
+        function zeroOutInputs() {
+            if(!confirm("Are you sure you want to zero out ALL inputs shown on this page? You must click Update All to save these changes.")) return;
+            document.querySelectorAll('.bgy-row').forEach(tr => {
+                tr.querySelectorAll('.inline-input').forEach(input => {
+                    if (parseInt(input.value) !== 0) {
+                        input.value = 0;
+                        tr.classList.add('dirty');
+                    }
+                });
+                const totalCell = tr.querySelector('.row-total-beneficiaries');
+                if (totalCell) totalCell.textContent = "0";
+            });
+            calculateGrandTotalBeneficiaries();
+            showToast('All inputs temporarily set to 0. Click Update All to save.', 'warning');
+        }
+
         // ── Update All dirty rows ───────────────────────────────────────────
         function updateAll() {
             const dirtyRows = [...document.querySelectorAll('.bgy-row.dirty')];
             if (!dirtyRows.length) { showToast('No changes to save.', 'warning'); return; }
 
             const rows = dirtyRows.map(getRowData);
+            
+            // Client side validation
+            for (let r of rows) {
+                if (r.total_households > r.total_population) {
+                    return showToast(`Validation Error: Households exceed population. Save aborted.`, "danger");
+                }
+                if (r.pwd_count > r.total_population || r.aics_count > r.total_population || r.single_parent_count > r.total_population || r.four_ps_count > r.total_population || r.senior_count > r.total_population) {
+                    return showToast(`Validation Error: Programs exceed population. Save aborted.`, "danger");
+                }
+            }
+
             console.log('Updating rows:', rows);
             
             const btn  = document.getElementById('updateAllBtn');
@@ -484,6 +620,75 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             t.textContent = message;
             document.body.appendChild(t);
             setTimeout(() => t.remove(), 3500);
+        }
+
+        // ── Quick Edit Modal Logic ─────────────────────────────────────────
+        let currentEditRow = null;
+
+        function openBrgyModal(name) {
+            if(!name) return;
+            const rows = Array.from(document.querySelectorAll('.bgy-row'));
+            currentEditRow = rows.find(r => r.querySelector('strong').textContent.trim() === name);
+            if(!currentEditRow) {
+                showToast("Barangay not found on current page.", "warning");
+                return;
+            }
+            
+            document.getElementById('editMdl-name').textContent = name;
+            document.getElementById('editMdl-pop').value = currentEditRow.querySelector('input[name="total_population"]').value;
+            document.getElementById('editMdl-pwd').value = currentEditRow.querySelector('input[name="pwd_count"]').value;
+            document.getElementById('editMdl-aics').value = currentEditRow.querySelector('input[name="aics_count"]').value;
+            document.getElementById('editMdl-solo').value = currentEditRow.querySelector('input[name="single_parent_count"]').value;
+            document.getElementById('editMdl-house').value = currentEditRow.querySelector('input[name="total_households"]').value;
+            document.getElementById('editMdl-4ps').value = currentEditRow.querySelector('input[name="four_ps_count"]').value;
+            document.getElementById('editMdl-senior').value = currentEditRow.querySelector('input[name="senior_count"]').value;
+            
+            recalcEditModal();
+            new bootstrap.Modal(document.getElementById('quickEditModal')).show();
+            document.getElementById('brgySearchInput').value = ''; // clear search field
+        }
+
+        function recalcEditModal() {
+            let total = 0;
+            document.querySelectorAll('.q-prog').forEach(el => total += parseInt(el.value || 0));
+            document.getElementById('editMdl-total').textContent = total.toLocaleString();
+        }
+
+        function saveQuickEdit() {
+            if(!currentEditRow) return;
+            
+            // Validation: Programs cannot exceed total population
+            let pop = parseInt(document.getElementById('editMdl-pop').value) || 0;
+            let house = parseInt(document.getElementById('editMdl-house').value) || 0;
+            let pwd = parseInt(document.getElementById('editMdl-pwd').value) || 0;
+            let aics = parseInt(document.getElementById('editMdl-aics').value) || 0;
+            let solo = parseInt(document.getElementById('editMdl-solo').value) || 0;
+            let fps = parseInt(document.getElementById('editMdl-4ps').value) || 0;
+            let senior = parseInt(document.getElementById('editMdl-senior').value) || 0;
+
+            if (house > pop) return showToast("Households cannot exceed total population.", "danger");
+            if (pwd > pop) return showToast("PWD count cannot exceed total population.", "danger");
+            if (aics > pop) return showToast("AICS count cannot exceed total population.", "danger");
+            if (solo > pop) return showToast("Solo Parent count cannot exceed total population.", "danger");
+            if (fps > pop) return showToast("4Ps count cannot exceed total population.", "danger");
+            if (senior > pop) return showToast("Senior count cannot exceed total population.", "danger");
+            
+            currentEditRow.querySelector('input[name="total_population"]').value = document.getElementById('editMdl-pop').value;
+            currentEditRow.querySelector('input[name="pwd_count"]').value = document.getElementById('editMdl-pwd').value;
+            currentEditRow.querySelector('input[name="aics_count"]').value = document.getElementById('editMdl-aics').value;
+            currentEditRow.querySelector('input[name="single_parent_count"]').value = document.getElementById('editMdl-solo').value;
+            currentEditRow.querySelector('input[name="total_households"]').value = document.getElementById('editMdl-house').value;
+            currentEditRow.querySelector('input[name="four_ps_count"]').value = document.getElementById('editMdl-4ps').value;
+            currentEditRow.querySelector('input[name="senior_count"]').value = document.getElementById('editMdl-senior').value;
+
+            // Trigger the internal table calculation scripts mechanically
+            currentEditRow.querySelector('input[name="pwd_count"]').dispatchEvent(new Event('input'));
+            
+            // Disparch save action mechanically
+            const btn = currentEditRow.querySelector('.btn-save-row');
+            saveRow(btn);
+            
+            bootstrap.Modal.getInstance(document.getElementById('quickEditModal')).hide();
         }
     </script>
 @include('components.admin-settings-modal')

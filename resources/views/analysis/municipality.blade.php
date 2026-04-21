@@ -295,9 +295,17 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="row g-3 mb-4">
                 <div class="col-md-6">
                     <div class="chart-card">
-                        <div class="section-hdr">
-                            <h5>Top 10 Barangays by Population</h5>
-                            <p>Highest populated barangays in {{ $municipality->name }}</p>
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div class="section-hdr" style="margin-bottom:0;">
+                                <h5>Top 10 Barangays by Population</h5>
+                                <p>Highest populated barangays in {{ $municipality->name }}</p>
+                            </div>
+                            <div class="year-filter-buttons" style="display:flex;gap:6px;flex-wrap:wrap;">
+                                <button class="year-btn-top active" data-year="all" onclick="filterTopBarangays('all')" style="background:var(--primary-gradient);color:white;border:none;border-radius:8px;padding:6px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">All</button>
+                                @foreach($availableYears as $year)
+                                <button class="year-btn-top" data-year="{{ $year }}" onclick="filterTopBarangays('{{ $year }}')" style="background:#E2E8F0;color:#64748b;border:none;border-radius:8px;padding:6px 14px;font-size:0.75rem;font-weight:700;cursor:pointer;transition:all 0.2s;">{{ $year }}</button>
+                                @endforeach
+                            </div>
                         </div>
                         <div class="chart-container">
                             <canvas id="topBarangaysChart"></canvas>
@@ -466,6 +474,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         };
 
         let programBeneficiariesChart;
+        let topBarangaysChartObj;
         const dataByYear = {!! json_encode($dataByYear) !!};
         const allYearsData = {
             totalPWD: {{ $totalPWD_All }},
@@ -473,16 +482,17 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             total4PS: {{ $total4PS_All }},
             totalSenior: {{ $totalSenior_All }},
             totalSingleParents: {{ $totalSingleParents_All }},
-            barangayData: {!! json_encode($barangayData) !!}
+            barangayData: {!! json_encode($allBarangayData) !!}
         };
 
         document.addEventListener('DOMContentLoaded', function () {
-            const barangayNames  = {!! json_encode(array_keys($barangayData)) !!};
-            const populations    = {!! json_encode(array_column($barangayData, 'population')) !!};
-
-            /* -- Top 10 Barangays by Population (horizontal bar) -- */
-            const top10 = barangayNames.slice(0, 10).map((name, i) => ({ name, pop: populations[i] }));
-            new Chart(document.getElementById('topBarangaysChart'), {
+            // Remove old static fallback and initialize with 'all' data
+            const initialTopData = allYearsData.barangayData;
+            const bNames = Object.keys(initialTopData);
+            const top10 = bNames.map(name => ({ name, pop: initialTopData[name].population }))
+                                .sort((a, b) => b.pop - a.pop)
+                                .slice(0, 10);
+            topBarangaysChartObj = new Chart(document.getElementById('topBarangaysChart'), {
                 type: 'bar',
                 data: {
                     labels: top10.map(d => d.name),
@@ -545,6 +555,36 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
             programBeneficiariesChart.data.datasets[0].data = data;
             programBeneficiariesChart.update();
+        }
+
+        // ── Year filter for top barangays chart ──
+        function filterTopBarangays(year) {
+            // Update button styles
+            document.querySelectorAll('.year-btn-top').forEach(btn => {
+                if (btn.dataset.year === year) {
+                    btn.style.background = 'var(--primary-gradient)';
+                    btn.style.color = 'white';
+                    btn.classList.add('active');
+                } else {
+                    btn.style.background = '#E2E8F0';
+                    btn.style.color = '#64748b';
+                    btn.classList.remove('active');
+                }
+            });
+
+            // Update chart data
+            const data = year === 'all' ? allYearsData.barangayData : dataByYear[year].barangayData;
+            
+            const barangayNames = Object.keys(data);
+            const populations = barangayNames.map(name => data[name].population);
+            
+            const top10 = barangayNames.map((name, i) => ({ name, pop: populations[i] }))
+                                       .sort((a, b) => b.pop - a.pop)
+                                       .slice(0, 10);
+
+            topBarangaysChartObj.data.labels = top10.map(d => d.name);
+            topBarangaysChartObj.data.datasets[0].data = top10.map(d => d.pop);
+            topBarangaysChartObj.update();
         }
 
         // ── Year filter for table ──

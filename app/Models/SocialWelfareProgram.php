@@ -21,11 +21,13 @@ class SocialWelfareProgram extends Model
         'barangay',
         'program_type',
         'beneficiary_count',
-        'year'
+        'year',
+        'month'
     ];
 
     protected $casts = [
         'year' => 'integer',
+        'month' => 'integer',
         'beneficiary_count' => 'integer',
     ];
 
