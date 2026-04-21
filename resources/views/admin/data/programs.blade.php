@@ -130,7 +130,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <option value="{{ $yr }}" {{ request('year') == $yr ? 'selected' : '' }}>{{ $yr }}</option>
                             @endforeach
                         </select>
-                        @if(request('program_type') || request('year'))
+                        <label class="form-label mb-0" style="color: rgba(255,255,255,.9); font-size: .82rem; font-weight: 600; white-space: nowrap;">Month:</label>
+                        <select name="month" class="form-select" style="min-width:110px; font-size:.85rem;" onchange="this.form.submit()">
+                            <option value="" {{ !request('month') ? 'selected' : '' }}>All</option>
+                            @foreach($months as $num => $name)
+                                <option value="{{ $num }}" {{ request('month') == $num ? 'selected' : '' }}>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        @if(request('program_type') || request('year') || request('month'))
                             <a href="{{ route('admin.data.programs') }}" class="btn-clear" style="background: rgba(255,255,255,.2); color: white; border: 1.5px solid rgba(255,255,255,.4); padding: 5px 14px; font-size: .8rem; text-decoration: none; border-radius: 8px; white-space: nowrap;">Clear</a>
                         @endif
                     </form>
@@ -138,14 +145,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             </div>
             <div style="overflow-x:auto;">
                 <table class="prog-table">
-                    <thead><tr><th>#</th><th>Program</th><th>Beneficiaries</th><th>Year</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>#</th><th>Program</th><th>Beneficiaries</th><th>Period</th><th>Actions</th></tr></thead>
                     <tbody>
                         @forelse($programs as $i => $program)
                         <tr>
                             <td style="color:#94a3b8;font-size:0.78rem;font-weight:700;">{{ $programs->firstItem() + $i }}</td>
                             <td><span class="prog-name-pill">{{ str_replace('_', ' ', $program->program_type) }}</span></td>
                             <td><strong>{{ number_format($program->beneficiary_count) }}</strong></td>
-                            <td>{{ $program->year }}</td>
+                            <td>{{ $program->month ? $months[$program->month] . ' ' : '' }}{{ $program->year }}</td>
                             <td>
                                 <button class="btn-edit-sm" data-bs-toggle="modal" data-bs-target="#editModal{{ $program->id }}">Edit</button>
                                 <button class="btn-del-sm" onclick="deleteProgram({{ $program->id }})">Delete</button>
@@ -156,12 +163,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="modal fade" id="editModal{{ $program->id }}" tabindex="-1">
                             <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
                                 <div class="modal-hdr d-flex align-items-center justify-content-between">
-                                    <span style="font-weight:800;">Edit Program - {{ str_replace('_', ' ', $program->program_type) }} ({{ $program->year }})</span>
+                                    <span style="font-weight:800;">Edit Program - {{ str_replace('_', ' ', $program->program_type) }} ({{ $program->month ? $months[$program->month] . ' ' : '' }}{{ $program->year }})</span>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
                                 <form method="POST" action="{{ route('admin.data.programs.update', $program->id) }}" id="editForm{{ $program->id }}">
                                     @csrf
                                     <input type="hidden" name="year" value="{{ $program->year }}">
+                                    <input type="hidden" name="month" value="{{ $program->month }}">
                                     <input type="hidden" name="beneficiary_count" id="totalCountHidden{{ $program->id }}" value="{{ $program->beneficiary_count }}">
                                     
                                     <div class="modal-body p-4">
@@ -256,11 +264,21 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </select>
                     </div>
                     <div class="mb-3"><label class="f-label">Beneficiary Count</label><input type="number" name="beneficiary_count" class="f-input" required min="0"></div>
-                    <div class="mb-3"><label class="f-label">Year</label>
-                        <select name="year" class="f-input" required>
-                            <option value="">Select Year</option>
-                            @foreach($years as $year)<option value="{{ $year }}">{{ $year }}</option>@endforeach
-                        </select>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="f-label">Year</label>
+                            <select name="year" class="f-input" required>
+                                <option value="">Select Year</option>
+                                @foreach($years as $year)<option value="{{ $year }}">{{ $year }}</option>@endforeach
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="f-label">Month (Optional)</label>
+                            <select name="month" class="f-input">
+                                <option value="">Entire Year</option>
+                                @foreach($months as $num => $name)<option value="{{ $num }}">{{ $name }}</option>@endforeach
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0 px-4 pb-4 gap-2"><button type="button" class="btn-cncl" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn-submit">Save Program</button></div>

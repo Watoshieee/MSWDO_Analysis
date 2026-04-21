@@ -196,6 +196,13 @@
             color: var(--secondary-yellow);
         }
 
+        /* Year Filter Buttons */
+        .year-btn:hover {
+            filter: brightness(0.92);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(44,62,143,0.15);
+        }
+
         /* Stat Cards — white with top accent bar */
         .stat-card {
             background: #f8fafc;
@@ -779,10 +786,21 @@
             </div>
         @endif
 
-        <div style="margin:8px 0 28px;">
+        <div style="margin:8px 0 20px;">
             <div class="sec-title" style="font-size:1.4rem;">Comparative Analysis: Magdalena, Liliw &amp; Majayjay</div>
-            <p class="sec-sub">Side-by-side population, household, and social welfare statistics across the three
-                municipalities.</p>
+            <p class="sec-sub" style="margin-bottom:0;">Side-by-side population, household, and social welfare statistics across the three municipalities.</p>
+        </div>
+
+        <div style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid var(--secondary-yellow); border-radius:12px; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:28px; box-shadow:0 4px 15px rgba(0,0,0,0.03);">
+            <div>
+                <div style="font-size:1.05rem; font-weight:800; color:var(--primary-blue); margin-bottom:4px;">Filter Analysis by Year</div>
+                <div style="font-size:0.85rem; color:#64748b;">Select a specific year to update all comparative charts and statistics.</div>
+            </div>
+            <div class="year-filter-buttons" style="display:flex;gap:6px;flex-wrap:wrap;">
+                @foreach($allYears as $year)
+                <a href="/analysis/programs?year={{ $year }}" class="year-btn" style="background:{{ request('year', $currentYear ?? date('Y')) == $year ? 'var(--primary-gradient)' : '#E2E8F0' }};color:{{ request('year', $currentYear ?? date('Y')) == $year ? 'white' : '#64748b' }};border:none;border-radius:8px;padding:8px 16px;font-size:0.85rem;font-weight:700;text-decoration:none;transition:all 0.2s;">{{ $year }}</a>
+                @endforeach
+            </div>
         </div>
 
         <!-- Summary Stats (existing) -->
@@ -815,7 +833,7 @@
                     <div class="sc-body">
                         <div class="sc-label">Total Beneficiaries</div>
                         <div class="sc-value">
-                            {{ number_format(array_sum(array_column($comparisonData, 'beneficiaries_2024'))) }}</div>
+                            {{ number_format(array_sum(array_column($comparisonData, 'beneficiaries_current'))) }}</div>
                         <div class="sc-sub">Program Beneficiaries</div>
                     </div>
                 </div>
@@ -1080,7 +1098,7 @@
                                 <div class="d-flex justify-content-between align-items-center">
                                     <span style="font-size: 0.85rem; color: #475569;">Beneficiaries</span>
                                     <span
-                                        style="font-size: 0.9rem; font-weight: 700; color: var(--primary-blue);">{{ number_format($data['beneficiaries_2024']) }}</span>
+                                        style="font-size: 0.9rem; font-weight: 700; color: var(--primary-blue);">{{ number_format($data['beneficiaries_current']) }}</span>
                                 </div>
                             </div>
 
@@ -1293,7 +1311,7 @@
                     },
                     {
                         label: 'Beneficiaries',
-                        data: {!! json_encode(array_column($comparisonData, 'beneficiaries_2024')) !!},
+                        data: {!! json_encode(array_column($comparisonData, 'beneficiaries_current')) !!},
                         backgroundColor: '#C41E24',
                         borderRadius: 6,
                         barPercentage: 0.7,
@@ -1333,7 +1351,7 @@
                     },
                     {
                         label: 'Beneficiaries',
-                        data: {!! json_encode(array_column($comparisonData, 'beneficiaries_2024')) !!},
+                        data: {!! json_encode(array_column($comparisonData, 'beneficiaries_current')) !!},
                         borderColor: '#C41E24',
                         backgroundColor: 'rgba(196, 30, 36, 0.1)',
                         borderWidth: 3,

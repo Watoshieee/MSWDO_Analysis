@@ -79,6 +79,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         /* MAIN GROW */
         .main-content { flex: 1; }
 
+        /* YEAR BUTTONS */
+        .year-btn:hover { transform: translateY(-2px); filter: brightness(0.92); box-shadow: 0 4px 12px rgba(44,62,143,0.15); }
+
         /* FOOTER */
         .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.75); text-align: center; padding: 20px 0; font-size: 0.85rem; margin-top: 48px; }
         .footer-strip strong { color: white; }
@@ -146,6 +149,20 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         @if(session('success'))
             <div class="alert-success-c">{{ session('success') }}</div>
         @endif
+
+        <!-- YEAR FILTERS -->
+        <div style="margin: 8px 0 24px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:15px;">
+            <div>
+                <div class="section-heading" style="margin-bottom:0; padding-bottom:8px;">Dashboard Overview</div>
+                <div style="font-size:0.85rem; color:#64748b;">Showing stats for selected year.</div>
+            </div>
+            
+            <div class="year-filter-buttons" style="display:flex;gap:6px;flex-wrap:wrap; margin-bottom:10px;">
+                @foreach($allYears as $year)
+                <a href="{{ route('admin.data.dashboard') }}?year={{ $year }}" class="year-btn" style="background:{{ request('year', $currentYear) == $year ? 'var(--primary-gradient)' : '#E2E8F0' }};color:{{ request('year', $currentYear) == $year ? 'white' : '#64748b' }};border:none;border-radius:8px;padding:8px 16px;font-size:0.85rem;font-weight:700;text-decoration:none;transition:all 0.2s;">{{ $year }}</a>
+                @endforeach
+            </div>
+        </div>
 
         <!-- STAT CARDS -->
         <div class="row g-3 mb-5">
