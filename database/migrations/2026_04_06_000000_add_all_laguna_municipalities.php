@@ -30,7 +30,7 @@ return new class extends Migration
                     'female_population' => 0,
                     'population_0_19' => 0,
                     'population_20_59' => 0,
-                    'population_51_100' => 0,
+                    'population_60_100' => 0,
                     'single_parent_count' => 0,
                     'created_at' => now(),
                     'year' => date('Y')

@@ -18,6 +18,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\InjectSessionGuard::class,
         ]);
 
+        // Exempt mobile API routes from CSRF verification
+        $middleware->validateCsrfTokens(except: [
+            'mobile-api/*',
+        ]);
+
         // Named middleware aliases
         $middleware->alias([
             'role'        => \App\Http\Middleware\RoleMiddleware::class,

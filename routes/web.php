@@ -10,6 +10,27 @@ use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SuperAdmin\UserController as SuperAdminUserController;
+use App\Http\Controllers\Api\MobileAuthController;
+
+// ============================================
+// MOBILE APP API ROUTES (no CSRF, JSON only)
+// ============================================
+Route::prefix('mobile-api')->name('mobile-api.')->group(function () {
+    // ── Public (no token needed) ──────────────────────────────
+    Route::get('/municipalities',  [MobileAuthController::class, 'municipalities'])->name('municipalities');
+    Route::post('/register',       [MobileAuthController::class, 'register'])->name('register');
+    Route::post('/verify-otp',     [MobileAuthController::class, 'verifyOtp'])->name('verify-otp');
+    Route::post('/resend-otp',     [MobileAuthController::class, 'resendOtp'])->name('resend-otp');
+    Route::post('/login',          [MobileAuthController::class, 'login'])->name('login');
+
+    // ── Authenticated (Bearer token required) ─────────────────
+    Route::get('/dashboard',       [MobileAuthController::class, 'dashboard'])->name('dashboard');
+    Route::get('/applications',    [MobileAuthController::class, 'getApplications'])->name('applications.index');
+    Route::post('/applications',   [MobileAuthController::class, 'submitApplication'])->name('applications.store');
+    Route::get('/announcements',   [MobileAuthController::class, 'getAnnouncements'])->name('announcements');
+    Route::post('/logout',         [MobileAuthController::class, 'logout'])->name('logout');
+});
+
 // ============================================
 // USER ROUTES (authenticated users with role 'user')
 // ============================================

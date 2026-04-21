@@ -33,7 +33,8 @@ class Application extends Model
         'completed_at',
         'proof_photo_path',
         'id_status',
-        'id_ready_at'
+        'id_ready_at',
+        'admin_remarks',
     ];
 
     protected $casts = [

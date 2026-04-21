@@ -9,8 +9,12 @@ return new class extends Migration
     public function up()
     {
         Schema::table('applications', function (Blueprint $table) {
-            $table->string('stage')->nullable()->after('status');
-            $table->timestamp('completed_at')->nullable()->after('stage');
+            if (!Schema::hasColumn('applications', 'stage')) {
+                $table->string('stage')->nullable();
+            }
+            if (!Schema::hasColumn('applications', 'completed_at')) {
+                $table->timestamp('completed_at')->nullable();
+            }
         });
     }
 
