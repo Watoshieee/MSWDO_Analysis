@@ -10,12 +10,13 @@ class Barangay extends Model
     use HasFactory;
 
     protected $table = 'barangays';
-    
+
     public $timestamps = false;
 
     protected $fillable = [
         'municipality',
         'name',
+        'total_population',
         'male_population',
         'female_population',
         'population_0_19',
@@ -24,6 +25,8 @@ class Barangay extends Model
         'single_parent_count',
         'pwd_count',
         'aics_count',
+        'four_ps_count',
+        'senior_count',
         'total_households',
         'total_approved_applications',
         'year'

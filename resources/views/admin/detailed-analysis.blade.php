@@ -7,12 +7,11 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    @include('components.admin-colors')
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
-            --primary-blue: #2C3E8F;
-            --secondary-yellow: #FDB913;
-            --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
-            --secondary-gradient: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
             --bg-light: #F8FAFC;
             --bg-white: #FFFFFF;
             --bg-soft-blue: #F0F5FF;
@@ -27,6 +26,12 @@
         /* ── NAVBAR ── */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
         .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display: flex; align-items: center; gap: 12px; }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+        }
         .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.93rem; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
@@ -48,12 +53,11 @@
         .muni-badge-lg .muni-sub  { font-size: 0.72rem; opacity: 0.75; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
 
         /* ── STAT CARDS ── */
-        .stat-card { background: var(--bg-white); border-radius: 18px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); height: 100%; transition: all 0.3s; position: relative; overflow: hidden; }
+        .stat-card { background: var(--bg-white); border-radius: 18px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); height: 100%; position: relative; overflow: hidden; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary-gradient); }
         .stat-card.yellow::before { background: var(--secondary-gradient); }
         .stat-card.green::before  { background: linear-gradient(135deg,#28a745,#1e7e34); }
         .stat-card.red::before    { background: linear-gradient(135deg,#C41E24,#8B0000); }
-        .stat-card:hover { transform: translateY(-4px); box-shadow: 0 12px 28px rgba(44,62,143,0.10); }
         .stat-card .inner { padding: 24px 26px; }
         .stat-pill  { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 20px; padding: 3px 10px; display: inline-block; margin-bottom: 8px; background: #E5EEFF; color: var(--primary-blue); }
         .stat-pill.y { background: #FFF3D6; color: #856404; }
@@ -296,15 +300,15 @@
                         </div>
                     </div>
                     <div class="panel-body">
-                        @php $maxProg = $applicationsByProgram->max('total') ?: 1; $pIdx = 1; @endphp
-                        @forelse($applicationsByProgram as $program => $stats)
+                        @php $maxProg = $programShareOverview->max() ?: 1; $pIdx = 1; @endphp
+                        @forelse($programShareOverview as $program => $count)
                         <div class="prog-row">
                             <span class="prog-num">{{ str_pad($pIdx++, 2, '0', STR_PAD_LEFT) }}</span>
                             <span class="prog-name">{{ str_replace('_', ' ', $program) }}</span>
                             <div class="prog-bar-wrap">
-                                <div class="prog-bar" style="width:{{ ($stats['total']/$maxProg)*100 }}%"></div>
+                                <div class="prog-bar" style="width:{{ ($count/$maxProg)*100 }}%"></div>
                             </div>
-                            <span class="prog-count">{{ $stats['total'] }}</span>
+                            <span class="prog-count">{{ number_format($count) }}</span>
                         </div>
                         @empty
                         <div class="no-data">No program data available.</div>
@@ -383,6 +387,9 @@
     <div class="footer-strip">
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
+
+    @include('components.admin-settings-modal')
+    @include('components.admin-chat-modal')
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>

@@ -26,13 +26,20 @@
             --text-mid: #475569;
             --text-light: #94a3b8;
         }
-        * { box-sizing: border-box; }
-        body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); margin: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { margin: 0; padding: 0; overscroll-behavior: none; }
+        body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); }
         a { text-decoration: none; color: inherit; }
 
         /* ── NAVBAR ── */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
         .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display: flex; align-items: center; gap: 10px; }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto; margin-right: 0; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0; margin-right: auto; }
+        }
         .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.95rem; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
@@ -267,7 +274,7 @@
         <div class="container">
             <div class="hero-inner">
                 <div class="hero-badge">Member Portal</div>
-                <h1>Welcome back, <em>{{ Auth::user()->full_name }}</em>!</h1>
+                <h1>Welcome <em>{{ Auth::user()->full_name }}</em>!</h1>
                 <div class="hero-divider"></div>
                 <p>Apply for MSWDO social welfare programs, track your application status, and stay updated with the latest announcements from our office.</p>
                 <div class="hero-pills">
@@ -522,6 +529,8 @@
     <div class="footer-strip">
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
+
+    @include('components.chat-modal')
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

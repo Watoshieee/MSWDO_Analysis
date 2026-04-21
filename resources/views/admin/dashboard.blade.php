@@ -3,15 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{ $municipality->name }} Admin Dashboard – MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    @include('components.admin-colors')
     <style>
         :root {
-            --primary-blue: #2C3E8F;
-            --secondary-yellow: #FDB913;
-            --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
-            --secondary-gradient: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
+            --primary-blue: {{ $adminPrimaryColor ?? '#2C3E8F' }};
+            --secondary-yellow: {{ $adminSecondaryColor ?? '#FDB913' }};
+            --accent-red: {{ $adminAccentColor ?? '#C41E24' }};
+            --primary-gradient: linear-gradient(135deg, var(--primary-blue) 0%, color-mix(in srgb, var(--primary-blue) 80%, black) 100%);
+            --secondary-gradient: linear-gradient(135deg, var(--secondary-yellow) 0%, color-mix(in srgb, var(--secondary-yellow) 90%, black) 100%);
             --bg-light: #F8FAFC;
             --bg-white: #FFFFFF;
             --bg-soft-blue: #F0F5FF;
@@ -20,11 +23,18 @@
         }
 
         body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); display:flex; flex-direction:column; min-height:100vh; margin:0; }
+        html, body { overscroll-behavior: none; }
         a { text-decoration: none; }
 
         /* ── NAVBAR ── */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
         .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display:flex; align-items:center; gap:12px; }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+        }
         .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.93rem; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
@@ -47,7 +57,7 @@
         .today-date { font-size:0.8rem; opacity:0.65; margin-top:10px; }
 
         /* ── STAT CARDS ── */
-        .stat-card { background:#EEF2FF; border-radius:18px; border:1px solid #C7D6F5; box-shadow:0 8px 36px rgba(44,62,143,0.18); height:100%; transition:all 0.3s ease; position:relative; overflow:hidden; }
+        .stat-card { background:#f1f5f9; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 4px 15px rgba(0,0,0,0.06); height:100%; transition:all 0.3s ease; position:relative; overflow:hidden; }
         .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--primary-gradient); }
         .stat-card.yellow::before { background:var(--secondary-gradient); }
         .stat-card.green::before  { background:linear-gradient(135deg,#28a745,#1e7e34); }
@@ -62,10 +72,10 @@
         .main-content { flex:1; }
 
         /* ── PANEL CARDS ── */
-        .panel-card { background:#EEF2FF; border-radius:18px; border:1px solid #C7D6F5; box-shadow:0 8px 36px rgba(44,62,143,0.18); overflow:hidden; height:100%; }
+        .panel-card { background:white; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 4px 15px rgba(0,0,0,0.06); overflow:hidden; height:100%; }
         .panel-header { background:var(--primary-gradient); color:white; padding:16px 22px; font-size:0.93rem; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
         .panel-header-badge { font-size:0.7rem; background:rgba(255,255,255,0.15); border-radius:20px; padding:3px 12px; font-weight:700; }
-        .panel-body { padding:20px; }
+        .panel-body { padding:20px; background:#f8fafc; }
 
         /* ── SECTION TITLE ── */
         .section-title { font-size:1.05rem; font-weight:800; color:var(--primary-blue); position:relative; padding-bottom:10px; margin-bottom:0; }
@@ -82,9 +92,9 @@
         .action-item:hover .action-arrow { color:var(--secondary-yellow); }
 
         /* ── PROGRAM BREAKDOWN ── */
-        .prog-row { display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid #D8E4FF; }
+        .prog-row { display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid #e2e8f0; }
         .prog-row:last-child { border-bottom:none; }
-        .prog-num { font-size:0.68rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; background:var(--bg-soft-blue); color:var(--primary-blue); border-radius:20px; padding:2px 10px; flex-shrink:0; }
+        .prog-num { font-size:0.68rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; background:#e2e8f0; color:var(--primary-blue); border-radius:20px; padding:2px 10px; flex-shrink:0; }
         .prog-name { font-size:0.88rem; font-weight:700; flex:1; }
         .prog-bar-wrap { flex:2; height:6px; background:#E2E8F0; border-radius:3px; overflow:hidden; }
         .prog-bar { height:100%; border-radius:3px; background:var(--primary-gradient); transition:width 0.8s ease; }
@@ -92,10 +102,10 @@
 
         /* ── RECENT TABLE ── */
         .recent-table { width:100%; }
-        .recent-table th { font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:0.07em; color:#6278b8; padding:6px 12px 10px; border-bottom:2px solid #C7D6F5; }
-        .recent-table td { padding:11px 12px; font-size:0.86rem; border-bottom:1px solid #D8E4FF; vertical-align:middle; }
+        .recent-table th { font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:0.07em; color:#64748b; padding:6px 12px 10px; border-bottom:2px solid #e2e8f0; }
+        .recent-table td { padding:11px 12px; font-size:0.86rem; border-bottom:1px solid #e2e8f0; vertical-align:middle; }
         .recent-table tr:last-child td { border-bottom:none; }
-        .recent-table tr:hover td { background:rgba(44,62,143,0.04); }
+        .recent-table tr:hover td { background:#f1f5f9; }
         .status-badge { font-size:0.68rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; border-radius:20px; padding:3px 11px; display:inline-block; }
         .badge-pending  { background:#FFF3D6; color:#856404; }
         .badge-approved { background:#d4edda; color:#155724; }
@@ -103,12 +113,12 @@
         .no-apps { text-align:center; padding:32px 0; color:#94a3b8; font-size:0.88rem; }
 
         /* ── INFO TABLE ── */
-        .info-table tr td { padding:11px 4px; font-size:0.88rem; border-color:#D8E4FF; }
+        .info-table tr td { padding:11px 4px; font-size:0.88rem; border-color:#e2e8f0; }
         .info-table tr td:first-child { color:#64748b; font-weight:500; }
         .info-table tr td:last-child { font-weight:800; color:var(--primary-blue); text-align:right; }
 
         /* ── SUMMARY BOX ── */
-        .summary-box { background:rgba(44,62,143,0.09); border-radius:12px; padding:14px 18px; border-left:4px solid var(--primary-blue); margin-top:16px; font-size:0.86rem; color:#334155; line-height:1.7; }
+        .summary-box { background:#f1f5f9; border-radius:12px; padding:14px 18px; border-left:4px solid var(--primary-blue); margin-top:16px; font-size:0.86rem; color:#334155; line-height:1.7; }
 
         /* ── ALERTS ── */
         .alert-styled { border-radius:12px; font-size:0.88rem; padding:12px 16px; margin-bottom:16px; }
@@ -320,7 +330,7 @@
                         Recent Applications
                         <a href="{{ route('admin.requirements') }}" style="font-size:0.78rem;color:rgba(255,255,255,0.80);font-weight:700;">View All</a>
                     </div>
-                    <div class="panel-body" style="padding:0 22px 8px; background:#EEF2FF;">
+                    <div class="panel-body" style="padding:0 22px 8px; background:#f8fafc;">
                         @php $recent = $applications->sortByDesc('application_date')->take(6); @endphp
                         @if($recent->count())
                         <table class="recent-table">
@@ -403,6 +413,9 @@
     <div class="footer-strip">
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
+
+    @include('components.admin-chat-modal')
+    @include('components.admin-settings-modal')
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

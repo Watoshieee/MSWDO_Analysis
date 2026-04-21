@@ -19,8 +19,24 @@ class SuperAdminController extends Controller
         $totalSuperAdmins = User::where('role', User::ROLE_SUPER_ADMIN)->count();
         $totalRegularUsers = User::where('role', User::ROLE_USER)->count();
         
+        // All users for modal
+        $allUsers = User::orderBy('id', 'desc')->get();
+        
         // Recent users
-        $recentUsers = User::latest()->take(5)->get();
+        $recentUsers = User::orderBy('id', 'desc')->take(5)->get();
+        
+        // Application statistics
+        $totalApplications = \App\Models\Application::count();
+        $pendingApplications = \App\Models\Application::where('status', 'pending')->count();
+        $approvedApplications = \App\Models\Application::where('status', 'approved')->count();
+        
+        // All applications for modals
+        $allApplications = \App\Models\Application::orderBy('application_date', 'desc')->get();
+        $pendingApplicationsList = \App\Models\Application::where('status', 'pending')->orderBy('application_date', 'desc')->get();
+        $approvedApplicationsList = \App\Models\Application::where('status', 'approved')->orderBy('application_date', 'desc')->get();
+        
+        // Recent applications
+        $recentApplications = \App\Models\Application::orderBy('application_date', 'desc')->take(5)->get();
         
         // Municipality data
         $municipalities = Municipality::whereIn('name', ['Magdalena', 'Liliw', 'Majayjay'])->get();
@@ -35,7 +51,15 @@ class SuperAdminController extends Controller
             'totalAdmins', 
             'totalSuperAdmins', 
             'totalRegularUsers',
+            'allUsers',
             'recentUsers',
+            'totalApplications',
+            'pendingApplications',
+            'approvedApplications',
+            'allApplications',
+            'pendingApplicationsList',
+            'approvedApplicationsList',
+            'recentApplications',
             'municipalities',
             'totalPrograms',
             'totalBeneficiaries',

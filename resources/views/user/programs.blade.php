@@ -8,6 +8,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
             --primary-blue: #2C3E8F;
             --primary-dark: #1A2A5C;
@@ -20,12 +22,18 @@
         }
 
         * { box-sizing: border-box; }
-        body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
+        body { background: #e2e8f0; font-family: 'Inter', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
         a { text-decoration: none; }
 
         /* ── NAVBAR ── */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
         .navbar-brand { font-weight: 800; font-size: 1.5rem; color: white !important; display: flex; align-items: center; gap: 10px; }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+        }
         .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; border-radius: 8px; padding: 10px 18px !important; font-size: 0.92rem; transition: all 0.2s; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
@@ -75,8 +83,8 @@
 
         /* ── SEARCH & FILTER BAR ── */
         .filter-bar {
-            background: white;
-            border-bottom: 1px solid var(--border-light);
+            background: #f8fafc;
+            border-bottom: 1px solid #cbd5e1;
             padding: 14px 0;
             position: sticky; top: 0; z-index: 100;
             box-shadow: 0 2px 12px rgba(44,62,143,0.06);
@@ -85,7 +93,7 @@
         .search-wrap { position: relative; flex: 1; min-width: 180px; max-width: 280px; }
         .search-wrap input {
             width: 100%; padding: 8px 14px 8px 38px;
-            border: 1.5px solid var(--border-light); border-radius: 10px;
+            border: 1.5px solid #cbd5e1; border-radius: 10px;
             font-family: 'Inter', sans-serif; font-size: 0.85rem; color: var(--text-dark);
             outline: none; transition: border-color .2s;
         }
@@ -95,7 +103,7 @@
         .filter-tabs { display: flex; gap: 6px; flex-wrap: wrap; }
         .ftab {
             padding: 7px 16px; border-radius: 30px; font-size: 0.8rem; font-weight: 700;
-            border: 1.5px solid var(--border-light); background: white; color: var(--text-muted);
+            border: 1.5px solid #cbd5e1; background: #f8fafc; color: var(--text-muted);
             cursor: pointer; transition: all .2s; white-space: nowrap;
         }
         .ftab.active, .ftab:hover { background: var(--primary-blue); color: white; border-color: var(--primary-blue); }
@@ -107,9 +115,9 @@
         @media (max-width: 580px) { .prog-grid { grid-template-columns: 1fr; } }
 
         .prog-card {
-            background: white;
+            background: #f8fafc;
             border-radius: 20px;
-            border: 1px solid var(--border-light);
+            border: 1px solid #cbd5e1;
             overflow: hidden;
             display: flex; flex-direction: column;
             transition: transform .28s, box-shadow .28s, border-color .28s;

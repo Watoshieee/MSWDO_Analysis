@@ -1,97 +1,544 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Municipality Data – MSWDO Super Admin</title>
+    <title>Municipality Data � MSWDO Super Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
     <style>
-        :root{--primary-blue:#2C3E8F;--primary-blue-light:#E5EEFF;--secondary-yellow:#FDB913;--primary-gradient:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%);--secondary-gradient:linear-gradient(135deg,#FDB913 0%,#E5A500 100%);--bg-light:#F8FAFC;--border-light:#E2E8F0;}
-        *,body{font-family:'Inter','Segoe UI',sans-serif;}
-        body{background:var(--bg-light);display:flex;flex-direction:column;min-height:100vh;}
-        .navbar{background:var(--primary-gradient)!important;box-shadow:0 4px 24px rgba(44,62,143,.18);padding:14px 0;}
-        .navbar-brand{font-weight:800;font-size:1.55rem;color:white!important;display:flex;align-items:center;gap:10px;}
-        .nav-link{color:rgba(255,255,255,.88)!important;font-weight:600;transition:all .25s;border-radius:8px;padding:10px 18px!important;font-size:.95rem;}
-        .nav-link:hover{background:rgba(255,255,255,.15);color:white!important;}
-        .nav-link.active{background:var(--secondary-yellow);color:var(--primary-blue)!important;font-weight:700;}
-        .user-info{color:white;display:flex;align-items:center;gap:12px;background:rgba(255,255,255,.1);padding:9px 22px;border-radius:40px;font-size:.92rem;font-weight:500;}
-        .logout-btn{background:transparent;border:2px solid rgba(255,255,255,.8);color:white;border-radius:30px;padding:6px 18px;font-weight:700;transition:all .3s;font-size:.88rem;cursor:pointer;}
-        .logout-btn:hover{background:var(--secondary-yellow);color:var(--primary-blue);border-color:var(--secondary-yellow);}
-        .hero-banner{background:var(--primary-gradient);color:white;padding:44px 0 36px;position:relative;overflow:hidden;}
-        .hero-banner::before{content:'';position:absolute;top:-70px;right:-70px;width:300px;height:300px;border-radius:50%;background:rgba(253,185,19,.10);}
-        .hero-badge{display:inline-block;background:rgba(253,185,19,.18);color:var(--secondary-yellow);border:1px solid rgba(253,185,19,.35);border-radius:30px;padding:5px 18px;font-size:.78rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:14px;}
-        .hero-banner h1{font-size:2.2rem;font-weight:800;margin-bottom:8px;}
-        .hero-divider{width:55px;height:4px;background:var(--secondary-yellow);border-radius:2px;margin:10px 0;}
-        .hero-banner p{font-size:.98rem;opacity:.85;}
-        .back-link{display:inline-flex;align-items:center;gap:6px;color:rgba(255,255,255,.75);font-size:.85rem;font-weight:600;text-decoration:none;margin-bottom:14px;transition:color .2s;}
-        .back-link:hover{color:var(--secondary-yellow);}
-        .main-content{flex:1;}
+        html,
+        body {
+            overscroll-behavior: none;
+            margin: 0;
+            padding: 0;
+        }
+
+        :root {
+            --primary-blue: #2C3E8F;
+            --primary-blue-light: #E5EEFF;
+            --secondary-yellow: #FDB913;
+            --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
+            --secondary-gradient: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
+            --bg-light: #F8FAFC;
+            --border-light: #E2E8F0;
+        }
+
+        *,
+        body {
+            font-family: 'Inter', 'Segoe UI', sans-serif;
+        }
+
+        body {
+            background: var(--bg-light);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        .navbar {
+            background: var(--primary-gradient) !important;
+            box-shadow: 0 4px 24px rgba(44, 62, 143, .18);
+            padding: 14px 0;
+        }
+
+        .navbar-brand {
+            font-weight: 800;
+            font-size: 1.55rem;
+            color: white !important;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .navbar-toggler {
+            order: -1;
+        }
+
+        .navbar-brand {
+            order: 0;
+            margin-left: auto !important;
+            margin-right: 0 !important;
+        }
+
+        @media (min-width: 992px) {
+            .navbar-toggler {
+                order: 0;
+            }
+
+            .navbar-brand {
+                order: 0;
+                margin-left: 0 !important;
+                margin-right: auto !important;
+            }
+        }
+
+        .nav-link {
+            color: rgba(255, 255, 255, .88) !important;
+            font-weight: 600;
+            transition: all .25s;
+            border-radius: 8px;
+            padding: 10px 18px !important;
+            font-size: .95rem;
+        }
+
+        .nav-link:hover {
+            background: rgba(255, 255, 255, .15);
+            color: white !important;
+        }
+
+        .nav-link.active {
+            background: var(--secondary-yellow);
+            color: var(--primary-blue) !important;
+            font-weight: 700;
+        }
+
+        .user-info {
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: rgba(255, 255, 255, .1);
+            padding: 9px 22px;
+            border-radius: 40px;
+            font-size: .92rem;
+            font-weight: 500;
+        }
+
+        .logout-btn {
+            background: transparent;
+            border: 2px solid rgba(255, 255, 255, .8);
+            color: white;
+            border-radius: 30px;
+            padding: 6px 18px;
+            font-weight: 700;
+            transition: all .3s;
+            font-size: .88rem;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: var(--secondary-yellow);
+            color: var(--primary-blue);
+            border-color: var(--secondary-yellow);
+        }
+
+        .hero-banner {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 44px 0 36px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .hero-banner::before {
+            content: '';
+            position: absolute;
+            top: -70px;
+            right: -70px;
+            width: 300px;
+            height: 300px;
+            border-radius: 50%;
+            background: rgba(253, 185, 19, .10);
+        }
+
+        .hero-badge {
+            display: inline-block;
+            background: rgba(253, 185, 19, .18);
+            color: var(--secondary-yellow);
+            border: 1px solid rgba(253, 185, 19, .35);
+            border-radius: 30px;
+            padding: 5px 18px;
+            font-size: .78rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .hero-banner h1 {
+            font-size: 2.2rem;
+            font-weight: 800;
+            margin-bottom: 8px;
+        }
+
+        .hero-divider {
+            width: 55px;
+            height: 4px;
+            background: var(--secondary-yellow);
+            border-radius: 2px;
+            margin: 10px 0;
+        }
+
+        .hero-banner p {
+            font-size: .98rem;
+            opacity: .85;
+        }
+
+        .back-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            color: rgba(255, 255, 255, .75);
+            font-size: .85rem;
+            font-weight: 600;
+            text-decoration: none;
+            margin-bottom: 14px;
+            transition: color .2s;
+        }
+
+        .back-link:hover {
+            color: var(--secondary-yellow);
+        }
+
+        .main-content {
+            flex: 1;
+        }
 
         /* Tab nav */
-        .tab-pills{display:flex;gap:10px;margin-bottom:28px;flex-wrap:wrap;}
-        .tab-pill{background:white;border:2px solid var(--border-light);border-radius:30px;padding:8px 22px;font-weight:700;font-size:.88rem;color:#64748b;cursor:pointer;transition:all .25s;}
-        .tab-pill.active{background:var(--primary-gradient);color:white;border-color:transparent;}
+        .tab-pills {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 28px;
+            flex-wrap: wrap;
+        }
+
+        .tab-pill {
+            background: white;
+            border: 2px solid var(--border-light);
+            border-radius: 30px;
+            padding: 8px 22px;
+            font-weight: 700;
+            font-size: .88rem;
+            color: #64748b;
+            cursor: pointer;
+            transition: all .25s;
+        }
+
+        .tab-pill.active {
+            background: var(--primary-gradient);
+            color: white;
+            border-color: transparent;
+        }
 
         /* Panel */
-        .panel-card{background:white;border-radius:20px;box-shadow:0 4px 15px rgba(0,0,0,.03);border:1px solid var(--border-light);overflow:hidden;margin-bottom:28px;}
-        .panel-header{background:var(--primary-gradient);color:white;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;}
-        .panel-header h5{font-weight:800;margin:0;font-size:1.05rem;}
-        .count-badge{background:rgba(253,185,19,.25);color:var(--secondary-yellow);border:1px solid rgba(253,185,19,.4);border-radius:20px;padding:3px 12px;font-size:.78rem;font-weight:700;}
+        .panel-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .03);
+            border: 1px solid var(--border-light);
+            overflow: hidden;
+            margin-bottom: 28px;
+        }
+
+        .panel-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 18px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .panel-header h5 {
+            font-weight: 800;
+            margin: 0;
+            font-size: 1.05rem;
+        }
+
+        .count-badge {
+            background: rgba(253, 185, 19, .25);
+            color: var(--secondary-yellow);
+            border: 1px solid rgba(253, 185, 19, .4);
+            border-radius: 20px;
+            padding: 3px 12px;
+            font-size: .78rem;
+            font-weight: 700;
+        }
 
         /* Table */
-        .premium-table{width:100%;border-collapse:collapse;}
-        .premium-table thead th{background:var(--bg-light);color:var(--primary-blue);font-size:.76rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:12px 18px;border-bottom:2px solid var(--border-light);}
-        .premium-table tbody td{padding:13px 18px;font-size:.88rem;border-bottom:1px solid var(--border-light);vertical-align:middle;color:#334155;}
-        .premium-table tbody tr:last-child td{border-bottom:none;}
-        .premium-table tbody tr:hover{background:var(--primary-blue-light);}
+        .premium-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .premium-table thead th {
+            background: var(--bg-light);
+            color: var(--primary-blue);
+            font-size: .76rem;
+            font-weight: 700;
+            letter-spacing: .08em;
+            text-transform: uppercase;
+            padding: 12px 18px;
+            border-bottom: 2px solid var(--border-light);
+        }
+
+        .premium-table tbody td {
+            padding: 13px 18px;
+            font-size: .88rem;
+            border-bottom: 1px solid var(--border-light);
+            vertical-align: middle;
+            color: #334155;
+        }
+
+        .premium-table tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        .premium-table tbody tr:hover {
+            background: var(--primary-blue-light);
+        }
 
         /* Buttons */
-        .btn-add{background:var(--secondary-gradient);color:var(--primary-blue);border:none;border-radius:30px;padding:9px 24px;font-weight:800;font-size:.88rem;cursor:pointer;transition:all .3s;}
-        .btn-add:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(253,185,19,.4);}
-        .btn-edit{background:var(--secondary-gradient);color:var(--primary-blue);border:none;border-radius:8px;padding:5px 14px;font-size:.79rem;font-weight:700;cursor:pointer;transition:all .25s;}
-        .btn-edit:hover{transform:translateY(-1px);}
-        .btn-del{background:rgba(196,30,36,.08);color:#C41E24;border:1px solid rgba(196,30,36,.2);border-radius:8px;padding:5px 14px;font-size:.79rem;font-weight:700;cursor:pointer;transition:all .25s;}
-        .btn-del:hover{background:#C41E24;color:white;}
-        .btn-archive-view{background:transparent;border:2px solid var(--primary-blue);color:var(--primary-blue);border-radius:30px;padding:8px 20px;font-weight:700;font-size:.85rem;cursor:pointer;transition:all .3s;}
-        .btn-archive-view:hover{background:var(--primary-blue);color:white;}
-        .btn-restore{background:linear-gradient(135deg,#10B981,#059669);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .25s;}
-        .btn-restore:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(16,185,129,.4);}
-        .btn-perm-del{background:rgba(196,30,36,.1);color:#C41E24;border:1px solid rgba(196,30,36,.2);border-radius:8px;padding:5px 14px;font-size:.8rem;font-weight:700;cursor:pointer;transition:all .25s;}
-        .btn-perm-del:hover{background:#C41E24;color:white;}
+        .btn-add {
+            background: var(--secondary-gradient);
+            color: var(--primary-blue);
+            border: none;
+            border-radius: 30px;
+            padding: 9px 24px;
+            font-weight: 800;
+            font-size: .88rem;
+            cursor: pointer;
+            transition: all .3s;
+        }
+
+        .btn-add:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(253, 185, 19, .4);
+        }
+
+        .btn-edit {
+            background: var(--secondary-gradient);
+            color: var(--primary-blue);
+            border: none;
+            border-radius: 8px;
+            padding: 5px 14px;
+            font-size: .79rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .25s;
+        }
+
+        .btn-edit:hover {
+            transform: translateY(-1px);
+        }
+
+        .btn-del {
+            background: rgba(196, 30, 36, .08);
+            color: #C41E24;
+            border: 1px solid rgba(196, 30, 36, .2);
+            border-radius: 8px;
+            padding: 5px 14px;
+            font-size: .79rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .25s;
+        }
+
+        .btn-del:hover {
+            background: #C41E24;
+            color: white;
+        }
+
+        .btn-archive-view {
+            background: transparent;
+            border: 2px solid var(--primary-blue);
+            color: var(--primary-blue);
+            border-radius: 30px;
+            padding: 8px 20px;
+            font-weight: 700;
+            font-size: .85rem;
+            cursor: pointer;
+            transition: all .3s;
+        }
+
+        .btn-archive-view:hover {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        .btn-restore {
+            background: linear-gradient(135deg, #10B981, #059669);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 5px 14px;
+            font-size: .8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .25s;
+        }
+
+        .btn-restore:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, .4);
+        }
+
+        .btn-perm-del {
+            background: rgba(196, 30, 36, .1);
+            color: #C41E24;
+            border: 1px solid rgba(196, 30, 36, .2);
+            border-radius: 8px;
+            padding: 5px 14px;
+            font-size: .8rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all .25s;
+        }
+
+        .btn-perm-del:hover {
+            background: #C41E24;
+            color: white;
+        }
 
         /* Modal */
-        .modal-content{border-radius:16px;border:none;box-shadow:0 20px 60px rgba(44,62,143,.2);}
-        .modal-header{background:var(--primary-gradient);color:white;border-radius:16px 16px 0 0;}
-        .modal-title{font-weight:800;}
-        .btn-close{filter:invert(1);}
-        .form-label{font-weight:600;color:var(--primary-blue);font-size:.88rem;}
-        .form-control,.form-select{border:1.5px solid var(--border-light);border-radius:10px;padding:10px 14px;font-size:.9rem;transition:border .2s;}
-        .form-control:focus,.form-select:focus{border-color:var(--primary-blue);box-shadow:0 0 0 3px rgba(44,62,143,.1);}
-        .btn-modal-submit{background:var(--primary-gradient);color:white;border:none;border-radius:30px;padding:10px 28px;font-weight:700;transition:all .3s;}
-        .btn-modal-cancel{background:transparent;color:#64748b;border:1.5px solid var(--border-light);border-radius:30px;padding:10px 28px;font-weight:600;}
+        .modal-content {
+            border-radius: 16px;
+            border: none;
+            box-shadow: 0 20px 60px rgba(44, 62, 143, .2);
+        }
+
+        .modal-header {
+            background: var(--primary-gradient);
+            color: white;
+            border-radius: 16px 16px 0 0;
+        }
+
+        .modal-title {
+            font-weight: 800;
+        }
+
+        .btn-close {
+            filter: invert(1);
+        }
+
+        .form-label {
+            font-weight: 600;
+            color: var(--primary-blue);
+            font-size: .88rem;
+        }
+
+        .form-control,
+        .form-select {
+            border: 1.5px solid var(--border-light);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: .9rem;
+            transition: border .2s;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(44, 62, 143, .1);
+        }
+
+        .btn-modal-submit {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 28px;
+            font-weight: 700;
+            transition: all .3s;
+        }
+
+        .btn-modal-cancel {
+            background: transparent;
+            color: #64748b;
+            border: 1.5px solid var(--border-light);
+            border-radius: 30px;
+            padding: 10px 28px;
+            font-weight: 600;
+        }
 
         /* Chart */
-        .chart-card{background:white;border-radius:20px;box-shadow:0 4px 15px rgba(0,0,0,.03);border:1px solid var(--border-light);padding:24px;margin-bottom:28px;}
-        .chart-title{font-size:.95rem;font-weight:800;color:var(--primary-blue);margin-bottom:16px;}
+        .chart-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .03);
+            border: 1px solid var(--border-light);
+            padding: 24px;
+            margin-bottom: 28px;
+        }
+
+        .chart-title {
+            font-size: .95rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            margin-bottom: 16px;
+        }
 
         /* Muni badge */
-        .muni-pill{display:inline-block;padding:3px 12px;border-radius:20px;font-size:.75rem;font-weight:700;}
-        .muni-Magdalena{background:#EFF6FF;color:#1D4ED8;}
-        .muni-Liliw{background:#F0FDF4;color:#15803D;}
-        .muni-Majayjay{background:#FFF7ED;color:#C2410C;}
+        .muni-pill {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: .75rem;
+            font-weight: 700;
+        }
 
-        .footer-strip{background:var(--primary-gradient);color:rgba(255,255,255,.75);text-align:center;padding:18px 0;font-size:.85rem;margin-top:auto;}
-        .footer-strip strong{color:white;}
-        .alert-success-custom{background:var(--primary-blue-light);color:var(--primary-blue);border:none;border-left:4px solid var(--primary-blue);border-radius:12px;padding:12px 18px;margin-bottom:20px;}
-        .alert-danger-custom{background:#fef2f2;color:#991b1b;border:none;border-left:4px solid #C41E24;border-radius:12px;padding:12px 18px;margin-bottom:20px;}
+        .muni-Magdalena {
+            background: #EFF6FF;
+            color: #1D4ED8;
+        }
 
-        .section-tab{display:none;}
-        .section-tab.active{display:block;}
+        .muni-Liliw {
+            background: #F0FDF4;
+            color: #15803D;
+        }
+
+        .muni-Majayjay {
+            background: #FFF7ED;
+            color: #C2410C;
+        }
+
+        .footer-strip {
+            background: var(--primary-gradient);
+            color: rgba(255, 255, 255, .75);
+            text-align: center;
+            padding: 18px 0;
+            font-size: .85rem;
+            margin-top: auto;
+        }
+
+        .footer-strip strong {
+            color: white;
+        }
+
+        .alert-success-custom {
+            background: var(--primary-blue-light);
+            color: var(--primary-blue);
+            border: none;
+            border-left: 4px solid var(--primary-blue);
+            border-radius: 12px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+        }
+
+        .alert-danger-custom {
+            background: #fef2f2;
+            color: #991b1b;
+            border: none;
+            border-left: 4px solid #C41E24;
+            border-radius: 12px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+        }
+
+        .section-tab {
+            display: none;
+        }
+
+        .section-tab.active {
+            display: block;
+        }
     </style>
 </head>
+
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid px-4">
@@ -103,10 +550,14 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.dashboard') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('superadmin.data.dashboard') }}">Data Management</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link"
+                            href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{{ route('superadmin.data.dashboard') }}">Data
+                            Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Public View</a></li>
                 </ul>
                 <div class="d-flex">
@@ -135,16 +586,18 @@
         <div class="container py-5">
 
             @if(session('success'))
-                <div class="alert-success-custom">✅ {{ session('success') }}</div>
+                <div class="alert-success-custom">? {{ session('success') }}</div>
             @endif
             @if($errors->any())
-                <div class="alert-danger-custom"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>
+                <div class="alert-danger-custom">
+                    <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
+                </div>
             @endif
 
             <!-- Tab Pills -->
             <div class="tab-pills">
-                <button class="tab-pill active" onclick="switchTab('records')">📋 Records</button>
-                <button class="tab-pill" onclick="switchTab('analysis')">📊 Analysis</button>
+                <button class="tab-pill active" onclick="switchTab('records')">?? Records</button>
+                <button class="tab-pill" onclick="switchTab('analysis')">?? Analysis</button>
             </div>
 
             <!-- ===================== RECORDS TAB ===================== -->
@@ -154,146 +607,170 @@
                     <h6 class="mb-0 fw-bold" style="color:var(--primary-blue);">Yearly Municipality Summary Records</h6>
                     <div class="d-flex gap-2 align-items-center">
                         <button class="btn-archive-view" data-bs-toggle="modal" data-bs-target="#archivedSummaryModal">
-                            🗂 Archived (<span id="archivedSummaryCount">...</span>)
+                            ?? Archived (<span id="archivedSummaryCount">...</span>)
                         </button>
-                        <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Year Data</button>
+                        <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Year
+                            Data</button>
                     </div>
                 </div>
 
                 @foreach($coreNames as $muniName)
-                @php $muniRows = $summaries->get($muniName, collect()); @endphp
-                <div class="panel-card">
-                    <div class="panel-header">
-                        <h5>{{ $muniName }}</h5>
-                        <span class="count-badge">{{ $muniRows->count() }} year records</span>
-                    </div>
-                    <div class="table-responsive">
-                        @if($muniRows->isEmpty())
-                        <div style="padding:32px;text-align:center;color:#94a3b8;font-size:.9rem;">
-                            No records yet for {{ $muniName }}. Click "+ Add Year Data" to add one.
+                    @php $muniRows = $summaries->get($muniName, collect()); @endphp
+                    <div class="panel-card">
+                        <div class="panel-header">
+                            <h5>{{ $muniName }}</h5>
+                            <span class="count-badge">{{ $muniRows->count() }} year records</span>
                         </div>
-                        @else
-                        <table class="premium-table">
-                            <thead>
-                                <tr>
-                                    <th>Year</th>
-                                    <th>Population</th>
-                                    <th>Households</th>
-                                    <th>4Ps</th>
-                                    <th>PWD</th>
-                                    <th>Senior</th>
-                                    <th>AICS</th>
-                                    <th>ESA</th>
-                                    <th>SLP</th>
-                                    <th>Solo Parent</th>
-                                    <th>Actions</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($muniRows as $row)
-                                <tr>
-                                    <td><strong>{{ $row->year }}</strong></td>
-                                    <td>{{ number_format($row->total_population) }}</td>
-                                    <td>{{ number_format($row->total_households) }}</td>
-                                    <td>{{ number_format($row->total_4ps) }}</td>
-                                    <td>{{ number_format($row->total_pwd) }}</td>
-                                    <td>{{ number_format($row->total_senior) }}</td>
-                                    <td>{{ number_format($row->total_aics) }}</td>
-                                    <td>{{ number_format($row->total_esa) }}</td>
-                                    <td>{{ number_format($row->total_slp) }}</td>
-                                    <td>{{ number_format($row->total_solo_parent) }}</td>
-                                    <td>
-                                        <div class="d-flex gap-2">
-                                            <button class="btn-edit" data-bs-toggle="modal" data-bs-target="#editModal{{ $row->id }}">Edit</button>
-                                            <button class="btn-del" onclick="archiveSummary({{ $row->id }}, '{{ $muniName }} {{ $row->year }}')">Archive</button>
-                                        </div>
-                                    </td>
-                                </tr>
+                        <div class="table-responsive">
+                            @if($muniRows->isEmpty())
+                                <div style="padding:32px;text-align:center;color:#94a3b8;font-size:.9rem;">
+                                    No records yet for {{ $muniName }}. Click "+ Add Year Data" to add one.
+                                </div>
+                            @else
+                                <table class="premium-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Year</th>
+                                            <th>Population</th>
+                                            <th>Male</th>
+                                            <th>Female</th>
+                                            <th style="text-align:center;">Age 0�19</th>
+                                            <th style="text-align:center;">Age 20�59</th>
+                                            <th style="text-align:center;">Age 60+</th>
+                                            <th>Households</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($muniRows as $row)
+                                            <tr>
+                                                <td><strong>{{ $row->year }}</strong></td>
+                                                <td>{{ number_format($row->total_population) }}</td>
+                                                <td>{{ number_format($row->male_population ?? 0) }}</td>
+                                                <td>{{ number_format($row->female_population ?? 0) }}</td>
+                                                <td style="text-align:center;font-size:.82rem;color:#64748b;">
+                                                    {{ number_format($row->population_0_19 ?? 0) }}
+                                                </td>
+                                                <td style="text-align:center;font-size:.82rem;color:#64748b;">
+                                                    {{ number_format($row->population_20_59 ?? 0) }}
+                                                </td>
+                                                <td style="text-align:center;font-size:.82rem;color:#64748b;">
+                                                    {{ number_format($row->population_60_100 ?? 0) }}
+                                                </td>
+                                                <td>{{ number_format($row->total_households) }}</td>
+                                                <td>
+                                                    <div class="d-flex gap-2">
+                                                        <button class="btn-edit" data-bs-toggle="modal"
+                                                            data-bs-target="#editModal{{ $row->id }}">Edit</button>
+                                                        <button class="btn-del"
+                                                            onclick="archiveSummary({{ $row->id }}, '{{ $muniName }} {{ $row->year }}')">Archive</button>
+                                                    </div>
+                                                </td>
+                                            </tr>
 
-                                <!-- Edit Modal -->
-                                <div class="modal fade" id="editModal{{ $row->id }}" tabindex="-1">
-                                    <div class="modal-dialog modal-lg modal-dialog-centered">
-                                        <div class="modal-content">
-                                            <div class="modal-header">
-                                                <h5 class="modal-title">Edit {{ $muniName }} – {{ $row->year }}</h5>
-                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                                            </div>
-                                            <form method="POST" action="{{ route('superadmin.data.municipalities.summary.save') }}">
-                                                @csrf
-                                                <input type="hidden" name="municipality" value="{{ $row->municipality }}">
-                                                <input type="hidden" name="year" value="{{ $row->year }}">
-                                                <div class="modal-body p-4">
-                                                    <div class="row g-3">
-                                                        <div class="col-md-6">
-                                                            <label class="form-label">Total Population</label>
-                                                            <input type="number" name="total_population" class="form-control" value="{{ $row->total_population }}" required min="0">
+                                            <!-- Edit Modal -->
+                                            <div class="modal fade" id="editModal{{ $row->id }}" tabindex="-1">
+                                                <div class="modal-dialog modal-lg modal-dialog-centered">
+                                                    <div class="modal-content">
+                                                        <div class="modal-header">
+                                                            <h5 class="modal-title">Edit {{ $muniName }} � {{ $row->year }}</h5>
+                                                            <button type="button" class="btn-close"
+                                                                data-bs-dismiss="modal"></button>
                                                         </div>
-                                                        <div class="col-md-6">
-                                                            <label class="form-label">Total Households</label>
-                                                            <input type="number" name="total_households" class="form-control" value="{{ $row->total_households }}" required min="0">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label">4Ps Beneficiaries</label>
-                                                            <input type="number" name="total_4ps" class="form-control" value="{{ $row->total_4ps }}" min="0">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label">PWD Assistance</label>
-                                                            <input type="number" name="total_pwd" class="form-control" value="{{ $row->total_pwd }}" min="0">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label">Senior Citizen Pension</label>
-                                                            <input type="number" name="total_senior" class="form-control" value="{{ $row->total_senior }}" min="0">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label">AICS</label>
-                                                            <input type="number" name="total_aics" class="form-control" value="{{ $row->total_aics }}" min="0">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label">ESA</label>
-                                                            <input type="number" name="total_esa" class="form-control" value="{{ $row->total_esa }}" min="0">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label">SLP</label>
-                                                            <input type="number" name="total_slp" class="form-control" value="{{ $row->total_slp }}" min="0">
-                                                        </div>
-                                                        <div class="col-md-4">
-                                                            <label class="form-label">Solo Parent</label>
-                                                            <input type="number" name="total_solo_parent" class="form-control" value="{{ $row->total_solo_parent }}" min="0">
-                                                        </div>
+                                                        <form method="POST"
+                                                            action="{{ route('superadmin.data.municipalities.summary.save') }}">
+                                                            @csrf
+                                                            <input type="hidden" name="municipality"
+                                                                value="{{ $row->municipality }}">
+                                                            <input type="hidden" name="year" value="{{ $row->year }}">
+                                                            <div class="modal-body p-4">
+                                                                <div class="row g-3">
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Total Population</label>
+                                                                        <input type="number" name="total_population"
+                                                                            class="form-control"
+                                                                            value="{{ $row->total_population }}" required min="0">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Male Population</label>
+                                                                        <input type="number" name="male_population"
+                                                                            class="form-control"
+                                                                            value="{{ $row->male_population ?? 0 }}" min="0">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Female Population</label>
+                                                                        <input type="number" name="female_population"
+                                                                            class="form-control"
+                                                                            value="{{ $row->female_population ?? 0 }}" min="0">
+                                                                    </div>
+                                                                    <div class="col-md-6">
+                                                                        <label class="form-label">Total Households</label>
+                                                                        <input type="number" name="total_households"
+                                                                            class="form-control"
+                                                                            value="{{ $row->total_households }}" required min="0">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Population Age 0�19</label>
+                                                                        <input type="number" name="population_0_19"
+                                                                            class="form-control"
+                                                                            value="{{ $row->population_0_19 ?? 0 }}" min="0">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Population Age 20�59</label>
+                                                                        <input type="number" name="population_20_59"
+                                                                            class="form-control"
+                                                                            value="{{ $row->population_20_59 ?? 0 }}" min="0">
+                                                                    </div>
+                                                                    <div class="col-md-4">
+                                                                        <label class="form-label">Population Age 60+</label>
+                                                                        <input type="number" name="population_60_100"
+                                                                            class="form-control"
+                                                                            value="{{ $row->population_60_100 ?? 0 }}" min="0">
+                                                                    </div>
+                                                                    {{-- Preserve existing values silently --}}
+                                                                    <input type="hidden" name="total_4ps"
+                                                                        value="{{ $row->total_4ps }}">
+                                                                    <input type="hidden" name="total_senior"
+                                                                        value="{{ $row->total_senior }}">
+                                                                    <input type="hidden" name="total_esa"
+                                                                        value="{{ $row->total_esa }}">
+                                                                    <input type="hidden" name="total_slp"
+                                                                        value="{{ $row->total_slp }}">
+                                                                </div>
+                                                            </div>
+                                                            <div class="modal-footer border-0 px-4 pb-4 gap-2">
+                                                                <button type="button" class="btn-modal-cancel"
+                                                                    data-bs-dismiss="modal">Cancel</button>
+                                                                <button type="submit" class="btn-modal-submit">Save Changes</button>
+                                                            </div>
+                                                        </form>
                                                     </div>
                                                 </div>
-                                                <div class="modal-footer border-0 px-4 pb-4 gap-2">
-                                                    <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
-                                                    <button type="submit" class="btn-modal-submit">Save Changes</button>
-                                                </div>
-                                            </form>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endforeach
-                            </tbody>
-                        </table>
-                        @endif
+                                            </div>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            @endif
+                        </div>
                     </div>
-                </div>
                 @endforeach
             </div>
 
             <!-- ===================== ANALYSIS TAB ===================== -->
             <div class="section-tab" id="tab-analysis">
                 @foreach($coreNames as $muniName)
-                @php $cd = $chartData[$muniName]; @endphp
-                @if(!empty($cd['years']))
-                <div class="chart-card">
-                    <div class="chart-title">{{ $muniName }} — Population & Households per Year</div>
-                    <canvas id="chart-{{ $muniName }}" height="80"></canvas>
-                </div>
-                @endif
+                    @php $cd = $chartData[$muniName]; @endphp
+                    @if(!empty($cd['years']))
+                        <div class="chart-card">
+                            <div class="chart-title">{{ $muniName }} � Population & Households per Year</div>
+                            <canvas id="chart-{{ $muniName }}" height="80"></canvas>
+                        </div>
+                    @endif
                 @endforeach
 
                 <!-- Combined comparison chart -->
                 <div class="chart-card">
-                    <div class="chart-title">All Municipalities — Population Comparison</div>
+                    <div class="chart-title">All Municipalities � Population Comparison</div>
                     <canvas id="chart-comparison" height="90"></canvas>
                 </div>
             </div>
@@ -327,44 +804,49 @@
                                     @foreach($years as $y)<option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>@endforeach
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <label class="form-label">Total Population</label>
-                                <input type="number" name="total_population" class="form-control" required min="0" placeholder="0">
+                                <input type="number" name="total_population" class="form-control" required min="0"
+                                    placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Male Population</label>
+                                <input type="number" name="male_population" class="form-control" min="0"
+                                    placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="form-label">Female Population</label>
+                                <input type="number" name="female_population" class="form-control" min="0"
+                                    placeholder="0">
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Total Households</label>
-                                <input type="number" name="total_households" class="form-control" required min="0" placeholder="0">
+                                <input type="number" name="total_households" class="form-control" required min="0"
+                                    placeholder="0">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">4Ps Beneficiaries</label>
-                                <input type="number" name="total_4ps" class="form-control" min="0" placeholder="0">
+                                <label class="form-label">Population Age 0�19</label>
+                                <input type="number" name="population_0_19" class="form-control" min="0" placeholder="0"
+                                    value="0">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">PWD Assistance</label>
-                                <input type="number" name="total_pwd" class="form-control" min="0" placeholder="0">
+                                <label class="form-label">Population Age 20�59</label>
+                                <input type="number" name="population_20_59" class="form-control" min="0"
+                                    placeholder="0" value="0">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Senior Citizen Pension</label>
-                                <input type="number" name="total_senior" class="form-control" min="0" placeholder="0">
+                                <label class="form-label">Population Age 60+</label>
+                                <input type="number" name="population_60_100" class="form-control" min="0"
+                                    placeholder="0" value="0">
                             </div>
-                            <div class="col-md-4">
-                                <label class="form-label">AICS</label>
-                                <input type="number" name="total_aics" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">ESA</label>
-                                <input type="number" name="total_esa" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">SLP</label>
-                                <input type="number" name="total_slp" class="form-control" min="0" placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Solo Parent</label>
-                                <input type="number" name="total_solo_parent" class="form-control" min="0" placeholder="0">
-                            </div>
+                            {{-- Hidden defaults for removed fields --}}
+                            <input type="hidden" name="total_4ps" value="0">
+                            <input type="hidden" name="total_senior" value="0">
+                            <input type="hidden" name="total_esa" value="0">
+                            <input type="hidden" name="total_slp" value="0">
                         </div>
-                        <small class="text-muted mt-2 d-block">💡 If a record for this municipality + year already exists, it will be updated automatically.</small>
+                        <small class="text-muted mt-2 d-block">?? If a record for this municipality + year already
+                            exists, it will be updated automatically.</small>
                     </div>
                     <div class="modal-footer border-0 px-4 pb-4 gap-2">
                         <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
@@ -375,18 +857,12 @@
         </div>
     </div>
 
-    <footer class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </footer>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-
-    <!-- ========== ARCHIVED SUMMARIES MODAL ========== -->
+    <!-- Add Monthly Modal -->
     <div class="modal fade" id="archivedSummaryModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">🗂 Archived Yearly Records</h5>
+                    <h5 class="modal-title">?? Archived Yearly Records</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -402,12 +878,17 @@
                                 </tr>
                             </thead>
                             <tbody id="archivedSummaryList">
-                                <tr><td colspan="5" class="text-center py-4"><div class="spinner-border text-primary" role="status"></div></td></tr>
+                                <tr>
+                                    <td colspan="5" class="text-center py-4">
+                                        <div class="spinner-border text-primary" role="status"></div>
+                                    </td>
+                                </tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button></div>
+                <div class="modal-footer"><button type="button" class="btn btn-secondary"
+                        data-bs-dismiss="modal">Close</button></div>
             </div>
         </div>
     </div>
@@ -431,9 +912,9 @@
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
             })
-            .then(r => r.json())
-            .then(d => { if (d.success) location.reload(); else alert(d.message || 'Error.'); })
-            .catch(() => alert('Network error.'));
+                .then(r => r.json())
+                .then(d => { if (d.success) location.reload(); else alert(d.message || 'Error.'); })
+                .catch(() => alert('Network error.'));
         }
 
         // Load archived summaries
@@ -445,15 +926,15 @@
                 .then(data => {
                     document.getElementById('archivedSummaryCount').textContent = data.length;
                     if (!data.length) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><div style="font-size:2rem;opacity:.3;">🗂</div><p class="mt-2 mb-0">No archived records.</p></td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><div style="font-size:2rem;opacity:.3;">??</div><p class="mt-2 mb-0">No archived records.</p></td></tr>';
                         return;
                     }
                     tbody.innerHTML = data.map(r => {
-                        const date = r.deleted_at ? new Date(r.deleted_at).toLocaleString('en-PH',{dateStyle:'medium',timeStyle:'short'}) : 'N/A';
+                        const date = r.deleted_at ? new Date(r.deleted_at).toLocaleString('en-PH', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
                         return `<tr>
                             <td style="font-weight:700;">${r.municipality}</td>
                             <td>${r.year}</td>
-                            <td>${Number(r.total_population||0).toLocaleString()}</td>
+                            <td>${Number(r.total_population || 0).toLocaleString()}</td>
                             <td>${date}</td>
                             <td><div class="d-flex gap-2">
                                 <button class="btn-restore" onclick="restoreSummary(${r.id})">Restore</button>
@@ -471,27 +952,27 @@
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
             })
-            .then(r => r.json())
-            .then(d => { if (d.success) { loadArchivedSummaries(); location.reload(); } else alert(d.message); })
-            .catch(() => alert('Network error.'));
+                .then(r => r.json())
+                .then(d => { if (d.success) { loadArchivedSummaries(); location.reload(); } else alert(d.message); })
+                .catch(() => alert('Network error.'));
         }
 
         function permDeleteSummary(id) {
-            if (!confirm('⚠️ PERMANENTLY DELETE this record?\n\nThis CANNOT be undone!')) return;
+            if (!confirm('?? PERMANENTLY DELETE this record?\n\nThis CANNOT be undone!')) return;
             fetch('/superadmin/data/municipalities/summary/' + id + '/force-delete', {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
             })
-            .then(r => r.json())
-            .then(d => { if (d.success) loadArchivedSummaries(); else alert(d.message); })
-            .catch(() => alert('Network error.'));
+                .then(r => r.json())
+                .then(d => { if (d.success) loadArchivedSummaries(); else alert(d.message); })
+                .catch(() => alert('Network error.'));
         }
 
         // Load count on page load
         fetch('/superadmin/data/municipalities/summary/archived', { headers: { 'Accept': 'application/json' } })
             .then(r => r.json())
             .then(d => { document.getElementById('archivedSummaryCount').textContent = d.length; })
-            .catch(() => {});
+            .catch(() => { });
 
         document.getElementById('archivedSummaryModal').addEventListener('show.bs.modal', loadArchivedSummaries);
 
@@ -500,7 +981,7 @@
             if (chartsInited) return;
             chartsInited = true;
 
-            const PALETTE = ['#2C3E8F','#FDB913','#C41E24','#10B981','#8B5CF6'];
+            const PALETTE = ['#2C3E8F', '#FDB913', '#C41E24', '#10B981', '#8B5CF6'];
             const chartData = @json($chartData);
             const coreNames = @json($coreNames);
 
@@ -584,6 +1065,24 @@
             form.appendChild(csrf); form.appendChild(method);
             document.body.appendChild(form); form.submit();
         }
-    </script>
+
+        // --- MONTHLY DATA ---------------------------------------------------
+                }
+            });
+        }
+
+        // Open Edit Monthly modal
+
+        // Save edit via AJAX
+
+        // Archive monthly record
+
+        // Load archived monthly records modal
+
+
+
+        // Auto-load archived monthly count on modal open
+
 </body>
+
 </html>

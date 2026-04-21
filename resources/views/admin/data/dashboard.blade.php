@@ -6,12 +6,11 @@
     <title>Data Management – MSWDO Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    @include('components.admin-colors')
     <style>
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
         :root {
-            --primary-blue: #2C3E8F;
-            --secondary-yellow: #FDB913;
-            --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
-            --secondary-gradient: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
             --bg-light: #F8FAFC;
             --bg-white: #FFFFFF;
             --bg-soft-blue: #F0F5FF;
@@ -25,6 +24,12 @@
         /* NAVBAR */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
         .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display: flex; align-items: center; gap: 12px; }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+        }
         .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.93rem; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
@@ -73,6 +78,9 @@
 
         /* MAIN GROW */
         .main-content { flex: 1; }
+
+        /* YEAR BUTTONS */
+        .year-btn:hover { transform: translateY(-2px); filter: brightness(0.92); box-shadow: 0 4px 12px rgba(44,62,143,0.15); }
 
         /* FOOTER */
         .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.75); text-align: center; padding: 20px 0; font-size: 0.85rem; margin-top: 48px; }
@@ -142,6 +150,20 @@
             <div class="alert-success-c">{{ session('success') }}</div>
         @endif
 
+        <!-- YEAR FILTERS -->
+        <div style="margin: 8px 0 24px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:15px;">
+            <div>
+                <div class="section-heading" style="margin-bottom:0; padding-bottom:8px;">Dashboard Overview</div>
+                <div style="font-size:0.85rem; color:#64748b;">Showing stats for selected year.</div>
+            </div>
+            
+            <div class="year-filter-buttons" style="display:flex;gap:6px;flex-wrap:wrap; margin-bottom:10px;">
+                @foreach($allYears as $year)
+                <a href="{{ route('admin.data.dashboard') }}?year={{ $year }}" class="year-btn" style="background:{{ request('year', $currentYear) == $year ? 'var(--primary-gradient)' : '#E2E8F0' }};color:{{ request('year', $currentYear) == $year ? 'white' : '#64748b' }};border:none;border-radius:8px;padding:8px 16px;font-size:0.85rem;font-weight:700;text-decoration:none;transition:all 0.2s;">{{ $year }}</a>
+                @endforeach
+            </div>
+        </div>
+
         <!-- STAT CARDS -->
         <div class="row g-3 mb-5">
             <div class="col-md-4">
@@ -149,8 +171,8 @@
                     <div class="inner">
                         <span class="stat-pill">Population</span>
                         <div class="stat-label">Total Residents</div>
-                        <div class="stat-value">{{ number_format($municipality->male_population + $municipality->female_population) }}</div>
-                        <div class="stat-sub">Male &amp; female combined</div>
+                        <div class="stat-value">{{ number_format($totalPopulation ?? 0) }}</div>
+                        <div class="stat-sub">Total Population</div>
                     </div>
                 </div>
             </div>
@@ -209,6 +231,16 @@
                     <span class="menu-arrow">&rsaquo;</span>
                 </a>
             </div>
+            <div class="col-md-4">
+                <a href="{{ route('admin.data.yearly') }}" class="menu-card">
+                    <div class="menu-text">
+                        <span class="menu-num">04 &mdash; Yearly Summary</span>
+                        <span class="menu-title">Municipality Yearly Data</span>
+                        <span class="menu-desc">Add and manage yearly population, household, PWD, AICS, and Solo Parent summary records for {{ $municipality->name }}.</span>
+                    </div>
+                    <span class="menu-arrow">&rsaquo;</span>
+                </a>
+            </div>
         </div>
 
     </div>
@@ -219,5 +251,10 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+@include('components.admin-settings-modal')
+@include('components.admin-chat-modal')
 </body>
 </html>
+
+
+

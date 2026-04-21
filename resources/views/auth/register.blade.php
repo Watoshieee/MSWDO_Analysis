@@ -231,16 +231,51 @@
                 <div class="section-label">Personal Information</div>
                 <div class="field-row">
                     <div>
-                        <label class="field-label" for="full_name">Full Name <span class="req">*</span></label>
+                        <label class="field-label" for="first_name">First Name <span class="req">*</span></label>
                         <div class="field-wrap">
-                            <input type="text" id="full_name" name="full_name"
-                                   class="form-input @error('full_name') invalid @enderror"
-                                   value="{{ old('full_name') }}" placeholder="Juan Dela Cruz"
-                                   autocomplete="name" oninput="validateFullName()">
+                            <input type="text" id="first_name" name="first_name"
+                                   class="form-input @error('first_name') invalid @enderror"
+                                   value="{{ old('first_name') }}" placeholder="Juan"
+                                   autocomplete="given-name" oninput="validateFirstName(); buildFullName();">
                         </div>
-                        <div id="msg_full_name" class="field-msg hint">Letters and spaces only, min 3 chars.</div>
-                        @error('full_name')<div class="field-msg err">{{ $message }}</div>@enderror
+                        <div id="msg_first_name" class="field-msg hint">Letters only, min 2 chars.</div>
+                        @error('first_name')<div class="field-msg err">{{ $message }}</div>@enderror
                     </div>
+                    <div>
+                        <label class="field-label" for="middle_name">Middle Name</label>
+                        <div class="field-wrap">
+                            <input type="text" id="middle_name" name="middle_name"
+                                   class="form-input @error('middle_name') invalid @enderror"
+                                   value="{{ old('middle_name') }}" placeholder="Santos (optional)"
+                                   autocomplete="additional-name" oninput="validateMiddleName(); buildFullName();">
+                        </div>
+                        <div id="msg_middle_name" class="field-msg hint">Optional</div>
+                        @error('middle_name')<div class="field-msg err">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+
+                <div class="field-row" style="margin-top:8px;">
+                    <div>
+                        <label class="field-label" for="last_name">Last Name <span class="req">*</span></label>
+                        <div class="field-wrap">
+                            <input type="text" id="last_name" name="last_name"
+                                   class="form-input @error('last_name') invalid @enderror"
+                                   value="{{ old('last_name') }}" placeholder="Dela Cruz"
+                                   autocomplete="family-name" oninput="validateLastName(); buildFullName();">
+                        </div>
+                        <div id="msg_last_name" class="field-msg hint">Letters only, min 2 chars.</div>
+                        @error('last_name')<div class="field-msg err">{{ $message }}</div>@enderror
+                    </div>
+                    <div>
+                        <label class="field-label">Full Name</label>
+                        <div class="field-wrap">
+                            <input type="text" id="fullname_display" class="form-input" readonly style="background: #f8fafc; cursor: default;" placeholder="Auto-generated from name fields">
+                        </div>
+                        <div class="field-msg hint">Automatically generated</div>
+                    </div>
+                </div>
+
+                <div class="field-row" style="margin-top:8px;">
                     <div>
                         <label class="field-label" for="username">Username <span class="req">*</span></label>
                         <div class="field-wrap">
@@ -252,9 +287,6 @@
                         <div id="msg_username" class="field-msg hint">Letters, numbers, underscores · 4–20 chars.</div>
                         @error('username')<div class="field-msg err">{{ $message }}</div>@enderror
                     </div>
-                </div>
-
-                <div class="field-row" style="margin-top:8px;">
                     <div>
                         <label class="field-label" for="email">Email Address <span class="req">*</span></label>
                         <div class="field-wrap">
@@ -266,32 +298,38 @@
                         <div id="msg_email" class="field-msg hint">Must be a valid email address.</div>
                         @error('email')<div class="field-msg err">{{ $message }}</div>@enderror
                     </div>
-                    <div>
-                        <label class="field-label" for="mobile_number">Mobile Number <span class="req">*</span></label>
-                        <div class="field-wrap">
-                            <input type="tel" id="mobile_number" name="mobile_number"
-                                   class="form-input @error('mobile_number') invalid @enderror"
-                                   value="{{ old('mobile_number') }}" placeholder="09XXXXXXXXX"
-                                   autocomplete="tel" oninput="validateMobile()">
-                        </div>
-                        <div id="msg_mobile" class="field-msg hint">Format: 09XXXXXXXXX or +639XXXXXXXXX</div>
-                        @error('mobile_number')<div class="field-msg err">{{ $message }}</div>@enderror
-                    </div>
                 </div>
 
                 <div class="field-row" style="margin-top:8px;">
+                    <div>
+                        <label class="field-label" for="mobile_number">Mobile Number <span class="req">*</span></label>
+                        <div class="field-wrap" style="position: relative;">
+                            <span style="position: absolute; left: 13px; top: 50%; transform: translateY(-50%); font-size: 0.88rem; color: #64748b; font-weight: 600; pointer-events: none;">+63</span>
+                            <input type="tel" id="mobile_number" name="mobile_number"
+                                   class="form-input @error('mobile_number') invalid @enderror"
+                                   value="{{ old('mobile_number') }}" placeholder="9XXXXXXXXX"
+                                   autocomplete="tel" oninput="validateMobile()"
+                                   style="padding-left: 45px;" maxlength="10">
+                        </div>
+                        <div id="msg_mobile" class="field-msg hint">Enter 10 digits (9XXXXXXXXX)</div>
+                        @error('mobile_number')<div class="field-msg err">{{ $message }}</div>@enderror
+                    </div>
                     <div>
                         <label class="field-label" for="birthdate">Date of Birth <span class="req">*</span></label>
                         <div class="field-wrap">
                             <input type="date" id="birthdate" name="birthdate"
                                    class="form-input @error('birthdate') invalid @enderror"
                                    value="{{ old('birthdate') }}"
+                                   min="{{ now()->subYears(150)->format('Y-m-d') }}"
                                    max="{{ now()->subYears(18)->format('Y-m-d') }}"
                                    onchange="calculateAge()">
                         </div>
                         <div id="age-display"></div>
                         @error('birthdate')<div class="field-msg err">{{ $message }}</div>@enderror
                     </div>
+                </div>
+
+                <div class="field-row" style="margin-top:8px;">
                     <div>
                         <label class="field-label" for="municipality">Municipality <span class="req">*</span></label>
                         <div class="field-wrap">
@@ -309,66 +347,27 @@
                         <div id="msg_municipality" class="field-msg hint"></div>
                         @error('municipality')<div class="field-msg err">{{ $message }}</div>@enderror
                     </div>
+                    <div>
+                        <label class="field-label" for="barangay">Barangay <span class="req">*</span></label>
+                        <div class="field-wrap">
+                            <select id="barangay" name="barangay"
+                                    class="form-input @error('barangay') invalid @enderror"
+                                    disabled>
+                                <option value="">Select Municipality first</option>
+                            </select>
+                        </div>
+                        <div id="msg_barangay" class="field-msg hint">Select your municipality first.</div>
+                        @error('barangay')<div class="field-msg err">{{ $message }}</div>@enderror
+                    </div>
                 </div>
 
-                <div style="margin-top:8px;">
-                    <label class="field-label" for="barangay">Barangay <span class="req">*</span></label>
-                    <div class="field-wrap">
-                        <select id="barangay" name="barangay"
-                                class="form-input @error('barangay') invalid @enderror"
-                                disabled>
-                            <option value="">Select Municipality first</option>
-                        </select>
-                    </div>
-                    <div id="msg_barangay" class="field-msg hint">Select your municipality first.</div>
-                    @error('barangay')<div class="field-msg err">{{ $message }}</div>@enderror
-                </div>
+                <!-- Hidden full_name field -->
+                <input type="hidden" id="full_name" name="full_name" value="{{ old('full_name') }}">
 
                 <div class="section-divider"></div>
-                <div class="section-label">Security</div>
-
-                <div class="field-row">
-                    <div>
-                        <label class="field-label" for="password">Password <span class="req">*</span></label>
-                        <div class="field-wrap pw-wrap">
-                            <input type="password" id="password" name="password"
-                                   class="form-input @error('password') invalid @enderror"
-                                   placeholder="Min. 8 characters"
-                                   autocomplete="new-password"
-                                   oninput="checkPassword()">
-                            <button type="button" class="pw-toggle" onclick="togglePw('password', this)" title="Show/hide password">&#128065;</button>
-                        </div>
-                        @error('password')<div class="field-msg err">{{ $message }}</div>@enderror
-
-                        <!-- Strength meter -->
-                        <div class="pw-strength" id="pw_strength_wrap" style="display:none;">
-                            <div class="pw-bars">
-                                <div class="pw-bar" id="s1"></div>
-                                <div class="pw-bar" id="s2"></div>
-                                <div class="pw-bar" id="s3"></div>
-                                <div class="pw-bar" id="s4"></div>
-                            </div>
-                            <div class="pw-criteria">
-                                <div class="pw-crit" id="c_len"><div class="dot"></div>8+ characters</div>
-                                <div class="pw-crit" id="c_upper"><div class="dot"></div>Uppercase (A–Z)</div>
-                                <div class="pw-crit" id="c_lower"><div class="dot"></div>Lowercase (a–z)</div>
-                                <div class="pw-crit" id="c_num"><div class="dot"></div>Number (0–9)</div>
-                                <div class="pw-crit" id="c_sym"><div class="dot"></div>Special char (!@#...)</div>
-                            </div>
-                        </div>
-                    </div>
-                    <div>
-                        <label class="field-label" for="password_confirmation">Confirm Password <span class="req">*</span></label>
-                        <div class="field-wrap pw-wrap">
-                            <input type="password" id="password_confirmation" name="password_confirmation"
-                                   class="form-input"
-                                   placeholder="Re-enter password"
-                                   autocomplete="new-password"
-                                   oninput="checkConfirm()">
-                            <button type="button" class="pw-toggle" onclick="togglePw('password_confirmation', this)" title="Show/hide password">&#128065;</button>
-                        </div>
-                        <div id="msg_confirm" class="field-msg hint">Must match the password above.</div>
-                    </div>
+                <div class="section-label">Account Information</div>
+                <div class="info-box">
+                    <strong>Note:</strong> A temporary password will be automatically generated and sent to your email. You will be required to change it after email verification.
                 </div>
 
                 <button type="submit" class="btn-register" id="submitBtn">
@@ -424,6 +423,8 @@
             if (opt) opt.selected = true;
         }
         if (document.getElementById('birthdate').value) calculateAge();
+        // Build full name on page load if fields have values
+        buildFullName();
     });
 
     // ── Field Validators ──
@@ -440,12 +441,36 @@
         if (state) el.classList.add(state);
     }
 
-    function validateFullName() {
-        const v = document.getElementById('full_name').value.trim();
-        if (!v) { setMsg('msg_full_name','hint','Letters and spaces only, min 3 chars.'); markInput('full_name',''); return; }
-        if (v.length < 3) { setMsg('msg_full_name','err','Too short — minimum 3 characters.'); markInput('full_name','invalid'); return; }
-        if (!/^[a-zA-ZÀ-ÿ\s'\-\.]+$/.test(v)) { setMsg('msg_full_name','err','Only letters, spaces, hyphens, and apostrophes allowed.'); markInput('full_name','invalid'); return; }
-        setMsg('msg_full_name','ok','✓ Looks good!'); markInput('full_name','valid');
+    function buildFullName() {
+        const first = document.getElementById('first_name').value.trim();
+        const middle = document.getElementById('middle_name').value.trim();
+        const last = document.getElementById('last_name').value.trim();
+        const fullName = [first, middle, last].filter(Boolean).join(' ');
+        document.getElementById('full_name').value = fullName;
+        document.getElementById('fullname_display').value = fullName;
+    }
+
+    function validateFirstName() {
+        const v = document.getElementById('first_name').value.trim();
+        if (!v) { setMsg('msg_first_name','hint','Letters only, min 2 chars.'); markInput('first_name',''); return; }
+        if (v.length < 2) { setMsg('msg_first_name','err','Too short — minimum 2 characters.'); markInput('first_name','invalid'); return; }
+        if (!/^[a-zA-ZÀ-ÿ\s'\-\.]+$/.test(v)) { setMsg('msg_first_name','err','Only letters, spaces, hyphens, and apostrophes allowed.'); markInput('first_name','invalid'); return; }
+        setMsg('msg_first_name','ok','✓ Looks good!'); markInput('first_name','valid');
+    }
+
+    function validateMiddleName() {
+        const v = document.getElementById('middle_name').value.trim();
+        if (!v) { setMsg('msg_middle_name','hint','Optional'); markInput('middle_name',''); return; }
+        if (!/^[a-zA-ZÀ-ÿ\s'\-\.]+$/.test(v)) { setMsg('msg_middle_name','err','Only letters, spaces, hyphens, and apostrophes allowed.'); markInput('middle_name','invalid'); return; }
+        setMsg('msg_middle_name','ok','✓ Valid'); markInput('middle_name','valid');
+    }
+
+    function validateLastName() {
+        const v = document.getElementById('last_name').value.trim();
+        if (!v) { setMsg('msg_last_name','hint','Letters only, min 2 chars.'); markInput('last_name',''); return; }
+        if (v.length < 2) { setMsg('msg_last_name','err','Too short — minimum 2 characters.'); markInput('last_name','invalid'); return; }
+        if (!/^[a-zA-ZÀ-ÿ\s'\-\.]+$/.test(v)) { setMsg('msg_last_name','err','Only letters, spaces, hyphens, and apostrophes allowed.'); markInput('last_name','invalid'); return; }
+        setMsg('msg_last_name','ok','✓ Looks good!'); markInput('last_name','valid');
     }
 
     function validateUsername() {
@@ -467,12 +492,24 @@
 
     function validateMobile() {
         const v = document.getElementById('mobile_number').value.trim();
-        if (!v) { setMsg('msg_mobile','hint','Format: 09XXXXXXXXX or +639XXXXXXXXX'); markInput('mobile_number',''); return; }
-        if (!/^(\+639|09)\d{9}$/.test(v)) {
-            setMsg('msg_mobile','err','Use 09XXXXXXXXX (11 digits) or +639XXXXXXXXX (13 chars).');
-            markInput('mobile_number','invalid'); return;
+        // Remove non-digits
+        const cleaned = v.replace(/\D/g, '');
+        
+        if (!v) { 
+            setMsg('msg_mobile','hint','Enter 10 digits (9XXXXXXXXX)'); 
+            markInput('mobile_number',''); 
+            return; 
         }
-        setMsg('msg_mobile','ok','✓ Valid Philippine number.'); markInput('mobile_number','valid');
+        
+        // Must be exactly 10 digits and start with 9
+        if (cleaned.length !== 10 || !cleaned.startsWith('9')) {
+            setMsg('msg_mobile','err','Must be 10 digits starting with 9 (e.g., 9171234567)');
+            markInput('mobile_number','invalid'); 
+            return;
+        }
+        
+        setMsg('msg_mobile','ok','✓ Valid Philippine number (+63' + cleaned + ')'); 
+        markInput('mobile_number','valid');
     }
 
     // ── Age calculator ──
@@ -561,26 +598,17 @@
 
     // ── Prevent submit if obvious client errors ──
     document.getElementById('registerForm').addEventListener('submit', function(e) {
-        validateFullName();
+        buildFullName();
+        validateFirstName();
+        validateLastName();
         validateUsername();
         validateEmail();
         validateMobile();
 
         const hasInvalid = document.querySelectorAll('.form-input.invalid').length > 0;
-        const pw  = document.getElementById('password').value;
-        const cpw = document.getElementById('password_confirmation').value;
-        const pwscore = [
-            pw.length >= 8,
-            /[A-Z]/.test(pw), /[a-z]/.test(pw),
-            /\d/.test(pw), /[@$!%*?&#_\-\.]/.test(pw)
-        ].filter(Boolean).length;
 
-        if (hasInvalid || pw !== cpw || pwscore < 5) {
+        if (hasInvalid) {
             e.preventDefault();
-            if (pw !== cpw) {
-                document.getElementById('msg_confirm').textContent = '✗ Passwords do not match.';
-                document.getElementById('msg_confirm').className = 'field-msg err';
-            }
             // Scroll to first error
             const first = document.querySelector('.form-input.invalid');
             if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });

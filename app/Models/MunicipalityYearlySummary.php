@@ -11,7 +11,7 @@ class MunicipalityYearlySummary extends Model
     use HasFactory, SoftDeletes;
 
     protected $table = 'municipality_yearly_summary';
-    
+
     public $timestamps = true;
     const CREATED_AT = 'created_at';
     const UPDATED_AT = null;
@@ -20,6 +20,11 @@ class MunicipalityYearlySummary extends Model
         'municipality',
         'year',
         'total_population',
+        'male_population',
+        'female_population',
+        'population_0_19',
+        'population_20_59',
+        'population_60_100',
         'total_households',
         'total_4ps',
         'total_pwd',
@@ -34,6 +39,11 @@ class MunicipalityYearlySummary extends Model
     protected $casts = [
         'year' => 'integer',
         'total_population' => 'integer',
+        'male_population' => 'integer',
+        'female_population' => 'integer',
+        'population_0_19' => 'integer',
+        'population_20_59' => 'integer',
+        'population_60_100' => 'integer',
         'total_households' => 'integer',
         'total_4ps' => 'integer',
         'total_pwd' => 'integer',

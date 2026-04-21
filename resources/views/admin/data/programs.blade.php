@@ -6,13 +6,22 @@
     <title>Program Data – {{ $municipality->name }} – MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+    @include('components.admin-colors')
     <style>
-        :root { --primary-blue:#2C3E8F; --secondary-yellow:#FDB913; --primary-gradient:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%); --bg-light:#F8FAFC; --bg-white:#FFFFFF; --bg-soft-blue:#F0F5FF; --border-light:#E2E8F0; --text-dark:#1E293B; }
+html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+
+        :root { --bg-light:#F8FAFC; --bg-white:#FFFFFF; --bg-soft-blue:#F0F5FF; --border-light:#E2E8F0; --text-dark:#1E293B; }
         * { box-sizing:border-box; }
         body { background:var(--bg-light); font-family:'Inter',sans-serif; color:var(--text-dark); display:flex; flex-direction:column; min-height:100vh; margin:0; }
         a { text-decoration:none; }
         .navbar { background:var(--primary-gradient) !important; box-shadow:0 4px 24px rgba(44,62,143,0.18); padding:14px 0; }
         .navbar-brand { font-weight:800; font-size:1.55rem; color:white !important; display:flex; align-items:center; gap:12px; }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+        }
         .nav-link { color:rgba(255,255,255,0.88) !important; font-weight:600; transition:all 0.25s; border-radius:8px; padding:10px 18px !important; font-size:0.93rem; }
         .nav-link:hover { background:rgba(255,255,255,0.15); color:white !important; }
         .nav-link.active { background:var(--secondary-yellow); color:var(--primary-blue) !important; font-weight:700; }
@@ -94,55 +103,56 @@
         @if(session('success'))<div class="alert-s">{{ session('success') }}</div>@endif
 
         <!-- Filter + Add -->
-        <div class="panel-card">
-            <div class="panel-header">
-                <div><div class="panel-header-title">Filter Programs</div></div>
-                <button class="btn-add-prog" data-bs-toggle="modal" data-bs-target="#createModal">+ Add Program</button>
-            </div>
-            <div class="filter-body">
-                <form method="GET" action="{{ route('admin.data.programs') }}">
-                    <div class="row g-3 align-items-end">
-                        <div class="col-md-4">
-                            <label class="f-label">Program Type</label>
-                            <select name="program_type" class="f-input">
-                                <option value="">All Programs</option>
-                                @foreach($programTypes as $value => $label)
-                                    <option value="{{ $value }}" {{ request('program_type') == $value ? 'selected' : '' }}>{{ $label }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-3">
-                            <label class="f-label">Year</label>
-                            <select name="year" class="f-input">
-                                <option value="">All Years</option>
-                                @foreach($years as $year)
-                                    <option value="{{ $year }}" {{ request('year') == $year ? 'selected' : '' }}>{{ $year }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="submit" class="btn-filter">Filter</button>
-                        </div>
-                    </div>
-                </form>
-            </div>
+        <div class="mb-3 text-end">
+            <button class="btn-add-prog" data-bs-toggle="modal" data-bs-target="#createModal">+ Add Program</button>
         </div>
 
         <!-- Programs Table -->
         <div class="panel-card">
             <div class="panel-header">
-                <div><div class="panel-header-title">Program Records</div><div class="panel-header-sub">Beneficiary data by program and year</div></div>
+                <div>
+                    <div class="panel-header-title">Program Records — {{ $municipality->name }}</div>
+                    <div class="panel-header-sub">{{ $programs->total() }} program records</div>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <form method="GET" action="{{ route('admin.data.programs') }}" class="d-flex align-items-center gap-2">
+                        <label class="form-label mb-0" style="color: rgba(255,255,255,.9); font-size: .82rem; font-weight: 600; white-space: nowrap;">Program Type:</label>
+                        <select name="program_type" class="form-select" style="min-width:150px; font-size:.85rem;" onchange="this.form.submit()">
+                            <option value="" {{ !request('program_type') ? 'selected' : '' }}>All Programs</option>
+                            @foreach($programTypes as $value => $label)
+                                <option value="{{ $value }}" {{ request('program_type') == $value ? 'selected' : '' }}>{{ $label }}</option>
+                            @endforeach
+                        </select>
+                        <label class="form-label mb-0" style="color: rgba(255,255,255,.9); font-size: .82rem; font-weight: 600; white-space: nowrap;">Year:</label>
+                        <select name="year" class="form-select" style="min-width:110px; font-size:.85rem;" onchange="this.form.submit()">
+                            <option value="" {{ !request('year') ? 'selected' : '' }}>All Years</option>
+                            @foreach($years as $yr)
+                                <option value="{{ $yr }}" {{ request('year') == $yr ? 'selected' : '' }}>{{ $yr }}</option>
+                            @endforeach
+                        </select>
+                        <label class="form-label mb-0" style="color: rgba(255,255,255,.9); font-size: .82rem; font-weight: 600; white-space: nowrap;">Month:</label>
+                        <select name="month" class="form-select" style="min-width:110px; font-size:.85rem;" onchange="this.form.submit()">
+                            <option value="" {{ !request('month') ? 'selected' : '' }}>All</option>
+                            @foreach($months as $num => $name)
+                                <option value="{{ $num }}" {{ request('month') == $num ? 'selected' : '' }}>{{ $name }}</option>
+                            @endforeach
+                        </select>
+                        @if(request('program_type') || request('year') || request('month'))
+                            <a href="{{ route('admin.data.programs') }}" class="btn-clear" style="background: rgba(255,255,255,.2); color: white; border: 1.5px solid rgba(255,255,255,.4); padding: 5px 14px; font-size: .8rem; text-decoration: none; border-radius: 8px; white-space: nowrap;">Clear</a>
+                        @endif
+                    </form>
+                </div>
             </div>
             <div style="overflow-x:auto;">
                 <table class="prog-table">
-                    <thead><tr><th>#</th><th>Program</th><th>Beneficiaries</th><th>Year</th><th>Actions</th></tr></thead>
+                    <thead><tr><th>#</th><th>Program</th><th>Beneficiaries</th><th>Period</th><th>Actions</th></tr></thead>
                     <tbody>
                         @forelse($programs as $i => $program)
                         <tr>
                             <td style="color:#94a3b8;font-size:0.78rem;font-weight:700;">{{ $programs->firstItem() + $i }}</td>
                             <td><span class="prog-name-pill">{{ str_replace('_', ' ', $program->program_type) }}</span></td>
                             <td><strong>{{ number_format($program->beneficiary_count) }}</strong></td>
-                            <td>{{ $program->year }}</td>
+                            <td>{{ $program->month ? $months[$program->month] . ' ' : '' }}{{ $program->year }}</td>
                             <td>
                                 <button class="btn-edit-sm" data-bs-toggle="modal" data-bs-target="#editModal{{ $program->id }}">Edit</button>
                                 <button class="btn-del-sm" onclick="deleteProgram({{ $program->id }})">Delete</button>
@@ -151,29 +161,84 @@
 
                         <!-- Edit Modal -->
                         <div class="modal fade" id="editModal{{ $program->id }}" tabindex="-1">
-                            <div class="modal-dialog"><div class="modal-content">
+                            <div class="modal-dialog modal-lg modal-dialog-centered"><div class="modal-content">
                                 <div class="modal-hdr d-flex align-items-center justify-content-between">
-                                    <span style="font-weight:800;">Edit Program</span>
+                                    <span style="font-weight:800;">Edit Program - {{ str_replace('_', ' ', $program->program_type) }} ({{ $program->month ? $months[$program->month] . ' ' : '' }}{{ $program->year }})</span>
                                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                 </div>
-                                <form method="POST" action="{{ route('admin.data.programs.update', $program->id) }}">@csrf
+                                <form method="POST" action="{{ route('admin.data.programs.update', $program->id) }}" id="editForm{{ $program->id }}">
+                                    @csrf
+                                    <input type="hidden" name="year" value="{{ $program->year }}">
+                                    <input type="hidden" name="month" value="{{ $program->month }}">
+                                    <input type="hidden" name="beneficiary_count" id="totalCountHidden{{ $program->id }}" value="{{ $program->beneficiary_count }}">
+                                    
                                     <div class="modal-body p-4">
-                                        <div class="mb-3"><label class="f-label">Program Type</label><input type="text" class="f-input" value="{{ str_replace('_', ' ', $program->program_type) }}" readonly disabled style="opacity:0.6;"></div>
-                                        <div class="mb-3"><label class="f-label">Beneficiary Count</label><input type="number" name="beneficiary_count" class="f-input" value="{{ $program->beneficiary_count }}" required></div>
-                                        <div class="mb-3"><label class="f-label">Year</label>
-                                            <select name="year" class="f-input" required>
-                                                @foreach(range(date('Y') - 2, date('Y') + 1) as $yearOption)
-                                                    <option value="{{ $yearOption }}" {{ $program->year == $yearOption ? 'selected' : '' }}>{{ $yearOption }}</option>
-                                                @endforeach
-                                            </select>
+                                        @if(isset($barangayBreakdown[$program->id]) && $barangayBreakdown[$program->id]->count() > 0)
+                                        <!-- Total Display -->
+                                        <div class="mb-3" style="background:var(--primary-gradient);color:white;padding:16px;border-radius:12px;text-align:center;">
+                                            <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;opacity:0.85;">Total Beneficiaries</div>
+                                            <div id="totalCountDisplay{{ $program->id }}" style="font-size:2.2rem;font-weight:900;margin-top:4px;">{{ number_format($program->beneficiary_count) }}</div>
                                         </div>
+                                        
+                                        <!-- Barangay Breakdown -->
+                                        <div class="mb-3">
+                                            <label class="f-label">Edit by Barangay</label>
+                                            <div style="max-height:300px;overflow-y:auto;border:1.5px solid var(--border-light);border-radius:10px;padding:8px;">
+                                                @foreach($barangayBreakdown[$program->id] as $brgy)
+                                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px;background:#F8FAFC;border-radius:8px;">
+                                                    <div style="flex:1;font-size:0.9rem;font-weight:600;color:var(--primary-blue);">{{ $brgy['name'] }}</div>
+                                                    <input type="hidden" name="barangay_data[{{ $loop->index }}][id]" value="{{ $brgy['id'] }}">
+                                                    <input type="number" 
+                                                           name="barangay_data[{{ $loop->index }}][count]" 
+                                                           value="{{ $brgy['count'] }}" 
+                                                           min="0"
+                                                           class="f-input barangay-count-input" 
+                                                           data-program-id="{{ $program->id }}"
+                                                           style="width:120px;padding:8px 12px;font-size:0.95rem;font-weight:600;text-align:center;">
+                                                </div>
+                                                @endforeach
+                                            </div>
+                                            <div style="font-size:0.75rem;color:#64748b;margin-top:8px;font-style:italic;">
+                                                💡 Total will auto-calculate as you edit the counts above.
+                                            </div>
+                                        </div>
+                                        @else
+                                        <div style="text-align:center;padding:40px;color:#94a3b8;">
+                                            <div style="font-size:2rem;margin-bottom:8px;">📊</div>
+                                            <div style="font-size:0.9rem;">No barangay data available for this program.</div>
+                                        </div>
+                                        @endif
                                     </div>
-                                    <div class="modal-footer border-0 px-4 pb-4 gap-2"><button type="button" class="btn-cncl" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn-submit">Save Changes</button></div>
+                                    <div class="modal-footer border-0 px-4 pb-4 gap-2">
+                                        <button type="button" class="btn-cncl" data-bs-dismiss="modal">Cancel</button>
+                                        <button type="submit" class="btn-submit">Save Changes</button>
+                                    </div>
                                 </form>
                             </div></div>
                         </div>
+                        
+                        <script>
+                        document.addEventListener('DOMContentLoaded', function() {
+                            const inputs = document.querySelectorAll('.barangay-count-input[data-program-id="{{ $program->id }}"]');
+                            const totalDisplay = document.getElementById('totalCountDisplay{{ $program->id }}');
+                            const totalHidden = document.getElementById('totalCountHidden{{ $program->id }}');
+                            
+                            if (inputs.length > 0 && totalDisplay && totalHidden) {
+                                inputs.forEach(input => {
+                                    input.addEventListener('input', function() {
+                                        let total = 0;
+                                        inputs.forEach(inp => {
+                                            total += parseInt(inp.value) || 0;
+                                        });
+                                        totalDisplay.textContent = total.toLocaleString();
+                                        totalHidden.value = total;
+                                    });
+                                });
+                            }
+                        });
+                        </script>
                         @empty
-                        <tr><td colspan="5" style="text-align:center;padding:40px;color:#94a3b8;font-size:0.88rem;">No programs found. Add one above.</td></tr>
+                        <tr><td colspan="4" style="text-align:center;padding:40px;color:#94a3b8;font-size:0.88rem;">No programs found. Add one above.</td></tr>
                         @endforelse
                     </tbody>
                 </table>
@@ -199,11 +264,21 @@
                         </select>
                     </div>
                     <div class="mb-3"><label class="f-label">Beneficiary Count</label><input type="number" name="beneficiary_count" class="f-input" required min="0"></div>
-                    <div class="mb-3"><label class="f-label">Year</label>
-                        <select name="year" class="f-input" required>
-                            <option value="">Select Year</option>
-                            @foreach($years as $year)<option value="{{ $year }}">{{ $year }}</option>@endforeach
-                        </select>
+                    <div class="row mb-3">
+                        <div class="col-6">
+                            <label class="f-label">Year</label>
+                            <select name="year" class="f-input" required>
+                                <option value="">Select Year</option>
+                                @foreach($years as $year)<option value="{{ $year }}">{{ $year }}</option>@endforeach
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="f-label">Month (Optional)</label>
+                            <select name="month" class="f-input">
+                                <option value="">Entire Year</option>
+                                @foreach($months as $num => $name)<option value="{{ $num }}">{{ $name }}</option>@endforeach
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer border-0 px-4 pb-4 gap-2"><button type="button" class="btn-cncl" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn-submit">Save Program</button></div>
@@ -224,5 +299,8 @@
             }
         }
     </script>
+@include('components.admin-settings-modal')
+@include('components.admin-chat-modal')
 </body>
 </html>
+
