@@ -592,7 +592,8 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/analysis">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD"
+                    style="width:36px;height:36px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -703,20 +704,20 @@
     @endphp
 
     {{-- ===== YEAR FILTER BAR ===== --}}
-    <div style="background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 0;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(44,62,143,0.07);">
+    <div
+        style="background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 0;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(44,62,143,0.07);">
         <div class="container d-flex align-items-center gap-3 flex-wrap">
             <span style="font-weight:700;color:#2C3E8F;font-size:0.93rem;">📅 View Year:</span>
             <form method="GET" action="" id="yearFilterForm" class="d-flex gap-2 align-items-center flex-wrap">
                 @foreach($allYears as $yr)
-                    <a href="?year={{ $yr }}"
-                       style="padding:6px 18px;border-radius:20px;font-weight:600;font-size:0.85rem;text-decoration:none;
-                              background:{{ $yr == $selectedYear ? '#2C3E8F' : '#f1f5f9' }};
-                              color:{{ $yr == $selectedYear ? '#fff' : '#334155' }};
-                              border:1px solid {{ $yr == $selectedYear ? '#2C3E8F' : '#cbd5e1' }};
-                              transition:all 0.2s;"
-                       class="year-pill">{{ $yr }}</a>
+                    <a href="?year={{ $yr }}" style="padding:6px 18px;border-radius:20px;font-weight:600;font-size:0.85rem;text-decoration:none;
+                                  background:{{ $yr == $selectedYear ? '#2C3E8F' : '#f1f5f9' }};
+                                  color:{{ $yr == $selectedYear ? '#fff' : '#334155' }};
+                                  border:1px solid {{ $yr == $selectedYear ? '#2C3E8F' : '#cbd5e1' }};
+                                  transition:all 0.2s;" class="year-pill">{{ $yr }}</a>
                 @endforeach
-                <span style="color:#94a3b8;font-size:0.82rem;margin-left:4px;">Showing data for <strong>{{ $selectedYear }}</strong></span>
+                <span style="color:#94a3b8;font-size:0.82rem;margin-left:4px;">Showing data for
+                    <strong>{{ $selectedYear }}</strong></span>
             </form>
         </div>
     </div>
@@ -796,7 +797,8 @@
                                     <div class="muni-name">{{ $name }}</div>
                                     <div class="muni-pop">{{ number_format($data['total']) }} total population</div>
                                     <div class="muni-pop">{{ number_format($data['households']) }} households &bull;
-                                        {{ number_format($data['beneficiaries']) }} beneficiaries</div>
+                                        {{ number_format($data['beneficiaries']) }} beneficiaries
+                                    </div>
                                 </div>
                             </div>
                         @endforeach
@@ -816,7 +818,8 @@
     <section class="section-wrapper">
         <div class="container">
             <h2 class="section-title">⚤ Gender Distribution</h2>
-            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Compare male vs. female population and identify any imbalance.</p>
+            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Compare male vs. female population
+                and identify any imbalance.</p>
             <div class="row g-4">
                 <div class="col-lg-5">
                     <div class="chart-card h-100">
@@ -844,10 +847,12 @@
     <section class="section-wrapper alt" style="background:#f0f5ff !important;">
         <div class="container">
             <h2 class="section-title">👥 Age Group Structure</h2>
-            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Is the population youthful, mature, or aging? Compare age brackets per municipality.</p>
+            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Is the population youthful, mature,
+                or aging? Compare age brackets per municipality.</p>
             <div class="chart-card">
                 <h5>Population by Age Group per Municipality</h5>
-                <p class="chart-sub">Stacked bars show Youth (0–19), Working Age (20–59), Senior (60+) — {{ $selectedYear }}</p>
+                <p class="chart-sub">Stacked bars show Youth (0–19), Working Age (20–59), Senior (60+) —
+                    {{ $selectedYear }}</p>
                 <div class="chart-container" style="height:320px;">
                     <canvas id="ageStackedChart"></canvas>
                 </div>
@@ -948,7 +953,8 @@
     <section class="section-wrapper alt" style="background:#f0f5ff !important;">
         <div class="container">
             <h2 class="section-title">📈 Population Trend (Yearly)</h2>
-            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Track population growth or decline over time for each municipality.</p>
+            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Track population growth or decline
+                over time for each municipality.</p>
             <div class="chart-card">
                 <h5>Population Growth Over Time</h5>
                 <p class="chart-sub">Lines represent Magdalena, Liliw, and Majayjay across all recorded years</p>
@@ -963,12 +969,14 @@
     <section class="section-wrapper">
         <div class="container">
             <h2 class="section-title">🏠 Household Analysis</h2>
-            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Compare total households and estimate average household size across municipalities.</p>
+            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Compare total households and estimate
+                average household size across municipalities.</p>
             <div class="row g-4">
                 <div class="col-lg-7">
                     <div class="chart-card h-100">
                         <h5>Population vs Households</h5>
-                        <p class="chart-sub">Combo chart showing population (bars) and households (line) — {{ $selectedYear }}</p>
+                        <p class="chart-sub">Combo chart showing population (bars) and households (line) —
+                            {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:300px;">
                             <canvas id="hhComboChart"></canvas>
                         </div>
@@ -980,19 +988,27 @@
                         <p class="chart-sub">Estimated persons per household</p>
                         <div style="padding:8px 0;">
                             @foreach($demographicData as $name => $d)
-                                @php $c = ['Magdalena'=>'#2C3E8F','Liliw'=>'#FDB913','Majayjay'=>'#28a745'][$name] ?? '#666'; @endphp
+                                @php $c = ['Magdalena' => '#2C3E8F', 'Liliw' => '#FDB913', 'Majayjay' => '#28a745'][$name] ?? '#666'; @endphp
                                 <div style="margin-bottom:22px;">
                                     <div style="display:flex;justify-content:space-between;margin-bottom:6px;">
                                         <span style="font-weight:700;color:#1e293b;font-size:0.92rem;">
-                                            <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ $c }};margin-right:6px;"></span>
+                                            <span
+                                                style="display:inline-block;width:10px;height:10px;border-radius:50%;background:{{ $c }};margin-right:6px;"></span>
                                             {{ $name }}
                                         </span>
-                                        <span style="font-weight:800;color:{{ $c }};font-size:1.05rem;">{{ $d['avg_hh_size'] }} <small style="font-weight:500;color:#64748b;font-size:0.75rem;">persons/hh</small></span>
+                                        <span
+                                            style="font-weight:800;color:{{ $c }};font-size:1.05rem;">{{ $d['avg_hh_size'] }}
+                                            <small
+                                                style="font-weight:500;color:#64748b;font-size:0.75rem;">persons/hh</small></span>
                                     </div>
                                     <div style="background:#F1F5F9;border-radius:20px;height:10px;overflow:hidden;">
-                                        <div style="height:100%;border-radius:20px;background:{{ $c }};width:{{ min($d['avg_hh_size'] / 10 * 100, 100) }}%;transition:width 1s ease;"></div>
+                                        <div
+                                            style="height:100%;border-radius:20px;background:{{ $c }};width:{{ min($d['avg_hh_size'] / 10 * 100, 100) }}%;transition:width 1s ease;">
+                                        </div>
                                     </div>
-                                    <div style="font-size:0.78rem;color:#64748b;margin-top:4px;">{{ number_format($d['households']) }} households · {{ number_format($d['total']) }} total population</div>
+                                    <div style="font-size:0.78rem;color:#64748b;margin-top:4px;">
+                                        {{ number_format($d['households']) }} households · {{ number_format($d['total']) }}
+                                        total population</div>
                                 </div>
                             @endforeach
                         </div>
@@ -1049,7 +1065,8 @@
     <section class="section-wrapper alt" style="background:#f0f5ff !important;">
         <div class="container">
             <h2 class="section-title">🤝 Beneficiaries Distribution</h2>
-            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Breakdown of social welfare program beneficiaries per municipality.</p>
+            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Breakdown of social welfare program
+                beneficiaries per municipality.</p>
             <div class="row g-4">
                 <div class="col-lg-8">
                     <div class="chart-card h-100">
@@ -1077,10 +1094,12 @@
     <section class="section-wrapper">
         <div class="container">
             <h2 class="section-title">📊 Beneficiaries Trend (Yearly)</h2>
-            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Analyze increase or decrease in total beneficiaries across all years.</p>
+            <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Analyze increase or decrease in total
+                beneficiaries across all years.</p>
             <div class="chart-card">
                 <h5>Total Beneficiaries Over Time</h5>
-                <p class="chart-sub">Tracks combined PWD + AICS + Solo Parent + 4Ps + Senior across all recorded years</p>
+                <p class="chart-sub">Tracks combined PWD + AICS + Solo Parent + 4Ps + Senior across all recorded years
+                </p>
                 <div class="chart-container" style="height:320px;">
                     <canvas id="benefTrendChart"></canvas>
                 </div>
@@ -1092,13 +1111,19 @@
     <section class="section-wrapper alt" style="background:#1e293b !important;padding:52px 0;">
         <div class="container">
             <h2 class="section-title" style="color:#FDB913;">💡 Key Insights</h2>
-            <p style="color:rgba(255,255,255,0.7);margin-top:-18px;margin-bottom:32px;font-size:0.93rem;">Auto-generated insights based on {{ $selectedYear }} demographic data.</p>
+            <p style="color:rgba(255,255,255,0.7);margin-top:-18px;margin-bottom:32px;font-size:0.93rem;">Auto-generated
+                insights based on {{ $selectedYear }} demographic data.</p>
             <div class="row g-4">
                 @foreach($insights as $i => $insight)
                     <div class="col-md-6 col-lg-4">
-                        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:24px;height:100%;transition:transform 0.2s,background 0.2s;" onmouseenter="this.style.background='rgba(255,255,255,0.1)'" onmouseleave="this.style.background='rgba(255,255,255,0.06)'">
-                            <div style="font-size:0.72rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#FDB913;margin-bottom:8px;">Finding {{ $i + 1 }}</div>
-                            <p style="color:rgba(255,255,255,0.88);font-size:0.9rem;line-height:1.65;margin:0;">{{ $insight }}</p>
+                        <div style="background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:16px;padding:24px;height:100%;transition:transform 0.2s,background 0.2s;"
+                            onmouseenter="this.style.background='rgba(255,255,255,0.1)'"
+                            onmouseleave="this.style.background='rgba(255,255,255,0.06)'">
+                            <div
+                                style="font-size:0.72rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:#FDB913;margin-bottom:8px;">
+                                Finding {{ $i + 1 }}</div>
+                            <p style="color:rgba(255,255,255,0.88);font-size:0.9rem;line-height:1.65;margin:0;">
+                                {{ $insight }}</p>
                         </div>
                     </div>
                 @endforeach
@@ -1178,13 +1203,13 @@
 
     {{-- ===== PHP → JS data bridge ===== --}}
     <script>
-        const YEARS    = @json($allYears);
-        const MUNIS    = @json($coreNames);
-        const COLORS   = @json($colors);
-        const POP_TREND   = @json($populationTrend);
-        const HH_TREND    = @json($householdsTrend);
+        const YEARS = @json($allYears);
+        const MUNIS = @json($coreNames);
+        const COLORS = @json($colors);
+        const POP_TREND = @json($populationTrend);
+        const HH_TREND = @json($householdsTrend);
         const BENEF_TREND = @json($benefTrend);
-        const DEMO    = @json($demographicData);
+        const DEMO = @json($demographicData);
     </script>
 
     <script>
@@ -1470,7 +1495,7 @@
             });
 
             // ===== GENDER PIE CHART =====
-            const totalMale   = MUNIS.reduce((s, m) => s + (DEMO[m]?.male ?? 0), 0);
+            const totalMale = MUNIS.reduce((s, m) => s + (DEMO[m]?.male ?? 0), 0);
             const totalFemale = MUNIS.reduce((s, m) => s + (DEMO[m]?.female ?? 0), 0);
             if (document.getElementById('genderPieChart')) {
                 new Chart(document.getElementById('genderPieChart'), {
@@ -1497,7 +1522,7 @@
                     data: {
                         labels: MUNIS,
                         datasets: [
-                            { label: 'Male',   data: MUNIS.map(m => DEMO[m]?.male ?? 0),   backgroundColor: '#2C3E8F', borderRadius: 6 },
+                            { label: 'Male', data: MUNIS.map(m => DEMO[m]?.male ?? 0), backgroundColor: '#2C3E8F', borderRadius: 6 },
                             { label: 'Female', data: MUNIS.map(m => DEMO[m]?.female ?? 0), backgroundColor: '#FDB913', borderRadius: 6 }
                         ]
                     },
@@ -1516,9 +1541,9 @@
                     data: {
                         labels: MUNIS,
                         datasets: [
-                            { label: 'Youth (0–19)',       data: MUNIS.map(m => DEMO[m]?.age_0_19 ?? 0),   backgroundColor: '#2C3E8F', borderRadius: 4 },
+                            { label: 'Youth (0–19)', data: MUNIS.map(m => DEMO[m]?.age_0_19 ?? 0), backgroundColor: '#2C3E8F', borderRadius: 4 },
                             { label: 'Working Age (20–59)', data: MUNIS.map(m => DEMO[m]?.age_20_59 ?? 0), backgroundColor: '#FDB913', borderRadius: 4 },
-                            { label: 'Senior (60+)',        data: MUNIS.map(m => DEMO[m]?.age_60_100 ?? 0), backgroundColor: '#28a745', borderRadius: 4 }
+                            { label: 'Senior (60+)', data: MUNIS.map(m => DEMO[m]?.age_60_100 ?? 0), backgroundColor: '#28a745', borderRadius: 4 }
                         ]
                     },
                     options: {
@@ -1535,17 +1560,17 @@
                     data: {
                         labels: MUNIS,
                         datasets: [
-                            { type: 'bar',  label: 'Total Population', data: MUNIS.map(m => DEMO[m]?.total ?? 0),      backgroundColor: '#2C3E8F88', borderRadius: 6, yAxisID: 'y' },
-                            { type: 'line', label: 'Households',        data: MUNIS.map(m => DEMO[m]?.households ?? 0), borderColor: '#FDB913', backgroundColor: '#FDB91322', borderWidth: 3, tension: 0.4, pointRadius: 7, yAxisID: 'y2' }
+                            { type: 'bar', label: 'Total Population', data: MUNIS.map(m => DEMO[m]?.total ?? 0), backgroundColor: '#2C3E8F88', borderRadius: 6, yAxisID: 'y' },
+                            { type: 'line', label: 'Households', data: MUNIS.map(m => DEMO[m]?.households ?? 0), borderColor: '#FDB913', backgroundColor: '#FDB91322', borderWidth: 3, tension: 0.4, pointRadius: 7, yAxisID: 'y2' }
                         ]
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         plugins: { legend: { position: 'top' } },
                         scales: {
-                            y:  { beginAtZero: true, position: 'left',  grid: { color: '#f1f5f9' }, ticks: { callback: v => v.toLocaleString() } },
+                            y: { beginAtZero: true, position: 'left', grid: { color: '#f1f5f9' }, ticks: { callback: v => v.toLocaleString() } },
                             y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => v.toLocaleString() } },
-                            x:  { grid: { display: false } }
+                            x: { grid: { display: false } }
                         }
                     }
                 });
@@ -1558,11 +1583,11 @@
                     data: {
                         labels: MUNIS,
                         datasets: [
-                            { label: 'PWD',         data: MUNIS.map(m => DEMO[m]?.pwd ?? 0),         backgroundColor: '#2C3E8F', borderRadius: 4 },
-                            { label: 'AICS',        data: MUNIS.map(m => DEMO[m]?.aics ?? 0),        backgroundColor: '#FDB913', borderRadius: 4 },
+                            { label: 'PWD', data: MUNIS.map(m => DEMO[m]?.pwd ?? 0), backgroundColor: '#2C3E8F', borderRadius: 4 },
+                            { label: 'AICS', data: MUNIS.map(m => DEMO[m]?.aics ?? 0), backgroundColor: '#FDB913', borderRadius: 4 },
                             { label: 'Solo Parent', data: MUNIS.map(m => DEMO[m]?.solo_parent ?? 0), backgroundColor: '#C41E24', borderRadius: 4 },
-                            { label: '4Ps',         data: MUNIS.map(m => DEMO[m]?.four_ps ?? 0),     backgroundColor: '#28a745', borderRadius: 4 },
-                            { label: 'Senior',      data: MUNIS.map(m => DEMO[m]?.senior ?? 0),      backgroundColor: '#8B5CF6', borderRadius: 4 }
+                            { label: '4Ps', data: MUNIS.map(m => DEMO[m]?.four_ps ?? 0), backgroundColor: '#28a745', borderRadius: 4 },
+                            { label: 'Senior', data: MUNIS.map(m => DEMO[m]?.senior ?? 0), backgroundColor: '#8B5CF6', borderRadius: 4 }
                         ]
                     },
                     options: {
