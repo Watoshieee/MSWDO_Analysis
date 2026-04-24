@@ -56,10 +56,38 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .file-thumb:hover { opacity:.85; }
 
         /* ACTION BUTTONS */
-        .btn-approve { background:#28a745; color:white; border:none; border-radius:8px; padding:8px 20px; font-weight:700; font-size:.83rem; cursor:pointer; transition:all .2s; }
-        .btn-approve:hover { background:#218838; box-shadow:0 4px 12px rgba(40,167,69,.35); }
-        .btn-decline { background:#dc3545; color:white; border:none; border-radius:8px; padding:8px 20px; font-weight:700; font-size:.83rem; cursor:pointer; transition:all .2s; margin-left:8px; }
-        .btn-decline:hover { background:#c82333; box-shadow:0 4px 12px rgba(220,53,69,.35); }
+        .action-gap {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .btn-action {
+            border: none;
+            border-radius: 8px;
+            padding: 5px 13px;
+            font-weight: 700;
+            font-size: 0.78rem;
+            transition: all 0.2s;
+            cursor: pointer;
+            display: inline-block;
+            text-decoration: none;
+        }
+        .btn-approve {
+            background: #d4edda;
+            color: #155724;
+        }
+        .btn-approve:hover {
+            background: #28a745;
+            color: white;
+        }
+        .btn-decline {
+            background: #FCE8E8;
+            color: #C41E24;
+        }
+        .btn-decline:hover {
+            background: #C41E24;
+            color: white;
+        }
         .btn-view { background: var(--primary-blue); color: white; border: none; border-radius: 8px; padding: 6px 16px; font-weight: 600; font-size: .78rem; cursor: pointer; transition: all .2s; }
         .btn-view:hover { background: #1A2A5C; transform: translateY(-1px); }
 
@@ -220,19 +248,27 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 {{-- File Preview --}}
                 <div class="col-md-4 text-center">
                     @if($file->file_path)
-                        @php $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION)); @endphp
-                        @if(in_array($ext, ['jpg','jpeg','png','webp']))
-                            <img src="{{ asset('storage/'.$file->file_path) }}"
+                        @php 
+                            $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION)); 
+                            $fileUrl = asset('storage/'.$file->file_path);
+                        @endphp
+                        @if(in_array($ext, ['jpg','jpeg','png','webp','gif']))
+                            <img src="{{ $fileUrl }}"
                                  class="file-thumb"
-                                 onclick="openFileModal('{{ asset('storage/'.$file->file_path) }}', '{{ $file->requirement_name }}', '{{ $ext }}')"
+                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')"
+                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
                                  title="Click to view full size">
+                            <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;display:none;cursor:pointer;" 
+                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">🖼️</div>
                         @elseif($ext === 'pdf')
-                            <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;">📄 PDF</div>
+                            <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;cursor:pointer;" 
+                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">📄</div>
                         @else
-                            <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;">📎</div>
+                            <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;cursor:pointer;" 
+                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">📎</div>
                         @endif
                         <div class="mt-2">
-                            <button onclick="openFileModal('{{ asset('storage/'.$file->file_path) }}', '{{ $file->requirement_name }}', '{{ $ext }}')"
+                            <button onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')"
                                     class="btn-view">
                                 👁 View Document
                             </button>
@@ -246,24 +282,37 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <div class="col-md-4 text-end">
                     @if($file->file_path)
                         @if($status === 'approved')
-                            <div style="color:#28a745;font-weight:700;font-size:.88rem;"> Already Approved</div>
+                            <div style="color:#28a745;font-weight:700;font-size:.88rem;">
+                                <span style="font-size:1rem;">✔</span> Already Approved
+                            </div>
+                        @elseif($status === 'rejected')
+                            <div style="background:#fff5f5;border:1px solid #f8d7da;border-radius:10px;padding:12px 16px;">
+                                <div style="color:#dc3545;font-weight:700;font-size:.88rem;margin-bottom:6px;">
+                                    <span style="font-size:1rem;">✖</span> Document Rejected
+                                </div>
+                                <div style="font-size:.75rem;color:#721c24;line-height:1.5;">
+                                    Waiting for user to re-upload a corrected document.
+                                </div>
+                            </div>
                         @else
-                            {{-- Approve form --}}
-                            <form action="{{ route('admin.update-file-status', $file->id) }}" method="POST" class="d-inline">
-                                @csrf
-                                <input type="hidden" name="status" value="approved">
-                                <input type="hidden" name="admin_remarks" value="">
-                                <button type="submit" class="btn-approve"> Approve</button>
-                            </form>
+                            <div class="action-gap" style="justify-content:flex-end;">
+                                {{-- Approve form --}}
+                                <form action="{{ route('admin.update-file-status', $file->id) }}" method="POST" class="d-inline">
+                                    @csrf
+                                    <input type="hidden" name="status" value="approved">
+                                    <input type="hidden" name="admin_remarks" value="">
+                                    <button type="submit" class="btn-action btn-approve">✔ Approve</button>
+                                </form>
 
-                            {{-- Decline triggers modal --}}
-                            <button type="button" class="btn-decline"
-                                data-bs-toggle="modal"
-                                data-bs-target="#declineModal"
-                                data-file-id="{{ $file->id }}"
-                                data-file-name="{{ $file->requirement_name }}">
-                                ❌ Decline
-                            </button>
+                                {{-- Decline triggers modal --}}
+                                <button type="button" class="btn-action btn-decline"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#declineModal"
+                                    data-file-id="{{ $file->id }}"
+                                    data-file-name="{{ $file->requirement_name }}">
+                                    ✖ Decline
+                                </button>
+                            </div>
                         @endif
                     @else
                         <span style="font-size:.8rem;color:#94a3b8;">No file to review</span>
@@ -300,11 +349,27 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <p><strong>Document Name:</strong> <span id="modalDocName" class="fw-bold" style="color: var(--primary-blue);">—</span></p>
                         <p><strong>File Type:</strong> <span id="modalFileType">—</span></p>
                         <p><strong>File Size:</strong> <span id="modalFileSize">Loading...</span></p>
+                        <p><strong>Status:</strong> <span id="modalFileStatus" class="s-badge">—</span></p>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    <a href="#" id="downloadFileBtn" class="btn btn-primary" download>Download File</a>
+                <div class="modal-footer" style="justify-content:space-between;">
+                    <div>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <a href="#" id="downloadFileBtn" class="btn btn-primary" download>Download File</a>
+                    </div>
+                    <div id="modalActionButtons" style="display:none;">
+                        {{-- Approve form --}}
+                        <form id="modalApproveForm" method="POST" class="d-inline" style="display:none;">
+                            @csrf
+                            <input type="hidden" name="status" value="approved">
+                            <input type="hidden" name="admin_remarks" value="">
+                            <button type="submit" class="btn-action btn-approve">✔ Approve</button>
+                        </form>
+                        {{-- Decline button --}}
+                        <button type="button" id="modalDeclineBtn" class="btn-action btn-decline" style="display:none;">
+                            ✖ Decline
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -313,36 +378,51 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     {{-- ===== DECLINE MODAL ===== --}}
     <div class="modal fade" id="declineModal" tabindex="-1" aria-labelledby="declineModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="declineModalLabel"> Decline Document</h5>
+            <div class="modal-content" style="border-radius:16px;border:none;overflow:hidden;">
+                <div class="modal-header" style="background:var(--primary-gradient);color:white;border:none;padding:18px 24px;">
+                    <h5 class="modal-title" id="declineModalLabel" style="font-weight:800;">❌ Decline Document</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="declineForm" action="" method="POST">
                     @csrf
                     <input type="hidden" name="status" value="rejected">
-                    <div class="modal-body">
+                    <div class="modal-body" style="padding:24px;">
                         <div style="margin-bottom:16px;">
                             <div style="font-size:.8rem;color:#64748b;margin-bottom:6px;">Document being declined:</div>
                             <div style="font-weight:700;color:#1e293b;" id="declineDocName">—</div>
                         </div>
-                        <div>
-                            <label for="admin_remarks" style="font-weight:700;font-size:.87rem;margin-bottom:6px;display:block;">
-                                Reason for Declining <span style="color:#dc3545;">*</span>
-                            </label>
-                            <textarea name="admin_remarks" id="admin_remarks" rows="4"
-                                class="form-control"
-                                placeholder="Enter the reason for declining this document. This will be shown to the applicant..."
-                                style="border-radius:10px;font-size:.875rem;"
-                                required></textarea>
-                            <div style="font-size:.72rem;color:#94a3b8;margin-top:6px;">
-                                The applicant will see this message and can re-upload the corrected document.
-                            </div>
+                        <label class="form-label" style="font-size:0.85rem;font-weight:700;color:#1e293b;">
+                            Rejection Reason <span style="color:#dc3545;">*</span>
+                        </label>
+                        <select id="rejectionReason" class="form-select mb-3"
+                            style="border-radius:10px;border:1.5px solid #C7D6F5;font-size:0.88rem;">
+                            <option value="">-- Select a reason --</option>
+                            <option value="Incomplete Documents">Incomplete Documents</option>
+                            <option value="Does not meet eligibility requirements">Does not meet eligibility requirements</option>
+                            <option value="Invalid or expired documents">Invalid or expired documents</option>
+                            <option value="Incorrect information provided">Incorrect information provided</option>
+                            <option value="Duplicate application">Duplicate application</option>
+                            <option value="Other">Other (specify below)</option>
+                        </select>
+                        <label class="form-label" style="font-size:0.85rem;font-weight:700;color:#1e293b;" for="declineRemarks">
+                            Additional Comments <span style="font-size:0.75rem;font-weight:400;color:#64748b;">(Optional)</span>
+                        </label>
+                        <textarea name="admin_remarks" id="declineRemarks" class="form-control" rows="3"
+                            placeholder="Add any additional details or instructions..."
+                            style="border-radius:10px;border:1.5px solid #C7D6F5;font-size:0.88rem;resize:none;"></textarea>
+                        <div id="remarksError" style="color:#dc3545;font-size:0.8rem;margin-top:6px;display:none;">
+                            Please select a rejection reason.
+                        </div>
+                        <div style="font-size:.72rem;color:#94a3b8;margin-top:10px;background:#f8f9fa;padding:10px 12px;border-radius:8px;border-left:3px solid #6c757d;">
+                            💡 The applicant will see this message and can re-upload the corrected document.
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius:8px;">Cancel</button>
-                        <button type="submit" class="btn-decline" style="margin-left:0;" id="confirmDeclineBtn">
+                    <div class="modal-footer" style="border:none;padding:16px 24px 20px;gap:8px;">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius:8px;font-weight:700;font-size:0.85rem;padding:8px 20px;">
+                            Cancel
+                        </button>
+                        <button type="submit" id="confirmDeclineBtn" class="btn"
+                            style="background:linear-gradient(135deg,#dc3545,#c82333);color:white;border-radius:8px;font-weight:700;font-size:0.85rem;border:none;padding:8px 22px;">
                             Confirm Decline
                         </button>
                     </div>
@@ -358,24 +438,59 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let fileViewerModal;
+        let currentFileId = null;
+        let currentFileName = null;
+        let currentFileStatus = null;
         
         document.addEventListener('DOMContentLoaded', function() {
             fileViewerModal = new bootstrap.Modal(document.getElementById('fileViewerModal'));
         });
         
-        function openFileModal(fileUrl, fileName, fileExt) {
+        function openFileModal(fileUrl, fileName, fileExt, fileId, fileStatus) {
             const container = document.getElementById('fileViewerContainer');
             const docNameSpan = document.getElementById('modalDocName');
             const fileTypeSpan = document.getElementById('modalFileType');
+            const fileStatusSpan = document.getElementById('modalFileStatus');
             const downloadBtn = document.getElementById('downloadFileBtn');
+            
+            // Store current file info
+            currentFileId = fileId;
+            currentFileName = fileName;
+            currentFileStatus = fileStatus;
             
             // Set download link
             downloadBtn.href = fileUrl;
             downloadBtn.setAttribute('download', fileName + '.' + fileExt);
             
-            // Set document name
+            // Set document name and status
             docNameSpan.textContent = fileName;
             fileTypeSpan.textContent = fileExt.toUpperCase();
+            
+            // Set status badge
+            fileStatusSpan.className = 's-badge s-' + fileStatus;
+            const statusText = fileStatus === 'approved' ? 'Approved' : 
+                              (fileStatus === 'rejected' ? 'Rejected' : 
+                              (fileStatus === 'in_review' ? 'In Review' : 'Pending'));
+            fileStatusSpan.textContent = statusText;
+            
+            // Show/hide action buttons based on status
+            const approveForm = document.getElementById('modalApproveForm');
+            const declineBtn = document.getElementById('modalDeclineBtn');
+            const actionButtons = document.getElementById('modalActionButtons');
+            
+            if (fileStatus === 'approved') {
+                // Already approved - hide buttons
+                actionButtons.style.display = 'none';
+            } else if (fileStatus === 'rejected') {
+                // Rejected - hide buttons (waiting for re-upload)
+                actionButtons.style.display = 'none';
+            } else {
+                // Pending or in_review - show buttons
+                actionButtons.style.display = 'block';
+                approveForm.style.display = 'inline';
+                declineBtn.style.display = 'inline-block';
+                approveForm.action = '/admin/requirements/' + fileId + '/status';
+            }
             
             // Display file based on extension
             const ext = fileExt.toLowerCase();
@@ -428,6 +543,26 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
         
+        // Handle decline button click in modal
+        document.getElementById('modalDeclineBtn').addEventListener('click', function() {
+            // Close file viewer modal
+            fileViewerModal.hide();
+            
+            // Open decline modal with current file info
+            setTimeout(() => {
+                const declineModalEl = document.getElementById('declineModal');
+                const declineModal = new bootstrap.Modal(declineModalEl);
+                
+                document.getElementById('declineDocName').textContent = currentFileName;
+                document.getElementById('declineForm').action = '/admin/requirements/' + currentFileId + '/status';
+                document.getElementById('rejectionReason').value = '';
+                document.getElementById('declineRemarks').value = '';
+                document.getElementById('remarksError').style.display = 'none';
+                
+                declineModal.show();
+            }, 300);
+        });
+        
         // Populate the decline modal with the correct file data
         const declineModal = document.getElementById('declineModal');
         declineModal.addEventListener('show.bs.modal', function (e) {
@@ -437,7 +572,62 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
             document.getElementById('declineDocName').textContent = fileName;
             document.getElementById('declineForm').action = '/admin/requirements/' + fileId + '/status';
-            document.getElementById('admin_remarks').value = '';
+            document.getElementById('rejectionReason').value = '';
+            document.getElementById('declineRemarks').value = '';
+            document.getElementById('remarksError').style.display = 'none';
+        });
+        
+        // Auto-fill rejection reason into additional comments
+        document.getElementById('rejectionReason').addEventListener('change', function() {
+            const reason = this.value;
+            const remarksField = document.getElementById('declineRemarks');
+            const remarksLabel = document.querySelector('label[for="declineRemarks"]');
+            
+            if (reason && reason !== 'Other') {
+                // Auto-fill with selected reason
+                remarksField.value = reason;
+                remarksField.placeholder = 'The rejection reason has been auto-filled. You can add more details if needed.';
+                // Make it optional
+                remarksLabel.innerHTML = 'Additional Comments <span style="font-size:0.75rem;font-weight:400;color:#64748b;">(Optional)</span>';
+            } else if (reason === 'Other') {
+                // Clear and make required
+                remarksField.value = '';
+                remarksField.placeholder = 'Please specify the reason for rejection...';
+                remarksLabel.innerHTML = 'Additional Comments <span style="color:#dc3545;">*</span>';
+            } else {
+                // Reset
+                remarksField.value = '';
+                remarksField.placeholder = 'Add any additional details or instructions...';
+                remarksLabel.innerHTML = 'Additional Comments <span style="font-size:0.75rem;font-weight:400;color:#64748b;">(Optional)</span>';
+            }
+        });
+        
+        // Client-side validation: require rejection reason before submit
+        document.getElementById('declineForm').addEventListener('submit', function (e) {
+            var reason = document.getElementById('rejectionReason').value;
+            var comments = document.getElementById('declineRemarks').value.trim();
+            var errorDiv = document.getElementById('remarksError');
+            
+            if (!reason) {
+                e.preventDefault();
+                errorDiv.textContent = 'Please select a rejection reason.';
+                errorDiv.style.display = 'block';
+                document.getElementById('rejectionReason').focus();
+                return;
+            }
+            
+            // If "Other" is selected, require additional comments
+            if (reason === 'Other' && !comments) {
+                e.preventDefault();
+                errorDiv.textContent = 'Please specify the reason in Additional Comments when selecting "Other".';
+                errorDiv.style.display = 'block';
+                document.getElementById('declineRemarks').focus();
+                return;
+            }
+            
+            // For non-Other reasons, use the reason as final remarks (comments are already auto-filled)
+            var finalRemarks = comments || reason;
+            document.getElementById('declineRemarks').value = finalRemarks;
         });
     </script>
 </body>

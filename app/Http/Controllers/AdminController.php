@@ -367,6 +367,54 @@ class AdminController extends Controller
         $application->admin_remarks = $request->admin_remarks;
         $application->save();
 
+        // Update FileMonitoring and FileUpload records
+        $fileMonitoring = FileMonitoring::where('application_id', $application->id)->first();
+        
+        if ($fileMonitoring) {
+            if ($request->status === 'rejected') {
+                // Update overall status
+                $fileMonitoring->overall_status = 'rejected';
+                $fileMonitoring->save();
+
+                // Update ALL file uploads to rejected with the rejection reason
+                FileUpload::where('file_monitoring_id', $fileMonitoring->id)
+                    ->update([
+                        'status' => 'rejected',
+                        'admin_remarks' => $request->admin_remarks ?? 'Application rejected',
+                        'verified_at' => now(),
+                        'verified_by' => Auth::user()->id,
+                    ]);
+            }
+            elseif ($request->status === 'approved') {
+                // Update overall status
+                $fileMonitoring->overall_status = 'approved';
+                $fileMonitoring->save();
+
+                // Update ALL file uploads to approved
+                FileUpload::where('file_monitoring_id', $fileMonitoring->id)
+                    ->update([
+                        'status' => 'approved',
+                        'admin_remarks' => null,
+                        'verified_at' => now(),
+                        'verified_by' => Auth::user()->id,
+                    ]);
+            }
+            elseif ($request->status === 'pending') {
+                // Reset to pending
+                $fileMonitoring->overall_status = 'pending';
+                $fileMonitoring->save();
+
+                // Reset ALL file uploads to pending
+                FileUpload::where('file_monitoring_id', $fileMonitoring->id)
+                    ->update([
+                        'status' => 'pending',
+                        'admin_remarks' => null,
+                        'verified_at' => null,
+                        'verified_by' => null,
+                    ]);
+            }
+        }
+
         // Update barangay approved applications count
         if ($oldStatus !== 'approved' && $request->status === 'approved') {
             $barangay = Barangay::where('municipality', $application->municipality)

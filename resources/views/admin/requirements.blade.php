@@ -424,8 +424,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                             </td>
                                             <td>
                                                 <div class="action-gap">
-                                                    {{-- APPROVE --}}
-                                                    @if($app->status !== 'approved')
+                                                    {{-- APPROVE - hide if already approved --}}
+                                                    @if($app->status !== 'approved' && $app->status !== 'rejected')
                                                         <form method="POST"
                                                             action="{{ route('admin.applications.status', $app->id) }}"
                                                             style="display:inline;">
@@ -437,14 +437,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                                         </form>
                                                     @endif
 
-                                                    {{-- DECLINE --}}
-                                                    @if($app->status !== 'rejected')
+                                                    {{-- DECLINE - hide if already rejected --}}
+                                                    @if($app->status !== 'rejected' && $app->status !== 'approved')
                                                         <button type="button" class="btn-action btn-decline" data-bs-toggle="modal"
                                                             data-bs-target="#declineModal" data-id="{{ $app->id }}"
                                                             data-name="{{ $app->full_name }}">✖ Decline</button>
                                                     @endif
 
-                                                    {{-- VIEW --}}
+                                                    {{-- VIEW - always show --}}
                                                     <a href="{{ route('admin.view-requirement', $app->id) }}"
                                                         class="btn-action btn-view"> View</a>
                                                 </div>
@@ -491,17 +491,29 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="modal-body" style="padding:24px;">
                         <p style="color:#475569;font-size:0.9rem;margin-bottom:14px;">
                             You are declining the application of <strong id="declineApplicantName"></strong>.
-                            Please provide a reason so the applicant understands why.
+                            Please select a reason and add additional comments if necessary.
                         </p>
                         <label class="form-label" style="font-size:0.85rem;font-weight:700;color:#1e293b;">
-                            Reason for Decline <span style="color:#C41E24;">*</span>
+                            Rejection Reason <span style="color:#C41E24;">*</span>
                         </label>
-                        <textarea name="admin_remarks" id="declineRemarks" class="form-control" rows="4"
-                            placeholder="e.g. Missing required documents, incomplete information..."
-                            style="border-radius:10px;border:1.5px solid #C7D6F5;font-size:0.88rem;resize:none;"
-                            required></textarea>
+                        <select id="rejectionReason" class="form-select mb-3"
+                            style="border-radius:10px;border:1.5px solid #C7D6F5;font-size:0.88rem;">
+                            <option value="">-- Select a reason --</option>
+                            <option value="Incomplete Documents">Incomplete Documents</option>
+                            <option value="Does not meet eligibility requirements">Does not meet eligibility requirements</option>
+                            <option value="Invalid or expired documents">Invalid or expired documents</option>
+                            <option value="Incorrect information provided">Incorrect information provided</option>
+                            <option value="Duplicate application">Duplicate application</option>
+                            <option value="Other">Other (specify below)</option>
+                        </select>
+                        <label class="form-label" style="font-size:0.85rem;font-weight:700;color:#1e293b;" for="declineRemarks">
+                            Additional Comments <span style="font-size:0.75rem;font-weight:400;color:#64748b;">(Optional)</span>
+                        </label>
+                        <textarea name="admin_remarks" id="declineRemarks" class="form-control" rows="3"
+                            placeholder="Add any additional details or instructions..."
+                            style="border-radius:10px;border:1.5px solid #C7D6F5;font-size:0.88rem;resize:none;"></textarea>
                         <div id="remarksError" style="color:#C41E24;font-size:0.8rem;margin-top:6px;display:none;">
-                            Please provide a reason before declining.
+                            Please select a rejection reason.
                         </div>
                     </div>
                     <div class="modal-footer" style="border:none;padding:16px 24px 20px;gap:8px;">
@@ -526,19 +538,63 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             var id = btn.getAttribute('data-id');
             var name = btn.getAttribute('data-name');
             document.getElementById('declineApplicantName').textContent = name;
+            document.getElementById('rejectionReason').value = '';
             document.getElementById('declineRemarks').value = '';
             document.getElementById('remarksError').style.display = 'none';
             document.getElementById('declineForm').action = '/admin/applications/' + id + '/status';
         });
 
-        // Client-side guard: require remarks before submit
-        document.getElementById('declineForm').addEventListener('submit', function (e) {
-            var remarks = document.getElementById('declineRemarks').value.trim();
-            if (!remarks) {
-                e.preventDefault();
-                document.getElementById('remarksError').style.display = 'block';
-                document.getElementById('declineRemarks').focus();
+        // Auto-fill rejection reason into additional comments
+        document.getElementById('rejectionReason').addEventListener('change', function() {
+            const reason = this.value;
+            const remarksField = document.getElementById('declineRemarks');
+            const remarksLabel = document.querySelector('label[for="declineRemarks"]');
+            
+            if (reason && reason !== 'Other') {
+                // Auto-fill with selected reason
+                remarksField.value = reason;
+                remarksField.placeholder = 'The rejection reason has been auto-filled. You can add more details if needed.';
+                // Make it optional
+                remarksLabel.innerHTML = 'Additional Comments <span style="font-size:0.75rem;font-weight:400;color:#64748b;">(Optional)</span>';
+            } else if (reason === 'Other') {
+                // Clear and make required
+                remarksField.value = '';
+                remarksField.placeholder = 'Please specify the reason for rejection...';
+                remarksLabel.innerHTML = 'Additional Comments <span style="color:#C41E24;">*</span>';
+            } else {
+                // Reset
+                remarksField.value = '';
+                remarksField.placeholder = 'Add any additional details or instructions...';
+                remarksLabel.innerHTML = 'Additional Comments <span style="font-size:0.75rem;font-weight:400;color:#64748b;">(Optional)</span>';
             }
+        });
+
+        // Client-side guard: require rejection reason before submit
+        document.getElementById('declineForm').addEventListener('submit', function (e) {
+            var reason = document.getElementById('rejectionReason').value;
+            var comments = document.getElementById('declineRemarks').value.trim();
+            var errorDiv = document.getElementById('remarksError');
+            
+            if (!reason) {
+                e.preventDefault();
+                errorDiv.textContent = 'Please select a rejection reason.';
+                errorDiv.style.display = 'block';
+                document.getElementById('rejectionReason').focus();
+                return;
+            }
+            
+            // If "Other" is selected, require additional comments
+            if (reason === 'Other' && !comments) {
+                e.preventDefault();
+                errorDiv.textContent = 'Please specify the reason in Additional Comments when selecting "Other".';
+                errorDiv.style.display = 'block';
+                document.getElementById('declineRemarks').focus();
+                return;
+            }
+            
+            // For non-Other reasons, use the comments as final remarks (already auto-filled with reason)
+            var finalRemarks = comments || reason;
+            document.getElementById('declineRemarks').value = finalRemarks;
         });
     </script>
 </body>
