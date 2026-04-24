@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -416,7 +416,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 </div>
                 <div class="row g-3" id="programsContainer">
                     @php
-                        $defaultPrograms = $programsByYear[$defaultProgramYear] ?? [];
+                        $defaultPrograms = $programsByYear[(int) $defaultProgramYear] ?? [];
                     @endphp
                     @forelse($defaultPrograms as $type => $count)
                     <div class="col-md-4 col-sm-6">

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 class User extends Authenticatable
@@ -103,7 +104,7 @@ class User extends Authenticatable
     {
         $otp = rand(100000, 999999);
         $this->otp_code = $otp;
-        $this->otp_expires_at = now()->addMinutes(10);
+        $this->otp_expires_at = Carbon::now()->addMinutes(10);
         $this->save();
         return $otp;
     }
@@ -111,7 +112,7 @@ class User extends Authenticatable
     public function verifyOtp($otp)
     {
         if ($this->otp_code == $otp && $this->otp_expires_at > now()) {
-            $this->email_verified_at = now();
+            $this->email_verified_at = Carbon::now();
             $this->otp_code = null;
             $this->otp_expires_at = null;
             $this->save();
@@ -125,7 +126,7 @@ class User extends Authenticatable
     {
         $token = Str::random(60);
         $this->reset_token = $token;
-        $this->reset_token_expires_at = now()->addMinutes(30);
+        $this->reset_token_expires_at = Carbon::now()->addMinutes(30);
         $this->save();
         return $token;
     }

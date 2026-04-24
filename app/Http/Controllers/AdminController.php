@@ -169,79 +169,21 @@ class AdminController extends Controller
     }
 
     /**
-     * NEW METHOD: Detailed Analysis Page
-     * Shows all analytics in one page
+     * Detailed Analysis Page — delegates to focused private helpers
+     * to keep the public method small and IDE-friendly.
      */
     public function detailedAnalysis()
     {
-        $user = Auth::user();
+        $user         = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
+        $applications = $this->loadApplications($user->municipality);
 
-        // Get applications for this municipality
-        $applications = Application::where('municipality', $user->municipality)
-            ->orderBy('application_date', 'desc')
-            ->get();
+        [$totalApplications, $pendingApplications,
+         $approvedApplications, $rejectedApplications,
+         $applicationsByProgram] = $this->buildApplicationStats($applications);
 
-        // Convert dates
-        foreach ($applications as $app) {
-            if (is_string($app->application_date)) {
-                $app->application_date = \Carbon\Carbon::parse($app->application_date);
-            }
-        }
-
-        // Statistics
-        $totalApplications = $applications->count();
-        $pendingApplications = $applications->where('status', 'pending')->count();
-        $approvedApplications = $applications->where('status', 'approved')->count();
-        $rejectedApplications = $applications->where('status', 'rejected')->count();
-
-        // Applications by program (from applications table)
-        $applicationsByProgram = $applications->groupBy('program_type')
-            ->map(function ($items) {
-                return [
-                    'total' => $items->count(),
-                    'pending' => $items->where('status', 'pending')->count(),
-                    'approved' => $items->where('status', 'approved')->count(),
-                    'rejected' => $items->where('status', 'rejected')->count(),
-                ];
-            });
-
-        // Get social welfare programs data (CURRENT YEAR ONLY - 2024)
-        $currentYear = 2024;
-        $socialPrograms = SocialWelfareProgram::where('municipality', $user->municipality)
-            ->where('year', $currentYear)
-            ->get();
-        
-        $programShareOverview = [];
-        foreach ($socialPrograms as $program) {
-            $programType = $program->program_type;
-            if (!isset($programShareOverview[$programType])) {
-                $programShareOverview[$programType] = 0;
-            }
-            $programShareOverview[$programType] += $program->beneficiary_count;
-        }
-        
-        // Convert to collection and sort by total descending
-        $programShareOverview = collect($programShareOverview)->sortByDesc(function($count) {
-            return $count;
-        });
-
-        // Get barangays
-        $barangays = Barangay::where('municipality', $user->municipality)->get();
-
-        // Barangay statistics
-        $barangayStats = [];
-        foreach ($barangays as $barangay) {
-            $barangayApps = $applications->where('barangay', $barangay->name);
-            $barangayStats[$barangay->name] = [
-                'total' => $barangayApps->count(),
-                'pending' => $barangayApps->where('status', 'pending')->count(),
-                'approved' => $barangayApps->where('status', 'approved')->count(),
-                'rejected' => $barangayApps->where('status', 'rejected')->count(),
-                'population' => $barangay->total_population ?? 0,
-                'households' => $barangay->total_households,
-            ];
-        }
+        $programShareOverview = $this->buildProgramOverview($user->municipality);
+        $barangayStats        = $this->buildBarangayStats($user->municipality, $applications);
 
         return view('admin.detailed-analysis', compact(
             'municipality',
@@ -254,6 +196,79 @@ class AdminController extends Controller
             'programShareOverview',
             'barangayStats'
         ));
+    }
+
+    /** Load and date-parse applications for a given municipality. */
+    private function loadApplications(string $municipality)
+    {
+        $applications = Application::where('municipality', $municipality)
+            ->orderBy('application_date', 'desc')
+            ->get();
+
+        foreach ($applications as $app) {
+            if (is_string($app->application_date)) {
+                $app->application_date = \Carbon\Carbon::parse($app->application_date);
+            }
+        }
+
+        return $applications;
+    }
+
+    /** Return counts + groupBy-program breakdown from a loaded collection. */
+    private function buildApplicationStats($applications): array
+    {
+        $total    = $applications->count();
+        $pending  = $applications->where('status', 'pending')->count();
+        $approved = $applications->where('status', 'approved')->count();
+        $rejected = $applications->where('status', 'rejected')->count();
+
+        $byProgram = $applications->groupBy('program_type')->map(function ($items) {
+            return [
+                'total'    => $items->count(),
+                'pending'  => $items->where('status', 'pending')->count(),
+                'approved' => $items->where('status', 'approved')->count(),
+                'rejected' => $items->where('status', 'rejected')->count(),
+            ];
+        });
+
+        return [$total, $pending, $approved, $rejected, $byProgram];
+    }
+
+    /** Aggregate social welfare program beneficiary counts for the current year. */
+    private function buildProgramOverview(string $municipality)
+    {
+        $programs = SocialWelfareProgram::where('municipality', $municipality)
+            ->where('year', 2024)
+            ->get();
+
+        $overview = [];
+        foreach ($programs as $program) {
+            $type = $program->program_type;
+            $overview[$type] = ($overview[$type] ?? 0) + $program->beneficiary_count;
+        }
+
+        return collect($overview)->sortByDesc(fn ($count) => $count);
+    }
+
+    /** Build per-barangay application statistics. */
+    private function buildBarangayStats(string $municipality, $applications): array
+    {
+        $barangays = Barangay::where('municipality', $municipality)->get();
+        $stats     = [];
+
+        foreach ($barangays as $barangay) {
+            $apps = $applications->where('barangay', $barangay->name);
+            $stats[$barangay->name] = [
+                'total'      => $apps->count(),
+                'pending'    => $apps->where('status', 'pending')->count(),
+                'approved'   => $apps->where('status', 'approved')->count(),
+                'rejected'   => $apps->where('status', 'rejected')->count(),
+                'population' => $barangay->total_population ?? 0,
+                'households' => $barangay->total_households,
+            ];
+        }
+
+        return $stats;
     }
 
     public function applications(Request $request)
