@@ -88,8 +88,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     </div>
     @endif
 
+    @if(session('error'))
+    <div style="background:#f8d7da;border-left:4px solid #dc3545;border-radius:12px;padding:12px 18px;margin-bottom:16px;font-size:.88rem;color:#721c24;font-weight:600;">
+        ❌ {{ session('error') }}
+    </div>
+    @endif
+
     <div class="note-banner">
-        ⚠️ <strong>Note:</strong> Prepare <strong>2 copies</strong> of every requirement. Upload clear, readable scans or photos (JPG/PNG/PDF, max 5MB each).
+        ⚠️ <strong>Note:</strong> Prepare <strong>2 copies</strong> of every requirement. Upload clear, readable scans or photos. <strong>Images: 5MB max · PDF: 25MB max</strong>
     </div>
 
     <!-- UPLOAD CARD -->
@@ -170,8 +176,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <input type="hidden" name="requirement_name" value="{{ $reqName }}">
                             <div class="row g-1 align-items-center">
                                 <div class="col-8">
-                                    <input type="file" name="file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf" required>
-                                    <div style="font-size:.67rem;color:#94a3b8;margin-top:2px;">Max 5MB · JPG PNG PDF</div>
+                                    <input type="file" name="file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf" onchange="validateAicsFile(this)" required>
+                                    <div style="font-size:.67rem;color:#94a3b8;margin-top:2px;">Images: 5MB · PDF: 25MB</div>
                                 </div>
                                 <div class="col-4">
                                     <button type="submit" class="btn btn-warning btn-sm w-100" style="font-weight:700;font-size:.8rem;">
@@ -205,5 +211,23 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+function validateAicsFile(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    const isImage = ['image/jpeg', 'image/jpg', 'image/png'].includes(file.type);
+    const isPDF = file.type === 'application/pdf';
+    const maxSize = isImage ? 5 * 1024 * 1024 : 25 * 1024 * 1024;
+    const maxSizeLabel = isImage ? '5MB' : '25MB';
+
+    if (file.size > maxSize) {
+        alert(`File size must be less than ${maxSizeLabel} for ${isImage ? 'images' : 'PDF files'}.`);
+        input.value = '';
+        return false;
+    }
+    return true;
+}
+</script>
 </body>
 </html>

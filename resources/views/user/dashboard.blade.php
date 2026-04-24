@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Dashboard – MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -253,10 +254,15 @@
                     <li class="nav-item"><a class="nav-link active" href="/user/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="/user/programs">Programs</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/user/announcements">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
-                <div class="d-flex">
+                <div class="d-flex align-items-center gap-3">
+                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal" style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;" title="Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($notificationCount) && $notificationCount > 0)
+                        <span style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $notificationCount > 9 ? '9+' : $notificationCount }}</span>
+                        @endif
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -530,10 +536,274 @@
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
+    <!-- Notifications Modal - Professional Version -->
+    <div class="modal fade" id="announcementsModal" tabindex="-1" aria-labelledby="announcementsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius:20px;border:none;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="background:var(--primary-gradient);color:white;border:none;padding:24px 28px;">
+                    <div>
+                        <h5 class="modal-title" id="announcementsModalLabel" style="font-weight:800;font-size:1.3rem;margin-bottom:4px;">
+                            <i class="bi bi-bell-fill" style="margin-right:8px;"></i>Notifications
+                        </h5>
+                        <p style="font-size:0.85rem;opacity:0.85;margin:0;">Stay updated with your application status</p>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                
+                @php
+                    $hasNotifications = (isset($rejectedApplications) && count($rejectedApplications) > 0) || (isset($documentNotifications) && count($documentNotifications) > 0);
+                    $allNotifications = collect();
+                    
+                    // Combine all notifications with timestamps
+                    if(isset($rejectedApplications)) {
+                        foreach($rejectedApplications as $app) {
+                            $allNotifications->push([
+                                'type' => 'app_rejected',
+                                'data' => $app,
+                                'timestamp' => $app->application_date
+                            ]);
+                        }
+                    }
+                    
+                    if(isset($documentNotifications)) {
+                        foreach($documentNotifications as $doc) {
+                            $allNotifications->push([
+                                'type' => 'doc_status',
+                                'data' => $doc,
+                                'timestamp' => $doc->verified_at ?? $doc->uploaded_at
+                            ]);
+                        }
+                    }
+                    
+                    // Sort by timestamp descending
+                    $allNotifications = $allNotifications->sortByDesc('timestamp');
+                @endphp
+
+                <!-- Filter Tabs -->
+                @if($hasNotifications)
+                <div style="background:#f8f9fa;border-bottom:1px solid #e2e8f0;padding:16px 28px;">
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                        <button class="notif-filter-btn active" data-filter="all" onclick="filterNotifications('all')" style="padding:6px 16px;border-radius:20px;border:1.5px solid #cbd5e1;background:white;color:#2C3E8F;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s;">
+                            All <span class="filter-count">({{ $allNotifications->count() }})</span>
+                        </button>
+                        <button class="notif-filter-btn" data-filter="rejected" onclick="filterNotifications('rejected')" style="padding:6px 16px;border-radius:20px;border:1.5px solid #cbd5e1;background:white;color:#64748b;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s;">
+                            Rejected <span class="filter-count">({{ $allNotifications->where('data.status', 'rejected')->count() }})</span>
+                        </button>
+                        <button class="notif-filter-btn" data-filter="approved" onclick="filterNotifications('approved')" style="padding:6px 16px;border-radius:20px;border:1.5px solid #cbd5e1;background:white;color:#64748b;font-size:0.85rem;font-weight:700;cursor:pointer;transition:all 0.2s;">
+                            Approved <span class="filter-count">({{ $allNotifications->where('data.status', 'approved')->count() }})</span>
+                        </button>
+                    </div>
+                </div>
+                @endif
+
+                <div class="modal-body" style="padding:24px 28px;max-height:60vh;overflow-y:auto;background:#fafbfc;">
+                    @if($hasNotifications)
+                        <div id="notificationsList">
+                        @foreach($allNotifications as $notification)
+                            @php
+                                $item = $notification['data'];
+                                $type = $notification['type'];
+                                $isRejected = ($type == 'app_rejected') || ($type == 'doc_status' && $item->status == 'rejected');
+                                $isApproved = ($type == 'doc_status' && $item->status == 'approved');
+                                $filterClass = $isRejected ? 'rejected' : ($isApproved ? 'approved' : 'all');
+                            @endphp
+                            
+                            <div class="notification-card" data-filter="{{ $filterClass }}" style="background:white;border-radius:14px;padding:20px;margin-bottom:14px;border:1px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:all 0.2s;">
+                                <div style="display:flex;gap:16px;">
+                                    <!-- Icon -->
+                                    <div style="flex-shrink:0;">
+                                        @if($type == 'app_rejected')
+                                            <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#fee,#fdd);border:2px solid #fcc;display:flex;align-items:center;justify-content:center;font-size:1.5rem;">
+                                                ⚠️
+                                            </div>
+                                        @elseif($isRejected)
+                                            <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#fee,#fdd);border:2px solid #fcc;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#dc3545;font-weight:900;">
+                                                ✕
+                                            </div>
+                                        @else
+                                            <div style="width:48px;height:48px;border-radius:12px;background:linear-gradient(135deg,#d4edda,#c3e6cb);border:2px solid #b1dfbb;display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:#28a745;font-weight:900;">
+                                                ✓
+                                            </div>
+                                        @endif
+                                    </div>
+                                    
+                                    <!-- Content -->
+                                    <div style="flex:1;min-width:0;">
+                                        <!-- Header -->
+                                        <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:8px;gap:12px;">
+                                            <div>
+                                                <h6 style="font-weight:800;font-size:0.95rem;color:#1e293b;margin:0 0 4px 0;">
+                                                    @if($type == 'app_rejected')
+                                                        Application Declined
+                                                    @elseif($isRejected)
+                                                        Document Rejected
+                                                    @else
+                                                        Document Approved
+                                                    @endif
+                                                </h6>
+                                                <p style="font-size:0.75rem;color:#94a3b8;margin:0;">
+                                                    {{ optional($notification['timestamp'])->diffForHumans() ?? 'Recently' }}
+                                                </p>
+                                            </div>
+                                            <span style="padding:4px 12px;border-radius:12px;font-size:0.7rem;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;
+                                                {{ $isRejected ? 'background:#fee2e2;color:#991b1b;' : 'background:#dcfce7;color:#166534;' }}">
+                                                {{ $isRejected ? 'Action Required' : 'Completed' }}
+                                            </span>
+                                        </div>
+                                        
+                                        <!-- Details -->
+                                        <div style="background:#f8fafc;border-radius:10px;padding:12px 14px;margin-bottom:10px;">
+                                            @if($type == 'app_rejected')
+                                                <p style="font-size:0.85rem;color:#475569;margin:0 0 6px 0;">
+                                                    <strong style="color:#1e293b;">Program:</strong> {{ str_replace('_', ' ', $item->program_type) }}
+                                                </p>
+                                                <p style="font-size:0.85rem;color:#475569;margin:0;">
+                                                    <strong style="color:#1e293b;">Applied:</strong> {{ optional($item->application_date)->format('M d, Y') ?? 'N/A' }}
+                                                </p>
+                                            @else
+                                                <p style="font-size:0.85rem;color:#475569;margin:0 0 6px 0;">
+                                                    <strong style="color:#1e293b;">Document:</strong> {{ $item->requirement_name }}
+                                                </p>
+                                                @if($item->fileMonitoring && $item->fileMonitoring->application)
+                                                <p style="font-size:0.85rem;color:#475569;margin:0;">
+                                                    <strong style="color:#1e293b;">Program:</strong> {{ str_replace('_', ' ', $item->fileMonitoring->application->program_type) }}
+                                                </p>
+                                                @endif
+                                            @endif
+                                        </div>
+                                        
+                                        <!-- Rejection Reason -->
+                                        @if($type == 'app_rejected' && $item->fileMonitoring && $item->fileMonitoring->fileUploads->where('status', 'rejected')->first())
+                                            @php $rejectedFile = $item->fileMonitoring->fileUploads->where('status', 'rejected')->first(); @endphp
+                                            @if($rejectedFile->admin_remarks)
+                                            <div style="background:#fef2f2;border-left:3px solid #dc3545;border-radius:8px;padding:12px 14px;margin-bottom:10px;">
+                                                <p style="font-size:0.8rem;color:#991b1b;margin:0;line-height:1.5;">
+                                                    <strong style="display:block;margin-bottom:4px;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">Rejection Reason:</strong>
+                                                    {{ $rejectedFile->admin_remarks }}
+                                                </p>
+                                            </div>
+                                            @endif
+                                        @elseif($isRejected && $item->admin_remarks)
+                                            <div style="background:#fef2f2;border-left:3px solid #dc3545;border-radius:8px;padding:12px 14px;margin-bottom:10px;">
+                                                <p style="font-size:0.8rem;color:#991b1b;margin:0;line-height:1.5;">
+                                                    <strong style="display:block;margin-bottom:4px;font-size:0.75rem;text-transform:uppercase;letter-spacing:0.05em;">Rejection Reason:</strong>
+                                                    {{ $item->admin_remarks }}
+                                                </p>
+                                            </div>
+                                        @endif
+                                        
+                                        <!-- Action Button -->
+                                        @if($isRejected)
+                                            @php
+                                                // Generate unique ID for the rejected item
+                                                if($type == 'app_rejected') {
+                                                    $targetId = 'app-' . $item->id;
+                                                } else {
+                                                    $targetId = 'file-' . $item->id;
+                                                }
+                                            @endphp
+                                        <a href="{{ route('user.my-requirements') }}#{{ $targetId }}" style="display:inline-flex;align-items:center;gap:8px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:10px 18px;border-radius:10px;font-size:0.85rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
+                                            <i class="bi bi-upload"></i> Re-upload Documents
+                                        </a>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                        </div>
+                    @else
+                        <div style="text-align:center;padding:60px 20px;">
+                            <div style="font-size:4rem;margin-bottom:16px;opacity:0.3;">🔔</div>
+                            <h6 style="font-weight:700;color:#64748b;margin-bottom:8px;">No notifications yet</h6>
+                            <p style="font-size:0.85rem;color:#94a3b8;margin:0;">You'll see updates about your applications here</p>
+                        </div>
+                    @endif
+                </div>
+                
+                <div class="modal-footer" style="background:#f8f9fa;border:none;padding:16px 28px;display:flex;justify-content:space-between;align-items:center;">
+                    <span style="font-size:0.8rem;color:#64748b;">
+                        @if($hasNotifications)
+                            {{ $allNotifications->count() }} notification{{ $allNotifications->count() != 1 ? 's' : '' }}
+                        @endif
+                    </span>
+                    <button type="button" class="btn" data-bs-dismiss="modal" style="background:#2C3E8F;color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;font-size:0.85rem;">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .notif-filter-btn:hover {
+            background: #f1f5f9 !important;
+            border-color: #94a3b8 !important;
+        }
+        .notif-filter-btn.active {
+            background: #2C3E8F !important;
+            color: white !important;
+            border-color: #2C3E8F !important;
+        }
+        .notification-card:hover {
+            box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+            transform: translateY(-2px);
+        }
+        .notification-card.hidden {
+            display: none;
+        }
+    </style>
+
     @include('components.chat-modal')
 
     @include('components.chatbot-widget')
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Filter notifications
+        function filterNotifications(filter) {
+            const cards = document.querySelectorAll('.notification-card');
+            const buttons = document.querySelectorAll('.notif-filter-btn');
+            
+            // Update active button
+            buttons.forEach(btn => {
+                if(btn.dataset.filter === filter) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Filter cards
+            cards.forEach(card => {
+                if(filter === 'all') {
+                    card.classList.remove('hidden');
+                } else {
+                    if(card.dataset.filter === filter) {
+                        card.classList.remove('hidden');
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        // Mark notifications as viewed when modal is opened
+        document.getElementById('announcementsModal').addEventListener('show.bs.modal', function () {
+            fetch('{{ route('user.mark-notifications-viewed') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Hide badge counter
+                      const badge = document.querySelector('.btn[data-bs-target="#announcementsModal"] span');
+                      if (badge) {
+                          badge.style.display = 'none';
+                      }
+                  }
+              });
+        });
+    </script>
 </body>
 </html>

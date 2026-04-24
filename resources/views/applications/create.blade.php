@@ -227,7 +227,7 @@
                      onclick="document.getElementById('file-{{ $index }}').click()">
                     <div class="uz-icon" id="zone-icon-{{ $index }}">+</div>
                     <div class="uz-label">Select File</div>
-                    <div class="uz-sub" id="zone-sub-{{ $index }}">JPG, PNG or PDF &bull; Max 5MB</div>
+                    <div class="uz-sub" id="zone-sub-{{ $index }}">JPG, PNG (5MB) or PDF (25MB)</div>
                     <div id="zone-filename-{{ $index }}" class="uz-selected mt-1" style="display:none;"></div>
                 </div>
 
@@ -277,16 +277,21 @@
 
                 if (!file) return;
 
-                // Validate size
-                if (file.size > 5 * 1024 * 1024) {
-                    alert('File size must be less than 5MB.');
+                // Validate type first
+                if (!['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'].includes(file.type)) {
+                    alert('Only JPG, PNG, and PDF files are allowed.');
                     this.value = '';
                     return;
                 }
 
-                // Validate type
-                if (!['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'].includes(file.type)) {
-                    alert('Only JPG, PNG, and PDF files are allowed.');
+                // Validate size based on file type
+                const isImage = ['image/jpeg', 'image/jpg', 'image/png'].includes(file.type);
+                const isPDF = file.type === 'application/pdf';
+                const maxSize = isImage ? 5 * 1024 * 1024 : 25 * 1024 * 1024; // 5MB for images, 25MB for PDF
+                const maxSizeLabel = isImage ? '5MB' : '25MB';
+
+                if (file.size > maxSize) {
+                    alert(`File size must be less than ${maxSizeLabel} for ${isImage ? 'images' : 'PDF files'}.`);
                     this.value = '';
                     return;
                 }

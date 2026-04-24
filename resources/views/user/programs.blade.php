@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Available Programs – MSWDO Member Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
 html, body { overscroll-behavior: none; margin: 0; padding: 0; }
@@ -219,10 +220,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link" href="/user/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link active" href="/user/programs">Programs</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/user/announcements">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
-                <div class="d-flex">
+                <div class="d-flex align-items-center gap-3">
+                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal" style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;" title="Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($notificationCount) && $notificationCount > 0)
+                        <span style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $notificationCount > 9 ? '9+' : $notificationCount }}</span>
+                        @endif
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -415,6 +421,103 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
+    <!-- Notifications Modal -->
+    <div class="modal fade" id="announcementsModal" tabindex="-1" aria-labelledby="announcementsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius:20px;border:none;overflow:hidden;">
+                <div class="modal-header" style="background:var(--primary-gradient);color:white;border:none;padding:20px 24px;">
+                    <h5 class="modal-title" id="announcementsModalLabel" style="font-weight:800;font-size:1.2rem;">
+                        <i class="bi bi-bell-fill"></i> Notifications
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding:24px;max-height:60vh;overflow-y:auto;">
+                    @php
+                        $hasNotifications = (isset($rejectedApplications) && count($rejectedApplications) > 0) || (isset($documentNotifications) && count($documentNotifications) > 0);
+                    @endphp
+
+                    @if($hasNotifications)
+                        {{-- Whole Application Rejections --}}
+                        @if(isset($rejectedApplications) && count($rejectedApplications) > 0)
+                            @foreach($rejectedApplications as $app)
+                            <div class="notification-item" style="padding:18px 20px;border-radius:12px;margin-bottom:16px;border-left:5px solid #C41E24;background:#FCE8E8;">
+                                <div style="display:flex;align-items:start;gap:14px;">
+                                    <div style="width:46px;height:46px;border-radius:10px;background:#f5c6cb;color:#721c24;display:flex;align-items:center;justify-content:center;font-size:1.5rem;font-weight:900;flex-shrink:0;">
+                                        ⚠
+                                    </div>
+                                    <div style="flex:1;">
+                                        <div style="font-weight:800;color:#721c24;font-size:1rem;margin-bottom:6px;">
+                                            Application Declined
+                                        </div>
+                                        <div style="font-size:0.85rem;color:#721c24;margin-bottom:10px;">
+                                            <strong>Program:</strong> {{ str_replace('_', ' ', $app->program_type) }}<br>
+                                            <strong>Applied:</strong> {{ optional($app->application_date)->format('M d, Y') ?? 'N/A' }}
+                                        </div>
+                                        @if($app->fileMonitoring && $app->fileMonitoring->fileUploads->where('status', 'rejected')->first())
+                                            @php $rejectedFile = $app->fileMonitoring->fileUploads->where('status', 'rejected')->first(); @endphp
+                                            @if($rejectedFile->admin_remarks)
+                                            <div style="background:white;padding:12px 14px;border-radius:8px;font-size:0.82rem;color:#721c24;margin-bottom:10px;border:1px solid #f5c6cb;">
+                                                <strong>Reason:</strong> {{ $rejectedFile->admin_remarks }}
+                                            </div>
+                                            @endif
+                                        @endif
+                                        <div style="background:#fff3cd;padding:12px 14px;border-radius:8px;font-size:0.82rem;color:#856404;border:1px solid #ffeaa7;">
+                                            <strong>⏰ Action Required:</strong> Please re-upload the required documents in <a href="{{ route('user.my-requirements') }}" style="color:#856404;font-weight:800;text-decoration:underline;">My Requirements</a> page.
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        @endif
+
+                        {{-- Individual Document Notifications --}}
+                        @if(isset($documentNotifications) && count($documentNotifications) > 0)
+                            @foreach($documentNotifications as $doc)
+                            <div class="notification-item" style="padding:16px 20px;border-radius:12px;margin-bottom:14px;border-left:5px solid {{ $doc->status == 'approved' ? '#28a745' : '#C41E24' }};background:{{ $doc->status == 'approved' ? '#d4edda' : '#FCE8E8' }};">
+                                <div style="display:flex;align-items:start;gap:14px;">
+                                    <div style="width:42px;height:42px;border-radius:10px;background:{{ $doc->status == 'approved' ? '#c3e6cb' : '#f5c6cb' }};color:{{ $doc->status == 'approved' ? '#155724' : '#721c24' }};display:flex;align-items:center;justify-content:center;font-size:1.3rem;font-weight:900;flex-shrink:0;">
+                                        {{ $doc->status == 'approved' ? '✓' : '✕' }}
+                                    </div>
+                                    <div style="flex:1;">
+                                        <div style="font-weight:800;color:{{ $doc->status == 'approved' ? '#155724' : '#721c24' }};font-size:0.95rem;margin-bottom:6px;">
+                                            Document {{ $doc->status == 'approved' ? 'Approved' : 'Rejected' }}
+                                        </div>
+                                        <div style="font-size:0.85rem;color:{{ $doc->status == 'approved' ? '#155724' : '#721c24' }};margin-bottom:8px;">
+                                            <strong>Document:</strong> {{ $doc->requirement_name }}<br>
+                                            @if($doc->fileMonitoring && $doc->fileMonitoring->application)
+                                            <strong>Program:</strong> {{ str_replace('_', ' ', $doc->fileMonitoring->application->program_type) }}<br>
+                                            @endif
+                                            <strong>{{ $doc->status == 'approved' ? 'Approved' : 'Reviewed' }}:</strong> {{ optional($doc->verified_at)->format('M d, Y h:i A') ?? optional($doc->uploaded_at)->format('M d, Y') ?? 'N/A' }}
+                                        </div>
+                                        @if($doc->status == 'rejected' && $doc->admin_remarks)
+                                        <div style="background:white;padding:10px 12px;border-radius:8px;font-size:0.82rem;color:#721c24;margin-top:8px;border:1px solid #f5c6cb;">
+                                            <strong>Reason:</strong> {{ $doc->admin_remarks }}
+                                        </div>
+                                        @endif
+                                        @if($doc->status == 'approved')
+                                        <div style="background:white;padding:10px 12px;border-radius:8px;font-size:0.82rem;color:#155724;margin-top:8px;border:1px solid #c3e6cb;">
+                                            <strong>Status:</strong> Your document has been approved.
+                                        </div>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
+                            @endforeach
+                        @endif
+                    @else
+                        <div style="text-align:center;padding:40px 20px;color:#94a3b8;">
+                            <div style="font-size:3rem;margin-bottom:12px;">🔔</div>
+                            <p style="font-size:0.9rem;margin:0;">No notifications yet.</p>
+                        </div>
+                    @endif
+                </div>
+                <div class="modal-footer" style="background:#f8f9fa;border:none;padding:16px 24px;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius:10px;font-weight:700;">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let activeCategory = 'all';
@@ -449,6 +552,25 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 visible === 0 ? 'No results' : `${visible} program${visible > 1 ? 's' : ''}`;
             document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
         }
+
+        // Mark notifications as viewed when modal is opened
+        document.getElementById('announcementsModal').addEventListener('show.bs.modal', function () {
+            fetch('{{ route('user.mark-notifications-viewed') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      const badge = document.querySelector('.btn[data-bs-target="#announcementsModal"] span');
+                      if (badge) {
+                          badge.style.display = 'none';
+                      }
+                  }
+              });
+        });
     </script>
 </body>
 </html>

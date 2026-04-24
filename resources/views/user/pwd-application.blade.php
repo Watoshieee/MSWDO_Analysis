@@ -442,8 +442,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                        class="req-file form-control form-control-sm"
                                        data-req="{{ $reqName }}"
                                        accept=".jpg,.jpeg,.png,.pdf"
-                                       onchange="onFileChosen()">
-                                <div style="font-size:.64rem;color:#94a3b8;margin-top:3px;">Max 5 MB &middot; JPG PNG PDF</div>
+                                       onchange="validateFileSize(this); onFileChosen();">
+                                <div style="font-size:.64rem;color:#94a3b8;margin-top:3px;">Images: 5MB max &middot; PDF: 25MB max</div>
                             </div>
                             @endif
                         </div>
@@ -557,6 +557,24 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        /* ── FILE SIZE VALIDATION ── */
+        function validateFileSize(input) {
+            const file = input.files[0];
+            if (!file) return;
+
+            const isImage = ['image/jpeg', 'image/jpg', 'image/png'].includes(file.type);
+            const isPDF = file.type === 'application/pdf';
+            const maxSize = isImage ? 5 * 1024 * 1024 : 25 * 1024 * 1024; // 5MB for images, 25MB for PDF
+            const maxSizeLabel = isImage ? '5MB' : '25MB';
+
+            if (file.size > maxSize) {
+                alert(`File size must be less than ${maxSizeLabel} for ${isImage ? 'images' : 'PDF files'}.`);
+                input.value = '';
+                return false;
+            }
+            return true;
+        }
+
         /* ── UPLOAD ALL (inline panel) ── */
         const _CSRF2       = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
         const _UPLOAD_URL2 = '{{ route("user.pwd-upload-requirement") }}';

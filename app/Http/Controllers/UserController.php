@@ -42,19 +42,97 @@ class UserController extends Controller
 
         $announcements = collect();
 
+        // Get last viewed timestamp
+        $lastViewed = \App\Models\NotificationView::where('user_id', $user->id)->first();
+        $lastViewedAt = $lastViewed ? $lastViewed->last_viewed_at : null;
+
+        // Get document notifications (approved/rejected per file)
+        $documentNotifications = FileUpload::whereHas('fileMonitoring', function($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->whereIn('status', ['approved', 'rejected'])
+            ->with(['fileMonitoring.application'])
+            ->orderBy('verified_at', 'desc')
+            ->orderBy('uploaded_at', 'desc')
+            ->get();
+
+        // Get whole application rejections
+        $rejectedApplications = Application::where('user_id', $user->id)
+            ->where('status', 'rejected')
+            ->with('fileMonitoring.fileUploads')
+            ->orderBy('application_date', 'desc')
+            ->get();
+
+        // Count only NEW notifications (after last viewed)
+        $newDocNotifications = $lastViewedAt 
+            ? $documentNotifications->filter(function($doc) use ($lastViewedAt) {
+                $timestamp = $doc->verified_at ?? $doc->uploaded_at;
+                return $timestamp && $timestamp > $lastViewedAt;
+            })->count()
+            : $documentNotifications->count();
+
+        $newAppRejections = $lastViewedAt
+            ? $rejectedApplications->filter(function($app) use ($lastViewedAt) {
+                return $app->application_date && $app->application_date > $lastViewedAt;
+            })->count()
+            : $rejectedApplications->count();
+
+        $notificationCount = $newDocNotifications + $newAppRejections;
+
         return view('user.dashboard', compact(
             'totalApplications',
             'pendingCount',
             'approvedCount',
             'rejectedCount',
             'recentApplications',
-            'announcements'
+            'announcements',
+            'documentNotifications',
+            'rejectedApplications',
+            'notificationCount'
         ));
     }
 
     public function programs()
     {
-        return view('user.programs');
+        $user = Auth::user();
+        
+        // Get last viewed timestamp
+        $lastViewed = \App\Models\NotificationView::where('user_id', $user->id)->first();
+        $lastViewedAt = $lastViewed ? $lastViewed->last_viewed_at : null;
+        
+        // Get notification data
+        $documentNotifications = FileUpload::whereHas('fileMonitoring', function($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->whereIn('status', ['approved', 'rejected'])
+            ->with(['fileMonitoring.application'])
+            ->orderBy('verified_at', 'desc')
+            ->orderBy('uploaded_at', 'desc')
+            ->get();
+
+        $rejectedApplications = Application::where('user_id', $user->id)
+            ->where('status', 'rejected')
+            ->with('fileMonitoring.fileUploads')
+            ->orderBy('application_date', 'desc')
+            ->get();
+
+        // Count only NEW notifications
+        $newDocNotifications = $lastViewedAt 
+            ? $documentNotifications->filter(function($doc) use ($lastViewedAt) {
+                $timestamp = $doc->verified_at ?? $doc->uploaded_at;
+                return $timestamp && $timestamp > $lastViewedAt;
+            })->count()
+            : $documentNotifications->count();
+
+        $newAppRejections = $lastViewedAt
+            ? $rejectedApplications->filter(function($app) use ($lastViewedAt) {
+                return $app->application_date && $app->application_date > $lastViewedAt;
+            })->count()
+            : $rejectedApplications->count();
+
+        $notificationCount = $newDocNotifications + $newAppRejections;
+
+        return view('user.programs', compact('documentNotifications', 'rejectedApplications', 'notificationCount'));
     }
 
     public function announcements()
@@ -109,68 +187,121 @@ public function myRequirements()
             ];
         }
 
-        return view('user.my-requirements', compact('requirementsData'));
+        // Get last viewed timestamp
+        $lastViewed = \App\Models\NotificationView::where('user_id', $user->id)->first();
+        $lastViewedAt = $lastViewed ? $lastViewed->last_viewed_at : null;
+
+        // Get notification data
+        $documentNotifications = FileUpload::whereHas('fileMonitoring', function($q) use ($user) {
+                $q->where('user_id', $user->id);
+            })
+            ->whereIn('status', ['approved', 'rejected'])
+            ->with(['fileMonitoring.application'])
+            ->orderBy('verified_at', 'desc')
+            ->orderBy('uploaded_at', 'desc')
+            ->get();
+
+        $rejectedApplications = Application::where('user_id', $user->id)
+            ->where('status', 'rejected')
+            ->with('fileMonitoring.fileUploads')
+            ->orderBy('application_date', 'desc')
+            ->get();
+
+        // Count only NEW notifications
+        $newDocNotifications = $lastViewedAt 
+            ? $documentNotifications->filter(function($doc) use ($lastViewedAt) {
+                $timestamp = $doc->verified_at ?? $doc->uploaded_at;
+                return $timestamp && $timestamp > $lastViewedAt;
+            })->count()
+            : $documentNotifications->count();
+
+        $newAppRejections = $lastViewedAt
+            ? $rejectedApplications->filter(function($app) use ($lastViewedAt) {
+                return $app->application_date && $app->application_date > $lastViewedAt;
+            })->count()
+            : $rejectedApplications->count();
+
+        $notificationCount = $newDocNotifications + $newAppRejections;
+
+        return view('user.my-requirements', compact('requirementsData', 'documentNotifications', 'rejectedApplications', 'notificationCount'));
     }
     /**
      * Resubmit a rejected requirement
-     */public function resubmitRequirement(Request $request, $fileUploadId)
+     */
+    public function resubmitRequirement(Request $request, $fileUploadId)
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        $request->validate([
-            'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120'
-        ]);
+            $request->validate([
+                'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:25600' // 25MB max for PDF, 5MB for images (validated client-side)
+            ]);
 
-        $fileUpload = FileUpload::where('id', $fileUploadId)
-            ->whereHas('fileMonitoring', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })
-            ->firstOrFail();
+            $fileUpload = FileUpload::with('fileMonitoring.application')
+                ->findOrFail($fileUploadId);
+            
+            // Verify ownership
+            if (!$fileUpload->fileMonitoring || $fileUpload->fileMonitoring->user_id != $user->id) {
+                return redirect()->back()->with('error', 'Unauthorized access to this file.');
+            }
 
-        // Delete old file
-        if ($fileUpload->file_path && Storage::disk('public')->exists($fileUpload->file_path)) {
-            Storage::disk('public')->delete($fileUpload->file_path);
+            // Validate file size based on type
+            $file = $request->file('file');
+            $isImage = in_array($file->getMimeType(), ['image/jpeg', 'image/jpg', 'image/png']);
+            $maxSize = $isImage ? 5 * 1024 * 1024 : 25 * 1024 * 1024; // 5MB for images, 25MB for PDF
+            
+            if ($file->getSize() > $maxSize) {
+                $maxSizeLabel = $isImage ? '5MB' : '25MB';
+                return redirect()->back()->with('error', "File size must be less than {$maxSizeLabel} for " . ($isImage ? 'images' : 'PDF files') . '.');
+            }
+
+            // Delete old file
+            if ($fileUpload->file_path && Storage::disk('public')->exists($fileUpload->file_path)) {
+                Storage::disk('public')->delete($fileUpload->file_path);
+            }
+
+            // Upload new file
+            $originalName = $file->getClientOriginalName();
+            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
+            $applicationId = $fileUpload->fileMonitoring->application_id;
+            $path = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
+
+            // Update file upload record
+            $fileUpload->update([
+                'file_name' => $originalName,
+                'file_path' => $path,
+                'status' => 'pending', // Reset to pending
+                'remarks' => null, // Clear old remarks
+                'admin_remarks' => null, // Clear admin remarks
+                'verified_at' => null,
+                'verified_by' => null,
+                'uploaded_at' => now()
+            ]);
+
+            // Update overall status of file monitoring
+            $fileMonitoring = $fileUpload->fileMonitoring;
+            $totalFiles = $fileMonitoring->fileUploads()->count();
+            $pendingFiles = $fileMonitoring->fileUploads()->where('status', 'pending')->count();
+            $rejectedFiles = $fileMonitoring->fileUploads()->where('status', 'rejected')->count();
+
+            if ($rejectedFiles > 0) {
+                $fileMonitoring->overall_status = 'rejected';
+            }
+            elseif ($pendingFiles > 0) {
+                $fileMonitoring->overall_status = 'pending';
+                // Also update application status back to pending
+                $fileMonitoring->application->update(['status' => 'pending']);
+            }
+            else {
+                $fileMonitoring->overall_status = 'in_review';
+            }
+            $fileMonitoring->save();
+
+            return redirect()->back()->with('success', 'Document re-uploaded successfully! Waiting for admin review.');
+        } catch (\Exception $e) {
+            \Log::error('Resubmit Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to upload file: ' . $e->getMessage());
         }
-
-        // Upload new file
-        $file = $request->file('file');
-        $originalName = $file->getClientOriginalName();
-        $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
-        $applicationId = $fileUpload->fileMonitoring->application_id;
-        $path = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
-
-        // Update file upload record
-        $fileUpload->update([
-            'file_name' => $originalName,
-            'file_path' => $path,
-            'status' => 'pending', // Reset to pending
-            'remarks' => null, // Clear old remarks
-            'admin_remarks' => null, // Clear admin remarks
-            'verified_at' => null,
-            'verified_by' => null,
-            'uploaded_at' => now()
-        ]);
-
-        // Update overall status of file monitoring
-        $fileMonitoring = $fileUpload->fileMonitoring;
-        $totalFiles = $fileMonitoring->fileUploads()->count();
-        $pendingFiles = $fileMonitoring->fileUploads()->where('status', 'pending')->count();
-        $rejectedFiles = $fileMonitoring->fileUploads()->where('status', 'rejected')->count();
-
-        if ($rejectedFiles > 0) {
-            $fileMonitoring->overall_status = 'rejected';
-        }
-        elseif ($pendingFiles > 0) {
-            $fileMonitoring->overall_status = 'pending';
-            // Also update application status back to pending
-            $fileMonitoring->application->update(['status' => 'pending']);
-        }
-        else {
-            $fileMonitoring->overall_status = 'in_review';
-        }
-        $fileMonitoring->save();
-
-        return redirect()->back()->with('success', 'Document re-uploaded successfully! Waiting for admin review.');
     }
     public function pwdApplication()
     {
@@ -505,6 +636,18 @@ public function myRequirements()
     public function uploadAicsBurial(Request $request)
     {
         return $this->uploadAicsRequirement($request, 'AICS_Burial', 'user.aics-burial');
+    }
+
+    public function markNotificationsViewed()
+    {
+        $user = Auth::user();
+        
+        \App\Models\NotificationView::updateOrCreate(
+            ['user_id' => $user->id],
+            ['last_viewed_at' => now()]
+        );
+        
+        return response()->json(['success' => true]);
     }
 
 }

@@ -19,6 +19,7 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::get('/user/announcements', [UserController::class, 'announcements'])->name('user.announcements');
     Route::get('/user/my-requirements', [UserController::class, 'myRequirements'])->name('user.my-requirements');
     Route::put('/user/resubmit-requirement/{fileUploadId}', [UserController::class, 'resubmitRequirement'])->name('user.resubmit-requirement');
+    Route::post('/user/resubmit-requirement/{fileUploadId}', [UserController::class, 'resubmitRequirement']); // Fallback for browsers that don't support PUT
     Route::get('/user/apply/AICS/aics', [UserController::class, 'aicsCategory'])->name('user.aics-category');
     Route::get('/user/apply/AICS/medical', [UserController::class, 'aicsMedical'])->name('user.aics-medical');
     Route::get('/user/apply/AICS/burial', [UserController::class, 'aicsBurial'])->name('user.aics-burial');
@@ -30,6 +31,7 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::post('/user/pwd-upload-requirement', [UserController::class, 'uploadPwdRequirement'])->name('user.pwd-upload-requirement');
     Route::post('/user/aics-medical-upload', [UserController::class, 'uploadAicsMedical'])->name('user.aics-medical-upload');
     Route::post('/user/aics-burial-upload', [UserController::class, 'uploadAicsBurial'])->name('user.aics-burial-upload');
+    Route::post('/user/mark-notifications-viewed', [UserController::class, 'markNotificationsViewed'])->name('user.mark-notifications-viewed');
 
     // Chat routes
     Route::get('/chat/admins', [App\Http\Controllers\ChatController::class, 'getAdmins'])->name('chat.admins');
