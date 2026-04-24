@@ -126,7 +126,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/admin/dashboard">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -208,12 +208,46 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <input type="number" name="total_population" class="f-input"
                                        value="{{ $currentTotalPopulation }}"
                                        required min="0" placeholder="e.g. 45000">
-                                <small class="text-muted" style="font-size:.75rem;">💡 Auto-calculated from barangay data for year {{ $municipality->year ?? date('Y') }}</small>
+                                <small class="text-muted" style="font-size:.75rem;">💡 Saved value for {{ $municipality->year ?? date('Y') }}</small>
                             </div>
                             <div class="col-md-6">
                                 <label class="f-label">Total Households</label>
                                 <input type="number" name="total_households" class="f-input" value="{{ $currentTotalHouseholds }}" required min="0">
-                                <small class="text-muted" style="font-size:.75rem;">💡 Auto-calculated from barangay data for year {{ $municipality->year ?? date('Y') }}</small>
+                                <small class="text-muted" style="font-size:.75rem;">💡 Saved value for {{ $municipality->year ?? date('Y') }}</small>
+                            </div>
+                        </div>
+
+                        <div class="section-title mt-4" style="font-size:.72rem;font-weight:800;color:var(--primary-blue);text-transform:uppercase;letter-spacing:.08em;margin-top:1.5rem;margin-bottom:.5rem;">Gender &amp; Age Breakdown</div>
+                        <div class="row g-3 mb-0">
+                            <div class="col-md-6">
+                                <label class="f-label">Male Population</label>
+                                <input type="number" name="male_population" class="f-input"
+                                       value="{{ $currentSummary->male_population ?? $municipality->male_population ?? 0 }}"
+                                       min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="f-label">Female Population</label>
+                                <input type="number" name="female_population" class="f-input"
+                                       value="{{ $currentSummary->female_population ?? $municipality->female_population ?? 0 }}"
+                                       min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="f-label">Age 0–19</label>
+                                <input type="number" name="population_0_19" class="f-input"
+                                       value="{{ $currentSummary->population_0_19 ?? $municipality->population_0_19 ?? 0 }}"
+                                       min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="f-label">Age 20–59</label>
+                                <input type="number" name="population_20_59" class="f-input"
+                                       value="{{ $currentSummary->population_20_59 ?? $municipality->population_20_59 ?? 0 }}"
+                                       min="0" placeholder="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label class="f-label">Age 60+</label>
+                                <input type="number" name="population_60_100" class="f-input"
+                                       value="{{ $currentSummary->population_60_100 ?? $municipality->population_60_100 ?? 0 }}"
+                                       min="0" placeholder="0">
                             </div>
                         </div>
 
@@ -267,6 +301,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <tr style="background:#f8fafc;">
                                     <th style="padding:10px 14px;text-align:left;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Year</th>
                                     <th style="padding:10px 14px;text-align:right;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Population</th>
+                                    <th style="padding:10px 14px;text-align:right;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Male</th>
+                                    <th style="padding:10px 14px;text-align:right;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Female</th>
+                                    <th style="padding:10px 14px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Age 0-19</th>
+                                    <th style="padding:10px 14px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Age 20-59</th>
+                                    <th style="padding:10px 14px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Age 60+</th>
                                     <th style="padding:10px 14px;text-align:right;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Households</th>
                                 </tr>
                             </thead>
@@ -280,6 +319,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         @endif
                                     </td>
                                     <td style="padding:11px 14px;text-align:right;color:#334155;">{{ number_format($summary->total_population) }}</td>
+                                    <td style="padding:11px 14px;text-align:right;color:#334155;">{{ number_format($summary->male_population ?? 0) }}</td>
+                                    <td style="padding:11px 14px;text-align:right;color:#334155;">{{ number_format($summary->female_population ?? 0) }}</td>
+                                    <td style="padding:11px 14px;text-align:center;color:#64748b;font-size:0.82rem;">{{ number_format($summary->population_0_19 ?? 0) }}</td>
+                                    <td style="padding:11px 14px;text-align:center;color:#64748b;font-size:0.82rem;">{{ number_format($summary->population_20_59 ?? 0) }}</td>
+                                    <td style="padding:11px 14px;text-align:center;color:#64748b;font-size:0.82rem;">{{ number_format($summary->population_60_100 ?? 0) }}</td>
                                     <td style="padding:11px 14px;text-align:right;color:#334155;">{{ number_format($summary->total_households) }}</td>
                                 </tr>
                                 @endforeach

@@ -126,10 +126,15 @@ class DataManagementController extends Controller
         if ($adminData) {
             $currentTotalPopulation = $adminData->total_population;
             $currentTotalHouseholds = $adminData->total_households;
+        } elseif ($currentSummary) {
+            // Prefer the saved yearly summary value over the barangay auto-sum
+            // (barangay data may be incomplete/partial)
+            $currentTotalPopulation = $currentSummary->total_population;
+            $currentTotalHouseholds = $currentSummary->total_households;
         } else {
-            // Use auto-calculated values if available, otherwise use summary values
-            $currentTotalPopulation = $autoTotalPopulation > 0 ? $autoTotalPopulation : ($currentSummary->total_population ?? 0);
-            $currentTotalHouseholds = $autoTotalHouseholds > 0 ? $autoTotalHouseholds : ($currentSummary->total_households ?? 0);
+            // No summary yet — fall back to barangay auto-sum
+            $currentTotalPopulation = $autoTotalPopulation;
+            $currentTotalHouseholds = $autoTotalHouseholds;
         }
 
         // Update municipality year if changed via request
@@ -162,6 +167,7 @@ class DataManagementController extends Controller
             'municipality',
             'currentTotalPopulation',
             'currentTotalHouseholds',
+            'currentSummary',
             'years',
             'allSummaries',
             'yearlyData',
@@ -178,6 +184,11 @@ class DataManagementController extends Controller
             'total_population'    => 'required|integer|min:0',
             'total_households'    => 'required|integer|min:0',
             'year'                => 'required|integer|min:2000|max:' . (date('Y') + 1),
+            'male_population'     => 'nullable|integer|min:0',
+            'female_population'   => 'nullable|integer|min:0',
+            'population_0_19'     => 'nullable|integer|min:0',
+            'population_20_59'    => 'nullable|integer|min:0',
+            'population_60_100'   => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -189,30 +200,29 @@ class DataManagementController extends Controller
         $totalPopulation = (int) $request->total_population;
         $totalHouseholds = (int) $request->total_households;
 
-        // Validation against barangay totals
-        $barangayPopSum = Barangay::where('municipality', $user->municipality)->where('year', $request->year)->sum('total_population');
-        $barangayHouseholdSum = Barangay::where('municipality', $user->municipality)->where('year', $request->year)->sum('total_households');
 
-        if ($totalPopulation < $barangayPopSum) {
-            return redirect()->back()->withErrors(['error' => "Population cannot be less than the sum of all barangays for {$request->year} (Currently: {$barangayPopSum})."])->withInput();
-        }
-        
-        if ($totalHouseholds < $barangayHouseholdSum) {
-            return redirect()->back()->withErrors(['error' => "Households cannot be less than the sum of all barangays for {$request->year} (Currently: {$barangayHouseholdSum})."])->withInput();
-        }
-
-        // Update the municipalities table (current live record)
+        // Update the municipalities table
         $municipality->update([
             'total_households'    => $request->total_households,
             'year'                => $request->year,
+            'male_population'     => $request->male_population   ?? 0,
+            'female_population'   => $request->female_population ?? 0,
+            'population_0_19'     => $request->population_0_19   ?? 0,
+            'population_20_59'    => $request->population_20_59  ?? 0,
+            'population_60_100'   => $request->population_60_100 ?? 0,
         ]);
 
-        // Mirror into the yearly summary
+        // Mirror into the yearly summary (preserves existing program totals)
         MunicipalityYearlySummary::updateOrCreate(
             ['municipality' => $municipality->name, 'year' => $request->year],
             [
                 'total_population'  => $totalPopulation,
                 'total_households'  => $request->total_households,
+                'male_population'   => $request->male_population   ?? 0,
+                'female_population' => $request->female_population ?? 0,
+                'population_0_19'   => $request->population_0_19   ?? 0,
+                'population_20_59'  => $request->population_20_59  ?? 0,
+                'population_60_100' => $request->population_60_100 ?? 0,
                 'created_at'        => now(),
             ]
         );

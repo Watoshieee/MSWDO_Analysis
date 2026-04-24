@@ -65,6 +65,11 @@ Route::get('/', function () {
     return redirect('/analysis');
 });
 
+// ============================================
+// AI CHATBOT (public — guests + auth users)
+// ============================================
+Route::post('/chatbot/message', [App\Http\Controllers\ChatbotController::class, 'reply'])->name('chatbot.reply');
+
 Route::prefix('analysis')->name('analysis.')->group(function () {
     Route::get('/', [AnalysisController::class, 'index'])->name('index');
     Route::get('/municipality/{name}', [AnalysisController::class, 'municipality'])->name('municipality');

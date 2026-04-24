@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -109,7 +109,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/admin/dashboard">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
             </a>
             <div class="collapse navbar-collapse">
                 <ul class="navbar-nav me-auto">

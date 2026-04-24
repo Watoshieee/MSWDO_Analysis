@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -64,7 +64,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 <div class="top-bar">
     <div class="container top-bar-inner">
         <a class="brand" href="{{ route('user.dashboard') }}">
-            <img src="/images/mswd-logo.png" alt="MSWD"> MSWDO
+            <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD"> MSWDO
         </a>
         <a href="{{ route('user.aics-category') }}" class="back-btn">← Back to AICS Categories</a>
     </div>

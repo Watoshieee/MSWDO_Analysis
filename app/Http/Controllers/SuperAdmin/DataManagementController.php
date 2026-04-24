@@ -10,6 +10,7 @@ use App\Models\MunicipalityYearlySummary;
 use App\Models\MunicipalityMonthlySummary;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 
 class DataManagementController extends Controller
@@ -19,7 +20,7 @@ class DataManagementController extends Controller
      */
     public function dashboard()
     {
-        $municipalities = Municipality::whereIn('name', ['Magdalena', 'Liliw', 'Majayjay'])->get();
+        $municipalities = Municipality::orderBy('name')->get();
 
         $totalPrograms = SocialWelfareProgram::count();
         $totalBeneficiaries = SocialWelfareProgram::sum('beneficiary_count');
@@ -44,7 +45,7 @@ class DataManagementController extends Controller
      */
     public function municipalities(Request $request)
     {
-        $coreNames = ['Magdalena', 'Liliw', 'Majayjay'];
+        $coreNames = Municipality::orderBy('name')->pluck('name')->toArray();
 
         // Summary records grouped by municipality + year
         $summaries = MunicipalityYearlySummary::whereIn('municipality', $coreNames)
@@ -80,7 +81,7 @@ class DataManagementController extends Controller
 
         // Monthly chart data: PWD + AICS + Solo per month for each municipality
         $monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-        $selectedYear = $request->get('chart_year', date('Y'));
+        $selectedYear = $request->input('chart_year', date('Y'));
         $monthlyChartData = [];
         foreach ($coreNames as $muni) {
             $rows = MunicipalityMonthlySummary::where('municipality', $muni)
@@ -119,22 +120,22 @@ class DataManagementController extends Controller
     public function saveMunicipalitySummary(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'municipality'     => 'required|in:Magdalena,Liliw,Majayjay',
-            'year'             => 'required|integer|min:2000|max:' . (date('Y') + 1),
+            'municipality' => ['required', 'string', Rule::in(Municipality::pluck('name')->toArray())],
+            'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
             'total_population' => 'required|integer|min:0',
-            'population_0_19'  => 'nullable|integer|min:0',
+            'population_0_19' => 'nullable|integer|min:0',
             'population_20_59' => 'nullable|integer|min:0',
-            'population_60_100'=> 'nullable|integer|min:0',
-            'male_population'   => 'nullable|integer|min:0',
+            'population_60_100' => 'nullable|integer|min:0',
+            'male_population' => 'nullable|integer|min:0',
             'female_population' => 'nullable|integer|min:0',
             'total_households' => 'required|integer|min:0',
-            'total_4ps'        => 'nullable|integer|min:0',
-            'total_pwd'        => 'nullable|integer|min:0',
-            'total_senior'     => 'nullable|integer|min:0',
-            'total_aics'       => 'nullable|integer|min:0',
-            'total_esa'        => 'nullable|integer|min:0',
-            'total_slp'        => 'nullable|integer|min:0',
-            'total_solo_parent'=> 'nullable|integer|min:0',
+            'total_4ps' => 'nullable|integer|min:0',
+            'total_pwd' => 'nullable|integer|min:0',
+            'total_senior' => 'nullable|integer|min:0',
+            'total_aics' => 'nullable|integer|min:0',
+            'total_esa' => 'nullable|integer|min:0',
+            'total_slp' => 'nullable|integer|min:0',
+
         ]);
 
         if ($validator->fails()) {
@@ -144,26 +145,50 @@ class DataManagementController extends Controller
         MunicipalityYearlySummary::updateOrCreate(
             [
                 'municipality' => $request->municipality,
-                'year'         => $request->year,
+                'year' => $request->year,
             ],
             [
-                'total_population'  => $request->total_population,
-                'male_population'   => $request->male_population ?? 0,
+                'total_population' => $request->total_population,
+                'male_population' => $request->male_population ?? 0,
                 'female_population' => $request->female_population ?? 0,
-                'population_0_19'   => $request->population_0_19 ?? 0,
-                'population_20_59'  => $request->population_20_59 ?? 0,
+                'population_0_19' => $request->population_0_19 ?? 0,
+                'population_20_59' => $request->population_20_59 ?? 0,
                 'population_60_100' => $request->population_60_100 ?? 0,
-                'total_households'  => $request->total_households,
-                'total_4ps'         => $request->total_4ps ?? 0,
-                'total_pwd'         => $request->total_pwd ?? 0,
-                'total_senior'      => $request->total_senior ?? 0,
-                'total_aics'        => $request->total_aics ?? 0,
-                'total_esa'         => $request->total_esa ?? 0,
-                'total_slp'         => $request->total_slp ?? 0,
+                'total_households' => $request->total_households,
+                'total_4ps' => $request->total_4ps ?? 0,
+                'total_pwd' => $request->total_pwd ?? 0,
+                'total_senior' => $request->total_senior ?? 0,
+                'total_aics' => $request->total_aics ?? 0,
+                'total_esa' => $request->total_esa ?? 0,
+                'total_slp' => $request->total_slp ?? 0,
                 'total_solo_parent' => $request->total_solo_parent ?? 0,
-                'created_at'        => now(),
+                'created_at' => now(),
             ]
         );
+
+        // Sync back to municipalities table — restore if soft-deleted, create if missing
+        $syncData = [
+            'total_population' => $request->total_population,
+            'male_population' => $request->male_population ?? 0,
+            'female_population' => $request->female_population ?? 0,
+            'population_0_19' => $request->population_0_19 ?? 0,
+            'population_20_59' => $request->population_20_59 ?? 0,
+            'population_60_100' => $request->population_60_100 ?? 0,
+            'total_households' => $request->total_households,
+            'year' => $request->year,
+        ];
+
+        $existing = Municipality::withTrashed()->where('name', $request->municipality)->first();
+
+        if ($existing) {
+            if ($existing->trashed()) {
+                $existing->restore(); // un-archive if it was soft-deleted
+            }
+            $existing->update($syncData);
+        } else {
+            // Municipality row was hard-deleted — recreate it
+            Municipality::create(array_merge(['name' => $request->municipality], $syncData));
+        }
 
         return redirect()->route('superadmin.data.municipalities')
             ->with('success', "Data for {$request->municipality} ({$request->year}) saved successfully!");
@@ -177,7 +202,7 @@ class DataManagementController extends Controller
      */
     public function barangays(Request $request)
     {
-        $municipalities = Municipality::whereIn('name', ['Magdalena', 'Liliw', 'Majayjay'])->pluck('name');
+        $municipalities = Municipality::orderBy('name')->pluck('name');
 
         $query = Barangay::query();
         if ($request->filled('municipality')) {
@@ -199,7 +224,7 @@ class DataManagementController extends Controller
 
         // Available years per municipality for the empty-state hint
         $availableYears = [];
-        foreach (['Magdalena', 'Liliw', 'Majayjay'] as $mun) {
+        foreach (Municipality::orderBy('name')->pluck('name') as $mun) {
             $availableYears[$mun] = Barangay::where('municipality', $mun)
                 ->distinct()->orderByDesc('year')->pluck('year')->toArray();
         }
@@ -241,7 +266,7 @@ class DataManagementController extends Controller
             'senior_count' => $request->senior_count ?? 0,
             'total_households' => $request->total_households ?? 0,
         ]);
-        
+
         // Sync to Programs table
         $this->syncBarangayYearToPrograms($barangay->municipality, $barangay->year);
 
@@ -257,7 +282,7 @@ class DataManagementController extends Controller
     public function storeBarangay(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'municipality' => 'required|in:Magdalena,Liliw,Majayjay',
+            'municipality' => ['required', 'string', Rule::in(Municipality::pluck('name')->toArray())],
             'name' => 'required|string|max:100',
             'year' => 'required|integer|min:2000',
             'total_population' => 'required|integer|min:0',
@@ -299,9 +324,9 @@ class DataManagementController extends Controller
     {
         $request->validate([
             'municipality' => 'required|string',
-            'year'         => 'required|integer',
-            'barangays'    => 'required|array|min:1',
-            'barangays.*'  => 'required|string',
+            'year' => 'required|integer',
+            'barangays' => 'required|array|min:1',
+            'barangays.*' => 'required|string',
         ]);
 
         $created = 0;
@@ -327,24 +352,25 @@ class DataManagementController extends Controller
             } else {
                 // Fresh create
                 Barangay::create([
-                    'municipality'               => $request->municipality,
-                    'name'                       => $name,
-                    'year'                       => $request->year,
-                    'total_population'           => 0,
-                    'single_parent_count'        => 0,
-                    'pwd_count'                  => 0,
-                    'aics_count'                 => 0,
-                    'four_ps_count'              => 0,
-                    'senior_count'               => 0,
-                    'total_households'           => 0,
-                    'total_approved_applications'=> 0,
+                    'municipality' => $request->municipality,
+                    'name' => $name,
+                    'year' => $request->year,
+                    'total_population' => 0,
+                    'single_parent_count' => 0,
+                    'pwd_count' => 0,
+                    'aics_count' => 0,
+                    'four_ps_count' => 0,
+                    'senior_count' => 0,
+                    'total_households' => 0,
+                    'total_approved_applications' => 0,
                 ]);
                 $created++;
             }
         }
 
         $msg = "{$created} barangay record(s) added";
-        if ($restored) $msg .= ", {$restored} archived record(s) restored";
+        if ($restored)
+            $msg .= ", {$restored} archived record(s) restored";
         $msg .= " for {$request->municipality} ({$request->year}).";
 
         return response()->json(['success' => true, 'created' => $created, 'restored' => $restored, 'message' => $msg]);
@@ -366,13 +392,13 @@ class DataManagementController extends Controller
             if (!$barangay)
                 continue;
             $barangay->update([
-                'total_population'    => intval($row['total_population'] ?? 0),
+                'total_population' => intval($row['total_population'] ?? 0),
                 'single_parent_count' => intval($row['single_parent_count'] ?? 0),
-                'pwd_count'           => intval($row['pwd_count'] ?? 0),
-                'aics_count'          => intval($row['aics_count'] ?? 0),
-                'four_ps_count'       => intval($row['four_ps_count'] ?? 0),
-                'senior_count'        => intval($row['senior_count'] ?? 0),
-                'total_households'    => intval($row['total_households'] ?? 0),
+                'pwd_count' => intval($row['pwd_count'] ?? 0),
+                'aics_count' => intval($row['aics_count'] ?? 0),
+                'four_ps_count' => intval($row['four_ps_count'] ?? 0),
+                'senior_count' => intval($row['senior_count'] ?? 0),
+                'total_households' => intval($row['total_households'] ?? 0),
                 'total_approved_applications' => intval($row['total_approved_applications'] ?? 0),
             ]);
             $updated++;
@@ -407,7 +433,7 @@ class DataManagementController extends Controller
     public function bulkDeleteBarangays(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'municipality' => 'required|in:Magdalena,Liliw,Majayjay',
+            'municipality' => ['required', 'string', Rule::in(Municipality::pluck('name')->toArray())],
             'year' => 'required|integer|min:2000',
         ]);
 
@@ -434,8 +460,8 @@ class DataManagementController extends Controller
      */
     public function programs(Request $request)
     {
-        $coreNames = ['Magdalena', 'Liliw', 'Majayjay'];
-        $municipalities = Municipality::whereIn('name', $coreNames)->pluck('name');
+        $coreNames = Municipality::orderBy('name')->pluck('name')->toArray();
+        $municipalities = Municipality::orderBy('name')->pluck('name');
 
         $programTypes = [
             '4Ps' => '4Ps',
@@ -486,7 +512,7 @@ class DataManagementController extends Controller
                 'Solo_Parent' => (int) $row->total_solo_parent,
             ];
         }
-        
+
         // Get barangay breakdown for each program
         $fieldMapping = [
             'PWD_Assistance' => 'pwd_count',
@@ -495,7 +521,7 @@ class DataManagementController extends Controller
             'Senior_Citizen_Pension' => 'senior_count',
             'Solo_Parent' => 'single_parent_count',
         ];
-        
+
         $barangayBreakdown = [];
         foreach ($programs as $program) {
             $field = $fieldMapping[$program->program_type] ?? null;
@@ -504,8 +530,8 @@ class DataManagementController extends Controller
                     ->where('year', $program->year)
                     ->where($field, '>', 0)
                     ->get();
-                
-                $barangayBreakdown[$program->id] = $barangays->map(function($b) use ($field) {
+
+                $barangayBreakdown[$program->id] = $barangays->map(function ($b) use ($field) {
                     return [
                         'id' => $b->id,
                         'name' => $b->name,
@@ -631,7 +657,7 @@ class DataManagementController extends Controller
         }
 
         $program = SocialWelfareProgram::findOrFail($id);
-        
+
         // Update barangay data if provided
         if ($request->has('barangay_data') && is_array($request->barangay_data)) {
             $fieldMapping = [
@@ -641,9 +667,9 @@ class DataManagementController extends Controller
                 'Senior_Citizen_Pension' => 'senior_count',
                 'Solo_Parent' => 'single_parent_count',
             ];
-            
+
             $field = $fieldMapping[$program->program_type] ?? null;
-            
+
             if ($field) {
                 // Update each barangay
                 foreach ($request->barangay_data as $data) {
@@ -662,10 +688,10 @@ class DataManagementController extends Controller
                         }
                     }
                 }
-                
+
                 // Re-sync to SocialWelfareProgram (this will auto-calculate the correct total)
                 $this->syncBarangayYearToPrograms($program->municipality, $program->year);
-                
+
                 // Force refresh the program model to get updated data
                 $program->refresh();
             }
@@ -768,7 +794,7 @@ class DataManagementController extends Controller
      */
     public function archiveMunicipalitySummary($id)
     {
-        $summary = \App\Models\MunicipalityYearlySummary::findOrFail($id);
+        $summary = MunicipalityYearlySummary::findOrFail($id);
         $summary->delete();
         return response()->json(['success' => true, 'message' => 'Yearly record archived.']);
     }
@@ -778,7 +804,7 @@ class DataManagementController extends Controller
      */
     public function getArchivedSummaries()
     {
-        $archived = \App\Models\MunicipalityYearlySummary::onlyTrashed()->orderBy('deleted_at', 'desc')->get();
+        $archived = MunicipalityYearlySummary::onlyTrashed()->orderBy('deleted_at', 'desc')->get();
         return response()->json($archived);
     }
 
@@ -787,7 +813,7 @@ class DataManagementController extends Controller
      */
     public function restoreMunicipalitySummary($id)
     {
-        $summary = \App\Models\MunicipalityYearlySummary::onlyTrashed()->findOrFail($id);
+        $summary = MunicipalityYearlySummary::onlyTrashed()->findOrFail($id);
         $summary->restore();
         return response()->json(['success' => true, 'message' => 'Yearly record restored.']);
     }
@@ -797,7 +823,7 @@ class DataManagementController extends Controller
      */
     public function forceDeleteMunicipalitySummary($id)
     {
-        $summary = \App\Models\MunicipalityYearlySummary::onlyTrashed()->findOrFail($id);
+        $summary = MunicipalityYearlySummary::onlyTrashed()->findOrFail($id);
         $summary->forceDelete();
         return response()->json(['success' => true, 'message' => 'Yearly record permanently deleted.']);
     }
@@ -807,7 +833,7 @@ class DataManagementController extends Controller
      */
     public function deleteMunicipalitySummary($id)
     {
-        $summary = \App\Models\MunicipalityYearlySummary::findOrFail($id);
+        $summary = MunicipalityYearlySummary::findOrFail($id);
         $summary->delete();
         return redirect()->back()->with('success', 'Record archived successfully.');
     }
@@ -1010,20 +1036,20 @@ class DataManagementController extends Controller
             'message' => "Permanently deleted {$count} archived barangay record(s).",
         ]);
     }
-    
+
     // Helper function to sync barangay data for a specific year to SocialWelfareProgram table
     private function syncBarangayYearToPrograms($municipality, $year)
     {
         $barangayData = Barangay::where('municipality', $municipality)
             ->where('year', $year)
             ->get();
-        
+
         \Log::info('syncBarangayYearToPrograms called', [
             'municipality' => $municipality,
             'year' => $year,
             'barangay_count' => $barangayData->count(),
         ]);
-        
+
         $fieldMapping = [
             'PWD_Assistance' => 'pwd_count',
             'AICS' => 'aics_count',
@@ -1031,7 +1057,7 @@ class DataManagementController extends Controller
             'Senior_Citizen_Pension' => 'senior_count',
             'Solo_Parent' => 'single_parent_count',
         ];
-        
+
         $aggregated = [];
         foreach ($barangayData as $barangay) {
             foreach ($fieldMapping as $programType => $field) {
@@ -1041,9 +1067,9 @@ class DataManagementController extends Controller
                 $aggregated[$programType] += $barangay->$field ?? 0;
             }
         }
-        
+
         \Log::info('Aggregated totals', $aggregated);
-        
+
         foreach ($aggregated as $programType => $count) {
             $updated = SocialWelfareProgram::updateOrCreate(
                 [

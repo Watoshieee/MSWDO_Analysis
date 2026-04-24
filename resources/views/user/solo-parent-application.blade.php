@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -93,7 +93,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="container">
             <div class="top-bar-inner">
                 <div class="brand">
-                    <img src="/images/mswd-logo.png" alt="MSWD">
+                    <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD">
                     <span>MSWDO</span>
                 </div>
                 <div class="d-flex align-items-center gap-3">

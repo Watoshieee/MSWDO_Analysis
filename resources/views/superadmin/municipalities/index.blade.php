@@ -526,7 +526,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid px-4">
             <a class="navbar-brand" href="{{ route('superadmin.dashboard') }}">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -629,6 +629,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                                     population_0_19: {{ $s->population_0_19 ?? 0 }},
                                                     population_20_59: {{ $s->population_20_59 ?? 0 }},
                                                     population_60_100: {{ $s->population_60_100 ?? 0 }},
+                                                    total_households: {{ $s->total_households ?? $municipality->total_households }},
+                                                    single_parent_count: {{ $municipality->single_parent_count ?? 0 }},
                                                 })">&#9998; Edit
                                             </button>
                                             <button class="btn-action-archive"
@@ -755,6 +757,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 </div>
                             </div>
                         </div>
+                        <input type="hidden" name="single_parent_count" id="edit_single_parent" value="0">
 
                     </form>
                 </div>
@@ -821,6 +824,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             document.getElementById('edit_p2059').value        = m.population_20_59;
             document.getElementById('edit_p60100').value       = m.population_60_100;
             document.getElementById('edit_households').value   = m.total_households;
+            document.getElementById('edit_single_parent').value = m.single_parent_count || 0;
 
             // Set year dropdown
             const yearSel = document.getElementById('edit_year');
