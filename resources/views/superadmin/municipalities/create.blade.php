@@ -135,12 +135,19 @@
                 <div class="row g-3">
                     <div class="col-md-6">
                         <label class="f-label">Municipality Name</label>
-                        <select name="name" id="municipalitySelect" class="f-input" required>
+                        <select name="name" id="municipalitySelect" class="f-input" required onchange="checkDuplicate(this)">
                             <option value="">-- Select Municipality --</option>
                             @foreach(['Alaminos','Bay','Biñan','Cabuyao','Calamba','Calauan','Cavinti','Famy','Kalayaan','Liliw','Los Baños','Luisiana','Lumban','Mabitac','Magdalena','Majayjay','Nagcarlan','Paete','Pagsanjan','Pakil','Pangil','Pila','Rizal','San Pablo','San Pedro','Santa Cruz','Santa Maria','Santa Rosa','Siniloan','Victoria'] as $mun)
-                                <option value="{{ $mun }}" {{ old('name') == $mun ? 'selected' : '' }}>{{ $mun }}</option>
+                                @php $isExisting = in_array($mun, $existingNames ?? []); @endphp
+                                <option value="{{ $mun }}"
+                                    {{ old('name') == $mun ? 'selected' : '' }}
+                                    {{ $isExisting ? 'disabled' : '' }}
+                                    data-exists="{{ $isExisting ? '1' : '0' }}">
+                                    {{ $mun }}{{ $isExisting ? ' — Already Added' : '' }}
+                                </option>
                             @endforeach
                         </select>
+                        <div id="dupWarning" style="display:none;margin-top:6px;font-size:0.8rem;color:#b91c1c;background:#fef2f2;border-radius:8px;padding:8px 12px;">⚠️ This municipality is already in the system.</div>
                         <div class="f-hint">Select a municipality from Laguna</div>
                     </div>
                     <div class="col-md-3">
@@ -201,7 +208,7 @@
 
             <!-- Actions -->
             <div class="d-flex gap-3 mb-5">
-                <button type="submit" class="btn-submit">&#10003; Create Municipality</button>
+                <button type="submit" id="submitBtn" class="btn-submit">&#10003; Create Municipality</button>
                 <a href="{{ route('superadmin.municipalities.index') }}" class="btn-cancel">Cancel</a>
             </div>
 
@@ -222,6 +229,13 @@
         document.getElementById('totalPop').addEventListener('input', function () {
             this.dataset.manual = '1';
         });
+
+        function checkDuplicate(sel) {
+            const opt = sel.options[sel.selectedIndex];
+            const isDupe = opt && opt.getAttribute('data-exists') === '1';
+            document.getElementById('dupWarning').style.display = isDupe ? 'block' : 'none';
+            document.getElementById('submitBtn').disabled = isDupe;
+        }
     </script>
 </body>
 </html>

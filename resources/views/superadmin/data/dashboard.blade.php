@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -329,7 +329,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="hero-badge">Super Admin</div>
             <h1>Data Management</h1>
             <div class="hero-divider"></div>
-            <p>Update population, household, barangay, and social program data across all municipalities.</p>
+            <p>Update population, household, and social program data across all municipalities.</p>
         </div>
     </section>
 
@@ -337,7 +337,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="container py-5">
             <div class="section-heading">Manage Data</div>
             <div class="row g-4">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <a href="{{ route('superadmin.data.municipalities') }}" class="menu-card">
                         <div class="menu-card-num">01</div>
                         <div class="menu-card-title">Municipality Data</div>
@@ -346,18 +346,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <span class="menu-card-arrow">&#8594;</span>
                     </a>
                 </div>
-                <div class="col-md-4">
-                    <a href="{{ route('superadmin.data.barangays') }}" class="menu-card">
-                        <div class="menu-card-num">02</div>
-                        <div class="menu-card-title">Barangay Data</div>
-                        <div class="menu-card-desc">Manage barangay-level household counts and population statistics per
-                            municipality.</div>
-                        <span class="menu-card-arrow">&#8594;</span>
-                    </a>
-                </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <a href="{{ route('superadmin.data.programs') }}" class="menu-card">
-                        <div class="menu-card-num">03</div>
+                        <div class="menu-card-num">02</div>
                         <div class="menu-card-title">Social Programs</div>
                         <div class="menu-card-desc">Track beneficiary counts per social welfare program across each
                             municipality.</div>

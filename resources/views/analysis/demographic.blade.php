@@ -27,7 +27,7 @@
             --primary-blue-soft: #5D7BB9;
             --secondary-yellow: #FDB913;
             --secondary-yellow-light: #FFF3D6;
-            --accent-red: #C41E24;
+            --accent-blue3: #6366f1;
             --accent-green: #28a745;
             --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
             --secondary-gradient: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
@@ -284,15 +284,15 @@
         }
 
         .stat-card.accent-yellow::before {
-            background: var(--secondary-gradient);
+            background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
         }
 
         .stat-card.accent-green::before {
-            background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+            background: linear-gradient(135deg, #0891b2 0%, #0369a1 100%);
         }
 
         .stat-card.accent-red::before {
-            background: linear-gradient(135deg, #C41E24 0%, #8B1A1A 100%);
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
         }
 
         .stat-icon {
@@ -682,8 +682,8 @@
             <h1>Population Demographics</h1>
             <div class="hero-divider"></div>
             <p>
-                Explore the population composition, gender distribution, and age structure of
-                Magdalena, Liliw, and Majayjay — three municipalities in Laguna province served by MSWDO.
+                Explore the population composition, gender distribution, and age structure
+                of municipalities in Laguna province served by MSWDO.
                 Understanding demographics helps design better-targeted social welfare programs.
             </p>
         </div>
@@ -732,12 +732,12 @@
                         <div class="stat-icon">POPULATION</div>
                         <h2>{{ number_format($totalPop) }}</h2>
                         <p class="stat-label">Total Population</p>
-                        <p class="stat-sub">Across 3 municipalities</p>
+                        <p class="stat-sub">Across {{ count($demographicData) }} municipalities</p>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="stat-card accent-yellow">
-                        <div class="stat-icon" style="background:#FFF3D6;color:#B37A00;">HOUSEHOLD</div>
+                        <div class="stat-icon" style="background:#E5EEFF;color:#1d4ed8;">HOUSEHOLD</div>
                         <h2 style="color:#2C3E8F;">{{ number_format($totalHouseholds) }}</h2>
                         <p class="stat-label">Total Households</p>
                         <p class="stat-sub">{{ $householdsPct }}% of population</p>
@@ -745,7 +745,7 @@
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="stat-card accent-green">
-                        <div class="stat-icon" style="background:#e8f5e9;color:#1e7e34;">BENEFICIARIES</div>
+                        <div class="stat-icon" style="background:#cce4f0;color:#0369a1;">BENEFICIARIES</div>
                         <h2 style="color:#2C3E8F;">{{ number_format($totalBeneficiaries) }}</h2>
                         <p class="stat-label">Total Beneficiaries</p>
                         <p class="stat-sub">{{ $beneficiariesPct }}% of population</p>
@@ -753,7 +753,7 @@
                 </div>
                 <div class="col-6 col-md-3">
                     <div class="stat-card accent-red">
-                        <div class="stat-icon" style="background:#fce8e8;color:#C41E24;">60+</div>
+                        <div class="stat-icon" style="background:#e0e7ff;color:#4f46e5;">60+</div>
                         <h2 style="color:#2C3E8F;">{{ number_format($totalSenior) }}</h2>
                         <p class="stat-label">Senior Citizens</p>
                         <p class="stat-sub">{{ $seniorPct }}% of total</p>
@@ -768,19 +768,19 @@
         <div class="container" style="background: transparent !important;">
             <h2 class="section-title">Geographic Location</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">
-                The three municipalities are located in southern Laguna, Philippines.
+                These municipalities are located in Laguna, Philippines.
                 Click on a marker to see municipality details.
             </p>
             <div class="row g-4 align-items-stretch" style="background: transparent !important;">
                 <div class="col-lg-8" style="background: transparent !important;">
                     <div id="municipalityMap"></div>
                     <div class="map-legend">
-                        <div class="legend-item"><span class="legend-dot" style="background:#2C3E8F;"></span> Magdalena
-                        </div>
-                        <div class="legend-item"><span class="legend-dot" style="background:#FDB913;"></span> Liliw
-                        </div>
-                        <div class="legend-item"><span class="legend-dot" style="background:#28a745;"></span> Majayjay
-                        </div>
+                        @foreach($demographicData as $mName => $_)
+                            <div class="legend-item">
+                                <span class="legend-dot" style="background:{{ $colors[$mName] ?? '#2C3E8F' }};"></span>
+                                {{ $mName }}
+                            </div>
+                        @endforeach
                     </div>
                 </div>
                 <div class="col-lg-4" style="background: transparent !important;">
@@ -788,7 +788,6 @@
                         <h6>Municipality Breakdown</h6>
                         @foreach($demographicData as $name => $data)
                             @php
-                                $colors = ['Magdalena' => '#2C3E8F', 'Liliw' => '#FDB913', 'Majayjay' => '#28a745'];
                                 $color = $colors[$name] ?? '#2C3E8F';
                             @endphp
                             <div class="muni-item">
@@ -804,8 +803,8 @@
                         @endforeach
                         <div style="margin-top:18px;padding-top:16px;border-top:1px solid #f1f5f9;">
                             <p style="font-size:0.82rem;color:#64748b;margin:0;line-height:1.6;">
-                                These municipalities are part of the 3rd District of Laguna and are the primary coverage
-                                areas of the MSWDO social welfare programs.
+                                These municipalities are primary coverage areas
+                                of the MSWDO social welfare programs in Laguna.
                             </p>
                         </div>
                     </div>
@@ -824,7 +823,7 @@
                 <div class="col-lg-5">
                     <div class="chart-card h-100">
                         <h5>Overall Male vs Female</h5>
-                        <p class="chart-sub">Combined across all 3 municipalities — {{ $selectedYear }}</p>
+                        <p class="chart-sub">Combined across all {{ count($demographicData) }} municipalities — {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:280px;">
                             <canvas id="genderPieChart"></canvas>
                         </div>
@@ -869,7 +868,7 @@
                 <div class="col-lg-5">
                     <div class="chart-card h-100">
                         <h5>Age Group Breakdown</h5>
-                        <p class="chart-sub">Combined across all three municipalities</p>
+                        <p class="chart-sub">Combined across all municipalities</p>
                         <div class="age-bar-row">
                             <div class="age-bar-label">
                                 <span>Youth (0–19 years)</span>
@@ -906,7 +905,7 @@
                         </div>
                         <hr style="margin:22px 0;">
                         @foreach($demographicData as $name => $data)
-                            @php $colors2 = ['Magdalena' => '#2C3E8F', 'Liliw' => '#FDB913', 'Majayjay' => '#28a745']; @endphp
+                            @php $colors2 = $colors; @endphp
                             <div style="margin-bottom:10px;">
                                 <div
                                     style="font-size:0.85rem;font-weight:700;color:{{ $colors2[$name] ?? '#333' }};margin-bottom:6px;">
@@ -1137,7 +1136,7 @@
             <h2 class="section-title">Detailed Data Table</h2>
             <div class="data-table-card">
                 <h5>Complete Demographic Breakdown</h5>
-                <p class="table-sub">Full population data across all three municipalities</p>
+                <p class="table-sub">Full population data across all {{ count($demographicData) }} municipalities</p>
                 <div class="table-responsive">
                     <table class="table table-hover mb-0">
                         <thead>
@@ -1153,11 +1152,11 @@
                         </thead>
                         <tbody>
                             @foreach($demographicData as $municipality => $data)
-                                @php $tc = ['Magdalena' => '#2C3E8F', 'Liliw' => '#FDB913', 'Majayjay' => '#28a745']; @endphp
+                                @php /* use dynamic $colors from controller */ @endphp
                                 <tr>
                                     <td>
                                         <span class="muni-badge"
-                                            style="background:{{ $tc[$municipality] ?? '#333' }};"></span>
+                                            style="background:{{ $colors[$municipality] ?? '#333' }};"></span>
                                         <strong>{{ $municipality }}</strong>
                                     </td>
                                     <td class="text-center"><strong>{{ number_format($data['total']) }}</strong></td>
@@ -1234,41 +1233,52 @@
                 maxZoom: 18
             }).addTo(map);
 
-            const municipalities = [
-                {
-                    name: 'Magdalena',
-                    searchQuery: 'Magdalena, Laguna, Philippines',
-                    lat: 14.1341, lng: 121.4536,
-                    color: '#2C3E8F',
-                    pop: {{ $demographicData['Magdalena']['total'] ?? 0 }},
-                    households: {{ $demographicData['Magdalena']['households'] ?? 0 }},
-                    beneficiaries: {{ $demographicData['Magdalena']['beneficiaries'] ?? 0 }},
-                    polygonLayer: null,
-                    bounds: null
-                },
-                {
-                    name: 'Liliw',
-                    searchQuery: 'Liliw, Laguna, Philippines',
-                    lat: 14.1291, lng: 121.4250,
-                    color: '#D4A00D',
-                    pop: {{ $demographicData['Liliw']['total'] ?? 0 }},
-                    households: {{ $demographicData['Liliw']['households'] ?? 0 }},
-                    beneficiaries: {{ $demographicData['Liliw']['beneficiaries'] ?? 0 }},
-                    polygonLayer: null,
-                    bounds: null
-                },
-                {
-                    name: 'Majayjay',
-                    searchQuery: 'Majayjay, Laguna, Philippines',
-                    lat: 14.0337, lng: 121.4714,
-                    color: '#28a745',
-                    pop: {{ $demographicData['Majayjay']['total'] ?? 0 }},
-                    households: {{ $demographicData['Majayjay']['households'] ?? 0 }},
-                    beneficiaries: {{ $demographicData['Majayjay']['beneficiaries'] ?? 0 }},
-                    polygonLayer: null,
-                    bounds: null
+            @php
+                // Known fallback coordinates for Laguna municipalities
+                $lagCoords = [
+                    'Magdalena'  => [14.1341, 121.4536],
+                    'Liliw'      => [14.1291, 121.4250],
+                    'Majayjay'   => [14.0337, 121.4714],
+                    'Nagcarlan'  => [14.0736, 121.4133],
+                    'Rizal'      => [14.1017, 121.5394],
+                    'Los Baños'  => [14.1717, 121.2408],
+                    'Bay'        => [14.1831, 121.2839],
+                    'San Pablo'  => [14.0682, 121.3223],
+                    'Alaminos'   => [14.0622, 121.2451],
+                    'Calauan'    => [14.1333, 121.3167],
+                    'Victoria'   => [14.2133, 121.2817],
+                    'Pila'       => [14.2314, 121.3656],
+                    'Santa Cruz' => [14.2817, 121.4167],
+                    'Lumban'     => [14.2731, 121.4614],
+                    'Pagsanjan'  => [14.2734, 121.4578],
+                    'Cavinti'    => [14.2422, 121.5131],
+                    'Luisiana'   => [14.1725, 121.5044],
+                    'Siniloan'   => [14.4275, 121.4458],
+                    'Famy'       => [14.4306, 121.4750],
+                    'Kalayaan'   => [14.3072, 121.5083],
+                    'Pakil'      => [14.3669, 121.4633],
+                    'Pangil'     => [14.4022, 121.4628],
+                    'Mabitac'    => [14.4289, 121.4236],
+                    'Sta. Maria' => [14.4797, 121.4194],
+                    'Cavite'     => [14.4791, 120.8980], // outside Laguna — still works
+                ];
+                $muniMapData = [];
+                foreach ($demographicData as $mName => $mData) {
+                    $coords = $lagCoords[$mName] ?? [14.17, 121.37]; // center of Laguna as default
+                    $muniMapData[] = [
+                        'name'          => $mName,
+                        'searchQuery'   => $mName . ', Laguna, Philippines',
+                        'lat'           => $coords[0],
+                        'lng'           => $coords[1],
+                        'color'         => $colors[$mName] ?? '#2C3E8F',
+                        'pop'           => $mData['total'] ?? 0,
+                        'households'    => $mData['households'] ?? 0,
+                        'beneficiaries' => $mData['beneficiaries'] ?? 0,
+                    ];
                 }
-            ];
+            @endphp
+            const municipalities = {!! json_encode($muniMapData) !!}.map(m => ({ ...m, polygonLayer: null, bounds: null }));
+
 
             // Dim all polygons except the active one
             function highlightMunicipality(active) {
@@ -1585,7 +1595,7 @@
                         datasets: [
                             { label: 'PWD', data: MUNIS.map(m => DEMO[m]?.pwd ?? 0), backgroundColor: '#2C3E8F', borderRadius: 4 },
                             { label: 'AICS', data: MUNIS.map(m => DEMO[m]?.aics ?? 0), backgroundColor: '#FDB913', borderRadius: 4 },
-                            { label: 'Solo Parent', data: MUNIS.map(m => DEMO[m]?.solo_parent ?? 0), backgroundColor: '#C41E24', borderRadius: 4 },
+                            { label: 'Solo Parent', data: MUNIS.map(m => DEMO[m]?.solo_parent ?? 0), backgroundColor: '#6366f1', borderRadius: 4 },
                             { label: '4Ps', data: MUNIS.map(m => DEMO[m]?.four_ps ?? 0), backgroundColor: '#28a745', borderRadius: 4 },
                             { label: 'Senior', data: MUNIS.map(m => DEMO[m]?.senior ?? 0), backgroundColor: '#8B5CF6', borderRadius: 4 }
                         ]

@@ -31,7 +31,14 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::post('/user/pwd-upload-requirement', [UserController::class, 'uploadPwdRequirement'])->name('user.pwd-upload-requirement');
     Route::post('/user/aics-medical-upload', [UserController::class, 'uploadAicsMedical'])->name('user.aics-medical-upload');
     Route::post('/user/aics-burial-upload', [UserController::class, 'uploadAicsBurial'])->name('user.aics-burial-upload');
+    Route::post('/user/aics-medical-upload-batch', [UserController::class, 'uploadAicsMedicalBatch'])->name('user.aics-medical-upload-batch');
+    Route::post('/user/aics-burial-upload-batch', [UserController::class, 'uploadAicsBurialBatch'])->name('user.aics-burial-upload-batch');
     Route::post('/user/mark-notifications-viewed', [UserController::class, 'markNotificationsViewed'])->name('user.mark-notifications-viewed');
+
+    // Appointment routes (Solo Parent)
+    Route::get('/user/appointments/slots', [\App\Http\Controllers\AppointmentController::class, 'getAvailableSlots'])->name('user.appointments.slots');
+    Route::post('/user/appointments', [\App\Http\Controllers\AppointmentController::class, 'store'])->name('user.appointments.store');
+    Route::post('/user/appointments/{id}/cancel', [\App\Http\Controllers\AppointmentController::class, 'cancel'])->name('user.appointments.cancel');
 
     // Chat routes
     Route::get('/chat/admins', [App\Http\Controllers\ChatController::class, 'getAdmins'])->name('chat.admins');
@@ -227,6 +234,24 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/requirements/{id}', [App\Http\Controllers\AdminController::class, 'viewRequirement'])->name('view-requirement');
     Route::post('/requirements/{id}/status', [App\Http\Controllers\AdminController::class, 'updateFileStatus'])->name('update-file-status');
 
+    // Archive / Restore / Force-delete
+    Route::delete('/applications/{id}/archive', [App\Http\Controllers\AdminController::class, 'archiveApplication'])->name('applications.archive');
+    Route::patch('/applications/{id}/restore', [App\Http\Controllers\AdminController::class, 'restoreApplication'])->name('applications.restore');
+    Route::delete('/applications/{id}/force-delete', [App\Http\Controllers\AdminController::class, 'forceDeleteApplication'])->name('applications.force-delete');
+    Route::delete('/applications/{id}/direct-delete', [App\Http\Controllers\AdminController::class, 'directDeleteApplication'])->name('applications.direct-delete');
+    Route::post('/applications/{id}/mark-id-ready', [App\Http\Controllers\AdminController::class, 'markIdReady'])->name('applications.mark-id-ready');
+
+    // Admin Appointment routes (Solo Parent)
+    Route::get('/appointments', [App\Http\Controllers\Admin\AppointmentController::class, 'index'])->name('admin.appointments.index');
+    Route::post('/appointments/{id}/confirm', [App\Http\Controllers\Admin\AppointmentController::class, 'confirm'])->name('admin.appointments.confirm');
+    Route::post('/appointments/{id}/validate', [App\Http\Controllers\Admin\AppointmentController::class, 'validate'])->name('admin.appointments.validate');
+    Route::post('/appointments/{id}/reject', [App\Http\Controllers\Admin\AppointmentController::class, 'reject'])->name('admin.appointments.reject');
+    // Appointment archive
+    Route::delete('/appointments/{id}/archive', [App\Http\Controllers\Admin\AppointmentController::class, 'archive'])->name('admin.appointments.archive');
+    Route::patch('/appointments/{id}/restore', [App\Http\Controllers\Admin\AppointmentController::class, 'restore'])->name('admin.appointments.restore');
+    Route::delete('/appointments/{id}/force-delete', [App\Http\Controllers\Admin\AppointmentController::class, 'forceDelete'])->name('admin.appointments.force-delete');
+    Route::get('/appointments/archived', [App\Http\Controllers\Admin\AppointmentController::class, 'archived'])->name('admin.appointments.archived');
+
     // Chat routes for admin
     Route::get('/chat/users', [App\Http\Controllers\ChatController::class, 'getUsers'])->name('chat.users');
     Route::get('/chat/messages/{userId}', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.messages');
@@ -264,6 +289,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::delete('/yearly/{id}/force-delete', [App\Http\Controllers\Admin\DataManagementController::class, 'forceDeleteYearlySummary'])->name('yearly.forceDelete');
         }
     );
+
+    // Announcement Management Routes
+    Route::prefix('announcements')->name('announcements.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\AnnouncementController::class, 'index'])->name('index');
+        Route::post('/', [App\Http\Controllers\Admin\AnnouncementController::class, 'store'])->name('store');
+        Route::patch('/{announcement}/deactivate', [App\Http\Controllers\Admin\AnnouncementController::class, 'deactivate'])->name('deactivate');
+        Route::patch('/{announcement}/activate', [App\Http\Controllers\Admin\AnnouncementController::class, 'activate'])->name('activate');
+        Route::delete('/{announcement}', [App\Http\Controllers\Admin\AnnouncementController::class, 'destroy'])->name('destroy');
+    });
+
+    // Admin notification bell - mark viewed
+    Route::post('/mark-notifications-viewed', [App\Http\Controllers\AdminController::class, 'markNotificationsViewed'])->name('mark-notifications-viewed');
 
     // Yearly Comparison Routes
     Route::prefix('yearly')->name('yearly.')->group(

@@ -494,6 +494,7 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a>
                     </li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
                 </ul>
                 <div class="d-flex">
                     @auth

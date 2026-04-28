@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title data-en="Solo Parent ID Guide – MSWDO" data-tl="Gabay sa Solo Parent ID – MSWDO">Solo Parent ID Guide – MSWDO</title>
+    <title data-en="Solo Parent ID Guide � MSWDO" data-tl="Gabay sa Solo Parent ID � MSWDO">Solo Parent ID Guide � MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -102,7 +102,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <button class="lang-btn"        data-lang="tl" onclick="setLang('tl')">TL</button>
                     </div>
                     <a href="{{ route('user.dashboard') }}" class="back-btn">
-                        ← <span data-en="Back to Dashboard" data-tl="Bumalik sa Dashboard">Back to Dashboard</span>
+                        ? <span data-en="Back to Dashboard" data-tl="Bumalik sa Dashboard">Back to Dashboard</span>
                     </a>
                 </div>
             </div>
@@ -117,14 +117,215 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <h1 data-en="Solo Parent ID Application Guide" data-tl="Gabay sa Pag-apply ng Solo Parent ID">Solo Parent ID Application Guide</h1>
                 <div class="hero-divider"></div>
                 <p class="hero-sub"
-                   data-en="A complete, step-by-step guide to applying for a Solo Parent ID through the MSWDO — from scheduling an appointment to receiving your ID."
-                   data-tl="Isang kumpletong hakbang-hakbang na gabay sa pag-apply ng Solo Parent ID sa MSWDO — mula sa pag-schedule ng appointment hanggang sa pagtanggap ng iyong ID.">
-                    A complete, step-by-step guide to applying for a Solo Parent ID through the MSWDO — from scheduling an appointment to receiving your ID.
+                   data-en="A complete, step-by-step guide to applying for a Solo Parent ID through the MSWDO � from scheduling an appointment to receiving your ID."
+                   data-tl="Isang kumpletong hakbang-hakbang na gabay sa pag-apply ng Solo Parent ID sa MSWDO � mula sa pag-schedule ng appointment hanggang sa pagtanggap ng iyong ID.">
+                    A complete, step-by-step guide to applying for a Solo Parent ID through the MSWDO � from scheduling an appointment to receiving your ID.
                 </p>
             </div>
         </div>
     </section>
 
+    {{-- ═══════════════════════════════════════════════════════════════════════
+         APPOINTMENT BOOKING SECTION
+    ════════════════════════════════════════════════════════════════════════ --}}
+    <div class="container" style="padding-top:32px;">
+
+        {{-- Flash messages --}}
+        @if(session('appt_success'))
+        <div style="background:#d4edda;border-left:4px solid #28a745;border-radius:12px;padding:14px 20px;margin-bottom:16px;font-size:.9rem;color:#155724;font-weight:600;">
+            ✅ {{ session('appt_success') }}
+        </div>
+        @endif
+        @if(session('appt_error'))
+        <div style="background:#f8d7da;border-left:4px solid #dc3545;border-radius:12px;padding:14px 20px;margin-bottom:16px;font-size:.9rem;color:#721c24;font-weight:600;">
+            ⚠️ {{ session('appt_error') }}
+        </div>
+        @endif
+
+        {{-- ── ACTIVE APPOINTMENT CARD ── --}}
+        @if($appointment && in_array($appointment->status, ['pending','confirmed']))
+        <div style="background:white;border-radius:20px;border:1px solid #c7d2fe;box-shadow:0 4px 20px rgba(44,62,143,.08);overflow:hidden;margin-bottom:24px;">
+            <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:18px 26px;display:flex;align-items:center;gap:14px;">
+                <div style="width:42px;height:42px;background:rgba(253,185,19,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📅</div>
+                <div style="flex:1;">
+                    <div style="font-weight:800;font-size:1rem;">Your Appointment</div>
+                    <div style="opacity:.8;font-size:.8rem;margin-top:2px;">Solo Parent ID Application</div>
+                </div>
+                {!! $appointment->status_badge !!}
+            </div>
+            <div style="padding:20px 26px;">
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:16px;">
+                    <div style="background:#f0f4ff;border-radius:10px;padding:12px 14px;">
+                        <div style="font-size:.72rem;color:#64748b;font-weight:600;margin-bottom:3px;">DATE</div>
+                        <div style="font-weight:800;color:#1e293b;font-size:.9rem;">{{ $appointment->formatted_date }}</div>
+                    </div>
+                    <div style="background:#f0f4ff;border-radius:10px;padding:12px 14px;">
+                        <div style="font-size:.72rem;color:#64748b;font-weight:600;margin-bottom:3px;">TIME</div>
+                        <div style="font-weight:800;color:#1e293b;font-size:.9rem;">{{ $appointment->formatted_time }}</div>
+                    </div>
+                    <div style="background:#f0f4ff;border-radius:10px;padding:12px 14px;">
+                        <div style="font-size:.72rem;color:#64748b;font-weight:600;margin-bottom:3px;">TYPE</div>
+                        <div style="font-weight:800;color:#1e293b;font-size:.9rem;">{{ $appointment->interview_label }}</div>
+                    </div>
+                </div>
+                @if($appointment->admin_notes)
+                <div style="background:#FFF3D6;border-left:3px solid #FDB913;border-radius:8px;padding:10px 14px;font-size:.84rem;color:#856404;margin-bottom:14px;">
+                    <strong>Admin Note:</strong> {{ $appointment->admin_notes }}
+                </div>
+                @endif
+                @if($appointment->appointment_date->isTomorrow())
+                <div style="background:linear-gradient(135deg,#fff3cd,#ffeeba);border:2px solid #FDB913;border-radius:10px;padding:12px 16px;font-size:.86rem;color:#856404;font-weight:700;margin-bottom:14px;">
+                    ⏰ <strong>Reminder:</strong> Your appointment is TOMORROW! Please be ready.
+                </div>
+                @endif
+                <form method="POST" action="{{ route('user.appointments.cancel', $appointment->id) }}" onsubmit="return confirm('Cancel this appointment?')">
+                    @csrf
+                    <button type="submit" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;cursor:pointer;">
+                        🚫 Cancel Appointment
+                    </button>
+                </form>
+            </div>
+        </div>
+        @else
+
+        {{-- ── BOOKING FORM ── --}}
+        <div style="background:white;border-radius:20px;border:1px solid #c7d2fe;box-shadow:0 4px 20px rgba(44,62,143,.08);overflow:hidden;margin-bottom:24px;" id="bookingCard">
+            <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:20px 26px;display:flex;align-items:center;gap:14px;">
+                <div style="width:42px;height:42px;background:rgba(253,185,19,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📅</div>
+                <div>
+                    <div style="font-weight:800;font-size:1rem;">Schedule an Appointment</div>
+                    <div style="opacity:.8;font-size:.8rem;margin-top:2px;">Step 1 &mdash; Book your interview slot with the MSWDO</div>
+                </div>
+            </div>
+            <div style="padding:24px 26px;">
+                <div style="background:#eef2ff;border-radius:10px;padding:12px 16px;font-size:.83rem;color:#4338ca;font-weight:600;margin-bottom:20px;">
+                    ℹ️ Office hours: <strong>Monday – Friday, 8:00 AM – 5:00 PM</strong> (lunch 12:00–1:00 PM excluded) &bull; Max 5 appointments per time slot.
+                </div>
+
+                <form id="apptForm" method="POST" action="{{ route('user.appointments.store') }}">
+                    @csrf
+                    <div class="row g-3">
+                        {{-- Date picker --}}
+                        <div class="col-md-4">
+                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📆 Select Date <span style="color:red">*</span></label>
+                            <input type="date" id="apptDate" name="appointment_date"
+                                   min="{{ $minDate }}" max="{{ $maxDate }}"
+                                   class="form-control"
+                                   style="border-radius:10px;border:1.5px solid #c7d2fe;font-weight:600;font-size:.88rem;"
+                                   required>
+                            <div style="font-size:.7rem;color:#94a3b8;margin-top:4px;">Weekdays only (Mon–Fri)</div>
+                        </div>
+
+                        {{-- Time slot --}}
+                        <div class="col-md-4">
+                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">⏰ Select Time Slot <span style="color:red">*</span></label>
+                            <select id="apptTime" name="appointment_time" class="form-control"
+                                    style="border-radius:10px;border:1.5px solid #c7d2fe;font-weight:600;font-size:.88rem;" required disabled>
+                                <option value="">Select date first</option>
+                            </select>
+                            <div id="slotMsg" style="font-size:.7rem;color:#94a3b8;margin-top:4px;"></div>
+                        </div>
+
+                        {{-- Interview type --}}
+                        <div class="col-md-4">
+                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">💬 Interview Type <span style="color:red">*</span></label>
+                            <select name="interview_type" class="form-control"
+                                    style="border-radius:10px;border:1.5px solid #c7d2fe;font-weight:600;font-size:.88rem;" required>
+                                <option value="face_to_face">🏢 Face-to-Face</option>
+                                <option value="online">📱 Online (via phone call)</option>
+                            </select>
+                        </div>
+
+                        {{-- Notes --}}
+                        <div class="col-12">
+                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📝 Additional Notes (optional)</label>
+                            <textarea name="user_notes" rows="2" class="form-control"
+                                      placeholder="Any concerns or special requests…"
+                                      style="border-radius:10px;border:1.5px solid #c7d2fe;font-size:.85rem;"
+                                      maxlength="500"></textarea>
+                        </div>
+
+                        {{-- Submit --}}
+                        <div class="col-12">
+                            <button type="submit" id="apptSubmitBtn"
+                                    style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:12px;padding:12px 32px;font-weight:800;font-size:.92rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:opacity .2s;">
+                                📅 Book Appointment
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        @if($appointment && $appointment->status === 'rejected')
+        <div style="background:#fee2e2;border-left:4px solid #dc3545;border-radius:12px;padding:14px 18px;font-size:.85rem;color:#991b1b;font-weight:600;margin-bottom:16px;">
+            ❌ Your previous appointment was <strong>rejected</strong>. You may book a new slot above.
+            @if($appointment->admin_notes)<br>Admin reason: {{ $appointment->admin_notes }}@endif
+        </div>
+        @endif
+
+        @endif {{-- end active appointment check --}}
+    </div>
+
+    {{-- AJAX: load time slots when date changes --}}
+    <script>
+    (function(){
+        const dateInput  = document.getElementById('apptDate');
+        const timeSelect = document.getElementById('apptTime');
+        const slotMsg    = document.getElementById('slotMsg');
+        if (!dateInput) return;
+
+        dateInput.addEventListener('change', function(){
+            const date = this.value;
+            if (!date) return;
+
+            // Disable weekend selection via JS
+            const d = new Date(date + 'T00:00:00');
+            if (d.getDay() === 0 || d.getDay() === 6) {
+                timeSelect.innerHTML = '<option value="">Weekdays only</option>';
+                timeSelect.disabled = true;
+                slotMsg.textContent = '⚠️ Please select a weekday (Mon–Fri).';
+                slotMsg.style.color = '#dc3545';
+                return;
+            }
+
+            timeSelect.disabled = true;
+            timeSelect.innerHTML = '<option value="">Loading slots…</option>';
+            slotMsg.textContent  = '';
+
+            fetch(`/user/appointments/slots?date=${date}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(slots => {
+                timeSelect.innerHTML = '<option value="">Choose a time</option>';
+                let available = 0;
+                slots.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.time;
+                    if (s.full) {
+                        opt.textContent = `${s.label}  — FULL`;
+                        opt.disabled = true;
+                        opt.style.color = '#9ca3af';
+                    } else {
+                        opt.textContent = `${s.label}  (${s.remaining} slot${s.remaining !== 1 ? 's' : ''} left)`;
+                        available++;
+                    }
+                    timeSelect.appendChild(opt);
+                });
+                timeSelect.disabled = false;
+                slotMsg.textContent = available > 0
+                    ? `✅ ${available} time slot${available > 1 ? 's' : ''} available`
+                    : '⚠️ No slots available on this date. Please pick another day.';
+                slotMsg.style.color = available > 0 ? '#16a34a' : '#dc3545';
+            })
+            .catch(() => {
+                timeSelect.innerHTML = '<option value="">Error loading slots</option>';
+                slotMsg.textContent = 'Failed to load slots. Please try again.';
+            });
+        });
+    })();
+    </script>
     <!-- MAIN CONTENT -->
     <div class="flex-grow-1 py-5">
         <div class="container">
@@ -135,7 +336,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">📋</div>
+                            <div class="sec-icon">??</div>
                             <div>
                                 <h4 data-en="How to Apply for a Solo Parent ID" data-tl="Paano Mag-apply ng Solo Parent ID">How to Apply for a Solo Parent ID</h4>
                                 <p data-en="Follow these 7 steps to complete your application" data-tl="Sundin ang 7 hakbang na ito para makumpleto ang iyong aplikasyon">Follow these 7 steps to complete your application</p>
@@ -164,7 +365,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         The admin will review your request and send a confirmation notification through the website and your registered email.
                                     </div>
                                     <div class="step-note">
-                                        📧 <span data-en="Make sure your registered email is active and accessible." data-tl="Siguraduhing aktibo at naa-access ang iyong nakarehistrong email.">Make sure your registered email is active and accessible.</span>
+                                        ?? <span data-en="Make sure your registered email is active and accessible." data-tl="Siguraduhing aktibo at naa-access ang iyong nakarehistrong email.">Make sure your registered email is active and accessible.</span>
                                     </div>
                                 </div>
                             </div>
@@ -179,7 +380,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         Go to the MSWDO office for a face-to-face interview if you are nearby. Otherwise, attend the scheduled online interview.
                                     </div>
                                     <div class="step-note">
-                                        📍 <span data-en="MSWDO Office — Municipal Hall, Ground Floor, Monday–Friday 8:00 AM–5:00 PM." data-tl="Opisina ng MSWDO — Municipal Hall, Ground Floor, Lunes–Biyernes 8:00 AM–5:00 PM.">MSWDO Office — Municipal Hall, Ground Floor, Monday–Friday 8:00 AM–5:00 PM.</span>
+                                        ?? <span data-en="MSWDO Office � Municipal Hall, Ground Floor, Monday�Friday 8:00 AM�5:00 PM." data-tl="Opisina ng MSWDO � Municipal Hall, Ground Floor, Lunes�Biyernes 8:00 AM�5:00 PM.">MSWDO Office � Municipal Hall, Ground Floor, Monday�Friday 8:00 AM�5:00 PM.</span>
                                     </div>
                                 </div>
                             </div>
@@ -218,7 +419,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         Prepare and submit the hard copies of your required documents to the MSWDO office.
                                     </div>
                                     <div class="step-note">
-                                        💡 <span data-en="Bring original copies and at least one photocopy of each document for verification." data-tl="Magdala ng mga orihinal na kopya at hindi bababa sa isang photocopy ng bawat dokumento para sa pag-verify.">Bring original copies and at least one photocopy of each document for verification.</span>
+                                        ?? <span data-en="Bring original copies and at least one photocopy of each document for verification." data-tl="Magdala ng mga orihinal na kopya at hindi bababa sa isang photocopy ng bawat dokumento para sa pag-verify.">Bring original copies and at least one photocopy of each document for verification.</span>
                                     </div>
                                 </div>
                             </div>
@@ -233,7 +434,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         Your Solo Parent ID will be processed by the MSWDO. You will be notified once it is ready for release.
                                     </div>
                                     <div class="step-note">
-                                        🎉 <span data-en="You will receive a notification via email and the website when your ID is ready for pickup." data-tl="Makakatanggap ka ng abiso sa pamamagitan ng email at website kapag handa na ang iyong ID para makuha.">You will receive a notification via email and the website when your ID is ready for pickup.</span>
+                                        ?? <span data-en="You will receive a notification via email and the website when your ID is ready for pickup." data-tl="Makakatanggap ka ng abiso sa pamamagitan ng email at website kapag handa na ang iyong ID para makuha.">You will receive a notification via email and the website when your ID is ready for pickup.</span>
                                     </div>
                                 </div>
                             </div>
@@ -246,10 +447,207 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <!-- RIGHT: SIDEBAR -->
                 <div class="col-lg-5">
 
-                    <!-- Requirements (Placeholder) -->
+                    <!-- Requirements Section -->
+                    @if(isset($appointment) && $appointment && $appointment->status === 'validated' && isset($soloParentApplication) && $soloParentApplication)
+                    {{-- ✅ VALIDATED: Show real requirements + upload form --}}
+                    <div class="section-card">
+                        <div class="section-header" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);">
+                            <div class="sec-icon" style="background:rgba(255,255,255,.2);">🏆</div>
+                            <div>
+                                <h4>Required Documents</h4>
+                                <p>You are eligible! Please upload the following documents.</p>
+                            </div>
+                        </div>
+                        <div class="section-body">
+
+                            {{-- Eligibility Banner --}}
+                            <div style="background:linear-gradient(135deg,#e0e7ff,#c7d2fe);border-radius:14px;border:1.5px solid #a5b4fc;padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;gap:14px;">
+                                <span style="font-size:1.8rem;">🎉</span>
+                                <div>
+                                    <div style="font-weight:800;color:#1e3a8a;font-size:1rem;">Congratulations! You passed the eligibility assessment.</div>
+                                    <div style="font-size:.85rem;color:#3730a3;margin-top:2px;">Please upload all required documents below to complete your Solo Parent ID application.</div>
+                                </div>
+                            </div>
+
+                            {{-- Overall Status --}}
+                            @php
+                                $fm = $soloParentApplication->fileMonitoring;
+                                $uploads = $fm ? $fm->fileUploads : collect();
+                                $overallStatus = $fm ? $fm->overall_status : 'pending';
+                            @endphp
+                            @if($overallStatus === 'approved')
+                            <div style="background:#dbeafe;border-left:4px solid #2C3E8F;border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:.87rem;color:#1e3a8a;font-weight:700;">
+                                ✅ All your documents have been approved! Your Solo Parent ID is being processed.
+                            </div>
+                            @elseif($overallStatus === 'rejected')
+                            <div style="background:#f8d7da;border-left:4px solid #dc3545;border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:.87rem;color:#721c24;font-weight:700;">
+                                ❌ Some documents need attention. Please resubmit the declined documents below.
+                            </div>
+                            @elseif($overallStatus === 'in_review')
+                            <div style="background:#e8f4fd;border-left:4px solid #2196F3;border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:.87rem;color:#0d47a1;font-weight:700;">
+                                🔍 Your documents are currently under review. We will notify you of the results.
+                            </div>
+                            @endif
+
+                            {{-- Requirements List + Uploaded Files --}}
+                            @php
+                                $soloReqs = [
+                                    'PSA Birth Certificate of Child/Children',
+                                    'Barangay Certificate (stating you are a solo parent)',
+                                    'Valid Government-Issued ID',
+                                    'CENOMAR or PSA Marriage Certificate',
+                                    'Death Certificate of Spouse (if widowed) / Police Report (if abandoned)',
+                                    '2x2 ID Photo (recent, white background)',
+                                ];
+                                $uploadedByName = $uploads->keyBy('requirement_name');
+                            @endphp
+
+                            <div style="margin-bottom:20px;">
+                            @foreach($soloReqs as $req)
+                                @php
+                                    $uploaded = $uploadedByName->get($req);
+                                @endphp
+                                <div class="solo-req-row" style="background:white;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                                    <div style="display:flex;align-items:center;gap:10px;flex:1;">
+                                        @if($uploaded && $uploaded->status === 'approved')
+                                            <span style="color:#28a745;font-size:1.1rem;">✅</span>
+                                        @elseif($uploaded && $uploaded->status === 'rejected')
+                                            <span style="color:#dc3545;font-size:1.1rem;">❌</span>
+                                        @elseif($uploaded)
+                                            <span style="color:#ffc107;font-size:1.1rem;">⏳</span>
+                                        @else
+                                            <span style="color:#ced4da;font-size:1.1rem;">📄</span>
+                                        @endif
+                                        <div>
+                                            <div style="font-weight:700;font-size:.88rem;color:#1e293b;">{{ $req }}</div>
+                                            @if($uploaded && $uploaded->admin_remarks)
+                                            <div style="font-size:.78rem;color:#dc3545;margin-top:2px;">Remark: {{ $uploaded->admin_remarks }}</div>
+                                            @endif
+                                        </div>
+                                    </div>
+                                    @if($uploaded && in_array($uploaded->status, ['pending','approved']))
+                                        <span style="background:#e2e8f0;color:#64748b;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Uploaded</span>
+                                    @elseif($uploaded && $uploaded->status === 'rejected')
+                                        {{-- Re-upload form --}}
+                                        <form action="{{ route('applications.requirement.upload', $soloParentApplication->id) }}" method="POST" enctype="multipart/form-data" data-upload-type="single" style="display:flex;align-items:center;gap:8px;">
+                                            @csrf
+                                            <input type="hidden" name="requirement_name" value="{{ $req }}">
+                                            <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size:.78rem;max-width:180px;">
+                                            <button type="submit" style="background:#2C3E8F;color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">🔄 Resubmit</button>
+                                        </form>
+                                    @else
+                                        {{-- Upload form --}}
+                                        <form action="{{ route('applications.requirement.upload', $soloParentApplication->id) }}" method="POST" enctype="multipart/form-data" data-upload-type="single" style="display:flex;align-items:center;gap:8px;">
+                                            @csrf
+                                            <input type="hidden" name="requirement_name" value="{{ $req }}">
+                                            <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size:.78rem;max-width:180px;">
+                                            <button type="submit" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">📤 Upload</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            @endforeach
+                            </div>
+
+                            {{-- Upload All Button --}}
+                            <div id="uploadAllBar" style="background:#f0f4ff;border:1.5px solid #c7d2fe;border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+                                <div>
+                                    <div style="font-weight:700;color:#1e3a8a;font-size:.9rem;">📦 Upload All Selected Files</div>
+                                    <div id="uploadAllStatus" style="font-size:.8rem;color:#64748b;margin-top:2px;">Select files in the rows above, then click Upload All to submit them all at once.</div>
+                                </div>
+                                <button type="button" id="uploadAllBtn" onclick="uploadAllFiles()"
+                                    style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:10px;padding:10px 24px;font-size:.88rem;font-weight:700;cursor:pointer;white-space:nowrap;">
+                                    📤 Upload All
+                                </button>
+                            </div>
+
+                            <script>
+                            function uploadAllFiles() {
+                                // Collect all file inputs inside individual upload forms (not resubmit forms)
+                                const rows = document.querySelectorAll('.solo-req-row');
+                                const toUpload = [];
+                                rows.forEach(row => {
+                                    const input = row.querySelector('input[type="file"][name="file"]');
+                                    const reqInput = row.querySelector('input[name="requirement_name"]');
+                                    const form = row.querySelector('form[data-upload-type="single"]');
+                                    if (input && input.files.length > 0 && reqInput && form) {
+                                        toUpload.push({ file: input.files[0], reqName: reqInput.value, action: form.action });
+                                    }
+                                });
+
+                                if (toUpload.length === 0) {
+                                    alert('⚠️ Please select at least one file in the rows below before clicking Upload All.');
+                                    return;
+                                }
+
+                                const btn = document.getElementById('uploadAllBtn');
+                                const status = document.getElementById('uploadAllStatus');
+                                btn.disabled = true;
+                                btn.textContent = '⏳ Uploading...';
+
+                                const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
+                                let done = 0, failed = 0;
+
+                                const uploadNext = (index) => {
+                                    if (index >= toUpload.length) {
+                                        btn.disabled = false;
+                                        btn.textContent = '📤 Upload All';
+                                        if (failed === 0) {
+                                            status.textContent = '✅ ' + done + ' file(s) uploaded successfully! Refreshing...';
+                                            setTimeout(() => location.reload(), 1200);
+                                        } else {
+                                            status.textContent = '✅ ' + done + ' uploaded, ❌ ' + failed + ' failed. Check individual rows.';
+                                        }
+                                        return;
+                                    }
+
+                                    const { file, reqName, action } = toUpload[index];
+                                    status.textContent = '⏳ Uploading ' + (index + 1) + ' of ' + toUpload.length + ': ' + file.name;
+
+                                    const fd = new FormData();
+                                    fd.append('_token', csrfToken);
+                                    fd.append('requirement_name', reqName);
+                                    fd.append('file', file);
+
+                                    fetch(action, { method: 'POST', body: fd })
+                                        .then(r => { if (r.ok || r.redirected) { done++; } else { failed++; } })
+                                        .catch(() => { failed++; })
+                                        .finally(() => uploadNext(index + 1));
+                                };
+
+                                uploadNext(0);
+                            }
+                            </script>
+
+                            <div style="background:#fff8e1;border-left:4px solid #FDB913;border-radius:8px;padding:12px 16px;font-size:.83rem;color:#856404;line-height:1.6;">
+                                ⚠️ <strong>Tip:</strong> Upload clear, readable scanned copies or photos. Accepted formats: PDF, JPG, PNG. Max size: 5MB per file.
+                            </div>
+                        </div>
+                    </div>
+
+                    @elseif(isset($appointment) && $appointment && $appointment->status === 'confirmed')
+                    {{-- ⏳ CONFIRMED but not yet validated --}}
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">📄</div>
+                            <div class="sec-icon">⏳</div>
+                            <div>
+                                <h4>Required Documents</h4>
+                                <p>Your appointment has been confirmed. Waiting for eligibility assessment.</p>
+                            </div>
+                        </div>
+                        <div class="section-body">
+                            <div style="text-align:center;padding:32px 20px;">
+                                <div style="font-size:2.5rem;margin-bottom:12px;">🔍</div>
+                                <div style="font-weight:700;color:#1e293b;margin-bottom:8px;">Eligibility Review In Progress</div>
+                                <div style="font-size:.87rem;color:#64748b;line-height:1.7;">Your appointment has been confirmed. The MSWDO officer will review your eligibility during your interview. Once validated, the requirements list will appear here and you will be notified by email.</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    @else
+                    {{-- 📋 DEFAULT: Coming Soon placeholder --}}
+                    <div class="section-card">
+                        <div class="section-header">
+                            <div class="sec-icon">??</div>
                             <div>
                                 <h4 data-en="Required Documents" data-tl="Mga Kinakailangang Dokumento">Required Documents</h4>
                                 <p data-en="Documents needed for your Solo Parent ID application" data-tl="Mga dokumentong kailangan para sa iyong aplikasyon">Documents needed for your Solo Parent ID application</p>
@@ -257,31 +655,26 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </div>
                         <div class="section-body">
                             <div class="info-card placeholder" style="padding:32px 22px;">
-                                <div style="font-size:2.5rem;margin-bottom:12px;">📋</div>
+                                <div style="font-size:2.5rem;margin-bottom:12px;">??</div>
                                 <div style="font-weight:700;color:#6c757d;font-size:.95rem;margin-bottom:8px;"
                                      data-en="Requirements List Coming Soon"
                                      data-tl="Listahan ng mga Kinakailangan — Malapit na">
                                     Requirements List Coming Soon
                                 </div>
-                                <div style="font-size:.83rem;color:#94a3b8;line-height:1.6;"
-                                     data-en="The list of required documents for the Solo Parent ID is being finalized. Once available, it will be displayed here and sent to eligible applicants via email."
-                                     data-tl="Ang listahan ng mga kinakailangang dokumento para sa Solo Parent ID ay kasalukuyang pinipinish. Kapag mayroon na, ito ay ipapakita dito at ipapadala sa mga karapat-dapat na aplikante sa pamamagitan ng email.">
+                                <div style="font-size:.85rem;color:#94a3b8;line-height:1.7;"
+                                     data-en="The list of required documents is being finalized. Once available, it will be displayed here and sent to eligible applicants via email after the interview."
+                                     data-tl="Ang listahan ng mga kinakailangang dokumento ay pinaplano pa. Kapag available na, ipapakita ito dito at ipapadala sa mga karapat-dapat na aplikante sa pamamagitan ng email pagkatapos ng panayam.">
                                     The list of required documents is being finalized. Once available, it will be displayed here and sent to eligible applicants via email after the interview.
-                                </div>
-                            </div>
-                            <div class="info-card yellow" style="margin-top:0;">
-                                <div class="ic-title">📧 <span data-en="How will I know?" data-tl="Paano ako malalaman?">How will I know?</span></div>
-                                <div class="ic-body" data-en="After your eligibility interview, the MSWDO will send the complete list of required documents directly to your registered email address." data-tl="Pagkatapos ng iyong eligibility interview, ipapadala ng MSWDO ang kumpletong listahan ng mga kinakailangang dokumento sa iyong nakarehistrong email address.">
-                                    After your eligibility interview, the MSWDO will send the complete list of required documents directly to your registered email address.
                                 </div>
                             </div>
                         </div>
                     </div>
+                    @endif
 
                     <!-- MSWDO Office Details -->
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">🏢</div>
+                            <div class="sec-icon">??</div>
                             <div>
                                 <h4 data-en="MSWDO Office Details" data-tl="Detalye ng Opisina ng MSWDO">MSWDO Office Details</h4>
                                 <p data-en="Where to personally submit your requirements" data-tl="Saan personal na magsumite ng mga kinakailangan">Where to personally submit your requirements</p>
@@ -289,19 +682,19 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </div>
                         <div class="section-body">
                             <div class="info-card">
-                                <div class="ic-title">📍 <span data-en="Location" data-tl="Lokasyon">Location</span></div>
+                                <div class="ic-title">?? <span data-en="Location" data-tl="Lokasyon">Location</span></div>
                                 <div class="ic-body" data-en="Municipal Social Welfare and Development Office, Municipal Hall, Ground Floor" data-tl="Municipal Social Welfare and Development Office, Municipal Hall, Ground Floor">
                                     Municipal Social Welfare and Development Office, Municipal Hall, Ground Floor
                                 </div>
                             </div>
                             <div class="info-card">
-                                <div class="ic-title">🕐 <span data-en="Office Hours" data-tl="Oras ng Opisina">Office Hours</span></div>
-                                <div class="ic-body" data-en="Monday – Friday · 8:00 AM – 5:00 PM (Closed on Holidays)" data-tl="Lunes – Biyernes · 8:00 AM – 5:00 PM (Sarado sa mga Pista Opisyal)">
-                                    Monday – Friday · 8:00 AM – 5:00 PM <br><small style="color:#94a3b8;">(Closed on Holidays)</small>
+                                <div class="ic-title">?? <span data-en="Office Hours" data-tl="Oras ng Opisina">Office Hours</span></div>
+                                <div class="ic-body" data-en="Monday � Friday � 8:00 AM � 5:00 PM (Closed on Holidays)" data-tl="Lunes � Biyernes � 8:00 AM � 5:00 PM (Sarado sa mga Pista Opisyal)">
+                                    Monday � Friday � 8:00 AM � 5:00 PM <br><small style="color:#94a3b8;">(Closed on Holidays)</small>
                                 </div>
                             </div>
                             <div class="info-card yellow">
-                                <div class="ic-title">💬 <span data-en="Interview Options" data-tl="Mga Opsyon sa Panayam">Interview Options</span></div>
+                                <div class="ic-title">?? <span data-en="Interview Options" data-tl="Mga Opsyon sa Panayam">Interview Options</span></div>
                                 <div class="ic-body">
                                     <ul style="margin:0;padding-left:18px;line-height:2;">
                                         <li data-en="Face-to-face at the MSWDO office" data-tl="Harapan sa opisina ng MSWDO">Face-to-face at the MSWDO office</li>
@@ -325,14 +718,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                    style="background:var(--secondary-yellow);color:var(--purple);border-radius:12px;padding:13px 30px;font-weight:800;font-size:.92rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:all .3s;"
                    onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(253,185,19,.5)'"
                    onmouseout="this.style.transform='';this.style.boxShadow=''">
-                    🏠 <span data-en="Go to Dashboard" data-tl="Pumunta sa Dashboard">Go to Dashboard</span>
+                    ?? <span data-en="Go to Dashboard" data-tl="Pumunta sa Dashboard">Go to Dashboard</span>
                 </a>
             </div>
 
             <!-- Back link -->
             <div class="text-center py-2">
                 <a href="{{ route('user.dashboard') }}" class="back-btn d-inline-flex" style="font-size:.92rem;padding:12px 28px;background:transparent;border-color:rgba(124,58,237,.4);color:var(--purple);">
-                    ← <span data-en="Return to Dashboard" data-tl="Bumalik sa Dashboard">Return to Dashboard</span>
+                    ? <span data-en="Return to Dashboard" data-tl="Bumalik sa Dashboard">Return to Dashboard</span>
                 </a>
             </div>
 
@@ -343,6 +736,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
+    @include('components.chat-modal')
+    @include('components.chatbot-widget')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let currentLang = 'en';

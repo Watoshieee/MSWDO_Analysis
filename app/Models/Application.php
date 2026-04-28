@@ -3,10 +3,13 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Application extends Model
 {
-    // Disable timestamps since your table doesn't have created_at/updated_at
+    use SoftDeletes;
+
+    // timestamps disabled — table has no created_at/updated_at (but does have deleted_at)
     public $timestamps = false;
 
     // Define the table name
@@ -37,9 +40,10 @@ class Application extends Model
     ];
 
     protected $casts = [
-        'form_data' => 'array',
+        'form_data'        => 'array',
         'application_date' => 'datetime',
-        'completed_at' => 'datetime'
+        'completed_at'     => 'datetime',
+        'deleted_at'       => 'datetime',
     ];
 
     // Relationships

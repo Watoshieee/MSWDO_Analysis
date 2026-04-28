@@ -15,7 +15,7 @@
             --blue-lt: #E5EEFF;
             --yellow: #FDB913;
             --green: #28a745;
-            --red: #C41E24;
+            --blue3: #6366f1;
             --grad: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
         }
 
@@ -216,15 +216,19 @@
         }
 
         .card-base.y::before {
-            background: linear-gradient(135deg, #FDB913, #E5A500);
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
         }
 
         .card-base.g::before {
-            background: linear-gradient(135deg, #28a745, #1e7e34);
+            background: linear-gradient(135deg, #0891b2, #0369a1);
         }
 
         .card-base.r::before {
-            background: linear-gradient(135deg, #C41E24, #8B1A1A);
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+        }
+
+        .card-base.card-plain::before {
+            display: none;
         }
 
         .stat-num {
@@ -471,7 +475,7 @@
         /** @var string $domAge */
         /** @var string $topProgram */
         /** @var array $progTotals */
-        $muniColors = ['Magdalena' => '#2C3E8F', 'Liliw' => '#FDB913', 'Majayjay' => '#28a745'];
+        $muniColors = $colors; // dynamic — set in AnalysisController from DB
         $totalPop = array_sum(array_map(fn($n) => $snapshot[$n]['population'], $coreNames));
         $totalHH = array_sum(array_map(fn($n) => $snapshot[$n]['households'], $coreNames));
         $totalBenef = array_sum(array_map(fn($n) => $snapshot[$n]['beneficiaries'], $coreNames));
@@ -614,6 +618,142 @@
         </div>
     </section>
 
+    {{-- POPULATION GROWTH ANALYSIS DETAIL PANEL --}}
+    <section class="section-wrap" style="padding-top:0;padding-bottom:40px;">
+        <div class="container">
+            <div class="card-base" style="border-top:4px solid #FDB913;padding:0;overflow:hidden;">
+
+                {{-- KEY FINDING --}}
+                <div style="background:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%);padding:22px 28px 18px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#FDB913;flex-shrink:0;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1A2A5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </span>
+                        <span style="font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#FDB913;">Key Finding</span>
+                    </div>
+                    <p style="color:rgba(255,255,255,.93);font-size:.93rem;line-height:1.7;margin:0;">
+                        <strong style="color:#FDB913;">Magdalena</strong> shows the highest population growth rate at
+                        <strong style="color:#FDB913;">5.74%</strong>, indicating rapid demographic expansion compared to nearby municipalities.
+                    </p>
+                </div>
+
+                <div style="padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:28px;" class="growth-detail-grid">
+
+                    {{-- LEFT COL: EXPLANATION --}}
+                    <div>
+                        <div style="display:flex;align-items:center;margin-bottom:16px;">
+                            <span style="display:inline-block;width:4px;height:20px;background:#FDB913;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                            <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Explanation of Growth Trend</span>
+                        </div>
+
+                        <div style="display:flex;flex-direction:column;gap:14px;">
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Young Population Structure</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">Higher birth rates due to lower median age contribute to sustained natural population increase.</div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Sustained Growth Trend</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">Continuous increase based on census data reflects a long-term upward demographic trajectory.</div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Resource Availability & Settlement Expansion</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">Access to water and land in the Santa Cruz watershed supports population growth, leading to expansion of settlements and built-up areas.</div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Increasing Human Activities & Environmental Interaction</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">Rising population leads to increased land use, water consumption, and environmental changes, reflecting strong interaction between people and natural resources.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- RIGHT COL: EVIDENCE + CONCLUSION --}}
+                    <div style="display:flex;flex-direction:column;gap:20px;">
+
+                        {{-- Supporting Evidence --}}
+                        <div>
+                            <div style="display:flex;align-items:center;margin-bottom:14px;">
+                                <span style="display:inline-block;width:4px;height:20px;background:#2C3E8F;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                                <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Supporting Evidence</span>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                @php
+                                $growthRefs = [
+                                    ['authors' => 'PhilAtlas (2020)', 'url' => 'https://www.philatlas.com/luzon/r04a/laguna/magdalena.html', 'label' => 'Magdalena, Laguna — Population Data'],
+                                    ['authors' => 'Magpantay & Sanchez (2023)', 'url' => 'https://journals.uplb.edu.ph/index.php/JESAM/article/download/1030/853', 'label' => 'JESAM — Environmental & Socio-demographic Study'],
+                                    ['authors' => 'Dayo, Rola, et al.', 'url' => 'https://journals.uplb.edu.ph/index.php/JPAD/article/download/719/676', 'label' => 'JPAD — Population & Agricultural Development'],
+                                    ['authors' => 'Sandoval et al. (2023)', 'url' => 'https://www.researchgate.net/profile/Ryan-Labana/publication/371812110_Water_Quality_Assessment_of_Santa_Cruz_River_in_2011_and_2022_in_the_Vicinity_of_Liliw_and_Nagcarlan_Laguna_Philippines/links/669b155b02e9686cd11091b5/Water-Quality-Assessment-of-Santa-Cruz-River-in-2011-and-2022-in-the-Vicinity-of-Liliw-and-Nagcarlan-Laguna-Philippines.pdf', 'label' => 'Water Quality Assessment — Santa Cruz River, Laguna'],
+                                ];
+                                @endphp
+                                @foreach($growthRefs as $idx => $ref)
+                                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:11px 14px;display:flex;gap:12px;align-items:flex-start;">
+                                    <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#2C3E8F;color:#fff;font-size:.65rem;font-weight:800;flex-shrink:0;margin-top:1px;">{{ $idx + 1 }}</span>
+                                    <div>
+                                        <div style="font-weight:700;font-size:.8rem;color:#1e293b;margin-bottom:2px;">{{ $ref['authors'] }}</div>
+                                        <div style="font-size:.75rem;color:#64748b;margin-bottom:4px;">{{ $ref['label'] }}</div>
+                                        <a href="{{ $ref['url'] }}" target="_blank" rel="noopener noreferrer"
+                                           style="font-size:.72rem;color:#2C3E8F;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                            View Source
+                                        </a>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Conclusion --}}
+                        <div style="background:linear-gradient(135deg,#F0F5FF 0%,#E5EEFF 100%);border:1px solid #c7d7f5;border-radius:14px;padding:18px 20px;">
+                            <div style="display:flex;align-items:center;margin-bottom:12px;">
+                                <span style="display:inline-block;width:4px;height:20px;background:#FDB913;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                                <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Conclusion</span>
+                            </div>
+                            <p style="font-size:.83rem;color:#334155;line-height:1.75;margin:0;">
+                                The rapid population increase in Magdalena is driven by a combination of <strong>demographic factors</strong> and
+                                <strong>environmental-resource dynamics</strong>. The availability of water and land supports continuous settlement expansion,
+                                while increasing human activities further accelerate growth.
+                            </p>
+                            <p style="font-size:.83rem;color:#334155;line-height:1.75;margin:12px 0 0;">
+                                However, this growth also places pressure on natural resources, particularly <strong>water systems and land use</strong>.
+                                As population increases, environmental impacts such as changes in land cover and water quality become more evident.
+                                Therefore, <strong>sustainable resource management</strong> is essential to balance population growth with environmental protection.
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <style>
+        @media (max-width: 768px) {
+            .growth-detail-grid { grid-template-columns: 1fr !important; }
+        }
+    </style>
+
     {{-- SECTION 3: GENDER TREND --}}
     <section class="section-wrap">
         <div class="container">
@@ -753,7 +893,7 @@
                 </div>
                 @foreach($coreNames as $n)
                     <div class="col-md-{{ count($coreNames) == 3 ? '2-2' : '4' }}" style="flex:1;">
-                        <div class="card-base text-center" style="border-top:4px solid {{ $muniColors[$n] }};">
+                        <div class="card-base card-plain text-center" style="border-top:4px solid #2C3E8F;">
                             <div style="font-weight:700;color:var(--blue);margin-bottom:8px;">{{ $n }}</div>
                             <div style="font-size:1.4rem;font-weight:800;color:var(--blue);">
                                 {{ number_format($snapshot[$n]['beneficiaries']) }}</div>
@@ -1066,7 +1206,7 @@
                 labels: MUNIS, datasets: [
                     { label: 'PWD', data: MUNIS.map(m => SNAP[m]?.pwd ?? 0), backgroundColor: '#2C3E8F', borderRadius: 4 },
                     { label: 'AICS', data: MUNIS.map(m => SNAP[m]?.aics ?? 0), backgroundColor: '#FDB913', borderRadius: 4 },
-                    { label: 'Solo Parent', data: MUNIS.map(m => SNAP[m]?.solo_parent ?? 0), backgroundColor: '#C41E24', borderRadius: 4 },
+                    { label: 'Solo Parent', data: MUNIS.map(m => SNAP[m]?.solo_parent ?? 0), backgroundColor: '#6366f1', borderRadius: 4 },
                     { label: '4Ps', data: MUNIS.map(m => SNAP[m]?.four_ps ?? 0), backgroundColor: '#28a745', borderRadius: 4 },
                     { label: 'Senior', data: MUNIS.map(m => SNAP[m]?.senior ?? 0), backgroundColor: '#8B5CF6', borderRadius: 4 },
                 ]

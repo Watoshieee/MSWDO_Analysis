@@ -1,101 +1,172 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Announcements – MSWDO</title>
+    <title>Announcements – MSWDO Member Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
 html, body { overscroll-behavior: none; margin: 0; padding: 0; }
-
         :root {
             --primary-blue: #2C3E8F;
+            --primary-dark: #1A2A5C;
             --secondary-yellow: #FDB913;
+            --secondary-yellow-light: #FFF3D6;
             --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
-            --bg-light: #F8FAFC; --bg-white: #FFFFFF; --bg-soft-blue: #F0F5FF;
-            --border-light: #E2E8F0; --text-dark: #1E293B;
+            --bg-light: #F4F7FB;
+            --border-light: #E2E8F0;
+            --text-dark: #1E293B;
+            --text-muted: #64748b;
         }
-        body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); display:flex; flex-direction:column; min-height:100vh; }
+        * { box-sizing: border-box; }
+        body { background: #e2e8f0; font-family: 'Inter', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
         a { text-decoration: none; }
 
         /* ── NAVBAR ── */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
-        .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display:flex; align-items:center; gap:10px; }
+        .navbar-brand { font-weight: 800; font-size: 1.5rem; color: white !important; display: flex; align-items: center; gap: 10px; }
         .navbar-toggler { order: -1; }
         .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
         @media (min-width: 992px) {
             .navbar-toggler { order: 0; }
             .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.95rem; }
+        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; border-radius: 8px; padding: 10px 18px !important; font-size: 0.92rem; transition: all 0.2s; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-info { color:white; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.1); padding:9px 22px; border-radius:40px; font-size:0.92rem; font-weight:600; }
-        .logout-btn { background:transparent; border:2px solid rgba(255,255,255,0.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; transition:all 0.3s; font-size:0.88rem; cursor:pointer; }
-        .logout-btn:hover { background:var(--secondary-yellow); color:var(--primary-blue); border-color:var(--secondary-yellow); }
+        .user-info { color: white; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1); padding: 9px 22px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; }
+        .logout-btn { background: transparent; border: 2px solid rgba(255,255,255,0.7); color: white; border-radius: 30px; padding: 6px 18px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.25s; }
+        .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
 
-        /* ── HERO BANNER ── */
-        .hero-banner { background: var(--primary-gradient); color: white; padding: 54px 0 46px; position: relative; overflow: hidden; }
-        .hero-banner::before { content:''; position:absolute; top:-80px; right:-80px; width:320px; height:320px; border-radius:50%; background:rgba(253,185,19,0.10); }
-        .hero-banner::after  { content:''; position:absolute; bottom:-60px; left:-40px; width:220px; height:220px; border-radius:50%; background:rgba(255,255,255,0.05); }
-        .hero-inner { position:relative; z-index:2; }
-        .hero-badge { display:inline-block; background:rgba(253,185,19,0.18); color:var(--secondary-yellow); border:1px solid rgba(253,185,19,0.35); border-radius:30px; padding:5px 18px; font-size:0.75rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:16px; }
-        .hero-banner h1 { font-size:2.4rem; font-weight:900; margin-bottom:8px; line-height:1.15; }
-        .hero-divider { width:50px; height:4px; background:var(--secondary-yellow); border-radius:2px; margin:14px 0; }
-        .hero-banner p { opacity:0.84; font-size:0.97rem; margin:0; max-width:600px; line-height:1.7; }
+        /* ── HERO ── */
+        .hero {
+            background: var(--primary-gradient);
+            color: white; padding: 56px 0 52px;
+            position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: ''; position: absolute; top: -100px; right: -100px;
+            width: 400px; height: 400px; border-radius: 50%;
+            background: radial-gradient(circle, rgba(253,185,19,0.12) 0%, transparent 70%);
+        }
+        .hero::after {
+            content: ''; position: absolute; bottom: -80px; left: -60px;
+            width: 280px; height: 280px; border-radius: 50%;
+            background: rgba(255,255,255,0.04);
+        }
+        .hero-inner { position: relative; z-index: 2; }
+        .hero-badge {
+            display: inline-block; background: rgba(253,185,19,0.18);
+            color: var(--secondary-yellow); border: 1px solid rgba(253,185,19,0.35);
+            border-radius: 30px; padding: 5px 18px;
+            font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em;
+            text-transform: uppercase; margin-bottom: 14px;
+        }
+        .hero h1 { font-size: 2.5rem; font-weight: 900; line-height: 1.15; margin-bottom: 6px; }
+        .hero-divider { width: 50px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; margin: 14px 0 16px; }
+        .hero p { opacity: 0.85; font-size: 0.97rem; max-width: 520px; line-height: 1.7; margin-bottom: 0; }
 
-        /* ── ANNOUNCEMENT CARDS ── */
+        /* ── FILTER BAR (sticky) ── */
+        .filter-bar {
+            background: #f8fafc; border-bottom: 1px solid #cbd5e1;
+            padding: 14px 0; position: sticky; top: 0; z-index: 100;
+            box-shadow: 0 2px 12px rgba(44,62,143,0.06);
+        }
+        .filter-inner { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .filter-select {
+            border: 1.5px solid #cbd5e1; border-radius: 10px;
+            font-size: 0.85rem; padding: 7px 14px;
+            font-family: 'Inter', sans-serif; color: var(--text-dark);
+            background: white; cursor: pointer; transition: border-color 0.2s;
+            min-width: 150px;
+        }
+        .filter-select:focus { border-color: var(--primary-blue); outline: none; }
+        .filter-label { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); white-space: nowrap; }
+        .btn-filter {
+            background: var(--primary-gradient); color: white; border: none;
+            padding: 8px 20px; border-radius: 10px; font-size: 0.84rem;
+            font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-filter:hover { box-shadow: 0 4px 14px rgba(44,62,143,0.3); transform: translateY(-1px); }
+        .btn-reset {
+            background: white; color: var(--text-muted); border: 1.5px solid #cbd5e1;
+            padding: 7px 16px; border-radius: 10px; font-size: 0.84rem;
+            font-weight: 600; cursor: pointer; transition: all 0.2s; text-decoration: none;
+        }
+        .btn-reset:hover { border-color: var(--primary-blue); color: var(--primary-blue); }
+        .result-count { margin-left: auto; font-size: 0.78rem; color: var(--text-muted); font-weight: 600; white-space: nowrap; }
+
+        /* ── MAIN ── */
+        .main-content { flex: 1; }
+
+        /* ── ANNOUNCEMENT CARD ── */
         .ann-card {
-            background: var(--bg-white); border-radius: 18px;
-            border: 1px solid var(--border-light); margin-bottom: 16px;
-            padding: 22px 24px; cursor: pointer;
-            transition: all 0.25s ease; position:relative; overflow:hidden;
+            background: #f8fafc;
+            border-radius: 20px;
+            border: 1px solid #cbd5e1;
+            overflow: hidden;
+            transition: transform .28s, box-shadow .28s, border-color .28s;
+            margin-bottom: 16px;
         }
-        .ann-card::before {
-            content:''; position:absolute; top:0; left:0; bottom:0;
-            width: 5px; background: var(--primary-blue); border-radius: 18px 0 0 18px;
+        .ann-card:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(44,62,143,0.12); border-color: rgba(44,62,143,0.22); }
+
+        /* Color accent strip */
+        .ann-card .accent { height: 5px; width: 100%; }
+        .acc-general        { background: linear-gradient(90deg, #2C3E8F, #5578d9); }
+        .acc-event          { background: linear-gradient(90deg, #FDB913, #E5A500); }
+        .acc-emergency      { background: linear-gradient(90deg, #dc2626, #ef4444); }
+        .acc-program_update { background: linear-gradient(90deg, #16a34a, #22c55e); }
+
+        .ann-body { padding: 20px 22px 18px; }
+
+        .ann-header { display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; margin-bottom: 10px; }
+        .ann-title { font-size: 1rem; font-weight: 800; color: var(--primary-blue); line-height: 1.3; }
+        .ann-title.no-title { font-style: italic; font-weight: 400; color: var(--text-muted); font-size: 0.88rem; }
+
+        .type-badge {
+            display: inline-block; font-size: 0.68rem; font-weight: 800;
+            letter-spacing: 0.5px; padding: 3px 11px; border-radius: 20px;
+            text-transform: uppercase; white-space: nowrap; flex-shrink: 0;
         }
-        .ann-card.info::before    { background: #17a2b8; }
-        .ann-card.warning::before { background: var(--secondary-yellow); }
-        .ann-card.success::before { background: #28a745; }
-        .ann-card.danger::before  { background: #dc3545; }
+        .badge-general        { background: #E5EEFF; color: #2C3E8F; }
+        .badge-event          { background: var(--secondary-yellow-light); color: #856404; }
+        .badge-emergency      { background: #fee2e2; color: #991b1b; }
+        .badge-program_update { background: #d4edda; color: #155724; }
 
-        .ann-card:hover { transform: translateY(-3px); box-shadow: 0 10px 28px rgba(44,62,143,0.10); border-color: var(--primary-blue); }
+        .ann-content { font-size: 0.88rem; color: var(--text-dark); line-height: 1.75; margin-bottom: 14px; }
 
-        .ann-type-pill {
-            font-size: 0.68rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em;
-            padding: 3px 10px; border-radius: 20px; display: inline-block; margin-bottom: 8px;
+        .ann-footer {
+            display: flex; align-items: center; justify-content: space-between;
+            flex-wrap: wrap; gap: 8px;
+            padding-top: 12px; border-top: 1px solid #e2e8f0;
         }
-        .pill-info    { background: #e0f7fa; color: #006064; }
-        .pill-warning { background: #FFF3D6; color: #856404; }
-        .pill-success { background: #e8f5e9; color: #2e7d32; }
-        .pill-danger  { background: #fce8e8; color: #b71c1c; }
-        .pill-default { background: var(--bg-soft-blue); color: var(--primary-blue); }
+        .ann-meta { font-size: 0.76rem; color: var(--text-muted); font-weight: 500; }
+        .prog-tag {
+            display: inline-block; font-size: 0.7rem; font-weight: 700;
+            padding: 3px 10px; border-radius: 20px;
+            background: #E5EEFF; color: var(--primary-blue);
+        }
+        .prog-tag.all { background: var(--secondary-yellow-light); color: #856404; }
 
-        .ann-title { font-size: 1.05rem; font-weight: 700; color: var(--text-dark); margin-bottom: 6px; }
-        .ann-preview { font-size: 0.86rem; color: #64748b; line-height: 1.6;
-            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-        .ann-date { font-size: 0.76rem; color: #94a3b8; margin-top: 10px; }
-        .ann-arrow { font-size: 1.1rem; color: #CBD5E1; font-style: normal; }
+        /* ── EMPTY STATE ── */
+        .empty-state { text-align: center; padding: 60px 0; }
+        .empty-num { font-size: 4rem; font-weight: 900; color: #E2E8F0; line-height: 1; display: block; margin-bottom: 12px; }
+        .empty-state h5 { font-weight: 700; color: var(--primary-blue); margin-bottom: 8px; }
+        .empty-state p { color: var(--text-muted); font-size: 0.88rem; }
 
-        /* ── MODAL ── */
-        .modal-content { border-radius: 18px; overflow: hidden; border: none; }
-        .modal-header  { background: var(--primary-gradient); color: white; border-radius: 0; border: none; padding: 20px 24px; }
-        .modal-title   { font-weight: 700; font-size: 1.05rem; }
-        .modal-body    { padding: 24px; font-size: 0.92rem; line-height: 1.7; color: #334155; }
-        .modal-footer  { border: none; padding: 12px 24px 20px; }
+        /* ── ALERTS ── */
+        .alert-styled { border-radius: 12px; border: none; font-size: 0.88rem; padding: 12px 16px; }
 
-        /* ── EMPTY ── */
-        .empty-state { text-align:center; padding: 50px 0; }
-        .empty-num { font-size: 4rem; font-weight: 800; color: #E2E8F0; line-height:1; }
-        .empty-state p { color: #94a3b8; }
+        /* ── PAGINATION ── */
+        .pagination .page-link { color: var(--primary-blue); border-color: var(--border-light); }
+        .pagination .page-item.active .page-link { background: var(--primary-blue); border-color: var(--primary-blue); }
 
         /* ── FOOTER ── */
-        .main-content { flex:1; }
-        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.75); text-align: center; padding: 20px 0; font-size: 0.85rem; margin-top: 40px; }
-        .footer-strip strong { color:white; }
+        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.83rem; }
+        .footer-strip strong { color: white; }
     </style>
 </head>
 <body>
@@ -114,10 +185,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link" href="/user/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="/user/programs">Programs</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="/user/announcements">Announcements</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{{ route('user.announcements') }}">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
-                <div class="d-flex">
+                <div class="d-flex align-items-center gap-3">
+                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal"
+                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
+                        title="Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($notificationCount) && $notificationCount > 0)
+                        <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $notificationCount > 9 ? '9+' : $notificationCount }}</span>
+                        @endif
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -130,73 +209,104 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </nav>
 
-    <!-- ===== HERO BANNER ===== -->
-    <section class="hero-banner">
+    <!-- HERO -->
+    <section class="hero">
         <div class="container">
             <div class="hero-inner">
                 <div class="hero-badge">Member Portal</div>
                 <h1>Announcements</h1>
                 <div class="hero-divider"></div>
-                <p>Important updates, reminders, and notices from the Municipal Social Welfare &amp; Development Office.</p>
+                <p>Stay updated with the latest notices, events, and program updates from MSWDO relevant to your municipality and enrolled programs.</p>
             </div>
         </div>
     </section>
 
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+        <div class="container">
+            <form method="GET" action="{{ route('user.announcements') }}" class="filter-inner">
+                <span class="filter-label">Filter by:</span>
+
+                <select name="type" class="filter-select">
+                    <option value="">All Types</option>
+                    @foreach($types as $val => $label)
+                        <option value="{{ $val }}" {{ request('type') === $val ? 'selected' : '' }}>{{ $label }}</option>
+                    @endforeach
+                </select>
+
+                <select name="program" class="filter-select">
+                    <option value="">All Programs</option>
+                    @foreach($programs as $val => $label)
+                        @if($val !== 'all')
+                            <option value="{{ $val }}" {{ request('program') === $val ? 'selected' : '' }}>{{ $label }}</option>
+                        @endif
+                    @endforeach
+                </select>
+
+                <button type="submit" class="btn-filter">Apply</button>
+
+                @if(request('type') || request('program'))
+                    <a href="{{ route('user.announcements') }}" class="btn-reset">Clear</a>
+                @endif
+
+                @if(method_exists($announcements, 'total'))
+                    <div class="result-count">{{ $announcements->total() }} announcement{{ $announcements->total() != 1 ? 's' : '' }}</div>
+                @endif
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT -->
     <div class="main-content">
-    <div class="container mt-4">
+        <div class="container" style="padding-top:28px; padding-bottom:48px;">
 
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show mb-3" style="border-radius:12px;">
-                {{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-
-        @if(count($announcements) > 0)
-            @foreach($announcements as $announcement)
-                @php
-                    $pillClass = 'pill-' . ($announcement->type ?? 'default');
-                @endphp
-                <div class="ann-card {{ $announcement->type ?? '' }}" onclick="showAnnouncement({{ $announcement->id }})">
-                    <div class="d-flex justify-content-between align-items-start">
-                        <div class="flex-grow-1">
-                            <span class="ann-type-pill {{ $pillClass }}">{{ ucfirst($announcement->type ?? 'Notice') }}</span>
-                            <div class="ann-title">{{ $announcement->title }}</div>
-                            <div class="ann-preview">{{ Str::limit(strip_tags($announcement->content), 150) }}</div>
-                            <div class="ann-date">{{ $announcement->created_at->format('F d, Y') }}</div>
+            @if(is_object($announcements) && (method_exists($announcements, 'isEmpty') ? $announcements->isEmpty() : $announcements->count() === 0))
+                <div class="empty-state">
+                    <span class="empty-num">00</span>
+                    <h5>No Announcements Yet</h5>
+                    <p>There are no announcements for your municipality or programs at this time.<br>Check back later for updates.</p>
+                </div>
+            @else
+                @foreach($announcements as $ann)
+                <div class="ann-card">
+                    <div class="accent acc-{{ $ann->type }}"></div>
+                    <div class="ann-body">
+                        <div class="ann-header">
+                            @if($ann->title)
+                                <div class="ann-title">{{ $ann->title }}</div>
+                            @else
+                                <div class="ann-title no-title">No title</div>
+                            @endif
+                            <span class="type-badge badge-{{ $ann->type }}">{{ $ann->typeLabel() }}</span>
                         </div>
-                        <span class="ann-arrow">&rsaquo;</span>
+
+                        <div class="ann-content">{{ $ann->content }}</div>
+
+                        <div class="ann-footer">
+                            <div class="ann-meta">
+                                Posted {{ $ann->created_at->format('F d, Y') }}
+                                @if($ann->municipality && $ann->municipality !== 'all')
+                                    &bull; {{ $ann->municipality }}
+                                @endif
+                            </div>
+                            @if($ann->program_type && $ann->program_type !== 'all')
+                                <span class="prog-tag">{{ $ann->program_type }}</span>
+                            @else
+                                <span class="prog-tag all">All Programs</span>
+                            @endif
+                        </div>
                     </div>
                 </div>
-            @endforeach
+                @endforeach
 
-            <div class="mt-4">{{ $announcements->links() }}</div>
-        @else
-            <div class="empty-state">
-                <div class="empty-num">00</div>
-                <h5 style="font-weight:700;color:var(--primary-blue);margin:12px 0 8px;">No announcements yet</h5>
-                <p>Check back later for updates from MSWDO.</p>
-            </div>
-        @endif
-    </div>
-    </div>
-
-    <!-- Modal -->
-    <div class="modal fade" id="announcementModal" tabindex="-1" aria-hidden="true">
-        <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modalTitle">Announcement</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="modalBody">
-                    <div class="text-center py-4">
-                        <div class="spinner-border text-primary" role="status"></div>
+                {{-- Pagination --}}
+                @if(method_exists($announcements, 'links') && $announcements->hasPages())
+                    <div class="d-flex justify-content-center mt-4">
+                        {{ $announcements->links() }}
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary btn-sm" data-bs-dismiss="modal">Close</button>
-                </div>
-            </div>
+                @endif
+            @endif
+
         </div>
     </div>
 
@@ -204,33 +314,26 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
+    @include('components.user-notification-modal')
+    @include('components.chat-modal')
+    @include('components.chatbot-widget')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        const announcementsData = @json($announcements);
-
-        function showAnnouncement(id) {
-            const a = announcementsData.find(x => x.id === id);
-            if (!a) return;
-
-            const typeColors = { success: '#28a745', warning: '#FDB913', danger: '#dc3545', info: '#17a2b8' };
-            const color = typeColors[a.type] || '#2C3E8F';
-            const posted = new Date(a.created_at).toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' });
-
-            document.getElementById('modalTitle').textContent = a.title;
-            document.getElementById('modalBody').innerHTML = `
-                <div style="margin-bottom:14px;">
-                    <span style="background:${color};color:white;padding:3px 12px;border-radius:20px;font-size:0.72rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;">
-                        ${(a.type || 'Notice').toUpperCase()}
-                    </span>
-                </div>
-                <h5 style="font-weight:800;color:#1e293b;margin-bottom:14px;">${a.title}</h5>
-                <div style="line-height:1.75;color:#334155;">${a.content}</div>
-                <hr style="margin:18px 0;">
-                <div style="font-size:0.78rem;color:#94a3b8;">Posted on: ${posted}</div>
-            `;
-
-            new bootstrap.Modal(document.getElementById('announcementModal')).show();
-        }
+        // Mark notifications as viewed when modal is opened
+        document.getElementById('announcementsModal').addEventListener('show.bs.modal', function () {
+            fetch('{{ route('user.mark-notifications-viewed') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }).then(r => r.json()).then(data => {
+                if (data.success) {
+                    const badge = document.querySelector('.btn[data-bs-target="#announcementsModal"] span');
+                    if (badge) badge.style.display = 'none';
+                }
+            });
+        });
     </script>
 </body>
 </html>

@@ -33,7 +33,8 @@ class MunicipalityManagementController extends Controller
      */
     public function create()
     {
-        return view('superadmin.municipalities.create');
+        $existingNames = Municipality::pluck('name')->toArray();
+        return view('superadmin.municipalities.create', compact('existingNames'));
     }
 
     /**
@@ -60,19 +61,21 @@ class MunicipalityManagementController extends Controller
                 ->withInput();
         }
 
+        // total_population lives in municipality_yearly_summary, not municipalities table
+        $totalPop = $request->total_population ?? ($request->male_population + $request->female_population);
+
         // Create municipality
         $municipality = Municipality::create([
-            'name' => $request->name,
-            'total_households' => $request->total_households,
-            'total_population' => $request->total_population ?? ($request->male_population + $request->female_population),
-            'male_population' => $request->male_population,
-            'female_population' => $request->female_population,
-            'population_0_19' => $request->population_0_19,
-            'population_20_59' => $request->population_20_59,
-            'population_60_100' => $request->population_60_100,
+            'name'                => $request->name,
+            'total_households'    => $request->total_households,
+            'male_population'     => $request->male_population,
+            'female_population'   => $request->female_population,
+            'population_0_19'     => $request->population_0_19,
+            'population_20_59'    => $request->population_20_59,
+            'population_60_100'   => $request->population_60_100,
             'single_parent_count' => $request->single_parent_count ?? 0,
-            'year' => $request->year,
-            'created_at' => now(),
+            'year'                => $request->year,
+            'created_at'          => now(),
         ]);
 
         // Auto-create a yearly summary record so data appears in /superadmin/data/municipalities
@@ -82,7 +85,7 @@ class MunicipalityManagementController extends Controller
                 'year'         => $municipality->year,
             ],
             [
-                'total_population'  => $municipality->total_population,
+                'total_population'  => $totalPop,
                 'male_population'   => $municipality->male_population,
                 'female_population' => $municipality->female_population,
                 'population_0_19'   => $municipality->population_0_19,
@@ -446,16 +449,15 @@ class MunicipalityManagementController extends Controller
         $totalPop = $request->total_population ?? ($request->male_population + $request->female_population);
 
         $municipality->update([
-            'name' => $request->name,
-            'total_households' => $request->total_households,
-            'total_population' => $totalPop,
-            'male_population' => $request->male_population,
-            'female_population' => $request->female_population,
-            'population_0_19' => $request->population_0_19,
-            'population_20_59' => $request->population_20_59,
-            'population_60_100' => $request->population_60_100,
+            'name'                => $request->name,
+            'total_households'    => $request->total_households,
+            'male_population'     => $request->male_population,
+            'female_population'   => $request->female_population,
+            'population_0_19'     => $request->population_0_19,
+            'population_20_59'    => $request->population_20_59,
+            'population_60_100'   => $request->population_60_100,
             'single_parent_count' => $request->single_parent_count,
-            'year' => $request->year,
+            'year'                => $request->year,
         ]);
 
         // Sync to municipality_yearly_summary so admin yearly data stays in sync

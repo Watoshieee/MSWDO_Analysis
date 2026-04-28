@@ -20,7 +20,7 @@ class AnalysisController extends Controller
      */
     public function index(Request $request)
     {
-        $coreNames = ['Magdalena', 'Liliw', 'Majayjay'];
+        $coreNames = Municipality::orderBy('name')->pluck('name')->toArray();
 
         $allYears = SocialWelfareProgram::whereIn('municipality', $coreNames)
             ->distinct()->orderBy('year')->pluck('year')->toArray();
@@ -311,8 +311,10 @@ class AnalysisController extends Controller
      */
     public function demographic(Request $request)
     {
-        $coreNames = ['Magdalena', 'Liliw', 'Majayjay'];
-        $colors     = ['Magdalena' => '#2C3E8F', 'Liliw' => '#FDB913', 'Majayjay' => '#28a745'];
+        $coreNames = Municipality::orderBy('name')->pluck('name')->toArray();
+        $palette   = ['#2C3E8F','#FDB913','#6366f1','#16a34a','#9333ea','#0891b2','#ea580c','#db2777','#65a30d','#d97706'];
+        $colors    = [];
+        foreach ($coreNames as $i => $n) { $colors[$n] = $palette[$i % count($palette)]; }
 
         // â”€â”€ All unique years across summaries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $allYears = MunicipalityYearlySummary::whereIn('municipality', $coreNames)
@@ -428,7 +430,7 @@ class AnalysisController extends Controller
             "$highPop has the largest population at " . number_format($demographicData[$highPop]['total']) . " in {$selectedYear}, making it the most populous municipality in this dataset.",
             "$fastestGrowing shows the highest population growth between available years — indicating strong community expansion and increasing demand for social services.",
             "$highBen leads in registered beneficiaries with " . number_format($demographicData[$highBen]['beneficiaries']) . " — representing " . $demographicData[$highBen]['beneficiaries_pct'] . "% of its total population.",
-            "The $domAgeGroup age bracket is the dominant age segment across all three municipalities, which should guide targeted program prioritization.",
+            "The $domAgeGroup age bracket is the dominant age segment across all municipalities, which should guide targeted program prioritization.",
             "Overall gender distribution is $genderNote. Male: " . number_format($totalMale) . ", Female: " . number_format($totalFemale) . " — a gap of " . number_format(abs($totalMale - $totalFemale)) . " persons.",
             "Average household sizes: " . implode(', ', array_map(fn($n) => "$n: {$demographicData[$n]['avg_hh_size']}", $coreNames)) . " persons per household.",
         ];
@@ -448,46 +450,63 @@ class AnalysisController extends Controller
 
     /**
      * Comprehensive Statistical Analysis page at /analysis/programs.
+     * Demographic data  → municipality_yearly_summary  (same source as /superadmin/data/municipalities)
+     * Program data      → social_welfare_programs       (same source as /superadmin/data/programs)
      */
     public function programs(Request $request)
     {
-        $coreNames = ['Magdalena', 'Liliw', 'Majayjay'];
-        $colors    = ['Magdalena' => '#2C3E8F', 'Liliw' => '#FDB913', 'Majayjay' => '#28a745'];
+        $coreNames = Municipality::orderBy('name')->pluck('name')->toArray();
+        $palette   = ['#2C3E8F','#FDB913','#6366f1','#16a34a','#9333ea','#0891b2','#ea580c','#db2777','#65a30d','#d97706'];
+        $colors    = [];
+        foreach ($coreNames as $i => $n) { $colors[$n] = $palette[$i % count($palette)]; }
 
-        // â”€â”€ All yearly summaries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Demographic data: municipality_yearly_summary ────────────────────
         $allSummaries = MunicipalityYearlySummary::whereIn('municipality', $coreNames)
             ->orderBy('year')->get();
-
-        $allYears = $allSummaries->pluck('year')->unique()->sort()->values()->toArray();
-        if (empty($allYears)) $allYears = [(int) date('Y')];
-
-        $latestYear   = end($allYears);
-        $selectedYear = (int) $request->input('year', $latestYear);
 
         $summariesByMuni = [];
         foreach ($coreNames as $name) {
             $summariesByMuni[$name] = $allSummaries->where('municipality', $name)->keyBy('year');
         }
+        $getDemog = fn($name, $yr, $field) => (int) ($summariesByMuni[$name][$yr]?->$field ?? 0);
 
-        // â”€â”€ Helper closure: get a field from summary row safely â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        $get = fn($name, $yr, $field) => (int) ($summariesByMuni[$name][$yr]?->$field ?? 0);
+        // ── Program data: social_welfare_programs ────────────────────────────
+        $allPrograms = SocialWelfareProgram::whereIn('municipality', $coreNames)->get();
+        $programLookup = []; // [municipality][year][program_type] = beneficiary_count
+        foreach ($allPrograms as $p) {
+            $programLookup[$p->municipality][$p->year][$p->program_type]
+                = (int) $p->beneficiary_count;
+        }
+        $getProg = fn($name, $yr, $type) => $programLookup[$name][$yr][$type] ?? 0;
 
-        // â”€â”€ Section 1: Snapshot for selected year â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── All unique years: union of both sources ──────────────────────────
+        $summaryYears = $allSummaries->pluck('year')->unique()->sort()->values()->toArray();
+        $programYears = $allPrograms->pluck('year')->unique()->sort()->values()->toArray();
+        $allYears = collect(array_merge($summaryYears, $programYears))
+            ->unique()->sort()->values()->toArray();
+        if (empty($allYears)) $allYears = [(int) date('Y')];
+
+        $latestYear   = end($allYears);
+        $selectedYear = (int) $request->input('year', $latestYear);
+
+        // ── Section 1: Snapshot for selected year ────────────────────────────
         $snapshot = [];
         foreach ($coreNames as $name) {
-            $pop   = $get($name, $selectedYear, 'total_population');
-            $hh    = $get($name, $selectedYear, 'total_households');
-            $pwd   = $get($name, $selectedYear, 'total_pwd');
-            $aics  = $get($name, $selectedYear, 'total_aics');
-            $solo  = $get($name, $selectedYear, 'total_solo_parent');
-            $fps   = $get($name, $selectedYear, 'total_4ps');
-            $sen   = $get($name, $selectedYear, 'total_senior');
-            $male  = $get($name, $selectedYear, 'male_population');
-            $female= $get($name, $selectedYear, 'female_population');
-            $a0    = $get($name, $selectedYear, 'population_0_19');
-            $a20   = $get($name, $selectedYear, 'population_20_59');
-            $a60   = $get($name, $selectedYear, 'population_60_100');
-            $benef = $pwd + $aics + $solo + $fps + $sen;
+            // Demographics from municipality_yearly_summary
+            $pop    = $getDemog($name, $selectedYear, 'total_population');
+            $hh     = $getDemog($name, $selectedYear, 'total_households');
+            $male   = $getDemog($name, $selectedYear, 'male_population');
+            $female = $getDemog($name, $selectedYear, 'female_population');
+            $a0     = $getDemog($name, $selectedYear, 'population_0_19');
+            $a20    = $getDemog($name, $selectedYear, 'population_20_59');
+            $a60    = $getDemog($name, $selectedYear, 'population_60_100');
+            // Program counts from social_welfare_programs
+            $pwd    = $getProg($name, $selectedYear, 'PWD_Assistance');
+            $aics   = $getProg($name, $selectedYear, 'AICS');
+            $solo   = $getProg($name, $selectedYear, 'Solo_Parent');
+            $fps    = $getProg($name, $selectedYear, '4Ps');
+            $sen    = $getProg($name, $selectedYear, 'Senior_Citizen_Pension');
+            $benef  = $pwd + $aics + $solo + $fps + $sen;
 
             $snapshot[$name] = [
                 'population'       => $pop,
@@ -509,7 +528,7 @@ class AnalysisController extends Controller
             ];
         }
 
-        // â”€â”€ Trend arrays â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Trend arrays ─────────────────────────────────────────────────────
         $populationTrend = []; $maleTrend = []; $femaleTrend = [];
         $householdsTrend = []; $benefTrend  = [];
         $pwdTrend = []; $aicsTrend = []; $soloTrend = []; $fpsTrend = []; $seniorTrend = [];
@@ -518,15 +537,17 @@ class AnalysisController extends Controller
         foreach ($coreNames as $name) {
             $prevPop = null;
             foreach ($allYears as $yr) {
-                $pop   = $get($name, $yr, 'total_population');
-                $hh    = $get($name, $yr, 'total_households');
-                $male  = $get($name, $yr, 'male_population');
-                $female= $get($name, $yr, 'female_population');
-                $pwd   = $get($name, $yr, 'total_pwd');
-                $aics  = $get($name, $yr, 'total_aics');
-                $solo  = $get($name, $yr, 'total_solo_parent');
-                $fps   = $get($name, $yr, 'total_4ps');
-                $sen   = $get($name, $yr, 'total_senior');
+                // Demographics from municipality_yearly_summary
+                $pop    = $getDemog($name, $yr, 'total_population');
+                $hh     = $getDemog($name, $yr, 'total_households');
+                $male   = $getDemog($name, $yr, 'male_population');
+                $female = $getDemog($name, $yr, 'female_population');
+                // Programs from social_welfare_programs
+                $pwd    = $getProg($name, $yr, 'PWD_Assistance');
+                $aics   = $getProg($name, $yr, 'AICS');
+                $solo   = $getProg($name, $yr, 'Solo_Parent');
+                $fps    = $getProg($name, $yr, '4Ps');
+                $sen    = $getProg($name, $yr, 'Senior_Citizen_Pension');
 
                 $populationTrend[$name][$yr] = $pop;
                 $householdsTrend[$name][$yr] = $hh;
@@ -548,13 +569,12 @@ class AnalysisController extends Controller
             }
         }
 
-        // â”€â”€ Section 7: ANOVA â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Section 7: ANOVA ─────────────────────────────────────────────────
         $anovaPopGroups   = array_map(fn($n) => array_values($populationTrend[$n]), $coreNames);
         $anovaBenefGroups = array_map(fn($n) => array_values($benefTrend[$n]),      $coreNames);
         $anovaPopResult   = $this->oneWayAnova($anovaPopGroups);
         $anovaBenefResult = $this->oneWayAnova($anovaBenefGroups);
 
-        // Group means labels for ANOVA chart
         if ($anovaPopResult) {
             $anovaPopResult['means']  = array_combine($coreNames, $anovaPopResult['groupMeans']);
         }
@@ -562,7 +582,7 @@ class AnalysisController extends Controller
             $anovaBenefResult['means'] = array_combine($coreNames, $anovaBenefResult['groupMeans']);
         }
 
-        // â”€â”€ Section 8: Correlation â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Section 8: Correlation ───────────────────────────────────────────
         $allPop   = []; $allBenef = [];
         $allAge60 = []; $allSen   = [];
         $allHH    = []; $allAics  = [];
@@ -570,15 +590,15 @@ class AnalysisController extends Controller
             foreach ($allYears as $yr) {
                 $allPop[]   = $populationTrend[$name][$yr];
                 $allBenef[] = $benefTrend[$name][$yr];
-                $allAge60[] = $get($name, $yr, 'population_60_100');
-                $allSen[]   = $get($name, $yr, 'total_senior');
+                $allAge60[] = $getDemog($name, $yr, 'population_60_100');
+                $allSen[]   = $seniorTrend[$name][$yr];   // from social_welfare_programs
                 $allHH[]    = $householdsTrend[$name][$yr];
-                $allAics[]  = $aicsTrend[$name][$yr];
+                $allAics[]  = $aicsTrend[$name][$yr];     // from social_welfare_programs
             }
         }
-        $corrPopBenef   = $this->pearsonCorr($allPop,   $allBenef);
-        $corrAge60Senior= $this->pearsonCorr($allAge60, $allSen);
-        $corrHhAics     = $this->pearsonCorr($allHH,    $allAics);
+        $corrPopBenef    = $this->pearsonCorr($allPop,   $allBenef);
+        $corrAge60Senior = $this->pearsonCorr($allAge60, $allSen);
+        $corrHhAics      = $this->pearsonCorr($allHH,    $allAics);
 
         $corrLabel = fn($r) => $r === null ? 'N/A'
             : (abs($r) >= 0.7 ? 'Strong' : (abs($r) >= 0.4 ? 'Moderate' : 'Weak'))
@@ -614,14 +634,13 @@ class AnalysisController extends Controller
             ],
         ];
 
-        // â”€â”€ Section 9: Key Insights (auto-generated) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Section 9: Key Insights ──────────────────────────────────────────
         $popMap   = array_map(fn($n) => $snapshot[$n]['population'],    $coreNames);
         $benefMap = array_map(fn($n) => $snapshot[$n]['beneficiaries'], $coreNames);
         arsort($popMap);   $highestPop   = $coreNames[key($popMap)];
         asort($popMap);    $lowestPop    = $coreNames[key($popMap)];
         arsort($benefMap); $highestBenef = $coreNames[key($benefMap)];
 
-        // Fastest growing
         $avgGrowth = [];
         foreach ($coreNames as $i => $name) {
             $rates = array_filter($growthRates[$name], fn($v) => $v !== null);
@@ -629,19 +648,16 @@ class AnalysisController extends Controller
         }
         arsort($avgGrowth); $fastestIdx = key($avgGrowth); $fastest = $coreNames[$fastestIdx];
 
-        // Dominant age group
         $totAge0  = array_sum(array_map(fn($n) => $snapshot[$n]['age_0_19'],   $coreNames));
         $totAge20 = array_sum(array_map(fn($n) => $snapshot[$n]['age_20_59'],  $coreNames));
         $totAge60 = array_sum(array_map(fn($n) => $snapshot[$n]['age_60_100'], $coreNames));
-        $domAge   = $totAge0 >= $totAge20 && $totAge0 >= $totAge60 ? 'Youth (0â€“19)'
-                  : ($totAge20 >= $totAge60 ? 'Working Age (20â€“59)' : 'Senior (60+)');
+        $domAge   = $totAge0 >= $totAge20 && $totAge0 >= $totAge60 ? 'Youth (0–19)'
+                  : ($totAge20 >= $totAge60 ? 'Working Age (20–59)' : 'Senior (60+)');
 
-        // Gender gap
         $totalMale   = array_sum(array_map(fn($n) => $snapshot[$n]['male'],   $coreNames));
         $totalFemale = array_sum(array_map(fn($n) => $snapshot[$n]['female'], $coreNames));
         $genderGap   = abs($totalMale - $totalFemale);
 
-        // Highest program
         $progTotals = ['PWD' => 0, 'AICS' => 0, 'Solo Parent' => 0, '4Ps' => 0, 'Senior' => 0];
         foreach ($coreNames as $n) {
             $progTotals['PWD']         += $snapshot[$n]['pwd'];
@@ -654,21 +670,21 @@ class AnalysisController extends Controller
 
         $insights = [
             "$highestPop has the highest population (" . number_format($snapshot[$highestPop]['population']) . ") while $lowestPop has the lowest.",
-            "$fastest shows the highest average population growth rate among the three municipalities.",
-            "$highestBenef has the most registered beneficiaries (" . number_format($snapshot[$highestBenef]['beneficiaries']) . ") â€” " . $snapshot[$highestBenef]['benef_pct'] . "% of its population.",
-            "The dominant age group across all municipalities is $domAge â€” indicating a " . ($domAge === 'Youth (0â€“19)' ? 'young, growing' : ($domAge === 'Working Age (20â€“59)' ? 'productive' : 'aging')) . " population.",
+            "$fastest shows the highest average population growth rate among the municipalities.",
+            "$highestBenef has the most registered beneficiaries (" . number_format($snapshot[$highestBenef]['beneficiaries']) . ") — " . $snapshot[$highestBenef]['benef_pct'] . "% of its population.",
+            "The dominant age group across all municipalities is $domAge — indicating a " . ($domAge === 'Youth (0–19)' ? 'young, growing' : ($domAge === 'Working Age (20–59)' ? 'productive' : 'aging')) . " population.",
             $genderGap > 0 ? "A gender gap of " . number_format($genderGap) . " exists: " . ($totalMale > $totalFemale ? "Male-dominant ($totalMale M vs $totalFemale F)." : "Female-dominant ($totalFemale F vs $totalMale M).") : "Gender distribution is balanced.",
             "The $topProgram program has the highest total beneficiaries (" . number_format($progTotals[$topProgram]) . ") across all municipalities.",
-            "Dependency ratios: " . implode(', ', array_map(fn($n) => "$n: {$snapshot[$n]['dependency_ratio']}%", $coreNames)) . " â€” higher ratio means more dependents per working-age person.",
+            "Dependency ratios: " . implode(', ', array_map(fn($n) => "$n: {$snapshot[$n]['dependency_ratio']}%", $coreNames)) . " — higher ratio means more dependents per working-age person.",
         ];
 
-        // â”€â”€ Section 10: Recommendations â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // ── Section 10: Recommendations ─────────────────────────────────────
         $recommendations = [
             ['label' => 'Priority Support',   'text' => "$lowestPop has the smallest population base; ensure equitable distribution of welfare resources and avoid underserving this municipality."],
-            ['label' => 'Program Expansion',  'text' => "Expand the $topProgram program â€” it has the highest demand. Consider increasing budget allocation and outreach in all three municipalities."],
-            ['label' => 'Age Intervention',   'text' => $totAge60 > $totAge0 ? "The senior population is growing â€” prioritize health care, pension programs, and elder care services." : "Youth programs (education, livelihood) should be reinforced to empower the dominant 0â€“19 age bracket."],
-            ['label' => 'Gender Programs',    'text' => $totalFemale > $totalMale ? "Female beneficiaries outpace males â€” strengthen Solo Parent and women-focused livelihood programs." : "Consider targeted programs for male residents who may be underrepresented in welfare enrollment."],
-            ['label' => 'Fastest Grower',     'text' => "$fastest is growing fastest â€” proactively scale up social welfare infrastructure and staffing to meet rising demand."],
+            ['label' => 'Program Expansion',  'text' => "Expand the $topProgram program — it has the highest demand. Consider increasing budget allocation and outreach in all municipalities."],
+            ['label' => 'Age Intervention',   'text' => $totAge60 > $totAge0 ? "The senior population is growing — prioritize health care, pension programs, and elder care services." : "Youth programs (education, livelihood) should be reinforced to empower the dominant 0–19 age bracket."],
+            ['label' => 'Gender Programs',    'text' => $totalFemale > $totalMale ? "Female beneficiaries outpace males — strengthen Solo Parent and women-focused livelihood programs." : "Consider targeted programs for male residents who may be underrepresented in welfare enrollment."],
+            ['label' => 'Fastest Grower',     'text' => "$fastest is growing fastest — proactively scale up social welfare infrastructure and staffing to meet rising demand."],
             ['label' => 'AICS & Households',  'text' => "High AICS uptake correlates with household density. Increase crisis assistance (AICS) funding proportionally with household growth."],
         ];
 
@@ -684,6 +700,7 @@ class AnalysisController extends Controller
             'domAge', 'topProgram', 'progTotals'
         ));
     }
+
 
     // â”€â”€ Statistical Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 

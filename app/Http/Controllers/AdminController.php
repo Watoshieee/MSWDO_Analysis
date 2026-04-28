@@ -5,14 +5,77 @@ namespace App\Http\Controllers;
 use App\Models\Municipality;
 use App\Models\Barangay;
 use App\Models\Application;
+use App\Models\Appointment;
 use App\Models\SocialWelfareProgram;
 use App\Models\FileMonitoring;
 use App\Models\FileUpload;
+use App\Mail\RequirementsReviewedMail;
+use App\Mail\SoloParentFilesUploadedMail;
+use App\Mail\SoloParentIdReadyMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 
 class AdminController extends Controller
 {
+    // ── Shared admin notification helper ─────────────────────────────────
+    private function adminNotifData($user): array
+    {
+        $lastViewed   = \App\Models\NotificationView::where('user_id', $user->id)->first();
+        $lastViewedAt = $lastViewed ? $lastViewed->last_viewed_at : null;
+
+        // ── New pending applications ──────────────────────────────────────────
+        $query = Application::where('municipality', $user->municipality)
+            ->where('status', 'pending')
+            ->with('user')
+            ->orderBy('application_date', 'desc');
+
+        $adminNewApplications = $lastViewedAt
+            ? (clone $query)->where('application_date', '>', $lastViewedAt)->get()
+            : (clone $query)->where('application_date', '>=', now()->subDays(3))->get();
+
+        // ── New pending Solo Parent appointments (booked after last viewed) ───
+        $apptQuery = Appointment::where('municipality', $user->municipality)
+            ->where('program_type', 'Solo_Parent')
+            ->where('status', 'pending')
+            ->with('user')
+            ->orderBy('created_at', 'desc');
+
+        $adminNewAppointments = $lastViewedAt
+            ? (clone $apptQuery)->where('created_at', '>', $lastViewedAt)->get()
+            : (clone $apptQuery)->where('created_at', '>=', now()->subDays(3))->get();
+
+        // ── New Solo Parent document uploads waiting for review ─────────────────
+        $uploadsQuery = FileMonitoring::where('municipality', $user->municipality)
+            ->where('overall_status', 'pending')
+            ->whereHas('application', fn($q) => $q->where('program_type', 'Solo_Parent'))
+            ->whereHas('fileUploads', fn($q) => $q->whereNotNull('file_path'))
+            ->with(['application.user', 'fileUploads']);
+
+        $adminNewUploads = $lastViewedAt
+            ? (clone $uploadsQuery)->whereHas('fileUploads', fn($q) =>
+                    $q->where('uploaded_at', '>', $lastViewedAt)->whereNotNull('file_path')
+              )->get()
+            : (clone $uploadsQuery)->whereHas('fileUploads', fn($q) =>
+                    $q->where('uploaded_at', '>=', now()->subDays(3))->whereNotNull('file_path')
+              )->get();
+
+        $adminNotifCount = $adminNewApplications->count() + $adminNewAppointments->count() + $adminNewUploads->count();
+
+        return compact('adminNewApplications', 'adminNewAppointments', 'adminNewUploads', 'adminNotifCount');
+    }
+
+    // Mark admin notifications as viewed
+    public function markNotificationsViewed()
+    {
+        $user = Auth::user();
+        \App\Models\NotificationView::updateOrCreate(
+            ['user_id' => $user->id],
+            ['last_viewed_at' => now()]
+        );
+        return response()->json(['success' => true]);
+    }
     public function dashboard()
     {
         $user = Auth::user();
@@ -69,6 +132,8 @@ class AdminController extends Controller
         $totalBarangays = $barangays->count();
         $totalPrograms = SocialWelfareProgram::where('municipality', $user->municipality)->count();
 
+        extract($this->adminNotifData($user));
+
         return view('admin.dashboard', compact(
             'municipality',
             'applications',
@@ -79,7 +144,10 @@ class AdminController extends Controller
             'applicationsByProgram',
             'barangayStats',
             'totalBarangays',
-            'totalPrograms'
+            'totalPrograms',
+            'adminNewApplications',
+            'adminNewAppointments',
+            'adminNotifCount'
         ));
     }
 
@@ -92,8 +160,111 @@ class AdminController extends Controller
             ->orderBy('application_date', 'desc')
             ->paginate(20);
 
-        return view('admin.requirements', compact('applications', 'municipality'));
+        // Archived (soft-deleted) applications
+        $archivedApplications = Application::onlyTrashed()
+            ->where('municipality', $municipality)
+            ->orderBy('deleted_at', 'desc')
+            ->get();
+
+        extract($this->adminNotifData($admin));
+
+        return view('admin.requirements', compact(
+            'applications', 'municipality',
+            'adminNewApplications', 'adminNewUploads',
+            'adminNewAppointments', 'adminNotifCount',
+            'archivedApplications'
+        ));
     }
+
+    // ── Archive (soft delete) ────────────────────────────────────────────────
+    public function archiveApplication($id)
+    {
+        $admin = Auth::user();
+        $application = Application::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->firstOrFail();
+
+        $application->delete(); // soft delete
+
+        return redirect()->route('admin.requirements')
+            ->with('success', "Application of \"{$application->full_name}\" has been archived.");
+    }
+
+    // ── Restore from archive ─────────────────────────────────────────────────
+    public function restoreApplication($id)
+    {
+        $admin = Auth::user();
+        $application = Application::onlyTrashed()
+            ->where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->firstOrFail();
+
+        $application->restore();
+
+        return redirect()->route('admin.requirements')
+            ->with('success', "Application of \"{$application->full_name}\" has been restored.");
+    }
+
+    // ── Permanent delete ─────────────────────────────────────────────────────
+    public function forceDeleteApplication($id)
+    {
+        $admin = Auth::user();
+        $application = Application::onlyTrashed()
+            ->where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->firstOrFail();
+
+        $name = $application->full_name;
+        $application->forceDelete();
+
+        return redirect()->route('admin.requirements')
+            ->with('success', "Application of \"{$name}\" has been permanently deleted.");
+    }
+
+    // ── Direct permanent delete (from active table, skips archive) ───────────
+    public function directDeleteApplication($id)
+    {
+        $admin = Auth::user();
+        $application = Application::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->firstOrFail();
+
+        $name = $application->full_name;
+        $application->forceDelete(); // bypasses soft delete entirely
+
+        return redirect()->route('admin.requirements')
+            ->with('success', "Application of \"{$name}\" has been permanently deleted.");
+    }
+
+    // ── Mark Solo Parent ID as ready for pickup ───────────────────────────────
+    public function markIdReady($id)
+    {
+        $admin = Auth::user();
+        $application = Application::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->where('program_type', 'Solo_Parent')
+            ->firstOrFail();
+
+        $application->update([
+            'id_status'   => 'ready_for_pickup',
+            'id_ready_at' => now(),
+        ]);
+
+        $user = \App\Models\User::find($application->user_id);
+        if ($user && $user->email) {
+            try {
+                Mail::to($user->email)->send(new SoloParentIdReadyMail($application, $user));
+            } catch (\Exception $e) {
+                Log::error('SoloParentIdReadyMail failed: ' . $e->getMessage());
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'ID marked as ready. Email sent to ' . ($user?->email ?? 'user') . '.',
+        ]);
+    }
+
 
     public function viewRequirement($id)
     {
@@ -164,6 +335,32 @@ class AdminController extends Controller
             'requirement_name' => $fileUpload->requirement_name,
             'created_at' => now()
         ]);
+
+        // ── Email user when their Solo Parent requirements are reviewed ────────
+        if ($fileMonitoring->application && $fileMonitoring->application->program_type === 'Solo_Parent') {
+            $fileMonitoring->load('fileUploads', 'application.user');
+            $newOverall = $fileMonitoring->overall_status;
+
+            // Notify user when a file is individually rejected
+            if ($request->status === 'rejected') {
+                try {
+                    Mail::to($fileMonitoring->application->user->email)
+                        ->send(new RequirementsReviewedMail($fileMonitoring, 'rejected'));
+                } catch (\Exception $e) {
+                    Log::error('Requirements reviewed (reject) email failed: ' . $e->getMessage());
+                }
+            }
+
+            // Notify user when ALL files are approved (overall becomes 'approved')
+            if ($newOverall === 'approved') {
+                try {
+                    Mail::to($fileMonitoring->application->user->email)
+                        ->send(new RequirementsReviewedMail($fileMonitoring, 'approved'));
+                } catch (\Exception $e) {
+                    Log::error('Requirements reviewed (all approved) email failed: ' . $e->getMessage());
+                }
+            }
+        }
 
         return redirect()->back()->with('success', 'File status updated successfully!');
     }

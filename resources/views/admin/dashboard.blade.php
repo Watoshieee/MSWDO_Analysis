@@ -59,9 +59,9 @@
         /* ── STAT CARDS ── */
         .stat-card { background:#f1f5f9; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 4px 15px rgba(0,0,0,0.06); height:100%; transition:all 0.3s ease; position:relative; overflow:hidden; }
         .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--primary-gradient); }
-        .stat-card.yellow::before { background:var(--secondary-gradient); }
-        .stat-card.green::before  { background:linear-gradient(135deg,#28a745,#1e7e34); }
-        .stat-card.red::before    { background:linear-gradient(135deg,#C41E24,#8B0000); }
+        .stat-card.yellow::before { background:var(--primary-gradient); }
+        .stat-card.green::before  { background:var(--primary-gradient); }
+        .stat-card.red::before    { background:var(--primary-gradient); }
         .stat-card .card-body { padding:24px 26px; }
         .stat-pill { font-size:0.68rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; border-radius:20px; padding:3px 10px; display:inline-block; margin-bottom:10px; }
         .stat-label { font-size:0.78rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
@@ -156,9 +156,22 @@
                            href="{{ route('admin.detailed-analysis') }}">Analysis</a>
                     </li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}"
+                           href="{{ route('admin.announcements.index') }}">Announcements</a>
+                    </li>
                 </ul>
-                <div class="d-flex">
+                <div class="d-flex align-items-center gap-3">
                     @auth
+                    {{-- Admin notification bell --}}
+                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#adminNotifModal"
+                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
+                        title="Application Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($adminNotifCount) && $adminNotifCount > 0)
+                        <span class="admin-bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $adminNotifCount > 9 ? '9+' : $adminNotifCount }}</span>
+                        @endif
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -208,38 +221,38 @@
                 <div class="stat-card">
                     <div class="card-body">
                         <span class="stat-pill" style="background:#E5EEFF;color:#2C3E8F;">Total</span>
-                        <div class="stat-label">Applications</div>
+                        <div class="stat-label">APPLICATIONS</div>
                         <div class="stat-value" style="color:var(--primary-blue);">{{ number_format($totalApplications) }}</div>
                         <div class="stat-sub">All time in {{ $municipality->name }}</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card yellow">
+                <div class="stat-card">
                     <div class="card-body">
-                        <span class="stat-pill" style="background:#FFF3D6;color:#856404;">Pending</span>
-                        <div class="stat-label">For Review</div>
-                        <div class="stat-value" style="color:#856404;">{{ number_format($pendingApplications) }}</div>
+                        <span class="stat-pill" style="background:#E5EEFF;color:#2C3E8F;">Pending</span>
+                        <div class="stat-label">FOR REVIEW</div>
+                        <div class="stat-value" style="color:var(--primary-blue);">{{ number_format($pendingApplications) }}</div>
                         <div class="stat-sub">Awaiting action</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card green">
+                <div class="stat-card">
                     <div class="card-body">
-                        <span class="stat-pill" style="background:#d4edda;color:#155724;">Approved</span>
-                        <div class="stat-label">Completed</div>
-                        <div class="stat-value" style="color:#155724;">{{ number_format($approvedApplications) }}</div>
+                        <span class="stat-pill" style="background:#E5EEFF;color:#2C3E8F;">Approved</span>
+                        <div class="stat-label">COMPLETED</div>
+                        <div class="stat-value" style="color:var(--primary-blue);">{{ number_format($approvedApplications) }}</div>
                         <div class="stat-sub">Successfully processed</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card red">
+                <div class="stat-card">
                     <div class="card-body">
-                        <span class="stat-pill" style="background:#FCE8E8;color:#C41E24;">Rejected</span>
-                        <div class="stat-label">Declined</div>
-                        <div class="stat-value" style="color:#C41E24;">{{ number_format($rejectedApplications) }}</div>
+                        <span class="stat-pill" style="background:#E5EEFF;color:#2C3E8F;">Rejected</span>
+                        <div class="stat-label">DECLINED</div>
+                        <div class="stat-value" style="color:var(--primary-blue);">{{ number_format($rejectedApplications) }}</div>
                         <div class="stat-sub">Did not meet requirements</div>
                     </div>
                 </div>
@@ -254,7 +267,7 @@
                 <div class="panel-card">
                     <div class="panel-header">
                         Quick Actions
-                        <span class="panel-header-badge">4 shortcuts</span>
+                        <span class="panel-header-badge">5 shortcuts</span>
                     </div>
                     <div class="panel-body">
                         <a href="{{ route('admin.requirements') }}" class="action-item">
@@ -285,7 +298,15 @@
                             <div class="action-text">
                                 <span class="action-num">04 &mdash; Public</span>
                                 <span class="action-title">Comparative Analysis</span>
-                                <span class="action-sub">View comparative data across all three municipalities</span>
+                                <span class="action-sub">View comparative data across municipalities</span>
+                            </div>
+                            <span class="action-arrow">&rsaquo;</span>
+                        </a>
+                        <a href="{{ route('admin.announcements.index') }}" class="action-item">
+                            <div class="action-text">
+                                <span class="action-num">05 &mdash; Announcements</span>
+                                <span class="action-title">Manage Announcements</span>
+                                <span class="action-sub">Post updates and notices for residents</span>
                             </div>
                             <span class="action-arrow">&rsaquo;</span>
                         </a>
@@ -416,6 +437,7 @@
 
     @include('components.admin-chat-modal')
     @include('components.admin-settings-modal')
+    @include('components.admin-notification-modal')
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

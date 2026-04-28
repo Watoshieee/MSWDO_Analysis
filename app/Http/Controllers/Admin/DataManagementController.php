@@ -45,28 +45,16 @@ class DataManagementController extends Controller
         // Total population from current year summary
         $totalPopulation = $currentSummary->total_population ?? 0;
 
-        // Count unique barangay names (not per year)
-        $barangays = Barangay::where('municipality', $user->municipality)
-            ->distinct('name')
-            ->count('name');
-        
         // Programs count (all years)
         $programs = SocialWelfareProgram::where('municipality', $user->municipality)->count();
-        
-        // Beneficiaries from current year only (strictly from Barangay columns)
-        $muniBarangays = Barangay::where('municipality', $user->municipality)
+
+        // Beneficiaries: sum beneficiary_count from programs for current year
+        $beneficiaries = SocialWelfareProgram::where('municipality', $user->municipality)
             ->where('year', $currentYear)
-            ->get();
-            
-        $beneficiaries = $muniBarangays->sum('pwd_count') +
-                         $muniBarangays->sum('aics_count') +
-                         $muniBarangays->sum('single_parent_count') +
-                         $muniBarangays->sum('four_ps_count') +
-                         $muniBarangays->sum('senior_count');
+            ->sum('beneficiary_count');
 
         return view('admin.data.dashboard', compact(
             'municipality',
-            'barangays',
             'programs',
             'beneficiaries',
             'totalPopulation',
@@ -671,41 +659,21 @@ class DataManagementController extends Controller
         }
         
         $programs = $query->orderBy('year', 'desc')->orderBy('month', 'desc')->paginate(20);
-        
-        // Get barangay breakdown for each program
-        $fieldMapping = [
-            'PWD_Assistance' => 'pwd_count',
-            'AICS' => 'aics_count',
-            '4Ps' => 'four_ps_count',
-            'Senior_Citizen_Pension' => 'senior_count',
-            'Solo_Parent' => 'single_parent_count',
-        ];
-        
-        $barangayBreakdown = [];
-        foreach ($programs as $program) {
-            $field = $fieldMapping[$program->program_type] ?? null;
-            if ($field) {
-                $barangays = Barangay::where('municipality', $user->municipality)
-                    ->where('year', $program->year)
-                    ->where($field, '>', 0)  // Only get barangays with count > 0
-                    ->get();
-                
-                $barangayBreakdown[$program->id] = $barangays->map(function($b) use ($field) {
-                    return [
-                        'id' => $b->id,
-                        'name' => $b->name,
-                        'count' => $b->$field ?? 0,
-                    ];
-                });
-            }
-        }
-        
+
+        // Build existing combos for duplicate prevention (year|program_type, no month)
+        $existingCombos = SocialWelfareProgram::where('municipality', $user->municipality)
+            ->whereNull('month')
+            ->select('year', 'program_type')
+            ->get()
+            ->map(fn($r) => "{$r->year}|{$r->program_type}")
+            ->toArray();
+
         $months = [
             1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 5 => 'May', 6 => 'June',
             7 => 'July', 8 => 'August', 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
         ];
-        
-        return view('admin.data.programs', compact('programs', 'programTypes', 'years', 'months', 'municipality', 'barangayBreakdown'));
+
+        return view('admin.data.programs', compact('programs', 'programTypes', 'years', 'months', 'municipality', 'existingCombos'));
     }
 
     public function updateProgram(Request $request, $id)
@@ -717,11 +685,8 @@ class DataManagementController extends Controller
 
         $validator = Validator::make($request->all(), [
             'beneficiary_count' => 'required|integer|min:0',
-            'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
-            'month' => 'nullable|integer|min:1|max:12',
-            'barangay_data' => 'nullable|array',
-            'barangay_data.*.id' => 'required|integer',
-            'barangay_data.*.count' => 'required|integer|min:0',
+            'year'              => 'required|integer|min:2000|max:' . (date('Y') + 1),
+            'month'             => 'nullable|integer|min:1|max:12',
         ]);
 
         if ($validator->fails()) {
@@ -730,38 +695,11 @@ class DataManagementController extends Controller
                 ->withInput();
         }
 
-        // Update program record
         $program->update([
             'beneficiary_count' => $request->beneficiary_count,
-            'year' => $request->year,
-            'month' => $request->month,
+            'year'              => $request->year,
+            'month'             => $request->month,
         ]);
-        
-        // Update barangay data if provided
-        if ($request->has('barangay_data')) {
-            $fieldMapping = [
-                'PWD_Assistance' => 'pwd_count',
-                'AICS' => 'aics_count',
-                '4Ps' => 'four_ps_count',
-                'Senior_Citizen_Pension' => 'senior_count',
-                'Solo_Parent' => 'single_parent_count',
-            ];
-            
-            $field = $fieldMapping[$program->program_type] ?? null;
-            if ($field) {
-                foreach ($request->barangay_data as $data) {
-                    $barangay = Barangay::find($data['id']);
-                    if ($barangay && $barangay->municipality === $user->municipality) {
-                        $barangay->update([
-                            $field => $data['count']
-                        ]);
-                    }
-                }
-                
-                // Re-sync to SocialWelfareProgram
-                $this->syncBarangayYearToPrograms($user->municipality, $request->year);
-            }
-        }
 
         return redirect()->back()->with('success', 'Program data updated successfully!');
     }

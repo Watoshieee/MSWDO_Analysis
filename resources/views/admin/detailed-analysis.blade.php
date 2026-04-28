@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detailed Analysis – {{ $municipality->name }} – MSWDO</title>
+    <title>Detailed Analysis � {{ $municipality->name }} � MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -23,7 +23,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
         a { text-decoration: none; }
 
-        /* ── NAVBAR ── */
+        /* -- NAVBAR -- */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
         .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display: flex; align-items: center; gap: 12px; }
         .navbar-toggler { order: -1; }
@@ -39,7 +39,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .logout-btn { background: transparent; border: 2px solid rgba(255,255,255,0.8); color: white; border-radius: 30px; padding: 6px 18px; font-weight: 700; transition: all 0.3s; font-size: 0.88rem; cursor: pointer; }
         .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
 
-        /* ── HERO BANNER ── */
+        /* -- HERO BANNER -- */
         .hero-banner { background: var(--primary-gradient); color: white; padding: 44px 0 38px; position: relative; overflow: hidden; }
         .hero-banner::before { content: ''; position: absolute; top: -80px; right: -80px; width: 340px; height: 340px; border-radius: 50%; background: rgba(253,185,19,0.09); }
         .hero-banner::after  { content: ''; position: absolute; bottom: -60px; left: -40px; width: 230px; height: 230px; border-radius: 50%; background: rgba(255,255,255,0.05); }
@@ -52,7 +52,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .muni-badge-lg .muni-name { font-size: 1.35rem; font-weight: 900; display: block; }
         .muni-badge-lg .muni-sub  { font-size: 0.72rem; opacity: 0.75; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
 
-        /* ── STAT CARDS ── */
+        /* -- STAT CARDS -- */
         .stat-card { background: var(--bg-white); border-radius: 18px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); height: 100%; position: relative; overflow: hidden; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary-gradient); }
         .stat-card.yellow::before { background: var(--secondary-gradient); }
@@ -67,7 +67,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .stat-value { font-size: 2.6rem; font-weight: 900; line-height: 1; }
         .stat-sub   { font-size: 0.75rem; color: #94a3b8; margin-top: 6px; font-weight: 500; }
 
-        /* ── PANEL CARDS ── */
+        /* -- PANEL CARDS -- */
         .panel-card { background: var(--bg-white); border-radius: 20px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.04); overflow: hidden; margin-bottom: 24px; }
         .panel-header { background: var(--primary-gradient); color: white; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; }
         .panel-header-title { font-size: 1rem; font-weight: 800; }
@@ -75,15 +75,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .panel-header-badge { font-size: 0.7rem; background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 14px; font-weight: 700; }
         .panel-body { padding: 26px; }
 
-        /* ── SECTION TITLE ── */
+        /* -- SECTION TITLE -- */
         .section-title { font-size: 1.05rem; font-weight: 800; color: var(--primary-blue); position: relative; padding-bottom: 10px; margin-bottom: 0; }
         .section-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 32px; height: 3px; background: var(--secondary-yellow); border-radius: 2px; }
 
-        /* ── CHARTS ── */
+        /* -- CHARTS -- */
         .chart-wrap { position: relative; }
         .chart-wrap canvas { max-width: 100%; }
 
-        /* ── STATUS BREAKDOWN ── */
+        /* -- STATUS BREAKDOWN -- */
         .breakdown-list { list-style: none; padding: 0; margin: 0; }
         .breakdown-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--border-light); }
         .breakdown-item:last-child { border-bottom: none; }
@@ -93,7 +93,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .breakdown-count { font-size: 1.2rem; font-weight: 900; color: var(--primary-blue); display: block; }
         .breakdown-pct   { font-size: 0.72rem; color: #94a3b8; font-weight: 500; }
 
-        /* ── PROGRESS BARS (program rows) ── */
+        /* -- PROGRESS BARS (program rows) -- */
         .prog-row { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--border-light); }
         .prog-row:last-child { border-bottom: none; }
         .prog-num  { font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; background: var(--bg-soft-blue); color: var(--primary-blue); border-radius: 20px; padding: 2px 10px; flex-shrink: 0; }
@@ -102,7 +102,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .prog-bar  { height: 100%; border-radius: 4px; background: var(--primary-gradient); }
         .prog-count { font-size: 0.88rem; font-weight: 800; color: var(--primary-blue); min-width: 28px; text-align: right; }
 
-        /* ── BARANGAY TABLE ── */
+        /* -- BARANGAY TABLE -- */
         .table-scroll { max-height: 400px; overflow-y: auto; border-radius: 0 0 14px 14px; }
         .bgy-table { width: 100%; }
         .bgy-table th { font-size: 0.71rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: #64748b; padding: 10px 14px; background: var(--bg-soft-blue); border-bottom: 2px solid var(--border-light); position: sticky; top: 0; z-index: 2; }
@@ -115,10 +115,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .badge-rejected { background: #fce8e8; color: #C41E24; }
         .no-data { text-align: center; padding: 40px 0; color: #94a3b8; font-size: 0.88rem; }
 
-        /* ── MAIN GROW ── */
+        /* -- MAIN GROW -- */
         .main-content { flex: 1; }
 
-        /* ── FOOTER ── */
+        /* -- FOOTER -- */
         .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.75); text-align: center; padding: 20px 0; font-size: 0.85rem; margin-top: 48px; }
         .footer-strip strong { color: white; }
     </style>
@@ -141,6 +141,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.data.*') ? 'active' : '' }}" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
                 </ul>
                 <div class="d-flex">
                     @auth
@@ -393,12 +394,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // ── SHARED DEFAULTS ──
+        // -- SHARED DEFAULTS --
         Chart.defaults.font.family = "'Inter', sans-serif";
         Chart.defaults.font.size   = 12;
         Chart.defaults.color       = '#64748b';
 
-        // ── 1. APPLICATIONS BY PROGRAM (grouped bar) ──
+        // -- 1. APPLICATIONS BY PROGRAM (grouped bar) --
         const progLabels = {!! json_encode($applicationsByProgram->keys()->map(fn($k) => str_replace('_', ' ', $k))) !!};
         const progPending  = {!! json_encode($applicationsByProgram->pluck('pending'))  !!};
         const progApproved = {!! json_encode($applicationsByProgram->pluck('approved')) !!};
@@ -465,7 +466,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
         });
 
-        // ── 2. STATUS DOUGHNUT ──
+        // -- 2. STATUS DOUGHNUT --
         new Chart(document.getElementById('statusChart'), {
             type: 'doughnut',
             data: {
@@ -496,7 +497,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
         });
 
-        // ── 3. BARANGAY BAR CHART ──
+        // -- 3. BARANGAY BAR CHART --
         @php
             $bgyDisplay = collect($barangayStats)
                 ->sortByDesc(fn($s) => $s['total'])
@@ -535,7 +536,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                indexAxis: 'y',   // Horizontal bar — cleaner for many barangay names
+                indexAxis: 'y',   // Horizontal bar � cleaner for many barangay names
                 plugins: {
                     legend: {
                         position: 'top',
