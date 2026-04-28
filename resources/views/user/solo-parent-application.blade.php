@@ -131,19 +131,33 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="container" style="padding-top:32px;">
 
         {{-- Flash messages --}}
-        @if(session('appt_success'))
-        <div style="background:#d4edda;border-left:4px solid #28a745;border-radius:12px;padding:14px 20px;margin-bottom:16px;font-size:.9rem;color:#155724;font-weight:600;">
-            ✅ {{ session('appt_success') }}
+        @php
+            $topNotice = session('appt_success') ?: session('appt_error');
+        @endphp
+        @if($topNotice)
+        <div style="position:fixed;top:{{ !empty($isSoloParentBeneficiary) ? '150px' : '84px' }};right:18px;z-index:1081;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+            {{ $topNotice }}
         </div>
         @endif
-        @if(session('appt_error'))
-        <div style="background:#f8d7da;border-left:4px solid #dc3545;border-radius:12px;padding:14px 20px;margin-bottom:16px;font-size:.9rem;color:#721c24;font-weight:600;">
-            ⚠️ {{ session('appt_error') }}
+
+        @if(!empty($isSoloParentBeneficiary))
+        <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+            Solo Parent beneficiary na ang account na ito. Re-application is disabled.
         </div>
         @endif
 
         {{-- ── ACTIVE APPOINTMENT CARD ── --}}
-        @if($appointment && in_array($appointment->status, ['pending','confirmed']))
+        @if(!empty($isSoloParentBeneficiary))
+        <div style="background:white;border-radius:20px;border:1px solid #c7d6f5;box-shadow:0 4px 20px rgba(44,62,143,.12);overflow:hidden;margin-bottom:24px;">
+            <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:18px 26px;display:flex;align-items:center;gap:14px;">
+                <div style="width:42px;height:42px;background:rgba(255,255,255,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">🪪</div>
+                <div style="font-weight:800;font-size:1rem;">Solo Parent Beneficiary</div>
+            </div>
+            <div style="padding:20px 26px;color:#1e293b;font-size:.9rem;line-height:1.7;">
+                May na-release na / beneficiary na ang iyong Solo Parent application, kaya disabled na ang new appointment at re-application.
+            </div>
+        </div>
+        @elseif($appointment && in_array($appointment->status, ['pending','confirmed']))
         <div style="background:white;border-radius:20px;border:1px solid #c7d2fe;box-shadow:0 4px 20px rgba(44,62,143,.08);overflow:hidden;margin-bottom:24px;">
             <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:18px 26px;display:flex;align-items:center;gap:14px;">
                 <div style="width:42px;height:42px;background:rgba(253,185,19,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📅</div>

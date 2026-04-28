@@ -16,6 +16,8 @@ use App\Http\Controllers\SuperAdmin\UserController as SuperAdminUserController;
 Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::get('/user/dashboard', [UserController::class, 'dashboard'])->name('user.dashboard');
     Route::get('/user/programs', [UserController::class, 'programs'])->name('user.programs');
+    Route::get('/user/profile', [UserController::class, 'profile'])->name('user.profile');
+    Route::put('/user/profile', [UserController::class, 'updateProfile'])->name('user.profile.update');
     Route::get('/user/announcements', [UserController::class, 'announcements'])->name('user.announcements');
     Route::get('/user/my-requirements', [UserController::class, 'myRequirements'])->name('user.my-requirements');
     Route::put('/user/resubmit-requirement/{fileUploadId}', [UserController::class, 'resubmitRequirement'])->name('user.resubmit-requirement');
@@ -233,12 +235,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/requirements', [App\Http\Controllers\AdminController::class, 'requirements'])->name('requirements');
     Route::get('/requirements/{id}', [App\Http\Controllers\AdminController::class, 'viewRequirement'])->name('view-requirement');
     Route::post('/requirements/{id}/status', [App\Http\Controllers\AdminController::class, 'updateFileStatus'])->name('update-file-status');
+    Route::get('/users/search', [App\Http\Controllers\AdminController::class, 'searchUsers'])->name('users.search');
 
     // Archive / Restore / Force-delete
     Route::delete('/applications/{id}/archive', [App\Http\Controllers\AdminController::class, 'archiveApplication'])->name('applications.archive');
     Route::patch('/applications/{id}/restore', [App\Http\Controllers\AdminController::class, 'restoreApplication'])->name('applications.restore');
     Route::delete('/applications/{id}/force-delete', [App\Http\Controllers\AdminController::class, 'forceDeleteApplication'])->name('applications.force-delete');
     Route::delete('/applications/{id}/direct-delete', [App\Http\Controllers\AdminController::class, 'directDeleteApplication'])->name('applications.direct-delete');
+    Route::post('/applications/{id}/validate-pwd', [App\Http\Controllers\AdminController::class, 'validatePwdApplication'])->name('applications.validate-pwd');
+    Route::post('/applications/{id}/validate-aics', [App\Http\Controllers\AdminController::class, 'validateAicsApplication'])->name('applications.validate-aics');
     Route::post('/applications/{id}/mark-id-ready', [App\Http\Controllers\AdminController::class, 'markIdReady'])->name('applications.mark-id-ready');
 
     // Admin Appointment routes (Solo Parent)
@@ -301,6 +306,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Admin notification bell - mark viewed
     Route::post('/mark-notifications-viewed', [App\Http\Controllers\AdminController::class, 'markNotificationsViewed'])->name('mark-notifications-viewed');
+
+    // Vision / Mission / Goals & Strategic Goals
+    Route::post('/vision-mission/save', [App\Http\Controllers\AdminController::class, 'saveVisionMission'])->name('vision-mission.save');
+
+    // Admin User Management (view users in same municipality)
+    Route::get('/users', [App\Http\Controllers\AdminController::class, 'users'])->name('users');
 
     // Yearly Comparison Routes
     Route::prefix('yearly')->name('yearly.')->group(

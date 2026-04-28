@@ -13,14 +13,32 @@
     $hasAnnounce     = isset($newAnnouncements)       && $newAnnouncements->count() > 0;
     $hasValidatedAppt = isset($validatedAppointment)  && $validatedAppointment !== null;
     $hasIdReady      = isset($idReadyApplication)     && $idReadyApplication !== null;
-    $hasAny          = $hasDocNotifs || $hasAppRejects || $hasAnnounce || $hasValidatedAppt || $hasIdReady;
+    $hasApprovedSoloParent = isset($approvedSoloParentAppointment) && $approvedSoloParentAppointment !== null;
+    $hasSoloParentReqValidated = isset($soloParentRequirementsValidated) && $soloParentRequirementsValidated !== null;
+    $hasPwdValidated = isset($pwdValidatedApplication) && $pwdValidatedApplication !== null;
+    $hasPwdIdReady   = isset($pwdIdReadyApplication) && $pwdIdReadyApplication !== null;
+    $hasAicsConfirmed = isset($confirmedAicsAppointments) && $confirmedAicsAppointments->count() > 0;
+    $hasAicsValidated = isset($aicsValidatedApplications) && $aicsValidatedApplications->count() > 0;
+    $hasAicsReady = isset($aicsReadyApplications) && $aicsReadyApplications->count() > 0;
+    $hasAny          = $hasDocNotifs || $hasAppRejects || $hasAnnounce || $hasApprovedSoloParent || $hasValidatedAppt || $hasSoloParentReqValidated || $hasIdReady || $hasPwdValidated || $hasPwdIdReady || $hasAicsConfirmed || $hasAicsValidated || $hasAicsReady;
+
+    $fmtTs = function ($ts) {
+        if (!$ts) return null;
+        try {
+            $c = $ts instanceof \Carbon\CarbonInterface ? $ts : \Carbon\Carbon::parse($ts);
+            $c = $c->copy()->setTimezone('Asia/Manila');
+            return $c->format('M d, Y h:i A');
+        } catch (\Exception $e) {
+            return null;
+        }
+    };
 
     // Build combined list for "All" tab
     $allItems = collect();
 
     if ($hasAppRejects) {
         foreach ($rejectedApplications as $app) {
-            $allItems->push(['kind' => 'app_rejected', 'data' => $app, 'ts' => $app->application_date]);
+            $allItems->push(['kind' => 'app_rejected', 'data' => $app, 'ts' => $app->created_at ?? $app->application_date]);
         }
     }
     if ($hasDocNotifs) {
@@ -33,9 +51,88 @@
             $allItems->push(['kind' => 'announcement', 'data' => $ann, 'ts' => $ann->created_at]);
         }
     }
+
+    if ($hasIdReady) {
+        $allItems->push([
+            'kind' => 'solo_parent_id_ready',
+            'data' => $idReadyApplication,
+            'ts'   => $idReadyApplication->id_ready_at ?? $idReadyApplication->updated_at ?? $idReadyApplication->application_date,
+        ]);
+    }
+
+    if ($hasApprovedSoloParent) {
+        $allItems->push([
+            'kind' => 'solo_parent_approved',
+            'data' => $approvedSoloParentAppointment,
+            'ts'   => $approvedSoloParentAppointment->updated_at ?? $approvedSoloParentAppointment->appointment_date,
+        ]);
+    }
+
+    if ($hasSoloParentReqValidated) {
+        $allItems->push([
+            'kind' => 'solo_parent_requirements_validated',
+            'data' => $soloParentRequirementsValidated,
+            'ts'   => $soloParentRequirementsValidated->completed_at ?? $soloParentRequirementsValidated->application_date,
+        ]);
+    }
+
+    if ($hasPwdValidated) {
+        $allItems->push([
+            'kind' => 'pwd_validated',
+            'data' => $pwdValidatedApplication,
+            'ts'   => $pwdValidatedApplication->completed_at ?? $pwdValidatedApplication->application_date,
+        ]);
+    }
+
+    if ($hasPwdIdReady) {
+        $allItems->push([
+            'kind' => 'pwd_id_ready',
+            'data' => $pwdIdReadyApplication,
+            'ts'   => $pwdIdReadyApplication->id_ready_at ?? $pwdIdReadyApplication->application_date,
+        ]);
+    }
+
+    if ($hasValidatedAppt) {
+        $allItems->push([
+            'kind' => 'solo_parent_eligible',
+            'data' => $validatedAppointment,
+            'ts'   => $validatedAppointment->validated_at ?? $validatedAppointment->updated_at,
+        ]);
+    }
+
+    if ($hasAicsConfirmed) {
+        foreach ($confirmedAicsAppointments as $aicsAppt) {
+            $allItems->push([
+                'kind' => 'aics_confirmed',
+                'data' => $aicsAppt,
+                'ts'   => $aicsAppt->updated_at ?? $aicsAppt->appointment_date,
+            ]);
+        }
+    }
+
+    if ($hasAicsValidated) {
+        foreach ($aicsValidatedApplications as $aicsApp) {
+            $allItems->push([
+                'kind' => 'aics_validated',
+                'data' => $aicsApp,
+                'ts'   => $aicsApp->completed_at ?? $aicsApp->application_date,
+            ]);
+        }
+    }
+
+    if ($hasAicsReady) {
+        foreach ($aicsReadyApplications as $aicsApp) {
+            $allItems->push([
+                'kind' => 'aics_ready',
+                'data' => $aicsApp,
+                'ts'   => $aicsApp->id_ready_at ?? $aicsApp->application_date,
+            ]);
+        }
+    }
+
     $allItems = $allItems->sortByDesc('ts');
 
-    $annCount   = isset($newAnnouncements) ? $newAnnouncements->count() : 0;
+    $annCount   = isset($newAnnouncementCount) ? $newAnnouncementCount : (isset($newAnnouncements) ? $newAnnouncements->count() : 0);
     $totalCount = $allItems->count();
 @endphp
 
@@ -89,7 +186,12 @@
                             $isReject = ($kind === 'app_rejected') || ($kind === 'doc_status' && $d->status === 'rejected');
                             $isApprove= ($kind === 'doc_status' && $d->status === 'approved');
                             $isAnn    = ($kind === 'announcement');
+                            $isOther  = in_array($kind, ['solo_parent_id_ready','solo_parent_eligible','solo_parent_approved','solo_parent_requirements_validated','aics_confirmed','aics_validated','aics_ready','pwd_validated','pwd_id_ready'], true);
                             $fClass   = $isAnn ? 'announcement' : ($isReject ? 'rejected' : 'approved');
+                            $tsHuman  = $item['ts']
+                                ? \Carbon\Carbon::parse($item['ts'])->setTimezone('Asia/Manila')->diffForHumans()
+                                : 'Recently';
+                            $tsExact  = $fmtTs($item['ts']);
                         @endphp
 
                         <div class="notif-card" data-filter="{{ $fClass }}"
@@ -97,7 +199,25 @@
                             <div style="display:flex;gap:14px;align-items:flex-start;">
 
                                 {{-- Icon --}}
-                                @if($isAnn)
+                                @if($kind === 'solo_parent_id_ready')
+                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#16a34a,#15803d);border:1px solid #86efac;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;color:white;">🎫</div>
+                                @elseif($kind === 'solo_parent_requirements_validated')
+                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">✅</div>
+                                @elseif($kind === 'solo_parent_approved')
+                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">📅</div>
+                                @elseif($kind === 'pwd_id_ready')
+                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#16a34a,#15803d);border:1px solid #86efac;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;color:white;">🎫</div>
+                                @elseif($kind === 'pwd_validated')
+                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">🏆</div>
+                                @elseif($kind === 'solo_parent_eligible')
+                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">🏆</div>
+                                @elseif($kind === 'aics_confirmed')
+                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#28a745,#155724);border:1px solid #86efac;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">✅</div>
+                                @elseif($kind === 'aics_validated')
+                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">📋</div>
+                                @elseif($kind === 'aics_ready')
+                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#16a34a,#15803d);border:1px solid #86efac;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">🎁</div>
+                                @elseif($isAnn)
                                     @php $typeColors = ['general'=>'#2C3E8F','event'=>'#856404','emergency'=>'#991b1b','program_update'=>'#155724']; $tc = $typeColors[$d->type] ?? '#2C3E8F'; @endphp
                                     <div style="width:46px;height:46px;border-radius:12px;background:#E5EEFF;border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">
                                         📢
@@ -115,24 +235,109 @@
                                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
                                         <div>
                                             <h6 style="font-weight:800;font-size:0.92rem;color:#1e293b;margin:0 0 2px;">
-                                                @if($isAnn)
+                                                @if($kind === 'solo_parent_id_ready')
+                                                    Your Solo Parent ID is Ready
+                                                @elseif($kind === 'solo_parent_requirements_validated')
+                                                    Solo Parent Requirements Validated
+                                                @elseif($kind === 'solo_parent_approved')
+                                                    Solo Parent Appointment Approved
+                                                @elseif($kind === 'pwd_id_ready')
+                                                    Your PWD ID is Ready
+                                                @elseif($kind === 'pwd_validated')
+                                                    PWD Requirements Validated
+                                                @elseif($kind === 'solo_parent_eligible')
+                                                    Eligible for Solo Parent ID
+                                                @elseif($kind === 'aics_confirmed')
+                                                    Appointment Confirmed
+                                                @elseif($kind === 'aics_validated')
+                                                    AICS Requirements Validated
+                                                @elseif($kind === 'aics_ready')
+                                                    AICS Grant Ready for Pickup
+                                                @elseif($isAnn)
                                                     {{ $d->title ?: 'New Announcement' }}
                                                 @elseif($kind === 'app_rejected') Application Declined
                                                 @elseif($isReject) Document Rejected
                                                 @else Document Approved
                                                 @endif
                                             </h6>
-                                            <p style="font-size:0.74rem;color:#94a3b8;margin:0;">{{ optional($item['ts'])->diffForHumans() ?? 'Recently' }}</p>
+                                            <p style="font-size:0.74rem;color:#94a3b8;margin:0;">
+                                                {{ $tsHuman }}@if($tsExact) <span style="color:#cbd5e1;">•</span> {{ $tsExact }}@endif
+                                            </p>
                                         </div>
                                         <span style="padding:3px 10px;border-radius:12px;font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;flex-shrink:0;
                                             {{ $isAnn ? 'background:#E5EEFF;color:#2C3E8F;' : ($isReject ? 'background:#fee2e2;color:#991b1b;' : 'background:#dcfce7;color:#166534;') }}">
-                                            {{ $isAnn ? strtoupper($d->type) : ($isReject ? 'Action Required' : 'Completed') }}
+                                            @if($kind === 'solo_parent_id_ready')
+                                                READY
+                                            @elseif($kind === 'solo_parent_requirements_validated')
+                                                VALIDATED
+                                            @elseif($kind === 'solo_parent_approved')
+                                                APPROVED
+                                            @elseif($kind === 'pwd_id_ready')
+                                                READY
+                                            @elseif($kind === 'pwd_validated')
+                                                VALIDATED
+                                            @elseif($kind === 'solo_parent_eligible')
+                                                ELIGIBLE
+                                            @elseif($kind === 'aics_confirmed')
+                                                CONFIRMED
+                                            @elseif($kind === 'aics_validated')
+                                                VALIDATED
+                                            @elseif($kind === 'aics_ready')
+                                                READY
+                                            @else
+                                                {{ $isAnn ? strtoupper($d->type) : ($isReject ? 'Action Required' : 'Completed') }}
+                                            @endif
                                         </span>
                                     </div>
 
                                     {{-- Details block --}}
                                     <div style="background:#f8fafc;border-radius:10px;padding:10px 14px;margin-bottom:8px;font-size:0.84rem;color:#475569;line-height:1.6;">
-                                        @if($isAnn)
+                                        @if($kind === 'solo_parent_id_ready')
+                                            <p style="margin:0;">Please pick up your Solo Parent ID at the <strong>{{ $d->municipality }} MSWDO Office</strong>.</p>
+                                        @elseif($kind === 'solo_parent_requirements_validated')
+                                            <p style="margin:0;">Your Solo Parent requirements are fully validated. Please wait for the ID ready notice.</p>
+                                        @elseif($kind === 'solo_parent_approved')
+                                            <p style="margin:0;">Your Solo Parent appointment has been approved. Please wait for your eligibility result from MSWDO.</p>
+                                        @elseif($kind === 'pwd_id_ready')
+                                            <p style="margin:0;">Your PWD ID is ready for pick-up at the <strong>{{ $d->municipality }} MSWDO Office</strong>.</p>
+                                        @elseif($kind === 'pwd_validated')
+                                            <p style="margin:0;">Your PWD requirements are validated. Please wait for a follow-up notice when your ID is ready for release.</p>
+                                        @elseif($kind === 'solo_parent_eligible')
+                                            <p style="margin:0;">Congratulations! You passed the eligibility assessment. Please submit your documents to complete your application.</p>
+                                        @elseif($kind === 'aics_confirmed')
+                                            @php
+                                                $aicsLabel = match($d->program_type) {
+                                                    'AICS_Medical' => 'AICS Medical Assistance',
+                                                    'AICS_Burial'  => 'AICS Burial Assistance',
+                                                    default        => str_replace('_', ' ', $d->program_type),
+                                                };
+                                                $aicsDate = $d->appointment_date ? $d->appointment_date->format('M d, Y') : null;
+                                            @endphp
+                                            <p style="margin:0;">
+                                                Your <strong>{{ $aicsLabel }}</strong> appointment
+                                                @if($aicsDate) on <strong>{{ $aicsDate }}</strong>@endif
+                                                @if($d->formatted_time) at <strong>{{ $d->formatted_time }}</strong>@endif
+                                                has been confirmed.
+                                            </p>
+                                        @elseif($kind === 'aics_validated')
+                                            @php
+                                                $aicsLabel = match($d->program_type) {
+                                                    'AICS_Medical' => 'AICS Medical Assistance',
+                                                    'AICS_Burial'  => 'AICS Burial Assistance',
+                                                    default        => str_replace('_', ' ', $d->program_type),
+                                                };
+                                            @endphp
+                                            <p style="margin:0;">Your <strong>{{ $aicsLabel }}</strong> requirements are validated. Please wait for grant release notice.</p>
+                                        @elseif($kind === 'aics_ready')
+                                            @php
+                                                $aicsLabel = match($d->program_type) {
+                                                    'AICS_Medical' => 'AICS Medical Assistance',
+                                                    'AICS_Burial'  => 'AICS Burial Assistance',
+                                                    default        => str_replace('_', ' ', $d->program_type),
+                                                };
+                                            @endphp
+                                            <p style="margin:0;">Your <strong>{{ $aicsLabel }}</strong> grant is ready for pickup at MSWDO.</p>
+                                        @elseif($isAnn)
                                             <p style="margin:0;">{{ Str::limit($d->content, 120) }}</p>
                                             @if($d->municipality && $d->municipality !== 'all')
                                                 <p style="margin:4px 0 0;font-size:0.76rem;color:#94a3b8;">📍 {{ $d->municipality }}</p>
@@ -168,7 +373,33 @@
                                     @endif
 
                                     {{-- Action button --}}
-                                    @if($isAnn)
+                                    @if($kind === 'solo_parent_approved')
+                                        <a href="{{ route('user.solo-parent-application') }}" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:8px 16px;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
+                                            View Appointment →
+                                        </a>
+                                    @elseif($kind === 'solo_parent_eligible')
+                                        <a href="{{ route('user.solo-parent-application') }}" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:8px 16px;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
+                                            📁 Submit Requirements
+                                        </a>
+                                    @elseif($kind === 'aics_confirmed')
+                                        @php
+                                            $aicsRoute = $d->program_type === 'AICS_Medical'
+                                                ? route('user.aics-medical')
+                                                : route('user.aics-burial');
+                                        @endphp
+                                        <a href="{{ $aicsRoute }}" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#28a745,#155724);color:white;padding:8px 16px;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
+                                            📁 Submit Requirements
+                                        </a>
+                                    @elseif($kind === 'aics_validated' || $kind === 'aics_ready')
+                                        @php
+                                            $aicsRoute = $d->program_type === 'AICS_Medical'
+                                                ? route('user.aics-medical')
+                                                : route('user.aics-burial');
+                                        @endphp
+                                        <a href="{{ $aicsRoute }}" style="display:inline-flex;align-items:center;gap:6px;background:#E5EEFF;color:#2C3E8F;padding:8px 16px;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
+                                            View AICS Status →
+                                        </a>
+                                    @elseif($isAnn)
                                         <a href="{{ route('user.announcements') }}" style="display:inline-flex;align-items:center;gap:6px;background:#E5EEFF;color:#2C3E8F;padding:8px 16px;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
                                             View All Announcements →
                                         </a>
@@ -183,52 +414,6 @@
                         </div>
                     @endforeach
                     </div>
-                @if($hasIdReady)
-                    {{-- 🎫 Solo Parent ID Ready for Pick-Up --}}
-                    <div style="background:white;border:1.5px solid #86efac;border-radius:14px;padding:16px 20px;margin-bottom:12px;transition:all 0.2s;">
-                        <div style="display:flex;align-items:flex-start;gap:12px;">
-                            <div style="width:46px;height:46px;min-width:46px;border-radius:12px;background:linear-gradient(135deg,#16a34a,#15803d);display:flex;align-items:center;justify-content:center;font-size:1.4rem;color:white;">🎫</div>
-                            <div style="flex:1;">
-                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                                    <span style="background:#dcfce7;color:#166534;border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:700;">Solo Parent ID</span>
-                                    <span style="background:#d4edda;color:#155724;border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:700;">✅ Ready</span>
-                                </div>
-                                <div style="font-weight:800;color:#1e293b;font-size:.92rem;">Your Solo Parent ID is Ready for Pick-Up!</div>
-                                <div style="font-size:.82rem;color:#64748b;margin-top:4px;line-height:1.6;">
-                                    Your Solo Parent ID has been processed and is now available at the
-                                    <strong>{{ $idReadyApplication->municipality }} MSWDO Office</strong>.
-                                    Please bring a valid ID when claiming.
-                                </div>
-                                <div style="font-size:.78rem;color:#94a3b8;margin-top:4px;">
-                                    📅 Office Hours: Monday – Friday, 8:00 AM – 5:00 PM
-                                    &nbsp;|&nbsp;
-                                    Ready since: {{ optional($idReadyApplication->id_ready_at)->diffForHumans() ?? 'Recently' }}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-
-    @if($hasValidatedAppt)
-                    {{-- ✔️ Validated Solo Parent Appointment notification --}}
-                    <div style="background:white;border:1.5px solid #cce5ff;border-radius:14px;padding:16px 20px;margin-bottom:12px;transition:all 0.2s;">
-                        <div style="display:flex;align-items:flex-start;gap:12px;">
-                            <div style="width:40px;height:40px;min-width:40px;border-radius:50%;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);display:flex;align-items:center;justify-content:center;font-size:1.1rem;color:white;">
-                                🏆
-                            </div>
-                            <div style="flex:1;">
-                                <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-                                    <span style="background:#cce5ff;color:#004085;border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:700;">Solo Parent ID</span>
-                                    <span style="background:#d4edda;color:#155724;border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:700;">✅ Eligible</span>
-                                </div>
-                                <div style="font-weight:700;color:#1e293b;font-size:.9rem;">You are Eligible for Solo Parent ID!</div>
-                                <div style="font-size:.82rem;color:#64748b;margin-top:3px;line-height:1.5;">Congratulations! You passed the eligibility assessment. Please submit your required documents to complete your application.</div>
-                                <a href="{{ route('user.solo-parent-application') }}" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border-radius:8px;padding:7px 16px;font-size:.78rem;font-weight:700;margin-top:8px;text-decoration:none;">📁 Submit Requirements</a>
-                            </div>
-                        </div>
-                    </div>
-                    @endif
-
                     @else
                     <div style="text-align:center;padding:60px 20px;">
                         <div style="font-size:3.5rem;margin-bottom:14px;opacity:0.3;">🔔</div>

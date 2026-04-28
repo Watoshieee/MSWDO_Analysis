@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Review Requirements – {{ $application->full_name }}</title>
+    <title>Review Requirements � {{ $application->full_name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -22,7 +22,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         /* NAVBAR */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,.18); padding: 14px 0; }
         .navbar-brand { font-weight: 800; font-size: 1.4rem; color: white !important; display:flex; align-items:center; gap:10px; }
-        .nav-link { color: rgba(255,255,255,.88) !important; font-weight:600; border-radius:8px; padding:10px 18px !important; font-size:.95rem; transition:all .25s; }
+        .nav-link { color: rgba(255,255,255,.88) !important; font-weight:600; border-radius:8px; padding:10px 18px !important; font-size: .85rem; transition:all .25s; white-space: nowrap; }
         .nav-link:hover { background: rgba(255,255,255,.15); }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; }
         .user-info { color:white; background:rgba(255,255,255,.1); padding:9px 22px; border-radius:40px; font-size:.9rem; font-weight:600; }
@@ -143,6 +143,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.requirements') }}">Applications</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                 </ul>
@@ -164,16 +165,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="container mt-4 pb-5">
 
         {{-- Alerts --}}
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show mb-3" style="border-radius:12px;">
-                ✅ {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show mb-3" style="border-radius:12px;">
-                ❌ {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        @php
+            $topNotice = session('success') ?: session('error');
+        @endphp
+        @if($topNotice)
+            <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                {{ $topNotice }}
             </div>
         @endif
 
@@ -185,7 +182,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <p>{{ str_replace('_', ' ', $application->program_type) }} &mdash; Reviewing submitted documents</p>
                 </div>
                 <a href="{{ route('admin.requirements') }}" class="btn btn-light btn-sm fw-bold px-4" style="border-radius:30px;">
-                    ← Back to List
+                    ? Back to List
                 </a>
             </div>
         </div>
@@ -204,11 +201,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 </div>
                 <div class="col-md-2">
                     <div style="font-size:.75rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Barangay</div>
-                    <div>{{ $application->barangay ?: '—' }}</div>
+                    <div>{{ $application->barangay ?: '�' }}</div>
                 </div>
                 <div class="col-md-2">
                     <div style="font-size:.75rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Date Filed</div>
-                    <div>{{ $application->application_date ? \Carbon\Carbon::parse($application->application_date)->format('M d, Y') : '—' }}</div>
+                    <div>{{ $application->application_date ? \Carbon\Carbon::parse($application->application_date)->format('M d, Y') : '�' }}</div>
                 </div>
                 <div class="col-md-2">
                     <div style="font-size:.75rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Status</div>
@@ -259,18 +256,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
                                  title="Click to view full size">
                             <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;display:none;cursor:pointer;" 
-                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">🖼️</div>
+                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">???</div>
                         @elseif($ext === 'pdf')
                             <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;cursor:pointer;" 
-                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">📄</div>
+                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">??</div>
                         @else
                             <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;cursor:pointer;" 
-                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">📎</div>
+                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">??</div>
                         @endif
                         <div class="mt-2">
                             <button onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')"
                                     class="btn-view">
-                                👁 View Document
+                                ?? View Document
                             </button>
                         </div>
                     @else
@@ -283,12 +280,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     @if($file->file_path)
                         @if($status === 'approved')
                             <div style="color:#28a745;font-weight:700;font-size:.88rem;">
-                                <span style="font-size:1rem;">✔</span> Already Approved
+                                <span style="font-size:1rem;">?</span> Already Approved
                             </div>
                         @elseif($status === 'rejected')
                             <div style="background:#fff5f5;border:1px solid #f8d7da;border-radius:10px;padding:12px 16px;">
                                 <div style="color:#dc3545;font-weight:700;font-size:.88rem;margin-bottom:6px;">
-                                    <span style="font-size:1rem;">✖</span> Document Rejected
+                                    <span style="font-size:1rem;">?</span> Document Rejected
                                 </div>
                                 <div style="font-size:.75rem;color:#721c24;line-height:1.5;">
                                     Waiting for user to re-upload a corrected document.
@@ -301,7 +298,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     @csrf
                                     <input type="hidden" name="status" value="approved">
                                     <input type="hidden" name="admin_remarks" value="">
-                                    <button type="submit" class="btn-action btn-approve">✔ Approve</button>
+                                    <button type="submit" class="btn-action btn-approve">? Approve</button>
                                 </form>
 
                                 {{-- Decline triggers modal --}}
@@ -310,7 +307,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     data-bs-target="#declineModal"
                                     data-file-id="{{ $file->id }}"
                                     data-file-name="{{ $file->requirement_name }}">
-                                    ✖ Decline
+                                    ? Decline
                                 </button>
                             </div>
                         @endif
@@ -346,10 +343,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="text-muted">Loading document...</div>
                     </div>
                     <div class="file-info-detail" id="fileInfoDetail">
-                        <p><strong>Document Name:</strong> <span id="modalDocName" class="fw-bold" style="color: var(--primary-blue);">—</span></p>
-                        <p><strong>File Type:</strong> <span id="modalFileType">—</span></p>
+                        <p><strong>Document Name:</strong> <span id="modalDocName" class="fw-bold" style="color: var(--primary-blue);">�</span></p>
+                        <p><strong>File Type:</strong> <span id="modalFileType">�</span></p>
                         <p><strong>File Size:</strong> <span id="modalFileSize">Loading...</span></p>
-                        <p><strong>Status:</strong> <span id="modalFileStatus" class="s-badge">—</span></p>
+                        <p><strong>Status:</strong> <span id="modalFileStatus" class="s-badge">�</span></p>
                     </div>
                 </div>
                 <div class="modal-footer" style="justify-content:space-between;">
@@ -363,11 +360,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             @csrf
                             <input type="hidden" name="status" value="approved">
                             <input type="hidden" name="admin_remarks" value="">
-                            <button type="submit" class="btn-action btn-approve">✔ Approve</button>
+                            <button type="submit" class="btn-action btn-approve">? Approve</button>
                         </form>
                         {{-- Decline button --}}
                         <button type="button" id="modalDeclineBtn" class="btn-action btn-decline" style="display:none;">
-                            ✖ Decline
+                            ? Decline
                         </button>
                     </div>
                 </div>
@@ -380,7 +377,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius:16px;border:none;overflow:hidden;">
                 <div class="modal-header" style="background:var(--primary-gradient);color:white;border:none;padding:18px 24px;">
-                    <h5 class="modal-title" id="declineModalLabel" style="font-weight:800;">❌ Decline Document</h5>
+                    <h5 class="modal-title" id="declineModalLabel" style="font-weight:800;">? Decline Document</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <form id="declineForm" action="" method="POST">
@@ -389,7 +386,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="modal-body" style="padding:24px;">
                         <div style="margin-bottom:16px;">
                             <div style="font-size:.8rem;color:#64748b;margin-bottom:6px;">Document being declined:</div>
-                            <div style="font-weight:700;color:#1e293b;" id="declineDocName">—</div>
+                            <div style="font-weight:700;color:#1e293b;" id="declineDocName">�</div>
                         </div>
                         <label class="form-label" style="font-size:0.85rem;font-weight:700;color:#1e293b;">
                             Rejection Reason <span style="color:#dc3545;">*</span>
@@ -414,7 +411,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             Please select a rejection reason.
                         </div>
                         <div style="font-size:.72rem;color:#94a3b8;margin-top:10px;background:#f8f9fa;padding:10px 12px;border-radius:8px;border-left:3px solid #6c757d;">
-                            💡 The applicant will see this message and can re-upload the corrected document.
+                            ?? The applicant will see this message and can re-upload the corrected document.
                         </div>
                     </div>
                     <div class="modal-footer" style="border:none;padding:16px 24px 20px;gap:8px;">
@@ -505,7 +502,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 // For other file types, show message and download option
                 container.innerHTML = `
                     <div class="text-center">
-                        <div style="font-size: 4rem; margin-bottom: 20px;">📄</div>
+                        <div style="font-size: 4rem; margin-bottom: 20px;">??</div>
                         <h6>File cannot be previewed</h6>
                         <p class="text-muted">This file type (${ext.toUpperCase()}) cannot be displayed in the browser.</p>
                         <a href="${fileUrl}" class="btn btn-primary" download>Download File</a>

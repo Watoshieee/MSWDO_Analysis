@@ -24,11 +24,18 @@ class AppointmentStatusMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $programLabel = match($this->appointment->program_type ?? 'Solo_Parent') {
+            'AICS_Medical' => 'AICS Medical Assistance',
+            'AICS_Burial'  => 'AICS Burial Assistance',
+            'Solo_Parent'  => 'Solo Parent ID',
+            default        => 'MSWDO Assistance',
+        };
+
         $subject = match($this->newStatus) {
-            'confirmed' => '[MSWDO] Appointment Confirmed – ' . $this->appointment->appointment_date->format('F d, Y'),
-            'rejected'  => '[MSWDO] Appointment Rejected',
-            'reminder'  => '[MSWDO] Reminder: Your Appointment is Tomorrow!',
-            default     => '[MSWDO] Appointment Update',
+            'confirmed' => "[MSWDO] {$programLabel} appointment confirmed – " . $this->appointment->appointment_date->format('F d, Y'),
+            'rejected'  => "[MSWDO] {$programLabel} appointment rejected",
+            'reminder'  => "[MSWDO] Reminder: {$programLabel} appointment tomorrow",
+            default     => "[MSWDO] {$programLabel} appointment update",
         };
 
         return new Envelope(subject: $subject);

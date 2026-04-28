@@ -11,11 +11,11 @@
     <style>
 html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         :root {
-            --primary-blue: #2C3E8F;
+            --primary-blue: {{ $primaryColor ?? '#2C3E8F' }};
             --primary-dark: #1A2A5C;
-            --secondary-yellow: #FDB913;
+            --secondary-yellow: {{ $secondaryColor ?? '#FDB913' }};
             --secondary-yellow-light: #FFF3D6;
-            --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
+            --primary-gradient: linear-gradient(135deg, {{ $primaryColor ?? '#2C3E8F' }} 0%, #1A2A5C 100%);
             --bg-light: #F4F7FB;
             --border-light: #E2E8F0;
             --text-dark: #1E293B;
@@ -184,6 +184,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/user/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="/user/programs">Programs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('user.announcements') }}">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>

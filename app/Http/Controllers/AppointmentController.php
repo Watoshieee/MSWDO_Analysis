@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Appointment;
+use App\Models\Application;
 use App\Models\User;
 use App\Mail\AppointmentStatusMail;
 use App\Mail\NewAppointmentAdminMail;
@@ -39,6 +40,12 @@ class AppointmentController extends Controller
         return response()->json(Appointment::slotsForDate($date, $user->municipality));
     }
 
+    /** Allowed program types for appointment booking */
+    private static function allowedProgramTypes(): array
+    {
+        return ['Solo_Parent', 'AICS_Medical', 'AICS_Burial'];
+    }
+
     /**
      * Book an appointment (POST /user/appointments)
      */
@@ -46,29 +53,44 @@ class AppointmentController extends Controller
     {
         $user = Auth::user();
 
+        $allowed = implode(',', self::allowedProgramTypes());
+
         $request->validate([
             'appointment_date' => 'required|date|after:today',
             'appointment_time' => 'required|in:' . implode(',', Appointment::availableSlots()),
             'interview_type'   => 'required|in:face_to_face,online',
             'user_notes'       => 'nullable|string|max:500',
+            'program_type'     => 'nullable|in:' . $allowed,
         ]);
 
+        $programType = $request->input('program_type', 'Solo_Parent');
         $date = $request->appointment_date;
         $time = $request->appointment_time;
+
+        if ($programType === 'Solo_Parent') {
+            $isSoloParentBeneficiary = Application::where('user_id', $user->id)
+                ->where('program_type', 'Solo_Parent')
+                ->whereIn('id_status', ['processing', 'ready_for_pickup', 'released'])
+                ->exists();
+
+            if ($isSoloParentBeneficiary) {
+                return back()->with('appt_error', 'Solo Parent re-application is disabled because you are already a beneficiary.');
+            }
+        }
 
         // Validate: weekday only
         if (Carbon::parse($date)->isWeekend()) {
             return back()->with('appt_error', 'Appointments can only be booked on weekdays (Mon–Fri).');
         }
 
-        // Check user doesn't already have an active appointment
+        // Check user doesn't already have an active appointment for this program
         $existing = Appointment::where('user_id', $user->id)
             ->whereIn('status', ['pending', 'confirmed'])
-            ->where('program_type', 'Solo_Parent')
+            ->where('program_type', $programType)
             ->first();
 
         if ($existing) {
-            return back()->with('appt_error', 'You already have an active appointment. Please cancel it before booking a new one.');
+            return back()->with('appt_error', 'You already have an active appointment for this program. Please cancel it before booking a new one.');
         }
 
         // Check slot capacity (scoped to user's municipality)
@@ -82,7 +104,7 @@ class AppointmentController extends Controller
             'appointment_date' => $date,
             'appointment_time' => $time,
             'interview_type'   => $request->interview_type,
-            'program_type'     => 'Solo_Parent',
+            'program_type'     => $programType,
             'status'           => 'pending',
             'user_notes'       => $request->user_notes,
         ]);
@@ -109,6 +131,7 @@ class AppointmentController extends Controller
     public function cancel($id)
     {
         $user = Auth::user();
+        // No program_type filter — users can cancel any of their own appointments
         $appt = Appointment::where('id', $id)->where('user_id', $user->id)->firstOrFail();
 
         if (!in_array($appt->status, ['pending', 'confirmed'])) {

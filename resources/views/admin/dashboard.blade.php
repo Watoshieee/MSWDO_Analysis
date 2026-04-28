@@ -35,10 +35,11 @@
             .navbar-toggler { order: 0; }
             .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.93rem; }
+        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.85rem; white-space: nowrap; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-info { color:white; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.1); padding:9px 22px; border-radius:40px; font-size:0.9rem; font-weight:600; }
+        .user-info { color:white; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.1); padding:9px 22px; border-radius:40px; font-size:0.9rem; font-weight:600; max-width: 100%; }
+        .user-info span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
         .logout-btn { background:transparent; border:2px solid rgba(255,255,255,0.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; transition:all 0.3s; font-size:0.88rem; cursor:pointer; }
         .logout-btn:hover { background:var(--secondary-yellow); color:var(--primary-blue); border-color:var(--secondary-yellow); }
 
@@ -50,7 +51,7 @@
         .hero-badge { display:inline-block; background:rgba(253,185,19,0.18); color:var(--secondary-yellow); border:1px solid rgba(253,185,19,0.35); border-radius:30px; padding:4px 16px; font-size:0.72rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:10px; }
         .hero-banner h1 { font-size:2rem; font-weight:900; margin-bottom:4px; }
         .hero-divider { width:44px; height:4px; background:var(--secondary-yellow); border-radius:2px; margin:10px 0 8px; }
-        .hero-banner p { opacity:0.82; font-size:0.93rem; margin:0; }
+        .hero-banner p { opacity:0.82; font-size: 0.85rem; margin:0; }
         .muni-badge { background:rgba(253,185,19,0.18); border:1px solid rgba(253,185,19,0.35); color:var(--secondary-yellow); border-radius:12px; padding:14px 24px; text-align:center; }
         .muni-badge .muni-name { font-size:1.35rem; font-weight:900; display:block; }
         .muni-badge .muni-sub  { font-size:0.72rem; opacity:0.75; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; }
@@ -73,7 +74,7 @@
 
         /* ── PANEL CARDS ── */
         .panel-card { background:white; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 4px 15px rgba(0,0,0,0.06); overflow:hidden; height:100%; }
-        .panel-header { background:var(--primary-gradient); color:white; padding:16px 22px; font-size:0.93rem; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
+        .panel-header { background:var(--primary-gradient); color:white; padding:16px 22px; font-size: 0.85rem; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
         .panel-header-badge { font-size:0.7rem; background:rgba(255,255,255,0.15); border-radius:20px; padding:3px 12px; font-weight:700; }
         .panel-body { padding:20px; background:#f8fafc; }
 
@@ -147,6 +148,7 @@
                         <a class="nav-link {{ request()->routeIs('admin.requirements*') ? 'active' : '' }}"
                            href="{{ route('admin.requirements') }}">Applications</a>
                     </li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
                     <li class="nav-item">
                         <a class="nav-link {{ request()->routeIs('admin.data.*') ? 'active' : '' }}"
                            href="{{ route('admin.data.dashboard') }}">Data Management</a>
@@ -211,8 +213,13 @@
     <div class="main-content">
     <div class="container mt-4">
 
-        @if(session('success'))
-            <div class="alert-styled alert-success-c">{{ session('success') }}</div>
+        @php
+            $topNotice = session('success') ?: session('error');
+        @endphp
+        @if($topNotice)
+            <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                {{ $topNotice }}
+            </div>
         @endif
 
         <!-- STAT CARDS -->
@@ -267,7 +274,7 @@
                 <div class="panel-card">
                     <div class="panel-header">
                         Quick Actions
-                        <span class="panel-header-badge">5 shortcuts</span>
+                        <span class="panel-header-badge">7 shortcuts</span>
                     </div>
                     <div class="panel-body">
                         <a href="{{ route('admin.requirements') }}" class="action-item">
@@ -307,6 +314,25 @@
                                 <span class="action-num">05 &mdash; Announcements</span>
                                 <span class="action-title">Manage Announcements</span>
                                 <span class="action-sub">Post updates and notices for residents</span>
+                            </div>
+                            <span class="action-arrow">&rsaquo;</span>
+                        </a>
+                        {{-- Edit Vision/Mission/Goals button --}}
+                        <button type="button" class="action-item" data-bs-toggle="modal" data-bs-target="#vmgEditModal"
+                                style="width:100%;text-align:left;cursor:pointer;">
+                            <div class="action-text">
+                                <span class="action-num">06 &mdash; Content</span>
+                                <span class="action-title">Vision, Mission &amp; Strategic Goals</span>
+                                <span class="action-sub">Edit your municipality's VMG &amp; strategic goals</span>
+                            </div>
+                            <span class="action-arrow">&#9998;</span>
+                        </button>
+                        {{-- User Management --}}
+                        <a href="{{ route('admin.users') }}" class="action-item">
+                            <div class="action-text">
+                                <span class="action-num">07 &mdash; Users</span>
+                                <span class="action-title">User Management</span>
+                                <span class="action-sub">View registered users &amp; admins in your municipality</span>
                             </div>
                             <span class="action-arrow">&rsaquo;</span>
                         </a>
@@ -438,6 +464,265 @@
     @include('components.admin-chat-modal')
     @include('components.admin-settings-modal')
     @include('components.admin-notification-modal')
+
+    {{-- ═══════════════════════════════════════════════════════════
+         VMG & STRATEGIC GOALS EDIT MODAL
+         ═══════════════════════════════════════════════════════════ --}}
+    <div class="modal fade" id="vmgEditModal" tabindex="-1" aria-labelledby="vmgEditModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content" style="border-radius:20px;overflow:hidden;border:none;box-shadow:0 24px 80px rgba(44,62,143,.22);">
+
+                {{-- Header --}}
+                <div class="modal-header" style="background:var(--primary-gradient);border:none;padding:20px 28px;">
+                    <div>
+                        <div style="font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--secondary-yellow);margin-bottom:4px;">
+                            {{ $municipality->name }} &mdash; Content Editor
+                        </div>
+                        <h5 class="modal-title" id="vmgEditModalLabel" style="color:#fff;font-weight:800;font-size:1.15rem;margin:0;">
+                            Vision, Mission &amp; Goals + Strategic Goals
+                        </h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+
+                {{-- Tabs --}}
+                <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:0 28px;">
+                    <ul class="nav" id="vmgTabs" role="tablist" style="gap:4px;margin:0;">
+                        <li class="nav-item"><button class="vmg-tab active" id="tab-vmg" data-bs-toggle="tab" data-bs-target="#pane-vmg" type="button" role="tab">Vision / Mission / Goals</button></li>
+                        <li class="nav-item"><button class="vmg-tab" id="tab-sg" data-bs-toggle="tab" data-bs-target="#pane-sg" type="button" role="tab">Strategic Goals</button></li>
+                    </ul>
+                </div>
+
+                {{-- Body --}}
+                <div class="modal-body" style="padding:28px;background:#fff;">
+                    <div class="tab-content">
+
+                        {{-- PANE 1: Vision / Mission / Goals --}}
+                        <div class="tab-pane fade show active" id="pane-vmg" role="tabpanel">
+                            <div class="row g-4">
+                                <div class="col-12">
+                                    <label class="vmg-field-label">
+                                        <span class="vmg-field-icon" style="background:#2C3E8F;">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        </span>
+                                        Vision
+                                    </label>
+                                    <textarea id="vmgVision" class="vmg-textarea" rows="4" placeholder="Enter the vision statement for {{ $municipality->name }}...">{{ $visionData['vision'] }}</textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="vmg-field-label">
+                                        <span class="vmg-field-icon" style="background:#FDB913;">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1A2A5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                        </span>
+                                        Mission
+                                    </label>
+                                    <textarea id="vmgMission" class="vmg-textarea" rows="4" placeholder="Enter the mission statement for {{ $municipality->name }}...">{{ $visionData['mission'] }}</textarea>
+                                </div>
+                                <div class="col-12">
+                                    <label class="vmg-field-label">
+                                        <span class="vmg-field-icon" style="background:#6366f1;">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                                        </span>
+                                        Goals
+                                    </label>
+                                    <textarea id="vmgGoals" class="vmg-textarea" rows="4" placeholder="Enter the goals for {{ $municipality->name }}...">{{ $visionData['goals'] }}</textarea>
+                                </div>
+                            </div>
+                            <div class="vmg-save-row">
+                                <button onclick="saveVMG()" class="vmg-save-btn" id="vmgSaveBtn">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                    Save Vision, Mission &amp; Goals
+                                </button>
+                                <span id="vmgSaveStatus" style="font-size:.82rem;font-weight:600;"></span>
+                            </div>
+                        </div>
+
+                        {{-- PANE 2: Strategic Goals --}}
+                        <div class="tab-pane fade" id="pane-sg" role="tabpanel">
+                            <div style="margin-bottom:16px;">
+                                <div style="font-size:.8rem;color:#64748b;line-height:1.6;">
+                                    Add up to <strong>10 strategic goals</strong> for <strong>{{ $municipality->name }}</strong>. Each goal will be displayed on the public analysis page.
+                                </div>
+                            </div>
+                            <div id="sgGoalsList" style="display:flex;flex-direction:column;gap:10px;">
+                                @php $existingGoals = $visionData['strategic_goals'] ?? []; @endphp
+                                @if(count($existingGoals) > 0)
+                                    @foreach($existingGoals as $gi => $goal)
+                                        <div class="sg-input-row" data-idx="{{ $gi }}">
+                                            <span class="sg-input-num">{{ str_pad($gi+1, 2, '0', STR_PAD_LEFT) }}</span>
+                                            <input type="text" class="sg-input" value="{{ $goal }}" placeholder="Enter strategic goal...">
+                                            <button type="button" onclick="removeSGRow(this)" class="sg-remove-btn" title="Remove">
+                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                            </button>
+                                        </div>
+                                    @endforeach
+                                @else
+                                    <div class="sg-input-row" data-idx="0">
+                                        <span class="sg-input-num">01</span>
+                                        <input type="text" class="sg-input" value="" placeholder="Enter strategic goal...">
+                                        <button type="button" onclick="removeSGRow(this)" class="sg-remove-btn" title="Remove">
+                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                        </button>
+                                    </div>
+                                @endif
+                            </div>
+                            <button type="button" onclick="addSGRow()" id="addSGBtn"
+                                    style="margin-top:12px;background:#f1f5f9;border:2px dashed #cbd5e1;border-radius:10px;color:#64748b;font-weight:700;font-size:.82rem;padding:10px 18px;cursor:pointer;width:100%;transition:all .2s;"
+                                    onmouseover="this.style.background='#e5eeff';this.style.borderColor='#2C3E8F';this.style.color='#2C3E8F'" onmouseout="this.style.background='#f1f5f9';this.style.borderColor='#cbd5e1';this.style.color='#64748b'">
+                                + Add Strategic Goal
+                            </button>
+                            <div class="vmg-save-row">
+                                <button onclick="saveSG()" class="vmg-save-btn" id="sgSaveBtn">
+                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                    Save Strategic Goals
+                                </button>
+                                <span id="sgSaveStatus" style="font-size:.82rem;font-weight:600;"></span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .vmg-tab { background:none;border:none;padding:12px 18px;font-size:.88rem;font-weight:700;color:#64748b;border-bottom:3px solid transparent;transition:all .2s;cursor:pointer;border-radius:0; }
+        .vmg-tab.active,.vmg-tab:focus { color:var(--primary-blue);border-bottom-color:var(--primary-blue);outline:none; }
+        .vmg-field-label { display:flex;align-items:center;gap:10px;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#334155;margin-bottom:8px; }
+        .vmg-field-icon { width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0; }
+        .vmg-textarea { width:100%;border:2px solid #e2e8f0;border-radius:12px;padding:14px 16px;font-size:.88rem;font-family:'Inter',sans-serif;color:#1e293b;resize:vertical;line-height:1.7;transition:border-color .2s;background:#f8fafc; }
+        .vmg-textarea:focus { outline:none;border-color:var(--primary-blue);background:#fff;box-shadow:0 0 0 4px rgba(44,62,143,.08); }
+        .vmg-save-row { display:flex;align-items:center;gap:16px;margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0; }
+        .vmg-save-btn { display:inline-flex;align-items:center;gap:8px;background:var(--primary-gradient);color:#fff;border:none;border-radius:12px;padding:11px 24px;font-size:.88rem;font-weight:800;cursor:pointer;transition:all .25s; }
+        .vmg-save-btn:hover { box-shadow:0 8px 24px rgba(44,62,143,.35);transform:translateY(-2px); }
+        .sg-input-row { display:flex;align-items:center;gap:10px; }
+        .sg-input-num { font-size:.7rem;font-weight:900;color:#fff;background:var(--primary-blue);border-radius:8px;padding:4px 8px;flex-shrink:0;letter-spacing:.05em; }
+        .sg-input { flex:1;border:2px solid #e2e8f0;border-radius:10px;padding:10px 14px;font-size:.88rem;font-family:'Inter',sans-serif;transition:border-color .2s;background:#f8fafc; }
+        .sg-input:focus { outline:none;border-color:var(--primary-blue);background:#fff;box-shadow:0 0 0 4px rgba(44,62,143,.08); }
+        .sg-remove-btn { background:#fce8e8;border:none;border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#dc2626;cursor:pointer;flex-shrink:0;transition:all .2s; }
+        .sg-remove-btn:hover { background:#dc2626;color:#fff; }
+    </style>
+
+    <script>
+    const MUNI_NAME = @json($municipality->name);
+    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
+    const SAVE_URL = '{{ route("admin.vision-mission.save") }}';
+
+    // ── Save Vision/Mission/Goals ────────────────────────────────────────────
+    async function saveVMG() {
+        const btn = document.getElementById('vmgSaveBtn');
+        const status = document.getElementById('vmgSaveStatus');
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+        status.style.color = '#94a3b8';
+        status.textContent = '';
+
+        const payload = {
+            _token: CSRF_TOKEN,
+            municipality_name: MUNI_NAME,
+            vision:  document.getElementById('vmgVision').value,
+            mission: document.getElementById('vmgMission').value,
+            goals:   document.getElementById('vmgGoals').value,
+        };
+
+        try {
+            const res = await fetch(SAVE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                status.style.color = '#16a34a';
+                status.textContent = '✓ Saved successfully!';
+            } else {
+                status.style.color = '#dc2626';
+                status.textContent = data.message || 'Error saving.';
+            }
+        } catch (e) {
+            status.style.color = '#dc2626';
+            status.textContent = 'Network error. Please try again.';
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Vision, Mission &amp; Goals`;
+    }
+
+    // ── Strategic Goals helpers ──────────────────────────────────────────────
+    function renumberSG() {
+        document.querySelectorAll('#sgGoalsList .sg-input-row').forEach((row, i) => {
+            row.dataset.idx = i;
+            row.querySelector('.sg-input-num').textContent = String(i + 1).padStart(2, '0');
+        });
+    }
+
+    function addSGRow() {
+        const list = document.getElementById('sgGoalsList');
+        if (list.children.length >= 10) { alert('Maximum 10 strategic goals allowed.'); return; }
+        const idx = list.children.length;
+        const div = document.createElement('div');
+        div.className = 'sg-input-row';
+        div.dataset.idx = idx;
+        div.innerHTML = `
+            <span class="sg-input-num">${String(idx + 1).padStart(2, '0')}</span>
+            <input type="text" class="sg-input" value="" placeholder="Enter strategic goal...">
+            <button type="button" onclick="removeSGRow(this)" class="sg-remove-btn" title="Remove">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>`;
+        list.appendChild(div);
+        div.querySelector('.sg-input').focus();
+    }
+
+    function removeSGRow(btn) {
+        const row = btn.closest('.sg-input-row');
+        const list = document.getElementById('sgGoalsList');
+        if (list.children.length <= 1) { row.querySelector('.sg-input').value = ''; return; }
+        row.remove();
+        renumberSG();
+    }
+
+    // ── Save Strategic Goals ─────────────────────────────────────────────────
+    async function saveSG() {
+        const btn = document.getElementById('sgSaveBtn');
+        const status = document.getElementById('sgSaveStatus');
+        btn.disabled = true;
+        btn.textContent = 'Saving…';
+        status.textContent = '';
+
+        const goals = Array.from(document.querySelectorAll('#sgGoalsList .sg-input'))
+            .map(i => i.value.trim())
+            .filter(v => v !== '');
+
+        const payload = {
+            _token: CSRF_TOKEN,
+            municipality_name: MUNI_NAME,
+            strategic_goals: goals,
+        };
+
+        try {
+            const res = await fetch(SAVE_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (data.success) {
+                status.style.color = '#16a34a';
+                status.textContent = '✓ Strategic goals saved!';
+            } else {
+                status.style.color = '#dc2626';
+                status.textContent = data.message || 'Error saving.';
+            }
+        } catch (e) {
+            status.style.color = '#dc2626';
+            status.textContent = 'Network error. Please try again.';
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Strategic Goals`;
+    }
+    </script>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

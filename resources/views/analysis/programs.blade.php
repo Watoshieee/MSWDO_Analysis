@@ -619,6 +619,21 @@
             background-color: transparent !important;
         }
 
+        /* ===== DYNAMIC VMG SLIDER ===== */
+        .vmg-main-section { padding:52px 0;background:#EEF5FF; }
+        .vmg-dyn-card { background:#fff !important;border-radius:16px;padding:24px 22px 22px;height:100%;box-shadow:0 4px 24px rgba(44,62,143,.1);position:relative; }
+        .vmg-dyn-icon { width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;flex-shrink:0; }
+        .vmg-dyn-label { font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:8px; }
+        .vmg-dyn-text { font-size:.9rem;color:#334155;line-height:1.78;margin:0; }
+
+        /* ===== DYNAMIC STRATEGIC GOALS SLIDER ===== */
+        .sg-main-section { padding:52px 0; }
+        .sg-dyn-card { background:#fff !important;border:1px solid #e2e8f0;border-radius:14px;padding:20px 22px;display:flex;align-items:flex-start;gap:16px;transition:all .2s;box-shadow:0 2px 12px rgba(44,62,143,.06); }
+        .sg-dyn-card:hover { background:#f0f5ff !important;box-shadow:0 6px 20px rgba(44,62,143,.1); }
+        .sg-dyn-num { font-size:.62rem;font-weight:900;letter-spacing:.1em;color:#fff;border-radius:8px;padding:5px 9px;flex-shrink:0;margin-top:2px;min-width:34px;text-align:center; }
+        .sg-dyn-text { font-size:.9rem;color:#334155;line-height:1.72;margin:0; }
+        .sg-empty { text-align:center;padding:48px 0;color:#94a3b8;font-size:.92rem; }
+
         @media (max-width: 768px) {
             .hero-banner h1 {
                 font-size: 1.85rem;
@@ -858,108 +873,115 @@
         </div>
     </section>
 
-    <!-- ===== VISION / MISSION / GOALS ===== -->
-    <section class="section-wrapper">
+    {{-- ═══ VISION, MISSION & GOALS — dynamic animated slider ═══ --}}
+    <section class="vmg-main-section">
         <div class="container">
-            <h2 class="section-title">Vision, Mission &amp; Goals</h2>
-            <div class="row g-4">
-                <div class="col-lg-4">
-                    <div class="vmg-card">
-                        <div class="vmg-label">Vision</div>
-                        <h5>What We Aspire To Be</h5>
-                        <p>
-                            A responsive and compassionate social welfare institution committed to empowering
-                            individuals, strengthening families, and building resilient communities where all
-                            citizens enjoy a better quality of life.
-                        </p>
-                    </div>
+            <h2 class="section-title" style="margin-bottom:32px;">Vision, Mission &amp; Goals</h2>
+            <div class="vmg-slider-wrap" style="position:relative;overflow:hidden;">
+                <div class="vmg-dyn-track" id="vmgTrack"
+                     style="display:flex;transition:transform .6s cubic-bezier(.4,0,.2,1);will-change:transform;">
+                    @foreach($coreNames as $idx => $muni)
+                        @php $vd = $visionData[$muni]; $col = '#2C3E8F'; @endphp
+                        <div style="min-width:100%;box-sizing:border-box;padding:0 4px;">
+                            {{-- Municipality badge --}}
+                            <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:{{ $col }};flex-shrink:0;"></span>
+                                <span style="font-size:1.08rem;font-weight:900;color:#1e293b;letter-spacing:.02em;">{{ $muni }}</span>
+                                <span style="font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;">Municipality</span>
+                            </div>
+                            <div class="row g-4">
+                                <div class="col-md-4">
+                                    <div class="vmg-dyn-card" style="border-top:4px solid #2C3E8F;">
+                                        <div class="vmg-dyn-icon" style="background:#2C3E8F;">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                        </div>
+                                        <div class="vmg-dyn-label">Vision</div>
+                                        <p class="vmg-dyn-text">{{ $vd['vision'] ?: 'Vision statement not yet set for '.$muni.'.' }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="vmg-dyn-card" style="border-top:4px solid #2C3E8F;">
+                                        <div class="vmg-dyn-icon" style="background:#2C3E8F;">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                        </div>
+                                        <div class="vmg-dyn-label">Mission</div>
+                                        <p class="vmg-dyn-text">{{ $vd['mission'] ?: 'Mission statement not yet set for '.$muni.'.' }}</p>
+                                    </div>
+                                </div>
+                                <div class="col-md-4">
+                                    <div class="vmg-dyn-card" style="border-top:4px solid #2C3E8F;">
+                                        <div class="vmg-dyn-icon" style="background:#2C3E8F;">
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                                        </div>
+                                        <div class="vmg-dyn-label">Goals</div>
+                                        <p class="vmg-dyn-text">{{ $vd['goals'] ?: 'Goals not yet set for '.$muni.'.' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endforeach
                 </div>
-                <div class="col-lg-4">
-                    <div class="vmg-card">
-                        <div class="vmg-label">Mission</div>
-                        <h5>How We Serve</h5>
-                        <p>
-                            To deliver inclusive, accessible, and quality social welfare and development
-                            services through responsive programs, partnerships, and community participation,
-                            ensuring the protection and empowerment of disadvantaged and vulnerable sectors.
-                        </p>
-                    </div>
-                </div>
-                <div class="col-lg-4">
-                    <div class="vmg-card">
-                        <div class="vmg-label">Goals</div>
-                        <h5>Our Strategic Direction</h5>
-                        <p>
-                            We are guided by six strategic goals: poverty reduction, social protection,
-                            community empowerment, improved access to services, disaster preparedness &amp;
-                            response, and good governance — all focused on the well-being of every citizen.
-                        </p>
-                    </div>
+            </div>
+            {{-- Controls --}}
+            <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:28px;">
+                <div style="display:flex;gap:8px;">
+                    @foreach($coreNames as $i => $n)
+                        <button onclick="vmgGoTo({{ $i }})" class="vmg-dyn-dot"
+                                style="width:10px;height:10px;border-radius:50%;border:none;cursor:pointer;background:{{ $i===0 ? '#2C3E8F' : '#cbd5e1' }};transition:background .3s;padding:0;"></button>
+                    @endforeach
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- ===== STRATEGIC GOALS ===== -->
-    <section class="section-wrapper alt" style="background: #e2e8f0 !important;">
-        <div class="container" style="background: transparent !important;">
-            <h2 class="section-title">Strategic Goals</h2>
-            <div class="row" style="background: transparent !important;">
-                <div class="col-lg-6" style="background: transparent !important;">
-                    <div class="goal-item">
-                        <div class="goal-number">01</div>
-                        <div class="goal-content">
-                            <h6>Poverty Reduction</h6>
-                            <p>To alleviate poverty by providing sustainable livelihood opportunities and financial
-                                assistance to disadvantaged individuals and families.</p>
+    {{-- ═══ STRATEGIC GOALS — dynamic animated slider ═══ --}}
+    <section class="sg-main-section">
+        <div class="container">
+            <h2 class="section-title" style="margin-bottom:8px;">Strategic Goals</h2>
+            <p style="color:#64748b;font-size:.85rem;margin-bottom:32px;">Per-municipality strategic direction</p>
+            <div class="sg-dyn-wrap" style="position:relative;overflow:hidden;">
+                <div class="sg-dyn-track" id="sgTrack"
+                     style="display:flex;transition:transform .6s cubic-bezier(.4,0,.2,1);will-change:transform;">
+                    @foreach($coreNames as $idx => $muni)
+                        @php $vd = $visionData[$muni]; $col = '#2C3E8F'; $sgoals = $vd['strategic_goals'] ?? []; @endphp
+                        <div style="min-width:100%;box-sizing:border-box;padding:0 4px;">
+                            <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
+                                <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:{{ $col }};flex-shrink:0;"></span>
+                                <span style="font-size:1.08rem;font-weight:900;color:#1e293b;letter-spacing:.02em;">{{ $muni }}</span>
+                                <span style="font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;">Strategic Goals</span>
+                            </div>
+                            @if(count($sgoals) > 0)
+                                <div class="row g-3">
+                                    @foreach($sgoals as $gi => $goal)
+                                        <div class="col-md-6">
+                                            <div class="sg-dyn-card">
+                                                <div class="sg-dyn-num" style="background:#2C3E8F;">{{ str_pad($gi+1,2,'0',STR_PAD_LEFT) }}</div>
+                                                <p class="sg-dyn-text">{{ $goal }}</p>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <div class="sg-empty">
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.4;margin-bottom:12px;display:block;margin-inline:auto;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+                                    Strategic goals not yet set for {{ $muni }}.
+                                </div>
+                            @endif
                         </div>
-                    </div>
-                    <div class="goal-item">
-                        <div class="goal-number">02</div>
-                        <div class="goal-content">
-                            <h6>Social Protection</h6>
-                            <p>To safeguard the rights and welfare of children, women, senior citizens, persons with
-                                disabilities, and other vulnerable sectors.</p>
-                        </div>
-                    </div>
-                    <div class="goal-item">
-                        <div class="goal-number">03</div>
-                        <div class="goal-content">
-                            <h6>Community Empowerment</h6>
-                            <p>To strengthen community participation and promote self-reliance through
-                                capability-building programs and social development initiatives.</p>
-                        </div>
-                    </div>
+                    @endforeach
                 </div>
-                <div class="col-lg-6" style="background: transparent !important;">
-                    <div class="goal-item">
-                        <div class="goal-number">04</div>
-                        <div class="goal-content">
-                            <h6>Improved Access to Services</h6>
-                            <p>To ensure that social welfare programs and services are accessible, efficient, and
-                                responsive to the needs of the public.</p>
-                        </div>
-                    </div>
-                    <div class="goal-item">
-                        <div class="goal-number">05</div>
-                        <div class="goal-content">
-                            <h6>Disaster Preparedness &amp; Response</h6>
-                            <p>To provide timely and effective assistance to individuals and families affected by
-                                disasters and emergencies.</p>
-                        </div>
-                    </div>
-                    <div class="goal-item">
-                        <div class="goal-number">06</div>
-                        <div class="goal-content">
-                            <h6>Good Governance</h6>
-                            <p>To promote transparency, accountability, and professionalism in the delivery of social
-                                welfare services.</p>
-                        </div>
-                    </div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:center;gap:16px;margin-top:28px;">
+                <div style="display:flex;gap:8px;">
+                    @foreach($coreNames as $i => $n)
+                        <button onclick="sgGoTo({{ $i }})" class="sg-dyn-dot"
+                                style="width:10px;height:10px;border-radius:50%;border:none;cursor:pointer;background:{{ $i===0 ? '#2C3E8F' : '#cbd5e1' }};transition:background .3s;padding:0;"></button>
+                    @endforeach
                 </div>
             </div>
         </div>
     </section>
+
 
     <!-- ===== PROGRAM DESCRIPTIONS ===== -->
     <section class="section-wrapper">
@@ -1404,7 +1426,7 @@
     @if(isset($allYears) && count($allYears))
         <script>
             (function () {
-                const COLORS = { Magdalena: '#2C3E8F', Liliw: '#FDB913', Majayjay: '#28a745' };
+                const COLORS = { Magdalena: '#2C3E8F', Liliw: '#FDB913', Majayjay: '#2C3E8F' };
                 const PROG_COLORS = ['#2C3E8F', '#FDB913', '#28a745', '#C41E24', '#0891b2', '#d97706', '#7c3aed'];
                 const allYears = @json($allYears);
                 const yearlyByMuni = @json($yearlyByMuni);
@@ -1772,6 +1794,44 @@
     @endauth
 
     @include('components.chatbot-widget')
+
+    <script>
+    // ── VMG Slider ────────────────────────────────────────────────────────────
+    (function(){
+        const track = document.getElementById('vmgTrack');
+        const dots = document.querySelectorAll('.vmg-dyn-dot');
+        let cur = 0, total = dots.length;
+        function vmgUpdate(n){
+            cur=(n+total)%total;
+            track.style.transform=`translateX(-${cur*100}%)`;
+            dots.forEach((d,i)=>d.style.background=i===cur?'#2C3E8F':'#cbd5e1');
+        }
+        window.vmgPrev=()=>vmgUpdate(cur-1);
+        window.vmgNext=()=>vmgUpdate(cur+1);
+        window.vmgGoTo=(n)=>vmgUpdate(n);
+        let t=setInterval(()=>vmgUpdate(cur+1),5000);
+        track.closest('.vmg-slider-wrap').addEventListener('mouseenter',()=>clearInterval(t));
+        track.closest('.vmg-slider-wrap').addEventListener('mouseleave',()=>{t=setInterval(()=>vmgUpdate(cur+1),5000);});
+    })();
+
+    // ── Strategic Goals Slider ────────────────────────────────────────────────
+    (function(){
+        const track = document.getElementById('sgTrack');
+        const dots = document.querySelectorAll('.sg-dyn-dot');
+        let cur = 0, total = dots.length;
+        function sgUpdate(n){
+            cur=(n+total)%total;
+            track.style.transform=`translateX(-${cur*100}%)`;
+            dots.forEach((d,i)=>d.style.background=i===cur?'#2C3E8F':'#cbd5e1');
+        }
+        window.sgPrev=()=>sgUpdate(cur-1);
+        window.sgNext=()=>sgUpdate(cur+1);
+        window.sgGoTo=(n)=>sgUpdate(n);
+        let t=setInterval(()=>sgUpdate(cur+1),5500);
+        track.closest('.sg-dyn-wrap').addEventListener('mouseenter',()=>clearInterval(t));
+        track.closest('.sg-dyn-wrap').addEventListener('mouseleave',()=>{t=setInterval(()=>sgUpdate(cur+1),5500);});
+    })();
+    </script>
 
 </body>
 

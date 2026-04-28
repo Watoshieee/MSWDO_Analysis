@@ -25,7 +25,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             .navbar-toggler { order: 0; }
             .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
-        .nav-link { color: rgba(255,255,255,.88) !important; font-weight: 600; transition: all .25s; border-radius: 8px; padding: 10px 18px !important; font-size: .95rem; }
+        .nav-link { color: rgba(255,255,255,.88) !important; font-weight: 600; transition: all .25s; border-radius: 8px; padding: 10px 18px !important; font-size: .85rem; white-space: nowrap; }
         .nav-link:hover { background: rgba(255,255,255,.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
         .user-info { color: white; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,.1); padding: 9px 22px; border-radius: 40px; font-size: .92rem; font-weight: 500; }
@@ -94,6 +94,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
@@ -237,7 +238,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <input type="number" class="inline-input program-input" name="senior_count"
                                     value="{{ $barangay->senior_count ?? 0 }}" min="0">
                             </td>
-                            <td style="text-align:center; font-weight:800; color:var(--primary-blue); font-size:.95rem; background:rgba(44,62,143,0.05);" class="row-total-beneficiaries">
+                            <td style="text-align:center; font-weight:800; color:var(--primary-blue); font-size: .85rem; background:rgba(44,62,143,0.05);" class="row-total-beneficiaries">
                                 {{ ($barangay->pwd_count ?? 0) + ($barangay->aics_count ?? 0) + ($barangay->single_parent_count ?? 0) + ($barangay->four_ps_count ?? 0) + ($barangay->senior_count ?? 0) }}
                             </td>
                             <td style="text-align:center; position:sticky; right:0; background:white; border-left:1px solid var(--border-light); z-index:2; box-shadow:-4px 0 10px rgba(0,0,0,0.02);">

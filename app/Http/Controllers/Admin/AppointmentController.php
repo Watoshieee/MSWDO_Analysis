@@ -23,21 +23,21 @@ class AppointmentController extends Controller
 
         $appointments = Appointment::with('user')
             ->where('municipality', $admin->municipality)
-            ->where('program_type', 'Solo_Parent')
             ->orderByRaw("FIELD(status,'pending','confirmed','validated','rejected','cancelled')")
             ->orderBy('appointment_date')
             ->orderBy('appointment_time')
             ->get();
 
         return response()->json($appointments->map(function ($a) {
-            // Load linked solo parent application for id_status
-            $soloApp = $a->solo_parent_app_id
+            // Load linked solo parent application for id_status (Solo_Parent only)
+            $soloApp = ($a->program_type === 'Solo_Parent' && $a->solo_parent_app_id)
                 ? Application::select('id', 'id_status', 'id_ready_at')
                     ->find($a->solo_parent_app_id)
                 : null;
 
             return [
                 'id'                 => $a->id,
+                'program_type'       => $a->program_type,
                 'user_name'          => $a->user?->full_name ?? 'N/A',
                 'user_email'         => $a->user?->email ?? '',
                 'date'               => $a->appointment_date->format('M d, Y'),
@@ -62,13 +62,13 @@ class AppointmentController extends Controller
         $admin = Auth::user();
         $appt  = Appointment::where('id', $id)
             ->where('municipality', $admin->municipality)
-            ->where('program_type', 'Solo_Parent')
             ->firstOrFail();
 
         $appt->update([
             'status'      => 'confirmed',
             'admin_notes' => $request->input('admin_notes'),
         ]);
+
 
         // Email user
         try {
@@ -77,7 +77,7 @@ class AppointmentController extends Controller
             Log::error('Appointment confirm email failed: ' . $e->getMessage());
         }
 
-        return response()->json(['success' => true, 'message' => 'Appointment confirmed and user notified.']);
+        return response()->json(['success' => true, 'message' => 'Appointment approved and user notified.']);
     }
 
     /**
@@ -143,7 +143,7 @@ class AppointmentController extends Controller
 
         return response()->json([
             'success'        => true,
-            'message'        => 'Appointment validated. User has been notified and can now submit requirements.',
+            'message'        => 'Applicant marked eligible. User has been notified and can now submit requirements.',
             'application_id' => $application->id,
         ]);
     }
@@ -158,7 +158,6 @@ class AppointmentController extends Controller
         $admin = Auth::user();
         $appt  = Appointment::where('id', $id)
             ->where('municipality', $admin->municipality)
-            ->where('program_type', 'Solo_Parent')
             ->firstOrFail();
 
         $appt->update([
@@ -218,12 +217,12 @@ class AppointmentController extends Controller
         $appts = Appointment::onlyTrashed()
             ->with('user')
             ->where('municipality', $admin->municipality)
-            ->where('program_type', 'Solo_Parent')
             ->orderBy('deleted_at', 'desc')
             ->get();
 
         return response()->json($appts->map(fn($a) => [
             'id'             => $a->id,
+            'program_type'   => $a->program_type,
             'user_name'      => $a->user?->name ?? '—',
             'user_email'     => $a->user?->email ?? '—',
             'date'           => $a->appointment_date?->format('M d, Y') ?? '—',

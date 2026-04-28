@@ -85,7 +85,7 @@
             transition: all .25s;
             border-radius: 8px;
             padding: 10px 18px !important;
-            font-size: .93rem;
+            font-size: .85rem; white-space: nowrap;
         }
 
         .nav-link:hover {
@@ -422,7 +422,7 @@
         }
 
         .chart-title {
-            font-size: .95rem;
+            font-size: .85rem;
             font-weight: 800;
             color: var(--primary-blue);
             margin-bottom: 16px;
@@ -489,6 +489,7 @@
                     <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a>
                     </li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.data.dashboard') }}">Data
                             Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a>
@@ -526,8 +527,13 @@
     <div class="main-content">
         <div class="container py-5">
 
-            @if(session('success'))
-                <div class="alert-success-c">✅ {{ session('success') }}</div>
+            @php
+                $topNotice = session('success') ?: session('error');
+            @endphp
+            @if($topNotice)
+                <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                    {{ $topNotice }}
+                </div>
             @endif
             @if($errors->any())
                 <div class="alert-danger-c">
@@ -563,7 +569,7 @@
                     </div>
                     <div class="table-responsive">
                         @if($summaries->isEmpty())
-                            <div style="padding:36px;text-align:center;color:#94a3b8;font-size:.95rem;">
+                            <div style="padding:36px;text-align:center;color:#94a3b8;font-size: .85rem;">
                                 <div style="font-size:2.5rem;opacity:.3;margin-bottom:8px;">📋</div>
                                 No records yet. Click <strong>"+ Add Year Data"</strong> to add your first yearly summary.
                             </div>

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -315,6 +315,23 @@
                         @error('mobile_number')<div class="field-msg err">{{ $message }}</div>@enderror
                     </div>
                     <div>
+                        <label class="field-label" for="gender">Gender <span class="req">*</span></label>
+                        <div class="field-wrap">
+                            <select id="gender" name="gender"
+                                    class="form-input @error('gender') invalid @enderror">
+                                <option value="">Select Gender</option>
+                                <option value="Male"   {{ old('gender') == 'Male'   ? 'selected' : '' }}>Male</option>
+                                <option value="Female" {{ old('gender') == 'Female' ? 'selected' : '' }}>Female</option>
+                                <option value="Other"  {{ old('gender') == 'Other'  ? 'selected' : '' }}>Other / Prefer not to say</option>
+                            </select>
+                        </div>
+                        <div id="msg_gender" class="field-msg hint">Select your gender.</div>
+                        @error('gender')<div class="field-msg err">{{ $message }}</div>@enderror
+                    </div>
+                </div>
+
+                <div class="field-row" style="margin-top:8px;">
+                    <div>
                         <label class="field-label" for="birthdate">Date of Birth <span class="req">*</span></label>
                         <div class="field-wrap">
                             <input type="date" id="birthdate" name="birthdate"
@@ -327,6 +344,7 @@
                         <div id="age-display"></div>
                         @error('birthdate')<div class="field-msg err">{{ $message }}</div>@enderror
                     </div>
+                    <div><!-- spacer --></div>
                 </div>
 
                 <div class="field-row" style="margin-top:8px;">

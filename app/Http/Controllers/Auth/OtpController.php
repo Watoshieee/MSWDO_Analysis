@@ -35,9 +35,18 @@ class OtpController extends Controller
             $otpExpiresAt   = session('pending_otp_expires_at');
             $registrationData = session('pending_registration');
 
-            // Check OTP code and expiry
-            if ($request->otp !== (string) $pendingOtp || now()->gt($otpExpiresAt)) {
-                return back()->withErrors(['otp' => 'Invalid or expired OTP. Please try again.']);
+            // Normalize both OTPs to strings and trim whitespace
+            $inputOtp = trim((string) $request->otp);
+            $storedOtp = trim((string) $pendingOtp);
+
+            // Check if OTP has expired
+            if (now()->gt($otpExpiresAt)) {
+                return back()->withErrors(['otp' => 'OTP has expired. Please request a new one.']);
+            }
+
+            // Check OTP code
+            if ($inputOtp !== $storedOtp) {
+                return back()->withErrors(['otp' => 'Invalid OTP code. Please check and try again.']);
             }
 
             // OTP is correct — NOW create the user in the database

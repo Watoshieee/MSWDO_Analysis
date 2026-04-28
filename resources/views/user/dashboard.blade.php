@@ -10,16 +10,16 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary-blue: #2C3E8F;
+            --primary-blue: {{ $primaryColor ?? '#2C3E8F' }};
             --primary-blue-light: #E5EEFF;
             --primary-blue-soft: #5D7BB9;
-            --secondary-yellow: #FDB913;
+            --secondary-yellow: {{ $secondaryColor ?? '#FDB913' }};
             --secondary-yellow-light: #FFF3D6;
             --accent-green: #28a745;
-            --accent-red: #C41E24;
+            --accent-red: {{ $accentColor ?? '#C41E24' }};
             --accent-red-light: #FCE8E8;
-            --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
-            --secondary-gradient: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
+            --primary-gradient: linear-gradient(135deg, {{ $primaryColor ?? '#2C3E8F' }} 0%, #1A2A5C 100%);
+            --secondary-gradient: linear-gradient(135deg, {{ $secondaryColor ?? '#FDB913' }} 0%, #E5A500 100%);
             --bg-light: #F8FAFC;
             --bg-soft-blue: #F0F5FF;
             --border-light: #E2E8F0;
@@ -41,10 +41,11 @@
             .navbar-toggler { order: 0; }
             .navbar-brand { order: 0; margin-left: 0; margin-right: auto; }
         }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.95rem; }
+        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 8px 14px !important; font-size: 0.88rem; white-space: nowrap; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-info { color: white; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1); padding: 9px 22px; border-radius: 40px; font-size: 0.92rem; font-weight: 600; }
+        .navbar-nav { flex-wrap: nowrap; }
+        .user-info { color: white; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1); padding: 9px 22px; border-radius: 40px; font-size: 0.92rem; font-weight: 600; white-space: nowrap; }
         .logout-btn { background: transparent; border: 2px solid rgba(255,255,255,0.8); color: white; border-radius: 30px; padding: 6px 18px; font-weight: 700; transition: all 0.3s; font-size: 0.88rem; cursor: pointer; }
         .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
 
@@ -253,6 +254,7 @@
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link active" href="/user/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="/user/programs">Programs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
@@ -296,18 +298,12 @@
     <div class="container mt-4">
 
         {{-- Session Alerts --}}
-        @if(session('success'))
-            <div class="dash-alert alert-success-c alert-dismissible fade show mb-3">
-                <div class="alert-icon" style="background:#c3e6cb;color:#155724;">✓</div>
-                <div><span class="dash-alert-label">Success</span>{{ session('success') }}</div>
-                <button class="btn-close ms-auto" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="dash-alert alert-danger-c alert-dismissible fade show mb-3">
-                <div class="alert-icon" style="background:#f5c6cb;color:#721c24;">!</div>
-                <div><span class="dash-alert-label">Error</span>{{ session('error') }}</div>
-                <button class="btn-close ms-auto" data-bs-dismiss="alert"></button>
+        @php
+            $topNotice = session('success') ?: session('error');
+        @endphp
+        @if($topNotice)
+            <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                {{ $topNotice }}
             </div>
         @endif
 
@@ -538,6 +534,7 @@
 
     @include('components.user-notification-modal')
 
+    @include('components.chat-modal')
     @include('components.chatbot-widget')
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

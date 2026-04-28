@@ -26,21 +26,12 @@ class ChatController extends Controller
     {
         $admin = Auth::user();
         
-        // Get users who have sent messages to this admin
-        $userIds = Message::where(function($query) use ($admin) {
-                $query->where('sender_id', $admin->id)
-                    ->orWhere('receiver_id', $admin->id);
-            })
-            ->get()
-            ->pluck('sender_id', 'receiver_id')
-            ->flatten()
-            ->unique()
-            ->filter(fn($id) => $id != $admin->id)
-            ->values();
-        
-        $users = User::whereIn('id', $userIds)
+        // Get all users from same municipality
+        $users = User::where('role', 'user')
             ->where('municipality', $admin->municipality)
+            ->where('id', '!=', $admin->id)
             ->select('id', 'full_name', 'municipality')
+            ->orderBy('full_name', 'asc')
             ->get();
         
         // Add unread count for each user

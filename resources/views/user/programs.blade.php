@@ -12,10 +12,10 @@
 html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         :root {
-            --primary-blue: #2C3E8F;
+            --primary-blue: {{ $primaryColor ?? '#2C3E8F' }};
             --primary-dark: #1A2A5C;
-            --secondary-yellow: #FDB913;
-            --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
+            --secondary-yellow: {{ $secondaryColor ?? '#FDB913' }};
+            --primary-gradient: linear-gradient(135deg, {{ $primaryColor ?? '#2C3E8F' }} 0%, #1A2A5C 100%);
             --bg-light: #F4F7FB;
             --border-light: #E2E8F0;
             --text-dark: #1E293B;
@@ -171,6 +171,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .prog-btn:hover { box-shadow: 0 8px 22px rgba(44,62,143,0.28); transform: translateY(-1px); color: white; }
         .prog-btn.btn-yellow { background: linear-gradient(135deg, #FDB913, #E5A500); color: #1a2e8a; }
         .prog-btn.btn-yellow:hover { box-shadow: 0 8px 22px rgba(253,185,19,0.4); color: #1a2e8a; }
+        .prog-btn.is-disabled { background: #cbd5e1; color: #475569; pointer-events: none; box-shadow: none; transform: none; }
 
         /* No results */
         .no-results { display: none; text-align: center; padding: 60px 0; }
@@ -219,6 +220,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/user/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link active" href="/user/programs">Programs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
@@ -291,10 +293,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="main-content">
         <div class="container">
 
-            @if(session('success'))
-                <div class="alert alert-success-c alert-dismissible fade show mt-4">
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            @php
+                $topNotice = session('success') ?: session('error');
+            @endphp
+            @if($topNotice)
+                <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                    {{ $topNotice }}
                 </div>
             @endif
 
@@ -320,7 +324,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <li>With medical certificate of disability</li>
                             </ul>
                         </div>
-                        <a href="{{ url('/user/pwd-application') }}" class="prog-btn">Apply Now →</a>
+                        @if(!empty($hasPwdBeneficiary))
+                            <span class="prog-btn is-disabled">Already a PWD Beneficiary</span>
+                        @else
+                            <a href="{{ url('/user/pwd-application') }}" class="prog-btn">Apply Now →</a>
+                        @endif
                     </div>
                 </div>
 

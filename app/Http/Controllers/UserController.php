@@ -21,13 +21,33 @@ use Carbon\Carbon;
 
 class UserController extends Controller
 {
+    private function hasPwdBeneficiaryStatus($user): bool
+    {
+        return Application::where('user_id', $user->id)
+            ->whereIn('program_type', ['PWD_Assistance', 'PWD_New', 'PWD_Renewal'])
+            ->whereIn('id_status', ['processing', 'ready_for_pickup', 'released'])
+            ->exists();
+    }
+
+    private function hasSoloParentBeneficiaryStatus($user): bool
+    {
+        return Application::where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->whereIn('id_status', ['processing', 'ready_for_pickup', 'released'])
+            ->exists();
+    }
+
     // ── Shared notification helper ──────────────────────────────────────────
     private function notificationData($user): array
     {
         $lastViewed   = \App\Models\NotificationView::where('user_id', $user->id)->first();
         $lastViewedAt = $lastViewed ? $lastViewed->last_viewed_at : null;
 
-        $documentNotifications = FileUpload::whereHas('fileMonitoring', fn($q) => $q->where('user_id', $user->id))
+        // Match files via direct user_id (Solo Parent) OR via application.user_id (AICS)
+        $documentNotifications = FileUpload::where(function ($q) use ($user) {
+                $q->whereHas('fileMonitoring', fn($q) => $q->where('user_id', $user->id))
+                  ->orWhereHas('fileMonitoring.application', fn($q) => $q->where('user_id', $user->id));
+            })
             ->whereIn('status', ['approved', 'rejected'])
             ->with(['fileMonitoring.application'])
             ->orderBy('verified_at', 'desc')
@@ -40,15 +60,19 @@ class UserController extends Controller
             ->orderBy('application_date', 'desc')
             ->get();
 
-        // New announcements — created after last-viewed, or last 7 days if never viewed
+        // All announcements for modal list (keep history visible)
         try {
             $annQuery = \App\Models\Announcement::forUser($user)->orderBy('created_at', 'desc');
-            $newAnnouncements = $lastViewedAt
-                ? (clone $annQuery)->where('created_at', '>', $lastViewedAt)->get()
-                : (clone $annQuery)->where('created_at', '>=', now()->subDays(7))->get();
+            $newAnnouncements = (clone $annQuery)->limit(50)->get();
         } catch (\Exception $e) {
             $newAnnouncements = collect();
         }
+
+        $newAnnouncementCount = $lastViewedAt
+            ? $newAnnouncements->filter(function ($a) use ($lastViewedAt) {
+                return $a->created_at && Carbon::parse($a->created_at)->gt(Carbon::parse($lastViewedAt));
+            })->count()
+            : $newAnnouncements->count();
 
         $newDocCount = $lastViewedAt
             ? $documentNotifications->filter(function ($d) use ($lastViewedAt) {
@@ -63,6 +87,21 @@ class UserController extends Controller
                     && Carbon::parse($a->application_date)->gt(Carbon::parse($lastViewedAt));
             })->count()
             : $rejectedApplications->count();
+
+        // ── Approved Solo Parent appointment (step 1: approved) ───────────────
+        $approvedSoloParentAppointment = Appointment::where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->where('status', 'confirmed')
+            ->latest('updated_at')
+            ->first();
+
+        $approvedSoloParentCount = 0;
+        if ($approvedSoloParentAppointment) {
+            $approvedTs = $approvedSoloParentAppointment->updated_at ?? $approvedSoloParentAppointment->appointment_date;
+            if (!$lastViewedAt || ($approvedTs && Carbon::parse($approvedTs)->gt(Carbon::parse($lastViewedAt)))) {
+                $approvedSoloParentCount = 1;
+            }
+        }
 
         // ── Validated Solo Parent appointment (user is now eligible) ──────────
         $validatedAppointment = Appointment::where('user_id', $user->id)
@@ -94,9 +133,107 @@ class UserController extends Controller
             }
         }
 
-        $notificationCount = $newDocCount + $newAppCount + $newAnnouncements->count() + $newValidatedCount + $idReadyCount;
+        // ── Solo Parent requirements validated (all docs approved) ────────────
+        $soloParentRequirementsValidated = Application::where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->where('status', 'approved')
+            ->where('id_status', 'processing')
+            ->latest('completed_at')
+            ->first();
 
-        return compact('documentNotifications', 'rejectedApplications', 'newAnnouncements', 'notificationCount', 'validatedAppointment', 'idReadyApplication');
+        $soloParentValidatedReqCount = 0;
+        if ($soloParentRequirementsValidated) {
+            $spReqTs = $soloParentRequirementsValidated->completed_at ?? $soloParentRequirementsValidated->application_date;
+            if (!$lastViewedAt || ($spReqTs && Carbon::parse($spReqTs)->gt(Carbon::parse($lastViewedAt)))) {
+                $soloParentValidatedReqCount = 1;
+            }
+        }
+
+        // ── PWD requirements validated ────────────────────────────────────────
+        $pwdValidatedApplication = Application::where('user_id', $user->id)
+            ->whereIn('program_type', ['PWD_Assistance', 'PWD_New', 'PWD_Renewal'])
+            ->where('id_status', 'processing')
+            ->latest('application_date')
+            ->first();
+
+        $pwdValidatedCount = 0;
+        if ($pwdValidatedApplication) {
+            $pwdValidatedTs = $pwdValidatedApplication->completed_at ?? $pwdValidatedApplication->application_date;
+            if (!$lastViewedAt || ($pwdValidatedTs && Carbon::parse($pwdValidatedTs)->gt(Carbon::parse($lastViewedAt)))) {
+                $pwdValidatedCount = 1;
+            }
+        }
+
+        // ── PWD ID ready for pickup ───────────────────────────────────────────
+        $pwdIdReadyApplication = Application::where('user_id', $user->id)
+            ->whereIn('program_type', ['PWD_Assistance', 'PWD_New', 'PWD_Renewal'])
+            ->where('id_status', 'ready_for_pickup')
+            ->latest('id_ready_at')
+            ->first();
+
+        $pwdIdReadyCount = 0;
+        if ($pwdIdReadyApplication) {
+            $pwdReadyTs = $pwdIdReadyApplication->id_ready_at;
+            if (!$lastViewedAt || ($pwdReadyTs && Carbon::parse($pwdReadyTs)->gt(Carbon::parse($lastViewedAt)))) {
+                $pwdIdReadyCount = 1;
+            }
+        }
+
+        // ── Confirmed AICS appointments (Medical or Burial) ───────────────────
+        $confirmedAicsAppointments = Appointment::where('user_id', $user->id)
+            ->whereIn('program_type', ['AICS_Medical', 'AICS_Burial'])
+            ->where('status', 'confirmed')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        $newAicsConfirmedCount = $lastViewedAt
+            ? $confirmedAicsAppointments->filter(function ($a) use ($lastViewedAt) {
+                $ts = $a->updated_at;
+                return $ts && Carbon::parse($ts)->gt(Carbon::parse($lastViewedAt));
+            })->count()
+            : $confirmedAicsAppointments->count();
+
+        // ── AICS requirements validated ───────────────────────────────────────
+        $aicsValidatedApplications = Application::where('user_id', $user->id)
+            ->whereIn('program_type', ['AICS_Medical', 'AICS_Burial'])
+            ->where('status', 'approved')
+            ->where('id_status', 'processing')
+            ->orderBy('completed_at', 'desc')
+            ->get();
+
+        $newAicsValidatedCount = $lastViewedAt
+            ? $aicsValidatedApplications->filter(function ($a) use ($lastViewedAt) {
+                $ts = $a->completed_at ?? $a->application_date;
+                return $ts && Carbon::parse($ts)->gt(Carbon::parse($lastViewedAt));
+            })->count()
+            : $aicsValidatedApplications->count();
+
+        // ── AICS claim ready for pickup ───────────────────────────────────────
+        $aicsReadyApplications = Application::where('user_id', $user->id)
+            ->whereIn('program_type', ['AICS_Medical', 'AICS_Burial'])
+            ->where('id_status', 'ready_for_pickup')
+            ->orderBy('id_ready_at', 'desc')
+            ->get();
+
+        $newAicsReadyCount = $lastViewedAt
+            ? $aicsReadyApplications->filter(function ($a) use ($lastViewedAt) {
+                $ts = $a->id_ready_at ?? $a->application_date;
+                return $ts && Carbon::parse($ts)->gt(Carbon::parse($lastViewedAt));
+            })->count()
+            : $aicsReadyApplications->count();
+
+        $notificationCount = $newDocCount + $newAppCount + $newAnnouncementCount
+            + $approvedSoloParentCount + $newValidatedCount + $soloParentValidatedReqCount + $idReadyCount
+            + $pwdValidatedCount + $pwdIdReadyCount + $newAicsConfirmedCount + $newAicsValidatedCount + $newAicsReadyCount;
+
+        return compact(
+            'documentNotifications', 'rejectedApplications', 'newAnnouncements',
+            'notificationCount', 'validatedAppointment', 'idReadyApplication',
+            'confirmedAicsAppointments', 'newAicsConfirmedCount', 'newAnnouncementCount',
+            'pwdValidatedApplication', 'pwdIdReadyApplication',
+            'approvedSoloParentAppointment', 'soloParentRequirementsValidated',
+            'aicsValidatedApplications', 'aicsReadyApplications'
+        );
     }
 
     public function dashboard()
@@ -139,7 +276,18 @@ class UserController extends Controller
             'documentNotifications',
             'rejectedApplications',
             'newAnnouncements',
-            'notificationCount'
+            'notificationCount',
+            'validatedAppointment',
+            'idReadyApplication',
+            'confirmedAicsAppointments',
+            'newAicsConfirmedCount',
+            'newAnnouncementCount',
+            'pwdValidatedApplication',
+            'pwdIdReadyApplication',
+            'approvedSoloParentAppointment',
+            'soloParentRequirementsValidated',
+            'aicsValidatedApplications',
+            'aicsReadyApplications'
         ));
     }
 
@@ -147,7 +295,26 @@ class UserController extends Controller
     {
         $user = Auth::user();
         extract($this->notificationData($user));
-        return view('user.programs', compact('documentNotifications', 'rejectedApplications', 'newAnnouncements', 'notificationCount'));
+        $hasPwdBeneficiary = $this->hasPwdBeneficiaryStatus($user);
+
+        return view('user.programs', compact(
+            'documentNotifications',
+            'rejectedApplications',
+            'newAnnouncements',
+            'notificationCount',
+            'validatedAppointment',
+            'idReadyApplication',
+            'confirmedAicsAppointments',
+            'newAicsConfirmedCount',
+            'newAnnouncementCount',
+            'pwdValidatedApplication',
+            'pwdIdReadyApplication',
+            'approvedSoloParentAppointment',
+            'soloParentRequirementsValidated',
+            'aicsValidatedApplications',
+            'aicsReadyApplications',
+            'hasPwdBeneficiary'
+        ));
     }
 
     public function announcements(Request $request)
@@ -179,7 +346,21 @@ class UserController extends Controller
 
         return view('user.announcements', compact(
             'announcements', 'types', 'programs',
-            'documentNotifications', 'rejectedApplications', 'newAnnouncements', 'notificationCount'
+            'documentNotifications',
+            'rejectedApplications',
+            'newAnnouncements',
+            'notificationCount',
+            'validatedAppointment',
+            'idReadyApplication',
+            'confirmedAicsAppointments',
+            'newAicsConfirmedCount',
+            'newAnnouncementCount',
+            'pwdValidatedApplication',
+            'pwdIdReadyApplication',
+            'approvedSoloParentAppointment',
+            'soloParentRequirementsValidated',
+            'aicsValidatedApplications',
+            'aicsReadyApplications'
         ));
     }
 
@@ -222,7 +403,24 @@ public function myRequirements()
 
         extract($this->notificationData($user));
 
-        return view('user.my-requirements', compact('requirementsData', 'documentNotifications', 'rejectedApplications', 'newAnnouncements', 'notificationCount'));
+        return view('user.my-requirements', compact(
+            'requirementsData',
+            'documentNotifications',
+            'rejectedApplications',
+            'newAnnouncements',
+            'notificationCount',
+            'validatedAppointment',
+            'idReadyApplication',
+            'confirmedAicsAppointments',
+            'newAicsConfirmedCount',
+            'newAnnouncementCount',
+            'pwdValidatedApplication',
+            'pwdIdReadyApplication',
+            'approvedSoloParentAppointment',
+            'soloParentRequirementsValidated',
+            'aicsValidatedApplications',
+            'aicsReadyApplications'
+        ));
     }
     /**
      * Resubmit a rejected requirement
@@ -309,6 +507,7 @@ public function myRequirements()
         }
 
         $user = Auth::user();
+        $isPwdBeneficiary = $this->hasPwdBeneficiaryStatus($user);
 
         $pwdRequirements = [
             'Completed PRPWD Application Form',
@@ -332,7 +531,7 @@ public function myRequirements()
             }
         }
 
-        return view('user.pwd-application', compact('user', 'application', 'uploadedFiles', 'pwdRequirements'));
+        return view('user.pwd-application', compact('user', 'application', 'uploadedFiles', 'pwdRequirements', 'isPwdBeneficiary'));
     }
     public function pwdFillableForm()
     {
@@ -348,6 +547,10 @@ public function myRequirements()
         }
 
         $user = Auth::user();
+        if ($this->hasPwdBeneficiaryStatus($user)) {
+            return redirect()->route('user.programs')
+                ->with('error', 'PWD re-application is disabled because you are already a PWD beneficiary.');
+        }
 
         $request->validate([
             'first_name' => 'required|string|max:100',
@@ -406,6 +609,7 @@ public function myRequirements()
     public function soloParentApplication()
     {
         $user = Auth::user();
+        $isSoloParentBeneficiary = $this->hasSoloParentBeneficiaryStatus($user);
 
         // Load user's active/recent appointment
         $appointment = Appointment::where('user_id', $user->id)
@@ -439,7 +643,7 @@ public function myRequirements()
             ])->find($appointment->solo_parent_app_id);
         }
 
-        return view('user.solo-parent-application', compact('appointment', 'minDate', 'maxDate', 'soloParentApplication'));
+        return view('user.solo-parent-application', compact('appointment', 'minDate', 'maxDate', 'soloParentApplication', 'isSoloParentBeneficiary'));
     }
 
     public function uploadPwdRequirement(Request $request)
@@ -454,6 +658,10 @@ public function myRequirements()
         ]);
 
         $user = Auth::user();
+        if ($this->hasPwdBeneficiaryStatus($user)) {
+            return redirect()->route('user.programs')
+                ->with('error', 'PWD re-application is disabled because you are already a PWD beneficiary.');
+        }
 
         // Auto-create PWD application for this user if none exists
         $application = Application::where('user_id', $user->id)
@@ -575,7 +783,17 @@ public function myRequirements()
     public function aicsCategory()
     {
         $user = Auth::user();
-        return view('user.aics-category', compact('user'));
+        $notifData = $this->notificationData($user);
+        extract($notifData);
+        return view('user.aics-category', compact(
+            'user',
+            'documentNotifications', 'rejectedApplications', 'newAnnouncements',
+            'notificationCount', 'validatedAppointment', 'idReadyApplication',
+            'confirmedAicsAppointments', 'newAicsConfirmedCount',
+            'pwdValidatedApplication', 'pwdIdReadyApplication',
+            'approvedSoloParentAppointment', 'soloParentRequirementsValidated',
+            'aicsValidatedApplications', 'aicsReadyApplications'
+        ));
     }
 
     public function aicsMedical()
@@ -598,7 +816,23 @@ public function myRequirements()
             if ($fm)
                 $uploadedFiles = FileUpload::where('file_monitoring_id', $fm->id)->get();
         }
-        return view('user.aics-medical', compact('user', 'application', 'uploadedFiles', 'requirements'));
+
+        // Load AICS Medical appointment
+        $appointment = Appointment::where('user_id', $user->id)
+            ->where('program_type', 'AICS_Medical')
+            ->orderByRaw("FIELD(status,'pending','confirmed','rejected','cancelled')")
+            ->orderBy('appointment_date', 'desc')
+            ->first();
+        $minDate = Carbon::tomorrow()->format('Y-m-d');
+        $maxDate = Carbon::now()->addDays(30)->format('Y-m-d');
+
+        $notifData = $this->notificationData($user);
+        extract($notifData);
+
+        return view('user.aics-medical', array_merge(
+            compact('user', 'application', 'uploadedFiles', 'requirements', 'appointment', 'minDate', 'maxDate'),
+            $notifData
+        ));
     }
 
     public function aicsBurial()
@@ -621,7 +855,23 @@ public function myRequirements()
             if ($fm)
                 $uploadedFiles = FileUpload::where('file_monitoring_id', $fm->id)->get();
         }
-        return view('user.aics-burial', compact('user', 'application', 'uploadedFiles', 'requirements'));
+
+        // Load AICS Burial appointment
+        $appointment = Appointment::where('user_id', $user->id)
+            ->where('program_type', 'AICS_Burial')
+            ->orderByRaw("FIELD(status,'pending','confirmed','rejected','cancelled')")
+            ->orderBy('appointment_date', 'desc')
+            ->first();
+        $minDate = Carbon::tomorrow()->format('Y-m-d');
+        $maxDate = Carbon::now()->addDays(30)->format('Y-m-d');
+
+        $notifData = $this->notificationData($user);
+        extract($notifData);
+
+        return view('user.aics-burial', array_merge(
+            compact('user', 'application', 'uploadedFiles', 'requirements', 'appointment', 'minDate', 'maxDate'),
+            $notifData
+        ));
     }
 
     private function uploadAicsRequirement(Request $request, string $programType, string $redirectRoute): \Illuminate\Http\RedirectResponse
@@ -654,7 +904,7 @@ public function myRequirements()
 
         $fileMonitoring = FileMonitoring::firstOrCreate(
         ['application_id' => $application->id],
-        ['overall_status' => 'pending', 'municipality' => $user->municipality ?? '']
+        ['overall_status' => 'pending', 'municipality' => $user->municipality ?? '', 'user_id' => $user->id]
         );
 
         // Notify admin by email only when the application is FIRST created
@@ -813,6 +1063,51 @@ public function myRequirements()
         );
         
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Show user profile page
+     */
+    public function profile()
+    {
+        $user = Auth::user();
+        return view('user.profile', compact('user'));
+    }
+
+    /**
+     * Update user profile
+     */
+    public function updateProfile(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            'phone_number' => 'required|string|max:20',
+            'date_of_birth' => 'required|date',
+        ]);
+
+        // Construct full_name from parts
+        $fullName = trim($request->first_name);
+        if ($request->middle_name) {
+            $fullName .= ' ' . trim($request->middle_name);
+        }
+        $fullName .= ' ' . trim($request->last_name);
+
+        $user->update([
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'middle_name' => $request->middle_name,
+            'full_name' => $fullName,
+            'phone_number' => $request->phone_number,
+            'mobile_number' => $request->phone_number, // Update both fields
+            'date_of_birth' => $request->date_of_birth,
+            'birthdate' => $request->date_of_birth, // Update both fields
+        ]);
+
+        return redirect()->route('user.profile')->with('success', 'Profile updated successfully!');
     }
 
 }

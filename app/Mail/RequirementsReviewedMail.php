@@ -25,10 +25,26 @@ class RequirementsReviewedMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $programType = $this->fileMonitoring->application->program_type ?? '';
+        $programLabel = match ($programType) {
+            'AICS_Medical'          => 'AICS Medical Assistance',
+            'AICS_Burial'           => 'AICS Burial Assistance',
+            'PWD_Assistance',
+            'PWD_New',
+            'PWD_Renewal'           => 'PWD ID',
+            'Senior_Citizen_Pension',
+            'Senior_Citizen'        => 'Senior Citizen Assistance',
+            '4Ps'                   => '4Ps',
+            'SLP'                   => 'SLP',
+            'ESA'                   => 'ESA',
+            'Solo_Parent'           => 'Solo Parent ID',
+            default                 => str_replace('_', ' ', $programType ?: 'Program'),
+        };
+
         $subject = match ($this->overallStatus) {
-            'approved'  => '[MSWDO] ✅ Your Solo Parent Requirements have been Approved!',
-            'rejected'  => '[MSWDO] ❌ Action Required: Some Requirements were Declined',
-            default     => '[MSWDO] Your Solo Parent Requirements are Under Review',
+            'approved'  => "[MSWDO] ✅ {$programLabel} requirements approved",
+            'rejected'  => "[MSWDO] ❌ {$programLabel} requirements need action",
+            default     => "[MSWDO] 📋 {$programLabel} requirements update",
         };
 
         return new Envelope(subject: $subject);

@@ -23,4 +23,21 @@ class AdminSetting extends Model
             ['setting_value' => $value]
         );
     }
+
+    public static function getByMunicipality($key, $municipality, $default = null)
+    {
+        // Get the latest color setting from any admin in the same municipality
+        $setting = self::whereHas('user', function($query) use ($municipality) {
+            $query->where('municipality', $municipality);
+        })->where('setting_key', $key)
+          ->orderBy('updated_at', 'desc')
+          ->first();
+        
+        return $setting ? $setting->setting_value : $default;
+    }
+
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class);
+    }
 }

@@ -65,7 +65,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             transition: all 0.25s;
             border-radius: 8px;
             padding: 10px 18px !important;
-            font-size: 0.95rem;
+            font-size: 0.85rem; white-space: nowrap;
         }
 
         .nav-link:hover {
@@ -306,7 +306,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .empty-state p {
             color: #94a3b8;
             margin-top: 10px;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
         }
 
         .footer-strip {
@@ -317,6 +317,101 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             font-size: 0.85rem;
             margin-top: 40px;
         }
+
+        /* ── Minimal in-page UI dialogs (avoid browser confirm/alert) ───────── */
+        .ui-modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(2, 6, 23, 0.55);
+            z-index: 11000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .ui-modal {
+            width: 100%;
+            max-width: 520px;
+            border-radius: 18px;
+            overflow: hidden;
+            background: #fff;
+            box-shadow: 0 20px 70px rgba(44, 62, 143, 0.25);
+            transform: translateY(8px);
+            opacity: 0;
+            transition: all .18s ease;
+        }
+        .ui-modal-backdrop.show .ui-modal {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        .ui-modal-header {
+            background: var(--primary-gradient);
+            color: #fff;
+            padding: 16px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+        }
+        .ui-modal-title {
+            font-weight: 800;
+            font-size: 0.98rem;
+            margin: 0;
+            line-height: 1.2;
+        }
+        .ui-modal-close {
+            width: 34px;
+            height: 34px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.14);
+            border: 1px solid rgba(255,255,255,0.22);
+            color: #fff;
+            cursor: pointer;
+            font-size: 1.25rem;
+            line-height: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .ui-modal-body { padding: 18px 20px 12px; color: #334155; font-size: 0.92rem; }
+        .ui-modal-body p { margin: 0; line-height: 1.55; }
+        .ui-modal-footer {
+            padding: 12px 20px 18px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+        }
+        .ui-btn {
+            border: none;
+            border-radius: 12px;
+            padding: 10px 16px;
+            font-weight: 800;
+            font-size: 0.86rem;
+            cursor: pointer;
+            transition: all .15s ease;
+        }
+        .ui-btn:active { transform: translateY(1px); }
+        .ui-btn-secondary { background: #f1f5f9; color: #334155; }
+        .ui-btn-secondary:hover { background: #e2e8f0; }
+        .ui-btn-primary { background: var(--primary-gradient); color: #fff; }
+        .ui-btn-primary:hover { opacity: 0.92; }
+        .ui-toast {
+            position: fixed;
+            top: 16px;
+            right: 16px;
+            z-index: 12000;
+            min-width: 260px;
+            max-width: 360px;
+            padding: 12px 14px;
+            border-radius: 14px;
+            background: #0f172a;
+            color: #fff;
+            box-shadow: 0 14px 40px rgba(2, 6, 23, 0.35);
+            border: 1px solid rgba(255,255,255,0.12);
+            display: none;
+        }
+        .ui-toast.show { display: block; }
+        .ui-toast small { display: block; opacity: 0.75; font-weight: 600; margin-top: 2px; }
     </style>
 </head>
 
@@ -335,6 +430,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link active"
                             href="{{ route('admin.requirements') }}">Applications</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data
                             Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a>
@@ -368,11 +464,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div style="flex:1;">
         <div class="container mt-4">
 
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show mb-3"
-                    style="border-radius:12px;border:none;background:#d4edda;color:#155724;">
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            @php
+                $topNotice = session('success') ?: session('error');
+            @endphp
+            @if($topNotice)
+                <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                    {{ $topNotice }}
                 </div>
             @endif
 
@@ -440,23 +537,70 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                             </td>
                                             <td>
                                                 <div class="action-gap">
-                                                    {{-- APPROVE - hide if already approved --}}
-                                                    @if($app->status !== 'approved' && $app->status !== 'rejected')
-                                                        <form method="POST"
-                                                            action="{{ route('admin.applications.status', $app->id) }}"
-                                                            style="display:inline;">
-                                                            @csrf
-                                                            <input type="hidden" name="status" value="approved">
-                                                            <button type="submit" class="btn-action btn-approve"
-                                                                onclick="return confirm('Approve this application?')">&#10003; Approve</button>
-                                                        </form>
+                                                    @if($app->status === 'approved' && in_array($app->program_type, ['PWD_Assistance', 'PWD_New', 'PWD_Renewal'], true))
+                                                        @if($app->id_status === 'ready_for_pickup')
+                                                            <span class="btn-action"
+                                                                style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:800;">
+                                                                🎫 ID Ready
+                                                            </span>
+                                                        @elseif($app->id_status === 'processing')
+                                                            <form method="POST"
+                                                                action="{{ route('admin.applications.mark-id-ready', $app->id) }}"
+                                                                style="display:inline;">
+                                                                @csrf
+                                                                <button type="submit" class="btn-action btn-approve js-confirm-submit"
+                                                                    data-confirm-title="Mark PWD ID ready?"
+                                                                    data-confirm-message="Notify user that PWD ID is ready for pick-up?"
+                                                                    data-confirm-ok="ID Ready">
+                                                                    🎫 ID Ready
+                                                                </button>
+                                                            </form>
+                                                        @else
+                                                            <form method="POST"
+                                                                action="{{ route('admin.applications.validate-pwd', $app->id) }}"
+                                                                style="display:inline;">
+                                                                @csrf
+                                                                <button type="submit" class="btn-action btn-approve js-confirm-submit"
+                                                                    data-confirm-title="Validate requirements?"
+                                                                    data-confirm-message="Mark this approved PWD application as validated and notify the user?"
+                                                                    data-confirm-ok="Validate">
+                                                                    🏆 Validate
+                                                                </button>
+                                                            </form>
+                                                        @endif
                                                     @endif
 
-                                                    {{-- DECLINE - hide if already rejected --}}
-                                                    @if($app->status !== 'rejected' && $app->status !== 'approved')
-                                                        <button type="button" class="btn-action btn-decline" data-bs-toggle="modal"
-                                                            data-bs-target="#declineModal" data-id="{{ $app->id }}"
-                                                            data-name="{{ $app->full_name }}">&#10007; Decline</button>
+                                                    @if($app->status === 'approved' && in_array($app->program_type, ['AICS_Medical', 'AICS_Burial'], true))
+                                                        @if($app->id_status === 'ready_for_pickup')
+                                                            <span class="btn-action"
+                                                                style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:800;">
+                                                                🎁 Claim Ready
+                                                            </span>
+                                                        @elseif($app->id_status === 'processing')
+                                                            <form method="POST"
+                                                                action="{{ route('admin.applications.mark-id-ready', $app->id) }}"
+                                                                style="display:inline;">
+                                                                @csrf
+                                                                <button type="submit" class="btn-action btn-view js-confirm-submit"
+                                                                    data-confirm-title="Mark claim ready?"
+                                                                    data-confirm-message="Notify user that AICS grant is ready for pickup?"
+                                                                    data-confirm-ok="Ready">
+                                                                    🎁 Claim Ready
+                                                                </button>
+                                                            </form>
+                                                        @else
+                                                            <form method="POST"
+                                                                action="{{ route('admin.applications.validate-aics', $app->id) }}"
+                                                                style="display:inline;">
+                                                                @csrf
+                                                                <button type="submit" class="btn-action btn-view js-confirm-submit"
+                                                                    data-confirm-title="Validate AICS requirements?"
+                                                                    data-confirm-message="Mark this approved AICS application as validated and notify the user?"
+                                                                    data-confirm-ok="Validate">
+                                                                    ✅ Validate
+                                                                </button>
+                                                            </form>
+                                                        @endif
                                                     @endif
 
                                                     {{-- VIEW - always show --}}
@@ -488,7 +632,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
             <div class="panel-card" style="margin-top:28px;">
                 <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
-                    <span>&#128197; Solo Parent Appointments</span>
+                    <span>&#128197; Appointments</span>
                     <div style="display:flex;align-items:center;gap:10px;">
                         <button type="button" onclick="openArchivedAppts()"
                             style="background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.3);color:white;border-radius:20px;padding:5px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;"
@@ -535,28 +679,48 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     }
 
                     let rows = data.map(a => {
+                        // Program type label + color
+                        const progLabels = {
+                            'Solo_Parent': {label:'Solo Parent', color:'#4f46e5', bg:'#ede9fe'},
+                            'AICS_Medical': {label:'AICS Medical', color:'#0891b2', bg:'#e0f2fe'},
+                            'AICS_Burial':  {label:'AICS Burial',  color:'#7c3aed', bg:'#f5f3ff'},
+                        };
+                        const prog = progLabels[a.program_type] || {label: a.program_type.replace('_',' '), color:'#64748b', bg:'#f1f5f9'};
+                        const progBadge = `<span style="background:${prog.bg};color:${prog.color};border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:700;white-space:nowrap;">${prog.label}</span>`;
+
+                        // Action buttons differ by program type
                         let actions = '';
+                        const isSoloParent = a.program_type === 'Solo_Parent';
+
                         if (a.status === 'pending') {
                             actions = `
-                                <button onclick="confirmAppt(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">✅ Confirm</button>
+                                <button onclick="confirmAppt(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">✅ Approve</button>
                                 <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">❌ Reject</button>
                             `;
                         } else if (a.status === 'confirmed') {
-                            actions = `
-                                <button onclick="validateAppt(${a.id})" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">🏆 Validate</button>
-                                <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">❌ Reject</button>
-                            `;
+                            if (isSoloParent) {
+                                actions = `
+                                    <button onclick="validateAppt(${a.id})" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">🏆 Eligible</button>
+                                    <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">❌ Reject</button>
+                                `;
+                            } else {
+                                actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">✅ Approved</span>`;
+                            }
                         } else if (a.status === 'validated') {
+                            // Solo Parent only
                             if (a.id_status === 'ready_for_pickup') {
                                 actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">🎫 ID Ready</span>`;
-                            } else {
+                            } else if (a.id_status === 'processing') {
                                 actions = `<button onclick="markIdReady(${a.solo_parent_app_id},'${encodeURIComponent(a.user_name)}')" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">🎫 ID Ready</button>`;
+                            } else {
+                                actions = `<span style="background:#fff7ed;color:#9a3412;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">⏳ Waiting Requirements Validation</span>`;
                             }
                         } else {
                             actions = '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
                         }
                         return `<tr>
                             <td style="font-weight:700;">${a.user_name}<br><small style="color:#94a3b8;font-size:.72rem;">${a.user_email}</small></td>
+                            <td>${progBadge}</td>
                             <td>${a.date}<br><small style="color:#64748b;">${a.day}</small></td>
                             <td>${a.time}</td>
                             <td>${a.interview_type}</td>
@@ -570,7 +734,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="table-responsive">
                         <table class="table mb-0" style="font-size:.85rem;">
                             <thead><tr>
-                                <th>Applicant</th><th>Date</th><th>Time</th><th>Type</th><th>Status</th><th>Notes</th><th>Actions</th>
+                                <th>Applicant</th><th>Program</th><th>Date</th><th>Time</th><th>Type</th><th>Status</th><th>Notes</th><th>Actions</th>
                             </tr></thead>
                             <tbody>${rows}</tbody>
                         </table>
@@ -582,31 +746,43 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
 
             function confirmAppt(id) {
-                if (!confirm('Confirm this appointment? An email will be sent to the user.')) return;
-                fetch(`/admin/appointments/${id}/confirm`, {
-                    method: 'POST',
-                    headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
-                    body: JSON.stringify({admin_notes: ''})
-                }).then(r => r.json()).then(d => {
-                    alert(d.message);
-                    loadAppointments();
-                }).catch(() => alert('Error confirming appointment.'));
+                uiConfirm(
+                    'Approve appointment?',
+                    'Approve this appointment? An email and bell notification will be sent to the user.',
+                    { okText: 'Approve', cancelText: 'Cancel' }
+                ).then(ok => {
+                    if (!ok) return;
+                    fetch(`/admin/appointments/${id}/confirm`, {
+                        method: 'POST',
+                        headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
+                        body: JSON.stringify({admin_notes: ''})
+                    }).then(r => r.json()).then(d => {
+                        uiToast(d.message || 'Confirmed.');
+                        loadAppointments();
+                    }).catch(() => uiToast('Error confirming appointment.', 'Error'));
+                });
             }
 
             function validateAppt(id) {
-                if (!confirm('Validate this appointment?\n\nThis will:\n- Mark the applicant as eligible for Solo Parent ID\n- Create their requirements submission form\n- Send them an email notification')) return;
-                fetch(`/admin/appointments/${id}/validate`, {
-                    method: 'POST',
-                    headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
-                    body: JSON.stringify({})
-                }).then(r => r.json()).then(d => {
-                    if (d.success) {
-                        alert('✅ ' + d.message);
-                        loadAppointments();
-                    } else {
-                        alert('⚠️ ' + (d.message || 'Error validating appointment.'));
-                    }
-                }).catch(() => alert('Error validating appointment.'));
+                uiConfirm(
+                    'Mark as eligible?',
+                    'Validate this appointment?\n\nThis will:\n- Mark the applicant as eligible for Solo Parent ID\n- Create their requirements submission form\n- Send them an email notification',
+                    { okText: 'Eligible', cancelText: 'Cancel' }
+                ).then(ok => {
+                    if (!ok) return;
+                    fetch(`/admin/appointments/${id}/validate`, {
+                        method: 'POST',
+                        headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
+                        body: JSON.stringify({})
+                    }).then(r => r.json()).then(d => {
+                        if (d.success) {
+                            uiToast(d.message || 'Validated.');
+                            loadAppointments();
+                        } else {
+                            uiToast(d.message || 'Error validating appointment.', 'Error');
+                        }
+                    }).catch(() => uiToast('Error validating appointment.', 'Error'));
+                });
             }
 
             function openRejectModal(id) {
@@ -769,8 +945,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     </script>
 
     <script>
-    function archiveApp(id, name) {
-        if (!confirm('Archive the application of "' + name + '"?\n\nThis will move it to the archive. You can restore it later.')) return;
+    async function archiveApp(id, name) {
+        const ok = await uiConfirm(
+            'Archive application?',
+            'Archive the application of \"' + name + '\"?\\n\\nThis will move it to the archive. You can restore it later.',
+            { okText: 'Archive', cancelText: 'Cancel' }
+        );
+        if (!ok) return;
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/admin/applications/' + id + '/archive';
@@ -781,14 +962,20 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     }
 
     function deleteAppDirect(id, name) {
-        if (!confirm('PERMANENTLY DELETE the application of "' + name + '"?\n\n⚠ This action CANNOT be undone. The record will be gone forever.')) return;
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/admin/applications/' + id + '/direct-delete';
-        form.innerHTML = '<input type="hidden" name="_token" value="' + document.querySelector('meta[name=csrf-token]').content + '">' +
-                         '<input type="hidden" name="_method" value="DELETE">';
-        document.body.appendChild(form);
-        form.submit();
+        uiConfirm(
+            'Permanently delete?',
+            'PERMANENTLY DELETE the application of \"' + name + '\"?\n\n⚠ This action CANNOT be undone. The record will be gone forever.',
+            { okText: 'Delete', cancelText: 'Cancel' }
+        ).then(ok => {
+            if (!ok) return;
+            const form = document.createElement('form');
+            form.method = 'POST';
+            form.action = '/admin/applications/' + id + '/direct-delete';
+            form.innerHTML = '<input type="hidden" name="_token" value="' + document.querySelector('meta[name=csrf-token]').content + '">' +
+                             '<input type="hidden" name="_method" value="DELETE">';
+            document.body.appendChild(form);
+            form.submit();
+        });
     }
     </script>
 
@@ -847,15 +1034,21 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <div class="action-gap">
                                     <form method="POST" action="{{ route('admin.applications.restore', $app->id) }}" style="display:inline;">
                                         @csrf @method('PATCH')
-                                        <button type="submit" class="btn-action btn-approve"
-                                            onclick="return confirm('Restore this application?')" style="font-size:.76rem;">
+                                        <button type="submit" class="btn-action btn-approve js-confirm-submit"
+                                            data-confirm-title="Restore application?"
+                                            data-confirm-message="Restore this application?"
+                                            data-confirm-ok="Restore"
+                                            style="font-size:.76rem;">
                                             &#8593; Restore
                                         </button>
                                     </form>
                                     <form method="POST" action="{{ route('admin.applications.force-delete', $app->id) }}" style="display:inline;">
                                         @csrf @method('DELETE')
-                                        <button type="submit" class="btn-action btn-decline"
-                                            onclick="return confirm('Permanently delete this application? This cannot be undone.')" style="font-size:.76rem;">
+                                        <button type="submit" class="btn-action btn-decline js-confirm-submit"
+                                            data-confirm-title="Permanently delete?"
+                                            data-confirm-message="Permanently delete this application? This cannot be undone."
+                                            data-confirm-ok="Delete"
+                                            style="font-size:.76rem;">
                                             &#10006; Delete
                                         </button>
                                     </form>
@@ -884,29 +1077,46 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
 
     <script>
+    const _markReadyInFlight = {};
     function markIdReady(appId, encodedName) {
+        if (_markReadyInFlight[appId]) return;
         const name = decodeURIComponent(encodedName);
-        if (!confirm('Mark Solo Parent ID of "' + name + '" as ready for pickup?\n\nThis will send a pickup notification email to the user.')) return;
-        fetch('/admin/applications/' + appId + '/mark-id-ready', {
-            method: 'POST',
-            headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
-        }).then(r => r.json()).then(d => {
-            alert(d.message);
-            loadAppointments();
-        }).catch(() => alert('Failed to mark ID as ready.'));
+        uiConfirm(
+            'Mark ID ready?',
+            'Mark Solo Parent ID of \"' + name + '\" as ready for pickup?\\n\\nThis will send a pickup notification email to the user.',
+            { okText: 'Mark Ready', cancelText: 'Cancel' }
+        ).then(ok => {
+            if (!ok) return;
+            _markReadyInFlight[appId] = true;
+            fetch('/admin/applications/' + appId + '/mark-id-ready', {
+                method: 'POST',
+                headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
+            }).then(r => r.json()).then(d => {
+                uiToast(d.message || 'Updated.');
+                loadAppointments();
+            }).finally(() => {
+                _markReadyInFlight[appId] = false;
+            }).catch(() => uiToast('Failed to mark ID as ready.', 'Error'));
+        });
     }
 
     function archiveAppt(id, name) {
         const displayName = decodeURIComponent(name);
-        if (!confirm('Archive the appointment of "' + displayName + '"?\n\nThis will move it to the archive.')) return;
-        fetch('/admin/appointments/' + id + '/archive', {
-            method: 'DELETE',
-            headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
-        }).then(r => r.json()).then(d => {
-            alert(d.message);
-            loadAppointments();
-            loadArchivedAppts();
-        }).catch(() => alert('Archive failed.'));
+        uiConfirm(
+            'Archive appointment?',
+            'Archive the appointment of \"' + displayName + '\"?\\n\\nThis will move it to the archive.',
+            { okText: 'Archive', cancelText: 'Cancel' }
+        ).then(ok => {
+            if (!ok) return;
+            fetch('/admin/appointments/' + id + '/archive', {
+                method: 'DELETE',
+                headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
+            }).then(r => r.json()).then(d => {
+                uiToast(d.message || 'Archived.');
+                loadAppointments();
+                loadArchivedAppts();
+            }).catch(() => uiToast('Archive failed.', 'Error'));
+        });
     }
 
     function openArchivedAppts() {
@@ -920,11 +1130,20 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             document.getElementById('archivedApptCount').textContent = data.length;
             const wrap = document.getElementById('archivedApptBody');
             if (!data.length) {
-                wrap.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8;">No archived appointments.</td></tr>';
+                wrap.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:30px;color:#94a3b8;">No archived appointments.</td></tr>';
                 return;
             }
-            wrap.innerHTML = data.map(a => `<tr style="background:#f8faff;">
+            const progLabels = {
+                'Solo_Parent':  {label:'Solo Parent',  color:'#4f46e5', bg:'#ede9fe'},
+                'AICS_Medical': {label:'AICS Medical', color:'#0891b2', bg:'#e0f2fe'},
+                'AICS_Burial':  {label:'AICS Burial',  color:'#7c3aed', bg:'#f5f3ff'},
+            };
+            wrap.innerHTML = data.map(a => {
+                const prog = progLabels[a.program_type] || {label: (a.program_type||'').replace('_',' '), color:'#64748b', bg:'#f1f5f9'};
+                const progBadge = `<span style="background:${prog.bg};color:${prog.color};border-radius:20px;padding:2px 9px;font-size:.7rem;font-weight:700;">${prog.label}</span>`;
+                return `<tr style="background:#f8faff;">
                 <td><div style="font-weight:700;color:#475569;">${a.user_name}</div><div style="font-size:.72rem;color:#94a3b8;">${a.user_email}</div></td>
+                <td>${progBadge}</td>
                 <td style="font-size:.82rem;color:#94a3b8;">${a.date}<br><small>${a.day}</small></td>
                 <td style="font-size:.82rem;">${a.time}</td>
                 <td style="font-size:.82rem;">${a.interview_type}</td>
@@ -936,24 +1155,36 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <button onclick="forceDeleteAppt(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">&#10006; Delete</button>
                     </div>
                 </td>
-            </tr>`).join('');
+            </tr>`;
+            }).join('');
         });
     }
 
     function restoreAppt(id) {
-        if (!confirm('Restore this appointment?')) return;
-        fetch('/admin/appointments/' + id + '/restore', {
-            method: 'PATCH',
-            headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
-        }).then(r => r.json()).then(d => { alert(d.message); loadArchivedAppts(); loadAppointments(); });
+        uiConfirm('Restore appointment?', 'Restore this appointment?', { okText: 'Restore', cancelText: 'Cancel' })
+        .then(ok => {
+            if (!ok) return;
+            fetch('/admin/appointments/' + id + '/restore', {
+                method: 'PATCH',
+                headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
+            }).then(r => r.json()).then(d => { uiToast(d.message || 'Restored.'); loadArchivedAppts(); loadAppointments(); })
+              .catch(() => uiToast('Restore failed.', 'Error'));
+        });
     }
 
     function forceDeleteAppt(id) {
-        if (!confirm('Permanently delete this appointment? This CANNOT be undone.')) return;
-        fetch('/admin/appointments/' + id + '/force-delete', {
-            method: 'DELETE',
-            headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
-        }).then(r => r.json()).then(d => { alert(d.message); loadArchivedAppts(); });
+        uiConfirm(
+            'Permanently delete?',
+            'Permanently delete this appointment? This CANNOT be undone.',
+            { okText: 'Delete', cancelText: 'Cancel' }
+        ).then(ok => {
+            if (!ok) return;
+            fetch('/admin/appointments/' + id + '/force-delete', {
+                method: 'DELETE',
+                headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
+            }).then(r => r.json()).then(d => { uiToast(d.message || 'Deleted.'); loadArchivedAppts(); })
+              .catch(() => uiToast('Delete failed.', 'Error'));
+        });
     }
     </script>
 
@@ -974,16 +1205,122 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <table class="table mb-0" style="font-size:.85rem;">
                     <thead>
                         <tr>
-                            <th>Applicant</th><th>Date</th><th>Time</th><th>Type</th><th>Status</th><th>Archived On</th><th>Action</th>
+                            <th>Applicant</th><th>Program</th><th>Date</th><th>Time</th><th>Type</th><th>Status</th><th>Archived On</th><th>Action</th>
                         </tr>
                     </thead>
                     <tbody id="archivedApptBody">
-                        <tr><td colspan="7" style="text-align:center;padding:30px;color:#94a3b8;">Loading&hellip;</td></tr>
+                        <tr><td colspan="8" style="text-align:center;padding:30px;color:#94a3b8;">Loading&hellip;</td></tr>
                     </tbody>
                 </table>
             </div>
         </div>
     </div>
+
+    {{-- ═══════════════ CUSTOM CONFIRM / TOAST UI ═══════════════════════════ --}}
+    <div id="uiConfirmBackdrop" class="ui-modal-backdrop" aria-hidden="true">
+        <div class="ui-modal" role="dialog" aria-modal="true" aria-labelledby="uiConfirmTitle">
+            <div class="ui-modal-header">
+                <h6 id="uiConfirmTitle" class="ui-modal-title">Confirm</h6>
+                <button type="button" class="ui-modal-close" onclick="uiConfirmClose(false)" aria-label="Close">&times;</button>
+            </div>
+            <div class="ui-modal-body">
+                <p id="uiConfirmMessage"></p>
+            </div>
+            <div class="ui-modal-footer">
+                <button type="button" id="uiConfirmCancel" class="ui-btn ui-btn-secondary" onclick="uiConfirmClose(false)">Cancel</button>
+                <button type="button" id="uiConfirmOk" class="ui-btn ui-btn-primary" onclick="uiConfirmClose(true)">OK</button>
+            </div>
+        </div>
+    </div>
+    <div id="uiToast" class="ui-toast" role="status" aria-live="polite">
+        <div id="uiToastTitle" style="font-weight:900;font-size:.88rem;"></div>
+        <small id="uiToastMsg"></small>
+    </div>
+
+    <script>
+        // Promise-based confirm dialog to replace browser confirm()
+        let __uiConfirmResolve = null;
+        function uiConfirm(title, message, opts = {}) {
+            const backdrop = document.getElementById('uiConfirmBackdrop');
+            const t = document.getElementById('uiConfirmTitle');
+            const m = document.getElementById('uiConfirmMessage');
+            const ok = document.getElementById('uiConfirmOk');
+            const cancel = document.getElementById('uiConfirmCancel');
+
+            t.textContent = title || 'Confirm';
+            m.textContent = (message || '').replace(/\\n/g, '\n');
+            ok.textContent = opts.okText || 'OK';
+            cancel.textContent = opts.cancelText || 'Cancel';
+
+            backdrop.style.display = 'flex';
+            backdrop.classList.add('show');
+            backdrop.setAttribute('aria-hidden', 'false');
+
+            ok.focus({ preventScroll: true });
+
+            return new Promise(resolve => {
+                __uiConfirmResolve = resolve;
+            });
+        }
+
+        function uiConfirmClose(result) {
+            const backdrop = document.getElementById('uiConfirmBackdrop');
+            backdrop.classList.remove('show');
+            backdrop.style.display = 'none';
+            backdrop.setAttribute('aria-hidden', 'true');
+            if (typeof __uiConfirmResolve === 'function') {
+                __uiConfirmResolve(!!result);
+            }
+            __uiConfirmResolve = null;
+        }
+
+        // Simple toast for success/error messages (replaces alert())
+        let __uiToastTimer = null;
+        function uiToast(message, title = 'MSWDO Admin') {
+            const toast = document.getElementById('uiToast');
+            const t = document.getElementById('uiToastTitle');
+            const m = document.getElementById('uiToastMsg');
+            t.textContent = title;
+            m.textContent = message || '';
+            toast.classList.add('show');
+            if (__uiToastTimer) clearTimeout(__uiToastTimer);
+            __uiToastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+        }
+
+        // Close dialog when clicking backdrop
+        document.getElementById('uiConfirmBackdrop')?.addEventListener('click', function (e) {
+            if (e.target === this) uiConfirmClose(false);
+        });
+
+        // Replace remaining inline confirms on form-submit buttons
+        document.addEventListener('click', function (e) {
+            const btn = e.target.closest('.js-confirm-submit');
+            if (!btn) return;
+            // If button already handled elsewhere, ignore.
+            if (btn.dataset.__confirmWired === '1') return;
+            e.preventDefault();
+            const form = btn.closest('form');
+            if (!form) return;
+            const title = btn.getAttribute('data-confirm-title') || 'Confirm';
+            const message = btn.getAttribute('data-confirm-message') || 'Continue?';
+            const okText = btn.getAttribute('data-confirm-ok') || 'OK';
+            const cancelText = btn.getAttribute('data-confirm-cancel') || 'Cancel';
+            uiConfirm(title, message, { okText, cancelText }).then(ok => {
+                if (!ok) return;
+                btn.disabled = true;
+                btn.style.opacity = '.65';
+                btn.style.cursor = 'not-allowed';
+                form.submit();
+            });
+        }, true);
+        // ESC closes dialog
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Escape') {
+                const backdrop = document.getElementById('uiConfirmBackdrop');
+                if (backdrop && backdrop.style.display === 'flex') uiConfirmClose(false);
+            }
+        });
+    </script>
 
 </body>
 

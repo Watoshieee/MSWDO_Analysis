@@ -1,11 +1,11 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Statistical Analysis – MSWDO</title>
+    <title>Statistical Analysis â€“ MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -96,6 +96,23 @@
         }
 
         .btn-login:hover {
+            background: var(--yellow);
+            color: var(--blue);
+            border-color: var(--yellow);
+        }
+
+        .btn-register {
+            background: transparent;
+            color: #fff;
+            border: 2px solid rgba(255,255,255,.8);
+            border-radius: 30px;
+            padding: 8px 25px;
+            font-weight: 700;
+            text-decoration: none;
+            transition: all .3s;
+        }
+
+        .btn-register:hover {
             background: var(--yellow);
             color: var(--blue);
             border-color: var(--yellow);
@@ -423,6 +440,7 @@
                     </ul>
                     <div class="d-flex gap-2">
                         <a href="{{ route('login') }}" class="btn-login">Login</a>
+                        <a href="{{ route('register') }}" class="btn-register">Register</a>
                     </div>
                 @endauth
             </div>
@@ -437,7 +455,7 @@
                 Statistical Analysis Dashboard</div>
             <h1>Comparative Socioeconomic Analysis</h1>
             <div class="hero-divider"></div>
-            <p>Comprehensive statistical analysis of Magdalena, Liliw, and Majayjay — covering population, gender, age
+            <p>Comprehensive statistical analysis of Magdalena, Liliw, and Majayjay â€” covering population, gender, age
                 groups, households, social welfare programs, ANOVA, and Pearson correlation.</p>
         </div>
     </section>
@@ -475,7 +493,7 @@
         /** @var string $domAge */
         /** @var string $topProgram */
         /** @var array $progTotals */
-        $muniColors = $colors; // dynamic — set in AnalysisController from DB
+        $muniColors = $colors; // dynamic â€” set in AnalysisController from DB
         $totalPop = array_sum(array_map(fn($n) => $snapshot[$n]['population'], $coreNames));
         $totalHH = array_sum(array_map(fn($n) => $snapshot[$n]['households'], $coreNames));
         $totalBenef = array_sum(array_map(fn($n) => $snapshot[$n]['beneficiaries'], $coreNames));
@@ -522,7 +540,7 @@
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Population, Households & Beneficiaries per
                             Municipality</h6>
-                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Grouped bar chart —
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Grouped bar chart â€”
                             {{ $selectedYear }}</p>
                         <div class="chart-box"><canvas id="descBar"></canvas></div>
                     </div>
@@ -578,7 +596,7 @@
                 <div class="col-lg-8">
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Population per Year per Municipality</h6>
-                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Line chart — all recorded years</p>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Line chart â€” all recorded years</p>
                         <div class="chart-box tall"><canvas id="popTrend"></canvas></div>
                     </div>
                 </div>
@@ -701,10 +719,10 @@
                             <div style="display:flex;flex-direction:column;gap:10px;">
                                 @php
                                 $growthRefs = [
-                                    ['authors' => 'PhilAtlas (2020)', 'url' => 'https://www.philatlas.com/luzon/r04a/laguna/magdalena.html', 'label' => 'Magdalena, Laguna — Population Data'],
-                                    ['authors' => 'Magpantay & Sanchez (2023)', 'url' => 'https://journals.uplb.edu.ph/index.php/JESAM/article/download/1030/853', 'label' => 'JESAM — Environmental & Socio-demographic Study'],
-                                    ['authors' => 'Dayo, Rola, et al.', 'url' => 'https://journals.uplb.edu.ph/index.php/JPAD/article/download/719/676', 'label' => 'JPAD — Population & Agricultural Development'],
-                                    ['authors' => 'Sandoval et al. (2023)', 'url' => 'https://www.researchgate.net/profile/Ryan-Labana/publication/371812110_Water_Quality_Assessment_of_Santa_Cruz_River_in_2011_and_2022_in_the_Vicinity_of_Liliw_and_Nagcarlan_Laguna_Philippines/links/669b155b02e9686cd11091b5/Water-Quality-Assessment-of-Santa-Cruz-River-in-2011-and-2022-in-the-Vicinity-of-Liliw-and-Nagcarlan-Laguna-Philippines.pdf', 'label' => 'Water Quality Assessment — Santa Cruz River, Laguna'],
+                                    ['authors' => 'PhilAtlas (2020)', 'url' => 'https://www.philatlas.com/luzon/r04a/laguna/magdalena.html', 'label' => 'Magdalena, Laguna â€” Population Data'],
+                                    ['authors' => 'Magpantay & Sanchez (2023)', 'url' => 'https://journals.uplb.edu.ph/index.php/JESAM/article/download/1030/853', 'label' => 'JESAM â€” Environmental & Socio-demographic Study'],
+                                    ['authors' => 'Dayo, Rola, et al.', 'url' => 'https://journals.uplb.edu.ph/index.php/JPAD/article/download/719/676', 'label' => 'JPAD â€” Population & Agricultural Development'],
+                                    ['authors' => 'Sandoval et al. (2023)', 'url' => 'https://www.researchgate.net/profile/Ryan-Labana/publication/371812110_Water_Quality_Assessment_of_Santa_Cruz_River_in_2011_and_2022_in_the_Vicinity_of_Liliw_and_Nagcarlan_Laguna_Philippines/links/669b155b02e9686cd11091b5/Water-Quality-Assessment-of-Santa-Cruz-River-in-2011-and-2022-in-the-Vicinity-of-Liliw-and-Nagcarlan-Laguna-Philippines.pdf', 'label' => 'Water Quality Assessment â€” Santa Cruz River, Laguna'],
                                 ];
                                 @endphp
                                 @foreach($growthRefs as $idx => $ref)
@@ -796,15 +814,15 @@
                 <div class="col-lg-7">
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Age Groups per Municipality (Stacked)</h6>
-                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Youth (0–19), Working Age (20–59),
-                            Senior (60+) — {{ $selectedYear }}</p>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Youth (0â€“19), Working Age (20â€“59),
+                            Senior (60+) â€” {{ $selectedYear }}</p>
                         <div class="chart-box tall"><canvas id="ageStacked"></canvas></div>
                     </div>
                 </div>
                 <div class="col-lg-5">
                     <div class="card-base h-100">
                         <h6 style="font-weight:700;color:var(--blue);">Dependency Ratios</h6>
-                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">(Youth + Senior) / Working Age ×
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">(Youth + Senior) / Working Age Ã—
                             100</p>
                         @foreach($coreNames as $n)
                             <div style="margin-bottom:18px;">
@@ -826,7 +844,7 @@
                         <div style="padding-top:12px;border-top:1px solid #f1f5f9;">
                             <p style="font-size:.8rem;color:#64748b;margin:0;line-height:1.6;">
                                 Dominant age group: <strong>{{ $domAge }}</strong>.<br>
-                                {{ $domAge === 'Youth (0–19)' ? 'Population is youthful — invest in education and livelihood programs.' : ($domAge === 'Working Age (20–59)' ? 'Productive population — strong labor force, moderate dependency.' : 'Aging population — prioritize elder care and pension services.') }}
+                                {{ $domAge === 'Youth (0â€“19)' ? 'Population is youthful â€” invest in education and livelihood programs.' : ($domAge === 'Working Age (20â€“59)' ? 'Productive population â€” strong labor force, moderate dependency.' : 'Aging population â€” prioritize elder care and pension services.') }}
                             </p>
                         </div>
                     </div>
@@ -844,7 +862,7 @@
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Population vs Households Combo Chart</h6>
                         <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Bars = Population, Line =
-                            Households — {{ $selectedYear }}</p>
+                            Households â€” {{ $selectedYear }}</p>
                         <div class="chart-box tall"><canvas id="hhCombo"></canvas></div>
                     </div>
                 </div>
@@ -868,7 +886,7 @@
                                     </div>
                                 </div>
                                 <div style="font-size:.75rem;color:#94a3b8;margin-top:3px;">
-                                    {{ number_format($snapshot[$n]['households']) }} households ·
+                                    {{ number_format($snapshot[$n]['households']) }} households Â·
                                     {{ number_format($snapshot[$n]['population']) }} pop.</div>
                             </div>
                         @endforeach
@@ -907,7 +925,7 @@
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Programs per Municipality (Stacked)</h6>
                         <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">PWD, AICS, Solo Parent, 4Ps, Senior
-                            — {{ $selectedYear }}</p>
+                            â€” {{ $selectedYear }}</p>
                         <div class="chart-box tall"><canvas id="benefStacked"></canvas></div>
                     </div>
                 </div>
@@ -968,13 +986,13 @@
         <div class="container">
             <h2 class="sec-title">7. ANOVA Analysis</h2>
             <p style="color:#64748b;font-size:.9rem;margin-top:-16px;margin-bottom:24px;">One-way ANOVA tests whether
-                significant differences exist among municipalities (α = 0.05).</p>
+                significant differences exist among municipalities (Î± = 0.05).</p>
             <div class="row g-4">
                 @foreach([['Population', 'anovaPopResult'], ['Beneficiaries', 'anovaBenefResult']] as [$label, $var])
                     @php $res = $$var; @endphp
                     <div class="col-lg-6">
                         <div class="card-base">
-                            <h6 style="font-weight:700;color:var(--blue);">ANOVA — {{ $label }}</h6>
+                            <h6 style="font-weight:700;color:var(--blue);">ANOVA â€” {{ $label }}</h6>
                             @if($res)
                                 <div class="d-flex align-items-center gap-3 mb-3">
                                     <div>
@@ -1064,11 +1082,11 @@
                             <p style="font-size:.8rem;color:#64748b;margin:0;">
                                 @if($r === null) Insufficient data for correlation.
                                 @elseif($abs >= 0.7) <strong>Strong {{ $r >= 0 ? 'positive' : 'negative' }}</strong>
-                                    relationship — as {{ $corr['xLabel'] }} {{ $r >= 0 ? 'increases' : 'decreases' }},
+                                    relationship â€” as {{ $corr['xLabel'] }} {{ $r >= 0 ? 'increases' : 'decreases' }},
                                     {{ $corr['yLabel'] }} {{ $r >= 0 ? 'increases' : 'decreases' }} significantly.
                                 @elseif($abs >= 0.4) <strong>Moderate {{ $r >= 0 ? 'positive' : 'negative' }}</strong>
                                     relationship detected between {{ $corr['xLabel'] }} and {{ $corr['yLabel'] }}.
-                                @else <strong>Weak</strong> relationship — {{ $corr['xLabel'] }} and {{ $corr['yLabel'] }}
+                                @else <strong>Weak</strong> relationship â€” {{ $corr['xLabel'] }} and {{ $corr['yLabel'] }}
                                     show little linear dependency.
                                 @endif
                             </p>
@@ -1110,9 +1128,7 @@
                 @foreach($recommendations as $rec)
                     <div class="col-md-6">
                         <div class="rec-card">
-                            <div
-                                style="font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;">
-                                {{ $rec['label'] }}</div>
+                            <div style="font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;">{{ $rec['label'] }}</div>
                             <p style="font-size:.88rem;color:#475569;margin:0;line-height:1.65;">{{ $rec['text'] }}</p>
                         </div>
                     </div>
@@ -1121,183 +1137,130 @@
         </div>
     </section>
 
-    <div class="footer-strip">MSWDO &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        const MUNIS = @json($coreNames);
-        const COLORS = @json($colors);
-        const YEARS = @json($allYears);
-        const SNAP = @json($snapshot);
-        const POP = @json($populationTrend);
-        const HH = @json($householdsTrend);
-        const MALE = @json($maleTrend);
-        const FEMALE = @json($femaleTrend);
-        const BENEF = @json($benefTrend);
-        const PWD = @json($pwdTrend);
-        const AICS = @json($aicsTrend);
-        const SOLO = @json($soloTrend);
-        const FPS = @json($fpsTrend);
-        const SENIOR = @json($seniorTrend);
-        const CORRS = @json($correlations);
-
-        const opts = (extra = {}) => ({ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: v => v.toLocaleString() } }, x: { grid: { display: false } } }, ...extra });
-
-        // Section 1 – Descriptive Bar
-        new Chart(document.getElementById('descBar'), {
-            type: 'bar', data: {
-                labels: MUNIS, datasets: [
-                    { label: 'Population', data: MUNIS.map(m => SNAP[m]?.population ?? 0), backgroundColor: '#2C3E8F', borderRadius: 6 },
-                    { label: 'Households', data: MUNIS.map(m => SNAP[m]?.households ?? 0), backgroundColor: '#FDB913', borderRadius: 6 },
-                    { label: 'Beneficiaries', data: MUNIS.map(m => SNAP[m]?.beneficiaries ?? 0), backgroundColor: '#28a745', borderRadius: 6 },
-                ]
-            }, options: opts()
-        });
-
-        // Section 2 – Population Trend
-        new Chart(document.getElementById('popTrend'), { type: 'line', data: { labels: YEARS, datasets: MUNIS.map(m => ({ label: m, data: YEARS.map(y => POP[m]?.[y] ?? 0), borderColor: COLORS[m], backgroundColor: COLORS[m] + '22', fill: true, tension: .4, borderWidth: 3, pointRadius: 5 })) }, options: opts({ plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } } }) });
-
-        // Section 3 – Gender Trend
-        const maleTot = YEARS.map(y => MUNIS.reduce((s, m) => s + (MALE[m]?.[y] ?? 0), 0));
-        const femTot = YEARS.map(y => MUNIS.reduce((s, m) => s + (FEMALE[m]?.[y] ?? 0), 0));
-        new Chart(document.getElementById('genderTrend'), {
-            type: 'line', data: {
-                labels: YEARS, datasets: [
-                    { label: 'Male (All)', data: maleTot, borderColor: '#2C3E8F', backgroundColor: '#2C3E8F22', fill: true, tension: .4, borderWidth: 3, pointRadius: 5 },
-                    { label: 'Female (All)', data: femTot, borderColor: '#FDB913', backgroundColor: '#FDB91322', fill: true, tension: .4, borderWidth: 3, pointRadius: 5 },
-                ]
-            }, options: opts({ plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } } })
-        });
-
-        new Chart(document.getElementById('genderBar'), {
-            type: 'bar', data: {
-                labels: MUNIS, datasets: [
-                    { label: 'Male', data: MUNIS.map(m => SNAP[m]?.male ?? 0), backgroundColor: '#2C3E8F', borderRadius: 6 },
-                    { label: 'Female', data: MUNIS.map(m => SNAP[m]?.female ?? 0), backgroundColor: '#FDB913', borderRadius: 6 },
-                ]
-            }, options: opts()
-        });
-
-        // Section 4 – Age Stacked
-        new Chart(document.getElementById('ageStacked'), {
-            type: 'bar', data: {
-                labels: MUNIS, datasets: [
-                    { label: 'Youth (0-19)', data: MUNIS.map(m => SNAP[m]?.age_0_19 ?? 0), backgroundColor: '#2C3E8F', borderRadius: 4 },
-                    { label: 'Working Age (20-59)', data: MUNIS.map(m => SNAP[m]?.age_20_59 ?? 0), backgroundColor: '#FDB913', borderRadius: 4 },
-                    { label: 'Senior (60+)', data: MUNIS.map(m => SNAP[m]?.age_60_100 ?? 0), backgroundColor: '#28a745', borderRadius: 4 },
-                ]
-            }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: v => v.toLocaleString() } }, x: { stacked: true, grid: { display: false } } } }
-        });
-
-        // Section 5 – HH Combo
-        new Chart(document.getElementById('hhCombo'), {
-            data: {
-                labels: MUNIS, datasets: [
-                    { type: 'bar', label: 'Population', data: MUNIS.map(m => SNAP[m]?.population ?? 0), backgroundColor: '#2C3E8F88', borderRadius: 6, yAxisID: 'y' },
-                    { type: 'line', label: 'Households', data: MUNIS.map(m => SNAP[m]?.households ?? 0), borderColor: '#FDB913', backgroundColor: '#FDB91322', borderWidth: 3, tension: .4, pointRadius: 7, yAxisID: 'y2' },
-                ]
-            }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, position: 'left', grid: { color: '#f1f5f9' }, ticks: { callback: v => v.toLocaleString() } }, y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => v.toLocaleString() } }, x: { grid: { display: false } } } }
-        });
-
-        // Section 6 – Benef Stacked
-        new Chart(document.getElementById('benefStacked'), {
-            type: 'bar', data: {
-                labels: MUNIS, datasets: [
-                    { label: 'PWD', data: MUNIS.map(m => SNAP[m]?.pwd ?? 0), backgroundColor: '#2C3E8F', borderRadius: 4 },
-                    { label: 'AICS', data: MUNIS.map(m => SNAP[m]?.aics ?? 0), backgroundColor: '#FDB913', borderRadius: 4 },
-                    { label: 'Solo Parent', data: MUNIS.map(m => SNAP[m]?.solo_parent ?? 0), backgroundColor: '#6366f1', borderRadius: 4 },
-                    { label: '4Ps', data: MUNIS.map(m => SNAP[m]?.four_ps ?? 0), backgroundColor: '#28a745', borderRadius: 4 },
-                    { label: 'Senior', data: MUNIS.map(m => SNAP[m]?.senior ?? 0), backgroundColor: '#8B5CF6', borderRadius: 4 },
-                ]
-            }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: v => v.toLocaleString() } }, x: { stacked: true, grid: { display: false } } } }
-        });
-
-        // Section 6 – Benef Trend
-        new Chart(document.getElementById('benefTrend'), { type: 'line', data: { labels: YEARS, datasets: MUNIS.map(m => ({ label: m, data: YEARS.map(y => BENEF[m]?.[y] ?? 0), borderColor: COLORS[m], backgroundColor: COLORS[m] + '22', fill: true, tension: .4, borderWidth: 3, pointRadius: 5 })) }, options: opts({ plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } } }) });
-
-        // Section 8 – Correlation scatter/bar
-        CORRS.forEach((c, i) => {
-            const ctx = document.getElementById('corrChart' + i);
-            if (!ctx) return;
-            new Chart(ctx, {
-                type: 'bar', data: {
-                    labels: c.xData.map((_, j) => 'P' + (j + 1)), datasets: [
-                        { label: c.xLabel, data: c.xData, backgroundColor: '#2C3E8F55', borderRadius: 3 },
-                        { label: c.yLabel, data: c.yData, backgroundColor: '#FDB91388', borderRadius: 3 },
-                    ]
-                }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 9 }, callback: v => v.toLocaleString() } }, x: { ticks: { font: { size: 9 } }, grid: { display: false } } } }
-            });
-        });
-    </script>
-
     @auth
         @if(Auth::user()->isSuperAdmin())
-            <style>
-                .admin-back-btn {
-                    position: fixed;
-                    bottom: 28px;
-                    left: 28px;
-                    z-index: 9999;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    background: var(--grad);
-                    color: #fff;
-                    border: none;
-                    border-radius: 50px;
-                    padding: 12px 22px 12px 16px;
-                    font-family: 'Inter', sans-serif;
-                    font-weight: 800;
-                    font-size: .85rem;
-                    box-shadow: 0 8px 28px rgba(44, 62, 143, .4);
-                    cursor: pointer;
-                    text-decoration: none;
-                    transition: all .3s;
-                }
-
-                .admin-back-btn:hover {
-                    transform: translateY(-4px);
-                    color: #fff;
-                }
-            </style>
+            <style>.admin-back-btn{position:fixed;bottom:28px;left:28px;z-index:9999;display:flex;align-items:center;gap:10px;background:var(--grad);color:#fff;border:none;border-radius:50px;padding:12px 22px 12px 16px;font-family:'Inter',sans-serif;font-weight:800;font-size:.85rem;box-shadow:0 8px 28px rgba(44,62,143,.4);cursor:pointer;text-decoration:none;transition:all .3s;}.admin-back-btn:hover{transform:translateY(-4px);color:#fff;}</style>
             <a href="{{ route('superadmin.dashboard') }}" class="admin-back-btn">&#8592; Super Admin Dashboard</a>
         @elseif(Auth::user()->isAdmin())
-            <style>
-                .admin-back-btn {
-                    position: fixed;
-                    bottom: 28px;
-                    left: 28px;
-                    z-index: 9999;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    background: linear-gradient(135deg, #FDB913, #E5A500);
-                    color: #1A2A5C;
-                    border: none;
-                    border-radius: 50px;
-                    padding: 12px 22px 12px 16px;
-                    font-family: 'Inter', sans-serif;
-                    font-weight: 800;
-                    font-size: .85rem;
-                    box-shadow: 0 8px 28px rgba(253, 185, 19, .45);
-                    cursor: pointer;
-                    text-decoration: none;
-                    transition: all .3s;
-                }
-
-                .admin-back-btn:hover {
-                    transform: translateY(-4px);
-                    color: #1A2A5C;
-                }
-            </style>
+            <style>.admin-back-btn{position:fixed;bottom:28px;left:28px;z-index:9999;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#FDB913,#E5A500);color:#1A2A5C;border:none;border-radius:50px;padding:12px 22px 12px 16px;font-family:'Inter',sans-serif;font-weight:800;font-size:.85rem;box-shadow:0 8px 28px rgba(253,185,19,.45);cursor:pointer;text-decoration:none;transition:all .3s;}.admin-back-btn:hover{transform:translateY(-4px);color:#1A2A5C;}</style>
             <a href="{{ route('admin.dashboard') }}" class="admin-back-btn">&#8592; Admin Dashboard</a>
         @endif
     @endauth
 
-
     @include('components.chatbot-widget')
 
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const MUNIS  = @json($coreNames);
+        const COLORS = @json($colors);
+        const YEARS  = @json($allYears);
+        const SNAP   = @json($snapshot);
+        const POP    = @json($populationTrend);
+        const HH     = @json($householdsTrend);
+        const MALE   = @json($maleTrend);
+        const FEMALE = @json($femaleTrend);
+        const BENEF  = @json($benefTrend);
+        const PWD    = @json($pwdTrend);
+        const AICS   = @json($aicsTrend);
+        const SOLO   = @json($soloTrend);
+        const FPS    = @json($fpsTrend);
+        const SENIOR = @json($seniorTrend);
+        const CORRS  = @json($correlations);
+
+        const opts = (extra={}) => ({
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ position:'top' } },
+            scales:{ y:{ beginAtZero:true, grid:{ color:'#f1f5f9' }, ticks:{ callback: v=>v.toLocaleString() } }, x:{ grid:{ display:false } } },
+            ...extra
+        });
+
+        // §1 Descriptive Bar
+        new Chart(document.getElementById('descBar'),{
+            type:'bar', data:{ labels:MUNIS, datasets:[
+                { label:'Population',    data:MUNIS.map(m=>SNAP[m]?.population??0),    backgroundColor:'#2C3E8F', borderRadius:6 },
+                { label:'Households',    data:MUNIS.map(m=>SNAP[m]?.households??0),    backgroundColor:'#FDB913', borderRadius:6 },
+                { label:'Beneficiaries', data:MUNIS.map(m=>SNAP[m]?.beneficiaries??0), backgroundColor:'#28a745', borderRadius:6 },
+            ]}, options:opts()
+        });
+
+        // §2 Population Trend
+        new Chart(document.getElementById('popTrend'),{
+            type:'line', data:{ labels:YEARS, datasets:MUNIS.map(m=>({
+                label:m, data:YEARS.map(y=>POP[m]?.[y]??0),
+                borderColor:COLORS[m], backgroundColor:COLORS[m]+'22', fill:true, tension:.4, borderWidth:3, pointRadius:5
+            }))}, options:opts({ plugins:{ legend:{ position:'top' }, tooltip:{ mode:'index', intersect:false } } })
+        });
+
+        // §3 Gender Trend
+        const maleTot = YEARS.map(y=>MUNIS.reduce((s,m)=>s+(MALE[m]?.[y]??0),0));
+        const femTot  = YEARS.map(y=>MUNIS.reduce((s,m)=>s+(FEMALE[m]?.[y]??0),0));
+        new Chart(document.getElementById('genderTrend'),{
+            type:'line', data:{ labels:YEARS, datasets:[
+                { label:'Male (All)',   data:maleTot, borderColor:'#2C3E8F', backgroundColor:'#2C3E8F22', fill:true, tension:.4, borderWidth:3, pointRadius:5 },
+                { label:'Female (All)', data:femTot,  borderColor:'#FDB913', backgroundColor:'#FDB91322', fill:true, tension:.4, borderWidth:3, pointRadius:5 },
+            ]}, options:opts({ plugins:{ legend:{ position:'top' }, tooltip:{ mode:'index', intersect:false } } })
+        });
+        new Chart(document.getElementById('genderBar'),{
+            type:'bar', data:{ labels:MUNIS, datasets:[
+                { label:'Male',   data:MUNIS.map(m=>SNAP[m]?.male??0),   backgroundColor:'#2C3E8F', borderRadius:6 },
+                { label:'Female', data:MUNIS.map(m=>SNAP[m]?.female??0), backgroundColor:'#FDB913', borderRadius:6 },
+            ]}, options:opts()
+        });
+
+        // §4 Age Stacked
+        new Chart(document.getElementById('ageStacked'),{
+            type:'bar', data:{ labels:MUNIS, datasets:[
+                { label:'Youth (0-19)',       data:MUNIS.map(m=>SNAP[m]?.age_0_19??0),   backgroundColor:'#2C3E8F', borderRadius:4 },
+                { label:'Working Age (20-59)',data:MUNIS.map(m=>SNAP[m]?.age_20_59??0),  backgroundColor:'#FDB913', borderRadius:4 },
+                { label:'Senior (60+)',       data:MUNIS.map(m=>SNAP[m]?.age_60_100??0), backgroundColor:'#28a745', borderRadius:4 },
+            ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'top' } },
+                scales:{ y:{ stacked:true, beginAtZero:true, grid:{ color:'#f1f5f9' }, ticks:{ callback:v=>v.toLocaleString() } }, x:{ stacked:true, grid:{ display:false } } } }
+        });
+
+        // §5 HH Combo
+        new Chart(document.getElementById('hhCombo'),{
+            data:{ labels:MUNIS, datasets:[
+                { type:'bar',  label:'Population', data:MUNIS.map(m=>SNAP[m]?.population??0), backgroundColor:'#2C3E8F88', borderRadius:6, yAxisID:'y' },
+                { type:'line', label:'Households', data:MUNIS.map(m=>SNAP[m]?.households??0), borderColor:'#FDB913', backgroundColor:'#FDB91322', borderWidth:3, tension:.4, pointRadius:7, yAxisID:'y2' },
+            ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'top' } },
+                scales:{ y:{ beginAtZero:true, position:'left', grid:{ color:'#f1f5f9' }, ticks:{ callback:v=>v.toLocaleString() } },
+                    y2:{ beginAtZero:true, position:'right', grid:{ drawOnChartArea:false }, ticks:{ callback:v=>v.toLocaleString() } }, x:{ grid:{ display:false } } } }
+        });
+
+        // §6 Beneficiaries Stacked
+        new Chart(document.getElementById('benefStacked'),{
+            type:'bar', data:{ labels:MUNIS, datasets:[
+                { label:'PWD',        data:MUNIS.map(m=>SNAP[m]?.pwd??0),         backgroundColor:'#2C3E8F', borderRadius:4 },
+                { label:'AICS',       data:MUNIS.map(m=>SNAP[m]?.aics??0),        backgroundColor:'#FDB913', borderRadius:4 },
+                { label:'Solo Parent',data:MUNIS.map(m=>SNAP[m]?.solo_parent??0), backgroundColor:'#6366f1', borderRadius:4 },
+                { label:'4Ps',        data:MUNIS.map(m=>SNAP[m]?.four_ps??0),     backgroundColor:'#28a745', borderRadius:4 },
+                { label:'Senior',     data:MUNIS.map(m=>SNAP[m]?.senior??0),      backgroundColor:'#8B5CF6', borderRadius:4 },
+            ]}, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{ position:'top' } },
+                scales:{ y:{ stacked:true, beginAtZero:true, grid:{ color:'#f1f5f9' }, ticks:{ callback:v=>v.toLocaleString() } }, x:{ stacked:true, grid:{ display:false } } } }
+        });
+
+        // §6 Beneficiaries Trend
+        new Chart(document.getElementById('benefTrend'),{
+            type:'line', data:{ labels:YEARS, datasets:MUNIS.map(m=>({
+                label:m, data:YEARS.map(y=>BENEF[m]?.[y]??0),
+                borderColor:COLORS[m], backgroundColor:COLORS[m]+'22', fill:true, tension:.4, borderWidth:3, pointRadius:5
+            }))}, options:opts({ plugins:{ legend:{ position:'top' }, tooltip:{ mode:'index', intersect:false } } })
+        });
+
+        // §8 Correlation mini-charts
+        CORRS.forEach((c,i)=>{
+            const ctx=document.getElementById('corrChart'+i);
+            if(!ctx) return;
+            new Chart(ctx,{
+                type:'bar', data:{ labels:c.xData.map((_,j)=>'P'+(j+1)), datasets:[
+                    { label:c.xLabel, data:c.xData, backgroundColor:'#2C3E8F55', borderRadius:3 },
+                    { label:c.yLabel, data:c.yData, backgroundColor:'#FDB91388', borderRadius:3 },
+                ]}, options:{ responsive:true, maintainAspectRatio:false,
+                    plugins:{ legend:{ position:'bottom', labels:{ font:{ size:10 } } } },
+                    scales:{ y:{ beginAtZero:true, ticks:{ font:{ size:9 }, callback:v=>v.toLocaleString() } }, x:{ ticks:{ font:{ size:9 } }, grid:{ display:false } } } }
+            });
+        });
+    </script>
 </body>
 
 </html>

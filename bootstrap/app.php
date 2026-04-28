@@ -13,9 +13,11 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withMiddleware(function (Middleware $middleware): void {
         // 1. No-cache headers on every response (back-button bypass fix)
         // 2. Inject session-guard.js into every authenticated HTML response
+        // 3. Share color settings with all views
         $middleware->web(append: [
             \App\Http\Middleware\PreventBackHistory::class,
             \App\Http\Middleware\InjectSessionGuard::class,
+            \App\Http\Middleware\ShareColorSettings::class,
         ]);
 
         // Named middleware aliases

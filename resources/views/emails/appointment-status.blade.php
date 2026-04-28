@@ -56,11 +56,20 @@
     <div class="body">
         <p class="greeting">Hello, {{ $appointment->user?->full_name ?? 'Applicant' }}!</p>
 
+        @php
+        $programLabel = match($appointment->program_type ?? 'Solo_Parent') {
+            'AICS_Medical' => 'AICS Medical Assistance',
+            'AICS_Burial'  => 'AICS Burial Assistance',
+            'Solo_Parent'  => 'Solo Parent ID',
+            default        => 'MSWDO Assistance',
+        };
+        @endphp
+
         <p class="intro">
             @if($newStatus === 'confirmed')
-                Your appointment for the <strong>Solo Parent ID</strong> application has been <strong>confirmed</strong> by the MSWDO. Please make sure to attend on the scheduled date and time.
+                Your appointment for the <strong>{{ $programLabel }}</strong> program has been <strong>confirmed</strong> by the MSWDO. Please make sure to attend on the scheduled date and time.
             @elseif($newStatus === 'rejected')
-                Unfortunately, your appointment request for the <strong>Solo Parent ID</strong> application was not approved. You may re-book a new appointment at your convenience.
+                Unfortunately, your appointment request for the <strong>{{ $programLabel }}</strong> program was not approved. You may re-book a new appointment at your convenience.
             @else
                 This is a friendly reminder that you have a scheduled appointment with the MSWDO <strong>tomorrow</strong>. Please prepare and arrive on time.
             @endif
