@@ -93,58 +93,71 @@ class AppointmentController extends Controller
         $appt  = Appointment::with('user')
             ->where('id', $id)
             ->where('municipality', $admin->municipality)
-            ->where('program_type', 'Solo_Parent')
+            ->whereIn('program_type', ['Solo_Parent', 'AICS_Medical', 'AICS_Burial'])
             ->where('status', 'confirmed')
             ->firstOrFail();
 
-        // Prevent duplicate applications
-        if ($appt->solo_parent_app_id) {
-            return response()->json(['success' => false, 'message' => 'Already validated.'], 422);
+        // ── Solo Parent: existing behavior ────────────────────────────────
+        if ($appt->program_type === 'Solo_Parent') {
+            // Prevent duplicate applications
+            if ($appt->solo_parent_app_id) {
+                return response()->json(['success' => false, 'message' => 'Already validated.'], 422);
+            }
+
+            $application = Application::create([
+                'user_id'          => $appt->user_id,
+                'program_type'     => 'Solo_Parent',
+                'municipality'     => $appt->municipality,
+                'barangay'         => $appt->user->barangay ?? '',
+                'full_name'        => $appt->user->full_name,
+                'age'              => $appt->user->age ?? 0,
+                'gender'           => null,  // nullable — not collected at appointment booking
+                'contact_number'   => $appt->user->mobile_number ?? $appt->user->contact_number ?? '',
+                'status'           => 'pending',
+                'application_date' => now(),
+                'year'             => now()->year,
+            ]);
+
+            \App\Models\FileMonitoring::create([
+                'application_id' => $application->id,
+                'user_id'        => $appt->user_id,
+                'municipality'   => $appt->municipality,
+                'overall_status' => 'pending',
+                'priority'       => 'medium',
+            ]);
+
+            $appt->update([
+                'status'             => 'validated',
+                'solo_parent_app_id' => $application->id,
+                'validated_at'       => now(),
+                'admin_notes'        => $request->input('admin_notes', $appt->admin_notes),
+            ]);
+
+            try {
+                Mail::to($appt->user->email)->send(new SoloParentEligibilityMail($appt, $application));
+            } catch (\Exception $e) {
+                Log::error('Solo Parent eligibility email failed: ' . $e->getMessage());
+            }
+
+            return response()->json([
+                'success'        => true,
+                'message'        => 'Applicant marked eligible. User has been notified and can now submit requirements.',
+                'application_id' => $application->id,
+            ]);
         }
 
-        // Create the Solo Parent Application record
-        $application = Application::create([
-            'user_id'          => $appt->user_id,
-            'program_type'     => 'Solo_Parent',
-            'municipality'     => $appt->municipality,
-            'barangay'         => $appt->user->barangay ?? '',
-            'full_name'        => $appt->user->full_name,
-            'age'              => $appt->user->age ?? 0,
-            'gender'           => null,  // nullable — not collected at appointment booking
-            'contact_number'   => $appt->user->mobile_number ?? $appt->user->contact_number ?? '',
-            'status'           => 'pending',
-            'application_date' => now(),
-            'year'             => now()->year,
-        ]);
-
-        // Create FileMonitoring so requirements can be uploaded immediately
-        \App\Models\FileMonitoring::create([
-            'application_id' => $application->id,
-            'user_id'        => $appt->user_id,
-            'municipality'   => $appt->municipality,
-            'overall_status' => 'pending',
-            'priority'       => 'medium',
-        ]);
-
-        // Update the appointment
+        // ── AICS: mark validated (document upload gate is handled in Mobile API) ──
+        // We do NOT create an Application/FileMonitoring here, because AICS uploads
+        // are submitted via the shared MobileApiController which already creates them.
         $appt->update([
-            'status'             => 'validated',
-            'solo_parent_app_id' => $application->id,
-            'validated_at'       => now(),
-            'admin_notes'        => $request->input('admin_notes', $appt->admin_notes),
+            'status'       => 'validated',
+            'validated_at' => now(),
+            'admin_notes' => $request->input('admin_notes', $appt->admin_notes),
         ]);
-
-        // Email user — eligibility confirmed + requirements link
-        try {
-            Mail::to($appt->user->email)->send(new SoloParentEligibilityMail($appt, $application));
-        } catch (\Exception $e) {
-            Log::error('Solo Parent eligibility email failed: ' . $e->getMessage());
-        }
 
         return response()->json([
-            'success'        => true,
-            'message'        => 'Applicant marked eligible. User has been notified and can now submit requirements.',
-            'application_id' => $application->id,
+            'success' => true,
+            'message' => 'Appointment marked as validated. User can now submit AICS requirements.'
         ]);
     }
 

@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Application;
+use App\Models\Appointment;
 use App\Models\FileMonitoring;
 use App\Models\FileUpload;
 use App\Models\User;
@@ -32,6 +33,40 @@ class ApplicationService
 
             if ($idAlreadyIssued) {
                 throw new \RuntimeException('You already have an active Solo Parent ID and cannot reapply.');
+            }
+        }
+
+        // ── AICS: block requirements upload until appointment is validated ──
+        if (in_array($programType, ['AICS_Medical', 'AICS_Burial'], true)) {
+            $hasValidatedAppointment = Appointment::where('user_id', $user->id)
+                ->where('program_type', $programType)
+                ->where('status', 'validated')
+                ->exists();
+
+            if (!$hasValidatedAppointment) {
+                throw new \RuntimeException(
+                    'You can only submit AICS requirements after your appointment is validated by MSWDO.'
+                );
+            }
+
+            $hasCompletedApplication = Application::where('user_id', $user->id)
+                ->where('program_type', $programType)
+                ->where('status', 'approved')
+                ->exists();
+
+            if ($hasCompletedApplication) {
+                throw new \RuntimeException('You have already completed this AICS application.');
+            }
+
+            $hasOtherActiveApplication = Application::where('user_id', $user->id)
+                ->where('program_type', $programType)
+                ->whereIn('status', ['pending', 'rejected'])
+                ->exists();
+
+            if ($hasOtherActiveApplication) {
+                throw new \RuntimeException(
+                    'You already have an AICS application in progress. Please re-upload only the rejected documents from your application status.'
+                );
             }
         }
 

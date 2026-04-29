@@ -4,6 +4,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\MobileApiController;
 use App\Http\Controllers\Api\SoloParentApiController;
+use App\Http\Controllers\Api\AicsApiController;
 
 // ============================================
 // PUBLIC ENDPOINTS
@@ -61,6 +62,23 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/requirements/upload', [SoloParentApiController::class, 'uploadRequirement']);
         Route::get('/notifications', [SoloParentApiController::class, 'getNotifications']);
         Route::put('/notifications/{id}/read', [SoloParentApiController::class, 'markNotificationRead']);
+    });
+
+    // AICS appointment booking (Medical & Burial)
+    Route::prefix('aics')->group(function () {
+        Route::prefix('medical')->group(function () {
+            Route::get('/slots', [AicsApiController::class, 'getAvailableSlots']);
+            Route::post('/appointments', [AicsApiController::class, 'bookMedicalAppointment']);
+            Route::get('/appointment', [AicsApiController::class, 'getMedicalAppointment']);
+            Route::delete('/appointments/{id}', [AicsApiController::class, 'cancelMedicalAppointment']);
+        });
+
+        Route::prefix('burial')->group(function () {
+            Route::get('/slots', [AicsApiController::class, 'getAvailableSlots']);
+            Route::post('/appointments', [AicsApiController::class, 'bookBurialAppointment']);
+            Route::get('/appointment', [AicsApiController::class, 'getBurialAppointment']);
+            Route::delete('/appointments/{id}', [AicsApiController::class, 'cancelBurialAppointment']);
+        });
     });
 
     // Device Token Management

@@ -80,6 +80,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Admin notification bell
     Route::post('/mark-notifications-viewed', [App\Http\Controllers\AdminController::class, 'markNotificationsViewed'])->name('mark-notifications-viewed');
 
+    // Vision / Mission / Goals
+    Route::post('/vision-mission/save', [App\Http\Controllers\AdminController::class, 'saveVisionMission'])->name('vision-mission.save');
+
+    // Admin user management
+    Route::get('/users', [App\Http\Controllers\AdminController::class, 'users'])->name('users');
+    Route::get('/users/search', [App\Http\Controllers\AdminController::class, 'searchUsers'])->name('users.search');
+
     // Yearly Comparison Routes
     Route::prefix('yearly')->name('yearly.')->group(function () {
         Route::get('/', [App\Http\Controllers\Admin\YearlyComparisonController::class, 'index'])->name('index');

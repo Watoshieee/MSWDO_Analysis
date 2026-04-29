@@ -291,7 +291,7 @@ class MobileApiController extends Controller
                         'id'               => $fu->id,
                         'requirement_name' => $fu->requirement_name,
                         'file_name'        => $fu->file_name,
-                        'status'           => $fu->status,
+                        'status'           => $fu->status ?? 'pending',
                         'admin_remarks'    => $fu->admin_remarks,
                     ];
                 }
@@ -300,7 +300,8 @@ class MobileApiController extends Controller
             return [
                 'id'               => $app->id,
                 'program_type'     => $app->program_type,
-                'status'           => $app->status,
+                // Keep API stable even if some legacy DB rows have NULL status.
+                'status'           => $app->status ?? Application::STATUS_PENDING,
                 'barangay'         => $app->barangay ?? '',
                 'municipality'     => $app->municipality ?? '',
                 'created_at'       => $app->application_date ? $app->application_date->format('F d, Y') : null,
@@ -459,7 +460,7 @@ class MobileApiController extends Controller
                     'requirement_name' => $fu->requirement_name,
                     'file_name'        => $fu->file_name,
                     'file_url'         => $fu->file_path ? asset('storage/' . $fu->file_path) : null,
-                    'status'           => $fu->status,
+                        'status'           => $fu->status ?? 'pending',
                     'admin_remarks'    => $fu->admin_remarks,
                     'uploaded_at'      => $fu->uploaded_at ? $fu->uploaded_at->format('F d, Y h:i A') : null,
                 ];
@@ -485,10 +486,10 @@ class MobileApiController extends Controller
                 'contact_number'   => $application->contact_number,
                 'barangay'         => $application->barangay ?? '',
                 'municipality'     => $application->municipality ?? '',
-                'status'           => $application->status,
+                    'status'           => $application->status ?? Application::STATUS_PENDING,
                 'status_message'   => $statusMessage,
                 'rejection_reason' => $application->admin_remarks,
-                'can_resubmit'     => $application->status === Application::STATUS_REJECTED,
+                    'can_resubmit'     => ($application->status ?? Application::STATUS_PENDING) === Application::STATUS_REJECTED,
                 'application_date' => $application->application_date ? $application->application_date->format('F d, Y') : null,
                 'stage'            => $application->stage,
                 'files'            => $files,

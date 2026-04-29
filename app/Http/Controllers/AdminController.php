@@ -555,6 +555,16 @@ class AdminController extends Controller
 
         if ($rejectedFiles > 0) {
             $fileMonitoring->overall_status = 'rejected';
+
+            // Ensure the application status becomes `rejected` when any file is rejected.
+            // This is required so the mobile app can show rejected-file resubmission UI.
+            if ($fileMonitoring->application) {
+                $fileMonitoring->application->update([
+                    'status' => 'rejected',
+                    // Show the latest rejection note as the application-level reason.
+                    'admin_remarks' => $request->admin_remarks ?? $fileMonitoring->application->admin_remarks,
+                ]);
+            }
         } elseif ($approvedFiles == $totalFiles && $totalFiles > 0) {
             $fileMonitoring->overall_status = 'approved';
             $appUpdates = ['status' => 'approved', 'completed_at' => now()];
