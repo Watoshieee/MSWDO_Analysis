@@ -256,7 +256,50 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <span class="s-badge s-{{ $st }}">{{ ucfirst($st) }}</span>
                 </div>
             </div>
+            {{-- No-Documents Warning Banner --}}
+        @if(!$hasDocuments)
+        <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:14px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">
+            <div style="font-size:1.6rem;line-height:1;">⚠️</div>
+            <div>
+                <div style="font-weight:800;color:#856404;font-size:1rem;margin-bottom:4px;">No Documents Submitted Yet</div>
+                <div style="font-size:.88rem;color:#856404;line-height:1.6;">This applicant has not uploaded any required documents. Approval and ID actions are <strong>disabled</strong> until at least one document is submitted.</div>
+            </div>
         </div>
+        @endif
+
+        {{-- ID Status / Mark Ready Section (Solo Parent only) --}}
+        @if($application->program_type === 'Solo_Parent')
+        <div class="info-card mb-4" style="border-left: 4px solid {{ $allApproved ? '#28a745' : '#fdb913' }};">
+            <h5>Solo Parent ID Status</h5>
+            @if($application->id_status === 'ready_for_pickup')
+                <div style="color:#28a745;font-weight:700;">✅ ID is marked as Ready for Pickup
+                    @if($application->id_ready_at)
+                        <span style="font-size:.78rem;color:#6c757d;font-weight:400;"> — {{ \Carbon\Carbon::parse($application->id_ready_at)->format('M d, Y h:i A') }}</span>
+                    @endif
+                </div>
+            @elseif($allApproved)
+                <div style="margin-bottom:10px;font-size:.88rem;color:#155724;">✔ All documents are approved. You may now mark the Solo Parent ID as ready for pickup.</div>
+                <form action="{{ route('admin.applications.mark-id-ready', $application->id) }}" method="POST" class="d-inline" id="markIdReadyForm">
+                    @csrf
+                    <button type="submit" class="btn btn-success fw-bold" style="border-radius:8px;padding:8px 22px;"
+                        onclick="return confirm('Mark this Solo Parent ID as ready for pickup and notify the applicant?')">
+                        🪪 Mark ID as Ready for Pickup
+                    </button>
+                </form>
+            @else
+                <div style="color:#856404;font-size:.88rem;margin-bottom:10px;">
+                    @if(!$hasDocuments)
+                        ⚠️ No documents submitted. ID cannot be marked ready.
+                    @else
+                        ⏳ Not all documents are approved yet. ID can only be marked ready once all documents are approved.
+                    @endif
+                </div>
+                <button class="btn btn-secondary fw-bold" disabled style="border-radius:8px;padding:8px 22px;opacity:.55;cursor:not-allowed;">
+                    🪪 Mark ID as Ready for Pickup
+                </button>
+            @endif
+        </div>
+        @endif
 
         {{-- Documents --}}
         @if($fileMonitoring)
@@ -273,7 +316,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <div class="col-md-4">
                     <div style="font-weight:700;color:#1e293b;margin-bottom:6px;">{{ $file->requirement_name }}</div>
                     <span class="s-badge s-{{ $status }}">
-                        {{ $status === 'approved' ? ' Approved' : ($status === 'rejected' ? ' Rejected' : ($status === 'in_review' ? ' In Review' : ' Pending')) }}
+                        {{ $status === 'approved' ? '✔ Approved' : ($status === 'rejected' ? '✖ Rejected' : ($status === 'in_review' ? '🔍 In Review' : '⏳ Pending')) }}
                     </span>
                     @if($file->admin_remarks)
                         <div style="margin-top:8px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:.78rem;color:#856404;border-left:3px solid #fdb913;">
@@ -318,7 +361,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     @endif
                 </div>
 
-                {{-- Actions --}}
+                {{-- Actions (disabled when no docs) --}}
                 <div class="col-md-4 text-end">
                     @if($file->file_path)
                         @if($status === 'approved')

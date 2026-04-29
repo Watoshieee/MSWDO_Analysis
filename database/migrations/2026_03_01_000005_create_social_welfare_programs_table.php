@@ -10,11 +10,17 @@ return new class extends Migration
     {
         Schema::create('social_welfare_programs', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('code')->unique();
-            $table->text('description')->nullable();
-            $table->timestamps();
+            $table->string('municipality');
+            $table->string('barangay')->nullable();
+            $table->string('program_type');
+            $table->integer('beneficiary_count')->default(0);
+            $table->integer('year');
+            $table->integer('month')->nullable();
             $table->softDeletes();
+            
+            // Add indexes for better query performance
+            $table->index(['municipality', 'year']);
+            $table->index('program_type');
         });
     }
 

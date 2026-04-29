@@ -10,12 +10,12 @@ class FileMonitoring extends Model
     
     protected $fillable = [
         'application_id',
-        'user_id',  // ADD THIS
+        'user_id',
         'assigned_admin_id',
         'priority',
         'overall_status',
         'notes',
-        'municipality'  // MAKE SURE THIS IS HERE
+        'municipality',
     ];
     
     protected $casts = [
@@ -45,9 +45,17 @@ class FileMonitoring extends Model
     
     public function updateOverallStatus()
     {
-        $totalFiles = $this->fileUploads()->count();
-        $approvedFiles = $this->fileUploads()->where('status', 'approved')->count();
-        $rejectedFiles = $this->fileUploads()->where('status', 'rejected')->count();
+        $counts = $this->fileUploads()
+            ->selectRaw('
+                COUNT(*) as total,
+                SUM(status = "approved") as approved,
+                SUM(status = "rejected") as rejected
+            ')
+            ->first();
+
+        $totalFiles    = (int) ($counts->total ?? 0);
+        $approvedFiles = (int) ($counts->approved ?? 0);
+        $rejectedFiles = (int) ($counts->rejected ?? 0);
         
         if ($totalFiles == 0) {
             $this->overall_status = 'pending';

@@ -6,14 +6,70 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\OtpController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\AnalysisController;
-use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\SuperAdmin\UserController as SuperAdminUserController;
+use App\Http\Controllers\BarangayDataController;
+
+// ============================================
+// PUBLIC ROUTES
+// ============================================
+Route::get('/', function () {
+    return redirect('/analysis');
+});
+
+// ============================================
+// PUBLIC ANALYSIS PAGES
+// ============================================
+Route::prefix('analysis')->name('analysis.')->group(function () {
+    Route::get('/', [AnalysisController::class, 'index'])->name('index');
+    Route::get('/municipality/{name}', [AnalysisController::class, 'municipality'])->name('municipality');
+    Route::get('/demographic', [AnalysisController::class, 'demographic'])->name('demographic');
+    Route::get('/programs', [AnalysisController::class, 'programs'])->name('programs');
+});
+
+// ============================================
+// AI CHATBOT (public — guests + auth users)
+// ============================================
+Route::post('/chatbot/message', [App\Http\Controllers\ChatbotController::class, 'reply'])->name('chatbot.reply');
+
+// ============================================
+// GUEST ROUTES (login, register, OTP, password reset)
+// ============================================
+Route::middleware('guest')->group(function () {
+    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
+    Route::post('/login', [LoginController::class, 'login']);
+
+    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
+    Route::post('/register', [RegisterController::class, 'register']);
+
+    Route::get('/verify-otp', [OtpController::class, 'showVerifyForm'])->name('otp.verify.form');
+    Route::post('/verify-otp', [OtpController::class, 'verify'])->name('otp.verify');
+    Route::post('/resend-otp', [OtpController::class, 'resend'])->name('otp.resend');
+
+    // Password Reset
+    Route::get('/forgot-password', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'create'])->name('password.request');
+    Route::post('/forgot-password', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store'])->name('password.email');
+    Route::get('/reset-password/{token}', [App\Http\Controllers\Auth\NewPasswordController::class, 'create'])->name('password.reset');
+    Route::post('/reset-password', [App\Http\Controllers\Auth\NewPasswordController::class, 'store'])->name('password.update');
+
+    // Change Password (after email verification)
+    Route::get('/change-password', [App\Http\Controllers\Auth\ChangePasswordController::class, 'showChangeForm'])->name('password.change');
+    Route::post('/change-password', [App\Http\Controllers\Auth\ChangePasswordController::class, 'change'])->name('password.change.submit');
+});
+
+// LOGOUT
+Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
+
+// SESSION HEARTBEAT — keeps session alive while tab is open
+Route::middleware(['auth'])->get('/session/ping', function () {
+    return response()->json(['ok' => true, 'ts' => now()->timestamp]);
+})->name('session.ping');
+
 // ============================================
 // USER ROUTES (authenticated users with role 'user')
 // ============================================
 Route::middleware(['auth', 'ensure_role:user'])->group(function () {
+    Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard');
     Route::get('/user/dashboard', [UserController::class, 'dashboard'])->name('user.dashboard');
     Route::get('/user/programs', [UserController::class, 'programs'])->name('user.programs');
     Route::get('/user/profile', [UserController::class, 'profile'])->name('user.profile');
@@ -49,8 +105,6 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::get('/chat/unread-count', [App\Http\Controllers\ChatController::class, 'getUnreadCount'])->name('chat.unread');
 });
 
-// [Duplicate route block removed — user management is handled in the main superadmin group below]
-
 // ============================================
 // SOLO PARENT APPLICATION ROUTES
 // ============================================
@@ -69,14 +123,13 @@ Route::middleware(['auth', 'ensure_role:user'])->prefix('applications')->name('a
     Route::delete('/{applicationId}/requirement/delete', [ApplicationController::class, 'deleteRequirement'])->name('requirement.delete');
 });
 
-// ============================================
-// PUBLIC ROUTES
-// ============================================
-Route::get('/', function () {
-    return redirect('/analysis');
-});
+// Batch upload for requirements
+Route::middleware(['auth'])->post('/applications/upload-batch', [ApplicationController::class, 'uploadBatch'])->name('applications.upload-batch');
 
 // ============================================
+<<<<<<< HEAD
+// BARANGAY ANALYSIS ROUTES (public/admin accessible)
+=======
 // AI CHATBOT (public — guests + auth users)
 // ============================================
 Route::post('/chatbot/message', [App\Http\Controllers\ChatbotController::class, 'reply'])->name('chatbot.reply');
@@ -329,6 +382,7 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
 });
 // ============================================
 // BARANGAY ANALYSIS ROUTES
+>>>>>>> origin/main
 // ============================================
 Route::prefix('barangay-analysis')->name('barangay-analysis.')->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\BarangayAnalysisController::class, 'index'])->name('index');
@@ -337,186 +391,9 @@ Route::prefix('barangay-analysis')->name('barangay-analysis.')->group(function (
     Route::get('/{barangay}', [App\Http\Controllers\Admin\BarangayAnalysisController::class, 'showBarangay'])->name('show');
 });
 
-// Batch upload for requirements
-Route::middleware(['auth'])->post('/applications/upload-batch', [ApplicationController::class, 'uploadBatch'])->name('applications.upload-batch');
-
 // ============================================
 // API ROUTES FOR BARANGAY DATA
 // ============================================
 Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
-    // Get barangay data for specific year
-    Route::get(
-        '/barangays/{municipality}/{year}',
-        function ($municipality, $year) {
-            try {
-                // Log the request
-                \Log::info('API Request: ' . $municipality . ' - Year: ' . $year);
-
-                // Validate year
-                $year = intval($year);
-                if ($year < 2000 || $year > date('Y') + 1) {
-                    return response()->json(['error' => 'Invalid year'], 400);
-                }
-
-                // Get all barangay names for this municipality
-                $barangayNames = App\Models\Barangay::where('municipality', $municipality)
-                    ->select('name')
-                    ->distinct('name')
-                    ->get()
-                    ->pluck('name')
-                    ->toArray();
-
-                // If no barangays exist, use defaults
-                if (empty($barangayNames)) {
-                    $defaultLists = [
-                        'Magdalena' => [
-                            'Alipit',
-                            'Malaking Ambling',
-                            'Munting Ambling',
-                            'Baanan',
-                            'Balanac',
-                            'Bucal',
-                            'Buenavista',
-                            'Bungkol',
-                            'Buo',
-                            'Burlungan',
-                            'Cigaras',
-                            'Ibabang Atingay',
-                            'Ibabang Butnong',
-                            'Ilayang Atingay',
-                            'Ilayang Butnong',
-                            'Ilog',
-                            'Malinao',
-                            'Maravilla',
-                            'Poblacion',
-                            'Sabang',
-                            'Salasad',
-                            'Tanawan',
-                            'Tipunan',
-                            'Halayhayin'
-                        ],
-                        'Liliw' => [
-                            'Bagong Anyo (Poblacion)',
-                            'Bayate',
-                            'Bongkol',
-                            'Bubukal',
-                            'Cabuyew',
-                            'Calumpang',
-                            'San Isidro Culoy',
-                            'Dagatan',
-                            'Daniw',
-                            'Dita',
-                            'Ibabang Palina',
-                            'Ibabang San Roque',
-                            'Ibabang Sungi',
-                            'Ibabang Taykin',
-                            'Ilayang Palina',
-                            'Ilayang San Roque',
-                            'Ilayang Sungi',
-                            'Ilayang Taykin',
-                            'Kanlurang Bukal',
-                            'Laguan',
-                            'Luquin',
-                            'Malabo-Kalantukan',
-                            'Masikap (Poblacion)',
-                            'Maslun (Poblacion)',
-                            'Mojon',
-                            'Novaliches',
-                            'Oples',
-                            'Pag-asa (Poblacion)',
-                            'Palayan',
-                            'Rizal (Poblacion)',
-                            'Silangang Bukal',
-                            'Tuy-Baanan'
-                        ],
-                        'Majayjay' => [
-                            'Amonoy',
-                            'Bakia',
-                            'Balanac',
-                            'Balayong',
-                            'Banilad',
-                            'Banti',
-                            'Bitaoy',
-                            'Botocan',
-                            'Bukal',
-                            'Burgos',
-                            'Burol',
-                            'Coralao',
-                            'Gagalot',
-                            'Ibabang Banga',
-                            'Ibabang Bayucain',
-                            'Ilayang Banga',
-                            'Ilayang Bayucain',
-                            'Isabang',
-                            'Malinao',
-                            'May-It',
-                            'Munting Kawayan',
-                            'Olla',
-                            'Oobi',
-                            'Origuel (Poblacion)',
-                            'Panalaban',
-                            'Pangil',
-                            'Panglan',
-                            'Piit',
-                            'Pook',
-                            'Rizal',
-                            'San Francisco (Poblacion)',
-                            'San Isidro',
-                            'San Miguel (Poblacion)',
-                            'San Roque',
-                            'Santa Catalina (Poblacion)',
-                            'Suba',
-                            'Talortor',
-                            'Tanawan',
-                            'Taytay',
-                            'Villa Nogales'
-                        ]
-                    ];
-                    $barangayNames = $defaultLists[$municipality] ?? [];
-                }
-
-                $result = [];
-
-                foreach ($barangayNames as $barangayName) {
-                    // Check if record exists for this year
-                    $record = App\Models\Barangay::where('municipality', $municipality)
-                        ->where('name', $barangayName)
-                        ->where('year', $year)
-                        ->first();
-
-                    if ($record) {
-                        $result[] = $record;
-                    } else {
-                        // Use updateOrCreate to prevent duplicates
-                        $newRecord = App\Models\Barangay::updateOrCreate(
-                            [
-                                'municipality' => $municipality,
-                                'name' => $barangayName,
-                                'year' => $year
-                            ],
-                            [
-                                'male_population' => 0,
-                                'female_population' => 0,
-                                'population_0_19' => 0,
-                                'population_20_59' => 0,
-                                'population_60_100' => 0,
-                                'single_parent_count' => 0,
-                                'total_households' => 0,
-                                'total_approved_applications' => 0,
-                            ]
-                        );
-
-                        $result[] = $newRecord;
-                    }
-                }
-
-                \Log::info('Returning ' . count($result) . ' barangays');
-                return response()->json($result);
-
-            } catch (\Exception $e) {
-                \Log::error('API Error: ' . $e->getMessage());
-                return response()->json(['error' => $e->getMessage()], 500);
-            }
-        }
-    );
+    Route::get('/barangays/{municipality}/{year}', [BarangayDataController::class, 'getByYear']);
 });
