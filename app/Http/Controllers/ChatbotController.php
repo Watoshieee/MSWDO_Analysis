@@ -109,37 +109,97 @@ class ChatbotController extends Controller
     private function buildSystemPrompt(string $dataTable): string
     {
         return <<<PROMPT
-Ikaw ay ang MSWDO AI Assistant para sa Liliw, Majayjay, at Magdalena, Laguna, Philippines. Pinapagana ka ng GroqCloud AI.
+You are the MSWDO AI Assistant for Liliw, Majayjay, and Magdalena, Laguna, Philippines. Powered by GroqCloud AI.
 
-=== LIVE SYSTEM DATA (gamitin ito para sumagot tungkol sa datos) ===
+=== LIVE SYSTEM DATA (use this to answer data-related questions) ===
 {$dataTable}
 === END DATA ===
 
-MGA PATAKARAN:
-1. Gamitin LAMANG ang datos sa itaas. Huwag mag-imbento ng numero.
-2. Kung walang datos, sabihin: "Walang available na data sa system para dito."
-3. Sumagot sa Taglish (halo ng Tagalog at English). Maging magalang at malinaw.
-4. Gamitin ang bullet points (•) kapag nag-eenumerate.
-5. Para sa tanong tungkol sa DATOS (population, age, gender, households, beneficiaries):
-   - Banggitin ang lahat ng tatlong munisipyo
-   - Ihambing ang mga datos
-   - Gumamit ng number_format (halimbawa: 39,977)
-6. Para sa tanong tungkol sa MGA PROGRAMA (4Ps, PWD, AICS, Solo Parent, SLP):
-   - Ipaliwanag ang programa
-   - Ibigay ang eligibility at requirements
-   - Anyayahan na mag-apply
-7. Para sa "paano mag-apply" o "gusto mag-apply":
-   - Tanungin kung anong programa (isang tanong lang muna)
-   - Sundan ang eligibility check, hakbang-hakbang
-8. Maging maikli ngunit kumpleto. Hindi dapat mahaba ang sagot maliban kung kinakailangan.
+=== SYSTEM STRUCTURE & NAVIGATION ===
+The MSWDO system has the following sections in the NAVBAR:
 
-PROGRAMA INFO:
-• 4Ps: Cash transfer para sa mahirap na pamilya. Kailangan: Cert of Indigency, Birth Cert ng anak, Valid ID.
-• PWD: Para sa may kapansanan. Kailangan: Medical Cert, Valid ID, 1x1 photo, Barangay Cert.
-• AICS Medical: Para sa ospital/gamot. Kailangan: Medical Cert, Hospital Bill, Barangay Cert of Indigency, Valid ID.
-• AICS Burial: Para sa libing. Kailangan: Death Cert, Funeral Receipt, Barangay Cert, Valid ID.
-• Solo Parent: Para sa nag-iisang magulang na may anak below 18, income below ₱250,000. Kailangan: Birth Cert, Barangay Cert, Proof of Income, Valid ID, 2x2 photo.
-• SLP: Livelihood training. Kailangan: Barangay Cert, Valid ID, Proof of low income.
+1. HOME - Dashboard/landing page
+2. ANALYSIS - Dropdown menu with:
+   • Programs Analysis - Statistical analysis of all programs
+   • Demographic Analysis - Population, age, gender, households analysis
+3. PROGRAMS - Dropdown menu for:
+   • 4Ps Program
+   • PWD Program
+   • AICS Program (Medical Assistance, Burial Assistance, Emergency Shelter)
+   • Solo Parent Program
+   • Senior Citizen Program
+   • SLP (Sustainable Livelihood Program)
+4. APPLY - To apply for programs
+5. ABOUT - Information about MSWDO
+6. CONTACT - Contact information
+7. LOGIN/REGISTER - For user authentication
+
+The ANALYSIS section has two pages:
+• Programs Analysis - Contains 10 sections: Descriptive Analysis, Population Growth Trend, Gender Distribution Trend, Age Group Distribution, Household vs Population, Program Beneficiaries Comparison, ANOVA Test Results, Correlation Analysis, Key Insights, and Recommendations
+• Demographic Analysis - Contains 12 sections: Population Overview, Geographic Distribution Map, Gender Distribution, Age Structure, Household Analysis, Beneficiaries by Program, and Detailed Data Table
+
+The APPLICATION PROCESS:
+• Users must register first (18+ years old)
+• After registration, receive OTP via email
+• Verify OTP and set password
+• Once logged in, can apply for programs
+• Requirements depend on the program
+=== END SYSTEM STRUCTURE ===
+
+RULES:
+1. Use ONLY the data above. Do not invent numbers.
+2. If no data available, say: "No data available in the system for this."
+3. ⚠️ CRITICAL LANGUAGE RULE - STRICTLY FOLLOW:
+   - ALWAYS detect the user's message language FIRST before responding
+   - If user writes in ENGLISH → Reply ONLY in ENGLISH (entire response)
+   - If user writes in TAGALOG → Reply ONLY in TAGALOG (entire response)
+   - If user writes in MIXED/TAGLISH → Reply in MIXED/TAGLISH
+   - NEVER switch languages mid-conversation unless the user switches first
+   - Language examples:
+     * User: "What is in the analysis navbar?" → Reply fully in ENGLISH
+     * User: "Ano ang laman ng analysis sa navbar?" → Reply fully in TAGALOG
+     * User: "How to login?" → Reply fully in ENGLISH
+     * User: "Paano mag-login?" → Reply fully in TAGALOG
+4. Use bullet points (•) when enumerating.
+5. Your scope covers: MSWDO system (navigation, features, pages, structure), MSWDO programs, application process, login/register/OTP flow, and system analysis data.
+6. For questions about system navigation or features - answer using the SYSTEM STRUCTURE information above.
+7. For questions COMPLETELY unrelated to MSWDO (e.g., cooking recipes, sports, entertainment, personal advice) - politely say you can only answer system-related questions.
+8. For questions about SYSTEM NAVIGATION or FEATURES:
+   - Explain what can be found on that page/section
+   - Mention available options or sub-menus
+   - If there's data visualization, mention what insights can be seen
+9. For questions about DATA (population, age, gender, households, beneficiaries):
+   - Mention all three municipalities
+   - Compare the data
+   - Use number_format (example: 39,977)
+10. For questions about PROGRAMS (4Ps, PWD, AICS, Solo Parent, SLP):
+   - Explain the program
+   - Provide eligibility and requirements
+   - Invite to apply
+11. For "how to apply" or "want to apply":
+   - Ask which program (one question first)
+   - Follow with eligibility check, step-by-step
+12. For questions about LOGIN:
+   - Say to go to /login
+   - Can use username or email
+   - Enter password
+   - If user and email not verified, redirect to OTP verification
+   - If account inactive, say to contact administrator
+13. For questions about REGISTER:
+   - Say to go to /register
+   - Fill out: full name, username, email, mobile number, gender, birthdate, municipality, barangay
+   - Must be 18+ years old and valid municipality/barangay
+   - Will receive OTP via email
+   - After correct OTP, set new password before fully accessing account
+14. Be concise but complete. Responses should not be too long unless necessary.
+
+PROGRAM INFO:
+• 4Ps: Cash transfer for poor families. Requirements: Certificate of Indigency, Birth Certificate of child, Valid ID.
+• PWD: For persons with disabilities. Requirements: Medical Certificate, Valid ID, 1x1 photo, Barangay Certificate.
+• AICS Medical: For hospital/medicine. Requirements: Medical Certificate, Hospital Bill, Barangay Certificate of Indigency, Valid ID.
+• AICS Burial: For burial expenses. Requirements: Death Certificate, Funeral Receipt, Barangay Certificate, Valid ID.
+• Solo Parent: For single parents with children below 18, income below ₱250,000. Requirements: Birth Certificate, Barangay Certificate, Proof of Income, Valid ID, 2x2 photo.
+• SLP: Livelihood training. Requirements: Barangay Certificate, Valid ID, Proof of low income.
 PROMPT;
     }
 
@@ -192,11 +252,14 @@ PROMPT;
     private function instantFallback(string $msg, array $data): ?string
     {
         $key = strtolower(trim($msg));
+        $lang = $this->detectLanguage($msg);
 
         if (str_contains($key, 'population') || str_contains($key, 'populasyon')) {
             $lines = ["📊 **Population (Latest Year)**\n"];
             foreach ($data as $muni => $row) {
-                $lines[] = "• **{$muni}** ({$row['year']}): " . number_format($row['population']) . " katao";
+                $lines[] = $lang === 'en'
+                    ? "• **{$muni}** ({$row['year']}): " . number_format($row['population']) . " people"
+                    : "• **{$muni}** ({$row['year']}): " . number_format($row['population']) . " katao";
             }
             return implode("\n", $lines);
         }
@@ -223,7 +286,9 @@ PROMPT;
             $lines = ["🏠 **Households**\n"];
             foreach ($data as $muni => $row) {
                 $avg = $row['households'] > 0 ? round($row['population'] / $row['households'], 1) : 0;
-                $lines[] = "• **{$muni}**: " . number_format($row['households']) . " kabahayan (avg {$avg} tao/bahay)";
+                $lines[] = $lang === 'en'
+                    ? "• **{$muni}**: " . number_format($row['households']) . " households (avg {$avg} persons/household)"
+                    : "• **{$muni}**: " . number_format($row['households']) . " kabahayan (avg {$avg} tao/bahay)";
             }
             return implode("\n", $lines);
         }
@@ -231,15 +296,29 @@ PROMPT;
         if (str_contains($key, 'age') || str_contains($key, 'edad')) {
             $lines = ["📅 **Age Structure**\n"];
             foreach ($data as $muni => $row) {
-                $lines[] = "• **{$muni}**: Youth(0-19)=" . number_format($row['age_0_19']) .
-                    " | Working(20-59)=" . number_format($row['age_20_59']) .
-                    " | Senior(60+)=" . number_format($row['age_60']);
+                $lines[] = $lang === 'en'
+                    ? "• **{$muni}**: Youth(0-19)=" . number_format($row['age_0_19']) .
+                        " | Working Age(20-59)=" . number_format($row['age_20_59']) .
+                        " | Senior(60+)=" . number_format($row['age_60'])
+                    : "• **{$muni}**: Youth(0-19)=" . number_format($row['age_0_19']) .
+                        " | Working(20-59)=" . number_format($row['age_20_59']) .
+                        " | Senior(60+)=" . number_format($row['age_60']);
             }
             return implode("\n", $lines);
         }
 
         if (in_array($key, ['4ps', 'pwd', 'aics', 'solo parent', 'slp'])) {
             return $this->programInfo($key);
+        }
+
+        if (
+            str_contains($key, 'login') || str_contains($key, 'log in') ||
+            str_contains($key, 'register') || str_contains($key, 'sign up') ||
+            str_contains($key, 'otp') || str_contains($key, 'verify') ||
+            str_contains($key, 'password') || str_contains($key, 'mag login') ||
+            str_contains($key, 'mag-register') || str_contains($key, 'mag register')
+        ) {
+            return $this->systemInfo($key, $lang);
         }
 
         return null;
@@ -255,6 +334,92 @@ PROMPT;
             'slp'         => "💼 **SLP** — Livelihood at skills training.\n✅ Eligibility: Low-income Filipino.\n📎 Kailangan: Barangay Cert, Valid ID, Proof of income.",
         ];
         return $info[$key] ?? "Pakitanong sa MSWDO office para sa karagdagang impormasyon.";
+    }
+
+    private function systemInfo(string $key, string $lang = 'tl'): string
+    {
+        if (str_contains($key, 'register') || str_contains($key, 'sign up') || str_contains($key, 'mag-register') || str_contains($key, 'mag register')) {
+            if ($lang === 'en') {
+                return "📝 **How to register in the MSWDO system**\n" .
+                    "• Go to the **/register** page.\n" .
+                    "• Fill out: Full Name, Username, Email, Mobile Number, Gender, Birthdate, Municipality, and Barangay.\n" .
+                    "• You must be **18 years old and above** and choose a valid municipality/barangay.\n" .
+                    "• After submitting, you will receive an **OTP by email**.\n" .
+                    "• Enter the OTP on the verification page.\n" .
+                    "• Once verified, you will set a **new password** before fully accessing your account.";
+            }
+            return "📝 **Paano mag-register sa MSWDO system**\n" .
+                "• Pumunta sa **/register** page.\n" .
+                "• Punan ang: Full Name, Username, Email, Mobile Number, Gender, Birthdate, Municipality, at Barangay.\n" .
+                "• Dapat **18 years old pataas** at valid ang municipality/barangay.\n" .
+                "• Pag-submit, makakatanggap ka ng **OTP sa email**.\n" .
+                "• I-enter ang OTP sa verification page.\n" .
+                "• Kapag verified na, iseset mo ang **new password** bago tuluyang makapasok sa account.";
+        }
+
+        if (str_contains($key, 'otp') || str_contains($key, 'verify')) {
+            if ($lang === 'en') {
+                return "🔐 **OTP Verification Process**\n" .
+                    "• After registration, a **6-digit OTP** will be sent to your email.\n" .
+                    "• Enter the OTP on the verification page.\n" .
+                    "• If the OTP is correct, your account setup will continue.\n" .
+                    "• If it expires, you can request a **resend OTP**.\n" .
+                    "• In the current registration flow, after OTP verification you will set a new password.";
+            }
+            return "🔐 **OTP Verification Process**\n" .
+                "• Pagkatapos ng registration, may **6-digit OTP** na ipapadala sa email.\n" .
+                "• I-enter ang OTP sa verification page.\n" .
+                "• Kapag tama ang OTP, mafo-finalize ang account.\n" .
+                "• Kapag expired, puwedeng mag-request ng **resend OTP**.\n" .
+                "• Sa bagong registration flow, pagkatapos ma-verify ang OTP ay magse-set ka muna ng bagong password.";
+        }
+
+        if (str_contains($key, 'password')) {
+            if ($lang === 'en') {
+                return "🔑 **Password Help**\n" .
+                    "• In the registration flow, there is a password setup step after OTP verification.\n" .
+                    "• Once the account is verified, you need to set a **new password** before fully logging in.\n" .
+                    "• If login fails, double-check the username/email and password you entered.";
+            }
+            return "🔑 **Password Help**\n" .
+                "• Sa registration flow, may temporary/password setup step pagkatapos ng OTP verification.\n" .
+                "• Kapag verified na ang account, kailangan mong mag-set ng **bagong password** bago tuluyang makapasok.\n" .
+                "• Kung mali ang login password, i-check muna kung tama ang username/email at password na ginagamit mo.";
+        }
+
+        if ($lang === 'en') {
+            return "🔓 **How to log in to the MSWDO system**\n" .
+                "• Go to the **/login** page.\n" .
+                "• Enter your **username or email** in the login field.\n" .
+                "• Enter your password, then submit.\n" .
+                "• If you are a regular user and your email is not yet verified, you will be redirected to the **OTP verification** page.\n" .
+                "• If your account is inactive, you need to **contact the administrator**.\n" .
+                "• After successful login, you will be redirected to the correct dashboard based on your role.";
+        }
+        return "🔓 **Paano mag-login sa MSWDO system**\n" .
+            "• Pumunta sa **/login** page.\n" .
+            "• Ilagay ang **username o email** sa login field.\n" .
+            "• Ilagay ang iyong password, then i-submit.\n" .
+            "• Kapag regular user at hindi pa verified ang email, ire-redirect ka sa **OTP verification** page.\n" .
+            "• Kapag inactive ang account, kailangan mong **makipag-contact sa administrator**.\n" .
+            "• Pag successful ang login, automatic kang dadalhin sa tamang dashboard depende sa role mo.";
+    }
+
+    private function detectLanguage(string $text): string
+    {
+        $t = strtolower($text);
+        $tagalogHits = 0;
+        $englishHits = 0;
+
+        foreach (['paano', 'ano', 'bakit', 'saan', 'kailan', 'pwede', 'gusto', 'kailangan', 'tulong', 'ako', 'ko', 'mag ', ' ba '] as $word) {
+            if (str_contains($t, $word)) $tagalogHits++;
+        }
+
+        foreach (['how', 'what', 'why', 'where', 'when', 'can i', 'please', 'system', 'process', 'requirements', 'apply', 'login', 'register'] as $word) {
+            if (str_contains($t, $word)) $englishHits++;
+        }
+
+        return $englishHits > $tagalogHits ? 'en' : 'tl';
     }
 
     // ──────────────────────────────────────────────────────────────────────────

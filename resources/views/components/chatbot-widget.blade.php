@@ -8,6 +8,7 @@ Include with: @include('components.chatbot-widget')
     /* ── Chatbot Widget Styles ──────────────────────────────────────────── */
     #mswdo-bot-wrap * {
         box-sizing: border-box;
+        font-family: 'Inter', sans-serif;
     }
 
     /* Floating toggle bubble */
@@ -205,37 +206,49 @@ Include with: @include('components.chatbot-widget')
         background: rgba(255, 255, 255, 0.25);
     }
 
-    /* Quick chips */
-    #mswdo-bot-chips {
-        padding: 10px 14px 0;
+    /* FAQ block */
+    #mswdo-bot-faq {
+        padding: 10px 14px 8px;
+        border-bottom: 1px solid #f1f5f9;
+        background: #f8faff;
+        flex-shrink: 0;
+    }
+
+    .bot-faq-title {
+        font-size: 0.68rem;
+        font-weight: 800;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+        color: #2C3E8F;
+        margin-bottom: 6px;
+    }
+
+    .bot-faq-list {
         display: flex;
         gap: 6px;
         flex-wrap: wrap;
-        flex-shrink: 0;
-        border-bottom: 1px solid #f1f5f9;
-        padding-bottom: 10px;
     }
 
-    .bot-chip {
-        background: #f0f5ff;
+    .bot-faq-btn {
+        background: #ffffff;
         border: 1px solid #c7d7f0;
-        color: #2C3E8F;
-        border-radius: 20px;
-        padding: 4px 12px;
-        font-size: 0.72rem;
+        color: #1e3a8a;
+        border-radius: 14px;
+        padding: 4px 10px;
+        font-size: 0.7rem;
         font-weight: 700;
         cursor: pointer;
-        transition: all 0.2s;
+        transition: all 0.18s;
         white-space: nowrap;
     }
 
-    .bot-chip:hover {
+    .bot-faq-btn:hover {
         background: #2C3E8F;
-        color: white;
+        color: #fff;
         border-color: #2C3E8F;
     }
 
-    /* Messages area */
+/* Messages area */
     #mswdo-bot-messages {
         flex: 1;
         overflow-y: auto;
@@ -534,18 +547,18 @@ Include with: @include('components.chatbot-widget')
             <button id="mswdo-bot-close" onclick="msBot.toggle()" aria-label="Close chatbot">✕</button>
         </div>
 
-        {{-- Quick action chips --}}
-        <div id="mswdo-bot-chips">
-            <button class="bot-chip" onclick="msBot.chip('Population')">Population</button>
-            <button class="bot-chip" onclick="msBot.chip('Age')">Age</button>
-            <button class="bot-chip" onclick="msBot.chip('Households')">Households</button>
-            <button class="bot-chip" onclick="msBot.chip('4Ps')">4Ps</button>
-            <button class="bot-chip" onclick="msBot.chip('PWD')">PWD</button>
-            <button class="bot-chip" onclick="msBot.chip('AICS')">AICS</button>
-            <button class="bot-chip" onclick="msBot.chip('Solo Parent')">Solo Parent</button>
-            <button class="bot-chip" onclick="msBot.chip('Male')">Male</button>
-            <button class="bot-chip" onclick="msBot.chip('Female')">Female</button>
+        {{-- FAQs --}}
+        <div id="mswdo-bot-faq">
+            <div class="bot-faq-title">FAQs</div>
+            <div class="bot-faq-list">
+                <button class="bot-faq-btn" onclick="msBot.chip('Paano mag register?')">Paano mag-register?</button>
+                <button class="bot-faq-btn" onclick="msBot.chip('Paano mag login?')">Paano mag-login?</button>
+                <button class="bot-faq-btn" onclick="msBot.chip('Paano mag apply ng PWD?')">PWD application</button>
+                <button class="bot-faq-btn" onclick="msBot.chip('Ano ang requirements ng Solo Parent?')">Solo Parent requirements</button>
+            </div>
         </div>
+
+
 
         {{-- Messages --}}
         <div id="mswdo-bot-messages">
@@ -605,7 +618,8 @@ Include with: @include('components.chatbot-widget')
             'I-click ang isang button sa itaas o magtanong ng direkta! Maaari akong tumulong sa:',
             '1. Population, Age, Households, Male/Female data',
             '2. 4Ps, PWD, AICS, Solo Parent programs',
-            '3. Paano mag-apply at mga requirements'
+            '3. Paano mag-apply at mga requirements',
+            '4. Paano mag-login at mag-register sa system'
         ].join('\n');
         appendBotMsg(greeting);
 

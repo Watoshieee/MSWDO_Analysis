@@ -142,9 +142,9 @@
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.requirements*') ? 'active' : '' }}" href="{{ route('admin.requirements') }}">Applications</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.data.*') ? 'active' : '' }}" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.detailed*') ? 'active' : '' }}" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
                     @auth

@@ -85,13 +85,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         /* -- STATUS BREAKDOWN -- */
         .breakdown-list { list-style: none; padding: 0; margin: 0; }
-        .breakdown-item { display: flex; align-items: center; justify-content: space-between; padding: 13px 0; border-bottom: 1px solid var(--border-light); }
+        .breakdown-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border-light); }
         .breakdown-item:last-child { border-bottom: none; }
-        .status-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; margin-right: 10px; flex-shrink: 0; }
-        .breakdown-label { display: flex; align-items: center; font-size: 0.9rem; font-weight: 600; }
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; }
+        .breakdown-label { display: flex; align-items: center; font-size: 0.8rem; font-weight: 600; }
         .breakdown-right { text-align: right; }
-        .breakdown-count { font-size: 1.2rem; font-weight: 900; color: var(--primary-blue); display: block; }
-        .breakdown-pct   { font-size: 0.72rem; color: #94a3b8; font-weight: 500; }
+        .breakdown-count { font-size: 0.95rem; font-weight: 900; color: var(--primary-blue); display: block; }
+        .breakdown-pct   { font-size: 0.66rem; color: #94a3b8; font-weight: 500; }
 
         /* -- PROGRESS BARS (program rows) -- */
         .prog-row { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--border-light); }
@@ -140,9 +140,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.requirements*') ? 'active' : '' }}" href="{{ route('admin.requirements') }}">Applications</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.data.*') ? 'active' : '' }}" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
                 </ul>
                 <div class="d-flex">
                     @auth
@@ -232,7 +232,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="row g-4 mb-0">
 
             <!-- Applications by Program (bar chart) -->
-            <div class="col-md-7">
+            <div class="col-md-6">
                 <div class="panel-card">
                     <div class="panel-header">
                         <div>
@@ -242,7 +242,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <span class="panel-header-badge">{{ $applicationsByProgram->count() }} programs</span>
                     </div>
                     <div class="panel-body">
-                        <div class="chart-wrap" style="height:320px;">
+                        <div class="chart-wrap" style="height:280px;">
                             <canvas id="programChart"></canvas>
                         </div>
                     </div>
@@ -250,7 +250,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             </div>
 
             <!-- Status Doughnut + Breakdown -->
-            <div class="col-md-5">
+            <div class="col-md-6">
                 <div class="panel-card">
                     <div class="panel-header">
                         <div>
@@ -259,10 +259,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </div>
                     </div>
                     <div class="panel-body">
-                        <div class="chart-wrap" style="height:200px;" class="mb-3">
+                        <div class="chart-wrap" style="height:100px;" class="mb-2">
                             <canvas id="statusChart"></canvas>
                         </div>
-                        <ul class="breakdown-list mt-3">
+                        <ul class="breakdown-list mt-2">
                             <li class="breakdown-item">
                                 <div class="breakdown-label"><span class="status-dot" style="background:#FDB913;"></span> Pending</div>
                                 <div class="breakdown-right">

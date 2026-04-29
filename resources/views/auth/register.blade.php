@@ -172,6 +172,89 @@
             .right-panel { padding: 28px 20px; }
             .field-row { grid-template-columns: 1fr; }
         }
+
+        /* ── MODAL STYLES ── */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-y: auto;
+        }
+        .modal-content {
+            background: white;
+            border-radius: 16px;
+            max-width: 700px;
+            width: 100%;
+            max-height: 85vh;
+            overflow-y: auto;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            position: relative;
+        }
+        .modal-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 20px 24px;
+            border-radius: 16px 16px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h3 {
+            margin: 0;
+            font-size: 1.3rem;
+            font-weight: 800;
+        }
+        .modal-close {
+            background: rgba(255,255,255,0.2);
+            border: none;
+            color: white;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+        .modal-close:hover {
+            background: rgba(255,255,255,0.3);
+        }
+        .modal-body {
+            padding: 24px;
+            line-height: 1.7;
+            color: #334155;
+        }
+        .modal-body h4 {
+            color: var(--primary-blue);
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin: 20px 0 10px;
+        }
+        .modal-body h4:first-child {
+            margin-top: 0;
+        }
+        .modal-body p {
+            margin: 10px 0;
+            font-size: 0.9rem;
+        }
+        .modal-body ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        .modal-body li {
+            margin: 6px 0;
+            font-size: 0.9rem;
+        }
+        .modal-body strong {
+            color: var(--primary-blue);
+        }
     </style>
 </head>
 <body>
@@ -383,6 +466,27 @@
                 <input type="hidden" id="full_name" name="full_name" value="{{ old('full_name') }}">
 
                 <div class="section-divider"></div>
+                <div class="section-label">Terms & Conditions and Privacy Policy</div>
+                <div class="info-box" style="margin-bottom: 14px;">
+                    By creating an account, you agree to our Terms & Conditions and Privacy Policy.
+                </div>
+                
+                <div style="margin-bottom: 16px;">
+                    <label style="display: flex; align-items: flex-start; gap: 10px; cursor: pointer; font-size: 0.85rem; color: #334155;">
+                        <input type="checkbox" id="agree_terms" name="agree_terms" required
+                               style="margin-top: 3px; width: 18px; height: 18px; cursor: pointer; accent-color: var(--primary-blue);">
+                        <span>
+                            I have read and agree to the 
+                            <a href="#" onclick="showTerms(event)" style="color: var(--primary-blue); font-weight: 700; text-decoration: none;">Terms & Conditions</a> 
+                            and 
+                            <a href="#" onclick="showPrivacy(event)" style="color: var(--primary-blue); font-weight: 700; text-decoration: none;">Privacy Policy</a>
+                            <span style="color: var(--danger); font-weight: 700;">*</span>
+                        </span>
+                    </label>
+                    <div id="msg_terms" class="field-msg hint" style="margin-left: 28px;">Required to proceed with registration.</div>
+                </div>
+
+                <div class="section-divider"></div>
                 <div class="section-label">Account Information</div>
                 <div class="info-box">
                     <strong>Note:</strong> A temporary password will be automatically generated and sent to your email. You will be required to change it after email verification.
@@ -395,6 +499,154 @@
 
             <div class="login-row">
                 Already have an account? <a href="{{ route('login') }}">Sign in here</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Terms & Conditions Modal -->
+    <div id="termsModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📜 Terms and Conditions</h3>
+                <button class="modal-close" onclick="closeModal('termsModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>MSWDO Application System</strong></p>
+
+                <h4>1. Acceptance of Terms</h4>
+                <p>By accessing and using the MSWDO Application System ("the System"), you agree to comply with these Terms and Conditions. If you do not agree, please do not use the System.</p>
+
+                <h4>2. Purpose of the System</h4>
+                <p>The System is designed to allow users to:</p>
+                <ul>
+                    <li>View available MSWDO programs</li>
+                    <li>Submit applications and required documents</li>
+                    <li>Track the status of their applications</li>
+                </ul>
+
+                <h4>3. User Responsibilities</h4>
+                <p>Users agree to:</p>
+                <ul>
+                    <li>Provide accurate and complete information</li>
+                    <li>Upload valid and authentic documents only</li>
+                    <li>Keep login credentials secure</li>
+                    <li>Not misuse or attempt to exploit the system</li>
+                </ul>
+                <p>Failure to comply may result in:</p>
+                <ul>
+                    <li>Rejection of application</li>
+                    <li>Suspension or restriction of access</li>
+                </ul>
+
+                <h4>4. Application Process</h4>
+                <ul>
+                    <li>Submission of an application does not guarantee approval</li>
+                    <li>Applications are subject to review and validation by MSWDO personnel</li>
+                    <li>Users may be required to re-upload or provide additional documents</li>
+                </ul>
+
+                <h4>5. Approval and Rejection</h4>
+                <ul>
+                    <li>Applications may be approved or rejected based on eligibility</li>
+                    <li>If rejected, a reason will be provided</li>
+                    <li>Users may reapply or resubmit as allowed</li>
+                </ul>
+
+                <h4>6. System Availability</h4>
+                <p>The System may be temporarily unavailable due to:</p>
+                <ul>
+                    <li>Maintenance</li>
+                    <li>Updates</li>
+                    <li>Technical issues</li>
+                </ul>
+                <p>MSWDO is not liable for delays caused by such interruptions.</p>
+
+                <h4>7. Limitation of Liability</h4>
+                <p>MSWDO shall not be held liable for:</p>
+                <ul>
+                    <li>Incorrect information submitted by users</li>
+                    <li>Delays in processing due to incomplete requirements</li>
+                    <li>Technical issues beyond control</li>
+                </ul>
+
+                <h4>8. Modifications</h4>
+                <p>MSWDO reserves the right to modify these Terms at any time. Continued use of the System constitutes acceptance of updated terms.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Privacy Policy Modal -->
+    <div id="privacyModal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>🔐 Privacy Policy</h3>
+                <button class="modal-close" onclick="closeModal('privacyModal')">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p><strong>MSWDO Application System</strong></p>
+
+                <h4>1. Introduction</h4>
+                <p>This Privacy Policy explains how your personal data is collected, used, and protected in accordance with the Data Privacy Act of 2012.</p>
+
+                <h4>2. Information We Collect</h4>
+                <p>We may collect the following:</p>
+                <ul>
+                    <li>Personal information (Name, Address, Contact Number, Email)</li>
+                    <li>Application details</li>
+                    <li>Uploaded documents (PDF, images)</li>
+                    <li>System usage data (logs, timestamps)</li>
+                </ul>
+
+                <h4>3. Purpose of Data Collection</h4>
+                <p>Your data is used to:</p>
+                <ul>
+                    <li>Process your application</li>
+                    <li>Verify your identity and eligibility</li>
+                    <li>Communicate updates and results</li>
+                    <li>Improve system performance and services</li>
+                </ul>
+
+                <h4>4. Data Sharing</h4>
+                <p>Your information may be shared only with:</p>
+                <ul>
+                    <li>Authorized MSWDO personnel</li>
+                    <li>Government agencies when required by law</li>
+                </ul>
+                <p>We do <strong>not sell or share your data for commercial purposes</strong>.</p>
+
+                <h4>5. Data Protection</h4>
+                <p>We implement reasonable security measures to protect your data, including:</p>
+                <ul>
+                    <li>Secure authentication (login system)</li>
+                    <li>Restricted access to authorized personnel</li>
+                    <li>Data storage protection</li>
+                </ul>
+
+                <h4>6. Data Retention</h4>
+                <p>Your data will be stored only as long as necessary for:</p>
+                <ul>
+                    <li>Application processing</li>
+                    <li>Legal and administrative requirements</li>
+                </ul>
+
+                <h4>7. Your Rights (Under Philippine Law)</h4>
+                <p>Under the Data Privacy Act of 2012, you have the right to:</p>
+                <ul>
+                    <li>Access your personal data</li>
+                    <li>Request correction of inaccurate data</li>
+                    <li>Request deletion (subject to legal limitations)</li>
+                    <li>Withdraw consent where applicable</li>
+                </ul>
+
+                <h4>8. Contact Information</h4>
+                <p>For concerns regarding your data, you may contact:</p>
+                <p><strong>MSWDO Office</strong><br>
+                Email: mswdo@example.com<br>
+                Contact Number: (049) XXX-XXXX</p>
+                <p>You may also contact the National Privacy Commission for complaints.</p>
+
+                <h4>9. Updates to Privacy Policy</h4>
+                <p>This policy may be updated from time to time. Continued use of the System indicates your acceptance of any changes.</p>
             </div>
         </div>
     </div>
@@ -497,7 +749,32 @@
         if (v.length < 4) { setMsg('msg_username','err','Too short — minimum 4 characters.'); markInput('username','invalid'); return; }
         if (v.length > 20) { setMsg('msg_username','err','Too long — maximum 20 characters.'); markInput('username','invalid'); return; }
         if (!/^[a-zA-Z0-9_]+$/.test(v)) { setMsg('msg_username','err','Only letters, numbers, and underscores — no spaces.'); markInput('username','invalid'); return; }
-        setMsg('msg_username','ok','✓ Valid username!'); markInput('username','valid');
+        
+        // Check username availability via AJAX
+        setMsg('msg_username','hint','Checking availability...');
+        fetch('/check-username', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ username: v })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.available) {
+                setMsg('msg_username','ok','✓ Username is available!');
+                markInput('username','valid');
+            } else {
+                setMsg('msg_username','err','✗ This username is already taken.');
+                markInput('username','invalid');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking username:', error);
+            setMsg('msg_username','hint','Could not verify availability. Please try again.');
+            markInput('username','');
+        });
     }
 
     function validateEmail() {
@@ -510,7 +787,6 @@
 
     function validateMobile() {
         const v = document.getElementById('mobile_number').value.trim();
-        // Remove non-digits
         const cleaned = v.replace(/\D/g, '');
         
         if (!v) { 
@@ -522,6 +798,13 @@
         // Must be exactly 10 digits and start with 9
         if (cleaned.length !== 10 || !cleaned.startsWith('9')) {
             setMsg('msg_mobile','err','Must be 10 digits starting with 9 (e.g., 9171234567)');
+            markInput('mobile_number','invalid'); 
+            return;
+        }
+        
+        // Check for 5 or more consecutive repeated digits
+        if (/(\d)\1{4,}/.test(cleaned)) {
+            setMsg('msg_mobile','err','Cannot contain 5 or more repeated digits in a row');
             markInput('mobile_number','invalid'); 
             return;
         }
@@ -624,6 +907,19 @@
         validateMobile();
 
         const hasInvalid = document.querySelectorAll('.form-input.invalid').length > 0;
+        const agreeTerms = document.getElementById('agree_terms').checked;
+        const msgTerms = document.getElementById('msg_terms');
+
+        if (!agreeTerms) {
+            msgTerms.textContent = '✗ You must agree to the Terms & Conditions and Privacy Policy.';
+            msgTerms.className = 'field-msg err';
+            e.preventDefault();
+            document.getElementById('agree_terms').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        } else {
+            msgTerms.textContent = '✓ Agreed';
+            msgTerms.className = 'field-msg ok';
+        }
 
         if (hasInvalid) {
             e.preventDefault();
@@ -632,6 +928,39 @@
             if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
         }
     });
+
+    // ── Terms & Privacy Modal Functions ──
+    function showTerms(e) {
+        e.preventDefault();
+        const modal = document.getElementById('termsModal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function showPrivacy(e) {
+        e.preventDefault();
+        const modal = document.getElementById('privacyModal');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+        const termsModal = document.getElementById('termsModal');
+        const privacyModal = document.getElementById('privacyModal');
+        if (event.target === termsModal) {
+            closeModal('termsModal');
+        }
+        if (event.target === privacyModal) {
+            closeModal('privacyModal');
+        }
+    }
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

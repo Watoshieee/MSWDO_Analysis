@@ -40,8 +40,7 @@
         .hero-divider { width:40px; height:4px; background:var(--secondary-yellow); border-radius:2px; margin:10px 0 8px; }
 
         /* STAT CARDS */
-        .stat-card { background: white; border-radius: 16px; border: 1px solid var(--border-light); padding: 22px 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; overflow: hidden; transition: all 0.3s; }
-        .stat-card:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(44,62,143,0.15); }
+        .stat-card { background: white; border-radius: 16px; border: 1px solid var(--border-light); padding: 22px 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
         .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:3px; background:var(--primary-gradient); }
         .stat-label { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.08em; color: #94a3b8; margin-bottom: 6px; }
         .stat-value { font-size: 2.4rem; font-weight: 900; color: var(--primary-blue); line-height: 1; }
@@ -61,7 +60,6 @@
         .users-table { width: 100%; border-collapse: collapse; }
         .users-table th { font-size: 0.72rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: #64748b; padding: 12px 16px 12px; border-bottom: 2px solid #e2e8f0; background: #f8fafc; white-space: nowrap; }
         .users-table td { padding: 14px 16px; font-size: 0.88rem; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
-        .users-table tbody tr:hover td { background: #f0f5ff; }
         .users-table tbody tr:last-child td { border-bottom: none; }
 
         /* AVATAR */
@@ -109,9 +107,9 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.users') }}">Users Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
                     @auth

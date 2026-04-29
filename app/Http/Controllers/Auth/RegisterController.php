@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Models\Municipality;
 use App\Models\Barangay;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -54,10 +55,16 @@ class RegisterController extends Controller
                 'mobile_number' => [
                     'required', 'string',
                     'regex:/^9\d{9}$/',
+                    function ($attribute, $value, $fail) {
+                        // Check for 5 or more consecutive repeated digits
+                        if (preg_match('/(\d)\1{4,}/', $value)) {
+                            $fail('Mobile number cannot contain 5 or more repeated digits in a row.');
+                        }
+                    },
                 ],
                 'gender' => [
                     'required', 'string',
-                    'in:Male,Female,Other',
+                    'in:Male,Female',
                 ],
                 'birthdate' => [
                     'required', 'date',
@@ -151,5 +158,18 @@ class RegisterController extends Controller
                 ->withInput($request->except('password', 'password_confirmation'))
                 ->withErrors(['error' => 'Registration failed: ' . $e->getMessage()]);
         }
+    }
+
+    public function checkUsername(Request $request)
+    {
+        $username = $request->input('username');
+        
+        if (empty($username)) {
+            return response()->json(['available' => true]);
+        }
+        
+        $exists = User::where('username', $username)->exists();
+        
+        return response()->json(['available' => !$exists]);
     }
 }
