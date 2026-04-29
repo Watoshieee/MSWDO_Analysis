@@ -73,7 +73,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 <body>
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand" href="/admin/dashboard"><img src="/images/mswd-logo.png" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO</a>
+            <a class="navbar-brand" href="/admin/dashboard"><img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
@@ -82,6 +82,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
                 </ul>
                 <div class="d-flex">@auth<div class="user-info"><span>{{ Auth::user()->full_name }}</span><form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf<button type="submit" class="logout-btn">Logout</button></form></div>@endauth</div>
             </div>
@@ -170,44 +171,19 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     @csrf
                                     <input type="hidden" name="year" value="{{ $program->year }}">
                                     <input type="hidden" name="month" value="{{ $program->month }}">
-                                    <input type="hidden" name="beneficiary_count" id="totalCountHidden{{ $program->id }}" value="{{ $program->beneficiary_count }}">
-                                    
                                     <div class="modal-body p-4">
-                                        @if(isset($barangayBreakdown[$program->id]) && $barangayBreakdown[$program->id]->count() > 0)
-                                        <!-- Total Display -->
                                         <div class="mb-3" style="background:var(--primary-gradient);color:white;padding:16px;border-radius:12px;text-align:center;">
-                                            <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;opacity:0.85;">Total Beneficiaries</div>
-                                            <div id="totalCountDisplay{{ $program->id }}" style="font-size:2.2rem;font-weight:900;margin-top:4px;">{{ number_format($program->beneficiary_count) }}</div>
+                                            <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;opacity:0.85;">Program</div>
+                                            <div style="font-size:1.1rem;font-weight:800;margin-top:4px;">{{ str_replace('_', ' ', $program->program_type) }} &mdash; {{ $program->month ? $months[$program->month] . ' ' : '' }}{{ $program->year }}</div>
                                         </div>
-                                        
-                                        <!-- Barangay Breakdown -->
                                         <div class="mb-3">
-                                            <label class="f-label">Edit by Barangay</label>
-                                            <div style="max-height:300px;overflow-y:auto;border:1.5px solid var(--border-light);border-radius:10px;padding:8px;">
-                                                @foreach($barangayBreakdown[$program->id] as $brgy)
-                                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px;background:#F8FAFC;border-radius:8px;">
-                                                    <div style="flex:1;font-size:0.9rem;font-weight:600;color:var(--primary-blue);">{{ $brgy['name'] }}</div>
-                                                    <input type="hidden" name="barangay_data[{{ $loop->index }}][id]" value="{{ $brgy['id'] }}">
-                                                    <input type="number" 
-                                                           name="barangay_data[{{ $loop->index }}][count]" 
-                                                           value="{{ $brgy['count'] }}" 
-                                                           min="0"
-                                                           class="f-input barangay-count-input" 
-                                                           data-program-id="{{ $program->id }}"
-                                                           style="width:120px;padding:8px 12px;font-size:0.95rem;font-weight:600;text-align:center;">
-                                                </div>
-                                                @endforeach
-                                            </div>
-                                            <div style="font-size:0.75rem;color:#64748b;margin-top:8px;font-style:italic;">
-                                                💡 Total will auto-calculate as you edit the counts above.
-                                            </div>
+                                            <label class="f-label">Beneficiary Count</label>
+                                            <input type="number" name="beneficiary_count"
+                                                   value="{{ $program->beneficiary_count }}"
+                                                   min="0" required
+                                                   class="f-input"
+                                                   style="font-size:1.4rem;font-weight:800;text-align:center;padding:14px;">
                                         </div>
-                                        @else
-                                        <div style="text-align:center;padding:40px;color:#94a3b8;">
-                                            <div style="font-size:2rem;margin-bottom:8px;">📊</div>
-                                            <div style="font-size:0.9rem;">No barangay data available for this program.</div>
-                                        </div>
-                                        @endif
                                     </div>
                                     <div class="modal-footer border-0 px-4 pb-4 gap-2">
                                         <button type="button" class="btn-cncl" data-bs-dismiss="modal">Cancel</button>
@@ -217,26 +193,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             </div></div>
                         </div>
                         
-                        <script>
-                        document.addEventListener('DOMContentLoaded', function() {
-                            const inputs = document.querySelectorAll('.barangay-count-input[data-program-id="{{ $program->id }}"]');
-                            const totalDisplay = document.getElementById('totalCountDisplay{{ $program->id }}');
-                            const totalHidden = document.getElementById('totalCountHidden{{ $program->id }}');
-                            
-                            if (inputs.length > 0 && totalDisplay && totalHidden) {
-                                inputs.forEach(input => {
-                                    input.addEventListener('input', function() {
-                                        let total = 0;
-                                        inputs.forEach(inp => {
-                                            total += parseInt(inp.value) || 0;
-                                        });
-                                        totalDisplay.textContent = total.toLocaleString();
-                                        totalHidden.value = total;
-                                    });
-                                });
-                            }
-                        });
-                        </script>
                         @empty
                         <tr><td colspan="4" style="text-align:center;padding:40px;color:#94a3b8;font-size:0.88rem;">No programs found. Add one above.</td></tr>
                         @endforelse
@@ -257,17 +213,23 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             </div>
             <form method="POST" action="{{ route('admin.data.programs.create') }}">@csrf
                 <div class="modal-body p-4">
+                    @if($errors->any())
+                        <div style="background:#fee2e2;border-left:4px solid #C41E24;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:0.85rem;color:#7f1d1d;">
+                            {{ $errors->first() }}
+                        </div>
+                    @endif
                     <div class="mb-3"><label class="f-label">Program Type</label>
-                        <select name="program_type" class="f-input" required>
+                        <select name="program_type" id="createProgramType" class="f-input" required onchange="checkAdminDuplicate()">
                             <option value="">Select Program</option>
                             @foreach($programTypes as $value => $label)<option value="{{ $value }}">{{ $label }}</option>@endforeach
                         </select>
+                        <div id="adminDupWarning" style="display:none;margin-top:8px;font-size:0.8rem;color:#92400e;background:#fef3c7;border-radius:8px;padding:8px 12px;">⚠️ This program type already has a record for the selected year.</div>
                     </div>
-                    <div class="mb-3"><label class="f-label">Beneficiary Count</label><input type="number" name="beneficiary_count" class="f-input" required min="0"></div>
+                    <div class="mb-3"><label class="f-label">Beneficiary Count</label><input type="number" name="beneficiary_count" class="f-input" required min="0" value="{{ old('beneficiary_count') }}"></div>
                     <div class="row mb-3">
                         <div class="col-6">
                             <label class="f-label">Year</label>
-                            <select name="year" class="f-input" required>
+                            <select name="year" id="createYear" class="f-input" required onchange="checkAdminDuplicate()">
                                 <option value="">Select Year</option>
                                 @foreach($years as $year)<option value="{{ $year }}">{{ $year }}</option>@endforeach
                             </select>
@@ -281,7 +243,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </div>
                     </div>
                 </div>
-                <div class="modal-footer border-0 px-4 pb-4 gap-2"><button type="button" class="btn-cncl" data-bs-dismiss="modal">Cancel</button><button type="submit" class="btn-submit">Save Program</button></div>
+                <div class="modal-footer border-0 px-4 pb-4 gap-2"><button type="button" class="btn-cncl" data-bs-dismiss="modal">Cancel</button><button type="submit" id="adminCreateSubmit" class="btn-submit">Save Program</button></div>
             </form>
         </div></div>
     </div>
@@ -289,6 +251,43 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="footer-strip"><strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}</div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Duplicate prevention
+        const adminExistingCombos = @json($existingCombos);
+
+        function checkAdminDuplicate() {
+            const year = document.getElementById('createYear').value;
+            const prog = document.getElementById('createProgramType').value;
+            const warning = document.getElementById('adminDupWarning');
+            const submitBtn = document.getElementById('adminCreateSubmit');
+            const isDupe = year && prog && adminExistingCombos.includes(`${year}|${prog}`);
+            warning.style.display = isDupe ? 'block' : 'none';
+            submitBtn.disabled = isDupe;
+            submitBtn.style.opacity = isDupe ? '0.5' : '1';
+        }
+
+        // Also disable already-used program types in the dropdown when year is selected
+        document.getElementById('createYear').addEventListener('change', function() {
+            const year = this.value;
+            const select = document.getElementById('createProgramType');
+            Array.from(select.options).forEach(opt => {
+                if (!opt.value) return;
+                const isDupe = year && adminExistingCombos.includes(`${year}|${opt.value}`);
+                opt.disabled = isDupe;
+                const baseLabel = opt.getAttribute('data-label') || opt.textContent.replace(' — Already Added', '');
+                opt.setAttribute('data-label', baseLabel);
+                opt.textContent = isDupe ? baseLabel + ' — Already Added' : baseLabel;
+                if (isDupe && opt.selected) select.value = '';
+            });
+            checkAdminDuplicate();
+        });
+
+        // Auto-reopen modal on validation error
+        @if($errors->any())
+            document.addEventListener('DOMContentLoaded', function() {
+                new bootstrap.Modal(document.getElementById('createModal')).show();
+            });
+        @endif
+
         function deleteProgram(id) {
             if (confirm('Delete this program record?')) {
                 const form = document.createElement('form');

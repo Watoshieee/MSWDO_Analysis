@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Dashboard – MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -94,13 +95,13 @@
     background: var(--primary-gradient); 
 }
 .stat-card.s-yellow::before { 
-    background: var(--secondary-gradient); 
+    background: var(--primary-gradient);
 }
 .stat-card.s-green::before { 
-    background: linear-gradient(135deg,#28a745,#1e7e34); 
+    background: var(--primary-gradient);
 }
 .stat-card.s-red::before { 
-    background: linear-gradient(135deg,#C41E24,#8B0000); 
+    background: var(--primary-gradient);
 }
 .stat-card .card-body { 
     padding: 26px 28px; 
@@ -121,13 +122,13 @@
     margin-bottom: 4px; 
 }
 .stat-value.v-yellow { 
-    color: #856404; 
+    color: var(--primary-blue);
 }
 .stat-value.v-green { 
-    color: #155724; 
+    color: var(--primary-blue);
 }
 .stat-value.v-red { 
-    color: var(--accent-red); 
+    color: var(--primary-blue);
 }
 .stat-desc { 
     font-size: 0.78rem; 
@@ -150,12 +151,12 @@
             display: flex; flex-direction: column;
         }
         .program-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary-gradient); }
-        .program-card.pc-yellow::before { background: var(--secondary-gradient); }
-        .program-card.pc-green::before  { background: linear-gradient(135deg,#28a745,#1e7e34); }
-        .program-card.pc-purple::before { background: linear-gradient(135deg,#6f42c1,#4a1f9e); }
-        .program-card.pc-red::before    { background: linear-gradient(135deg,#C41E24,#8B0000); }
-        .program-card.pc-teal::before   { background: linear-gradient(135deg,#17a2b8,#0d7b8a); }
-        .program-card.pc-orange::before { background: linear-gradient(135deg,#fd7e14,#c9530a); }
+        .program-card.pc-yellow::before { background: var(--primary-gradient); }
+        .program-card.pc-green::before  { background: var(--primary-gradient); }
+        .program-card.pc-purple::before { background: var(--primary-gradient); }
+        .program-card.pc-red::before    { background: var(--primary-gradient); }
+        .program-card.pc-teal::before   { background: var(--primary-gradient); }
+        .program-card.pc-orange::before { background: var(--primary-gradient); }
         .program-card:hover:not(.locked) { transform: translateY(-5px); box-shadow: 0 14px 30px rgba(44,62,143,0.12); border-color: var(--primary-blue-soft); }
         .program-card.locked { opacity: 0.48; cursor: not-allowed; }
         .prog-num {
@@ -243,7 +244,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/user/dashboard">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -253,10 +254,16 @@
                     <li class="nav-item"><a class="nav-link active" href="/user/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="/user/programs">Programs</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/user/announcements">Announcements</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
-                <div class="d-flex">
+                <div class="d-flex align-items-center gap-3">
+                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal" style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;" title="Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($notificationCount) && $notificationCount > 0)
+                        <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $notificationCount > 9 ? '9+' : $notificationCount }}</span>
+                        @endif
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -316,28 +323,28 @@
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card s-yellow">
+                <div class="stat-card">
                     <div class="card-body">
                         <div class="stat-label">Under Review</div>
-                        <div class="stat-value v-yellow">{{ $pendingCount ?? 0 }}</div>
+                        <div class="stat-value">{{ $pendingCount ?? 0 }}</div>
                         <div class="stat-desc">Awaiting decision</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card s-green">
+                <div class="stat-card">
                     <div class="card-body">
                         <div class="stat-label">Approved</div>
-                        <div class="stat-value v-green">{{ $approvedCount ?? 0 }}</div>
+                        <div class="stat-value">{{ $approvedCount ?? 0 }}</div>
                         <div class="stat-desc">Successfully completed</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card s-red">
+                <div class="stat-card">
                     <div class="card-body">
                         <div class="stat-label">Rejected</div>
-                        <div class="stat-value v-red">{{ $rejectedCount ?? 0 }}</div>
+                        <div class="stat-value">{{ $rejectedCount ?? 0 }}</div>
                         <div class="stat-desc">Unsuccessful applications</div>
                     </div>
                 </div>
@@ -354,10 +361,9 @@
 
         @php
             $programs = [
-                ['key' => 'Senior_Citizen_Pension',  'num' => '01', 'num_class' => 'n-yellow',  'card_class' => 'pc-yellow', 'title' => 'Senior Citizen Pension',     'sub' => 'Monthly social pension for senior citizens 60 years and above.'],
-                ['key' => 'PWD_Assistance',          'num' => '02', 'num_class' => 'n-green',   'card_class' => 'pc-green',  'title' => 'PWD Assistance',             'sub' => 'Support services for persons with disability.',             'url' => route('user.pwd-application')],
-                ['key' => 'Solo_Parent',             'num' => '03', 'num_class' => 'n-purple',  'card_class' => 'pc-purple', 'title' => 'Solo Parent Support',        'sub' => 'Assistance for solo parents raising children alone.',       'url' => route('user.solo-parent-application')],
-                ['key' => 'AICS',                    'num' => '04', 'num_class' => 'n-red',     'card_class' => 'pc-red',    'title' => 'Assistance in Crisis',       'sub' => 'Emergency financial aid for families in crisis situations.', 'url' => route('user.aics-category')],
+                ['key' => 'PWD_Assistance',          'num' => '01', 'num_class' => 'n-green',   'card_class' => 'pc-green',  'title' => 'PWD Assistance',             'sub' => 'Support services for persons with disability.',             'url' => route('user.pwd-application')],
+                ['key' => 'Solo_Parent',             'num' => '02', 'num_class' => 'n-purple',  'card_class' => 'pc-purple', 'title' => 'Solo Parent Support',        'sub' => 'Assistance for solo parents raising children alone.',       'url' => route('user.solo-parent-application')],
+                ['key' => 'AICS',                    'num' => '03', 'num_class' => 'n-red',     'card_class' => 'pc-red',    'title' => 'Assistance in Crisis',       'sub' => 'Emergency financial aid for families in crisis situations.', 'url' => route('user.aics-category')],
             ];
         @endphp
 
@@ -530,8 +536,59 @@
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
-    @include('components.chat-modal')
+    @include('components.user-notification-modal')
+
+    @include('components.chatbot-widget')
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Filter notifications
+        function filterNotifications(filter) {
+            const cards = document.querySelectorAll('.notification-card');
+            const buttons = document.querySelectorAll('.notif-filter-btn');
+            
+            // Update active button
+            buttons.forEach(btn => {
+                if(btn.dataset.filter === filter) {
+                    btn.classList.add('active');
+                } else {
+                    btn.classList.remove('active');
+                }
+            });
+            
+            // Filter cards
+            cards.forEach(card => {
+                if(filter === 'all') {
+                    card.classList.remove('hidden');
+                } else {
+                    if(card.dataset.filter === filter) {
+                        card.classList.remove('hidden');
+                    } else {
+                        card.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        // Mark notifications as viewed when modal is opened
+        document.getElementById('announcementsModal').addEventListener('show.bs.modal', function () {
+            fetch('{{ route('user.mark-notifications-viewed') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      // Hide badge counter
+                      const badge = document.querySelector('.btn[data-bs-target="#announcementsModal"] span');
+                      if (badge) {
+                          badge.style.display = 'none';
+                      }
+                  }
+              });
+        });
+    </script>
 </body>
 </html>

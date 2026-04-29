@@ -8,11 +8,15 @@ use Illuminate\Support\Facades\Auth;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Guards route groups by role.
- * Usage in routes: middleware(['auth', 'ensure_role:user'])
+ * Graceful role gate — redirects to the correct dashboard if the user's role doesn't match.
  *
- * If the authenticated user's role doesn't match, they are redirected
- * to their own correct dashboard instead of seeing a 403.
+ * Usage: middleware('ensure_role:user')
+ *
+ * Use this for user-facing routes where a mis-routed admin should be
+ * sent to their own dashboard instead of seeing a 403.
+ * For admin/superadmin routes that should hard-block, use 'role' instead.
+ *
+ * @see \App\Http\Middleware\RoleMiddleware  Hard 403 alternative
  */
 class EnsureUserRole
 {

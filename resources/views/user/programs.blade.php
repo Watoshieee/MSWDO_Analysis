@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Available Programs – MSWDO Member Portal</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
 html, body { overscroll-behavior: none; margin: 0; padding: 0; }
@@ -129,12 +130,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         /* Color accent bar at top */
         .prog-card .accent { height: 5px; }
         .acc-blue   { background: linear-gradient(90deg, #2C3E8F, #5578d9); }
-        .acc-yellow { background: linear-gradient(90deg, #FDB913, #E5A500); }
-        .acc-green  { background: linear-gradient(90deg, #16a34a, #22c55e); }
-        .acc-purple { background: linear-gradient(90deg, #7c3aed, #a855f7); }
-        .acc-red    { background: linear-gradient(90deg, #dc2626, #ef4444); }
-        .acc-teal   { background: linear-gradient(90deg, #0891b2, #22d3ee); }
-        .acc-orange { background: linear-gradient(90deg, #ea580c, #f97316); }
+        .acc-yellow { background: linear-gradient(90deg, #2C3E8F, #5578d9); }
+        .acc-green  { background: linear-gradient(90deg, #2C3E8F, #5578d9); }
+        .acc-purple { background: linear-gradient(90deg, #2C3E8F, #5578d9); }
+        .acc-red    { background: linear-gradient(90deg, #2C3E8F, #5578d9); }
+        .acc-teal   { background: linear-gradient(90deg, #2C3E8F, #5578d9); }
+        .acc-orange { background: linear-gradient(90deg, #2C3E8F, #5578d9); }
 
         .prog-body { padding: 20px 20px 18px; flex: 1; display: flex; flex-direction: column; }
         .prog-header { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
@@ -209,7 +210,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/user/dashboard">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -219,10 +220,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link" href="/user/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link active" href="/user/programs">Programs</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/user/announcements">Announcements</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
-                <div class="d-flex">
+                <div class="d-flex align-items-center gap-3">
+                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal" style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;" title="Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($notificationCount) && $notificationCount > 0)
+                        <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $notificationCount > 9 ? '9+' : $notificationCount }}</span>
+                        @endif
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -293,33 +300,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
             <div class="prog-grid" id="progGrid">
 
-                <!-- 1. Senior Citizen Pension -->
-                <div class="prog-card" data-cat="financial" data-title="Senior Citizen Pension Social Pension">
-                    <div class="accent acc-yellow"></div>
-                    <div class="prog-body">
-                        <div class="prog-header">
-                        
-                            <div class="prog-meta">
-                                <div class="prog-cat cat-financial">Financial Aid</div>
-                                <div class="prog-title">Senior Citizen Pension</div>
-                            </div>
-                        </div>
-                        <div class="prog-desc">Monthly social pension for indigent senior citizens 60 years and above who are frail, sickly, or with disabilities, and have no regular source of income.</div>
-                        <div class="prog-elig">
-                            <div class="prog-elig-title">Key Eligibility</div>
-                            <ul>
-                                <li>Filipino citizen aged 60 or older</li>
-                                <li>Indigent — no regular income or pension</li>
-                                <li>Frail, sickly, or with disability</li>
-                            </ul>
-                        </div>
-                        <a href="{{ route('user.apply', 'Senior_Citizen_Pension') }}" class="prog-btn btn-yellow">Apply Now →</a>
-                    </div>
-                </div>
-
-                <!-- 2. PWD Assistance -->
+                <!-- 1. PWD Assistance -->
                 <div class="prog-card" data-cat="social" data-title="PWD Assistance Persons with Disability">
-                    <div class="accent acc-green"></div>
+                    <div class="accent acc-blue"></div>
                     <div class="prog-body">
                         <div class="prog-header">
                           
@@ -341,9 +324,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 </div>
 
-                <!-- 3. Solo Parent Support -->
+                <!-- 2. Solo Parent Support -->
                 <div class="prog-card" data-cat="social" data-title="Solo Parent Support Single Parent">
-                    <div class="accent acc-purple"></div>
+                    <div class="accent acc-blue"></div>
                     <div class="prog-body">
                         <div class="prog-header">
                        
@@ -365,9 +348,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 </div>
 
-                <!-- 4. AICS -->
+                <!-- 3. AICS -->
                 <div class="prog-card" data-cat="financial" data-title="AICS Assistance in Crisis Situations Emergency Aid">
-                    <div class="accent acc-red"></div>
+                    <div class="accent acc-blue"></div>
                     <div class="prog-body">
                         <div class="prog-header">
                           
@@ -415,6 +398,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
+    @include('components.user-notification-modal')
+
+    @include('components.chat-modal')
+    @include('components.chatbot-widget')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let activeCategory = 'all';
@@ -449,6 +436,25 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 visible === 0 ? 'No results' : `${visible} program${visible > 1 ? 's' : ''}`;
             document.getElementById('noResults').style.display = visible === 0 ? 'block' : 'none';
         }
+
+        // Mark notifications as viewed when modal is opened
+        document.getElementById('announcementsModal').addEventListener('show.bs.modal', function () {
+            fetch('{{ route('user.mark-notifications-viewed') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      const badge = document.querySelector('.btn[data-bs-target="#announcementsModal"] span');
+                      if (badge) {
+                          badge.style.display = 'none';
+                      }
+                  }
+              });
+        });
     </script>
 </body>
 </html>

@@ -12,7 +12,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('social_welfare_programs', function (Blueprint $table) {
-            $table->integer('month')->nullable()->after('year');
+            // Month column is now in the main create_social_welfare_programs_table migration
+            // This migration is kept for compatibility but does nothing
         });
     }
 
@@ -22,7 +23,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('social_welfare_programs', function (Blueprint $table) {
-            $table->dropColumn('month');
+            // No action needed
         });
     }
 };

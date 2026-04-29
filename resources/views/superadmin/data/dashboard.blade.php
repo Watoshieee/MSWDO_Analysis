@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Data Management – MSWDO Super Admin</title>
+    <title>Data Management ï¿½ MSWDO Super Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -295,7 +295,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid px-4">
             <a class="navbar-brand" href="{{ route('superadmin.dashboard') }}">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -329,7 +329,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="hero-badge">Super Admin</div>
             <h1>Data Management</h1>
             <div class="hero-divider"></div>
-            <p>Update population, household, barangay, and social program data across all municipalities.</p>
+            <p>Update population, household, and social program data across all municipalities.</p>
         </div>
     </section>
 
@@ -337,7 +337,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="container py-5">
             <div class="section-heading">Manage Data</div>
             <div class="row g-4">
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <a href="{{ route('superadmin.data.municipalities') }}" class="menu-card">
                         <div class="menu-card-num">01</div>
                         <div class="menu-card-title">Municipality Data</div>
@@ -346,18 +346,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <span class="menu-card-arrow">&#8594;</span>
                     </a>
                 </div>
-                <div class="col-md-4">
-                    <a href="{{ route('superadmin.data.barangays') }}" class="menu-card">
-                        <div class="menu-card-num">02</div>
-                        <div class="menu-card-title">Barangay Data</div>
-                        <div class="menu-card-desc">Manage barangay-level household counts and population statistics per
-                            municipality.</div>
-                        <span class="menu-card-arrow">&#8594;</span>
-                    </a>
-                </div>
-                <div class="col-md-4">
+                <div class="col-md-6">
                     <a href="{{ route('superadmin.data.programs') }}" class="menu-card">
-                        <div class="menu-card-num">03</div>
+                        <div class="menu-card-num">02</div>
                         <div class="menu-card-title">Social Programs</div>
                         <div class="menu-card-desc">Track beneficiary counts per social welfare program across each
                             municipality.</div>

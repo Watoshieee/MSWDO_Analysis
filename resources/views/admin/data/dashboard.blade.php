@@ -93,7 +93,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/admin/dashboard">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -105,6 +105,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
                 </ul>
                 <div class="d-flex">
                     @auth
@@ -130,7 +131,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="hero-badge">Data Management</div>
                         <h1>Manage Your Data</h1>
                         <div class="hero-divider"></div>
-                        <p>Update municipality profiles, barangay records, and social welfare program data for {{ $municipality->name }}.</p>
+                        <p>Update municipality profiles and social welfare program data for {{ $municipality->name }}.</p>
                     </div>
                     <div class="col-md-4 d-none d-md-flex justify-content-end">
                         <div class="muni-badge-lg">
@@ -166,7 +167,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         <!-- STAT CARDS -->
         <div class="row g-3 mb-5">
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="stat-card">
                     <div class="inner">
                         <span class="stat-pill">Population</span>
@@ -176,17 +177,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
-                <div class="stat-card">
-                    <div class="inner">
-                        <span class="stat-pill">Barangays</span>
-                        <div class="stat-label">Total Barangays</div>
-                        <div class="stat-value">{{ number_format($barangays) }}</div>
-                        <div class="stat-sub">In {{ $municipality->name }}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-4">
+            <div class="col-md-6">
                 <div class="stat-card">
                     <div class="inner">
                         <span class="stat-pill">Beneficiaries</span>
@@ -212,19 +203,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 </a>
             </div>
             <div class="col-md-4">
-                <a href="{{ route('admin.data.barangays') }}" class="menu-card">
-                    <div class="menu-text">
-                        <span class="menu-num">02 &mdash; Barangays</span>
-                        <span class="menu-title">Barangay Records</span>
-                        <span class="menu-desc">Manage population, household, and demographic data for all {{ $barangays }} barangays in {{ $municipality->name }}.</span>
-                    </div>
-                    <span class="menu-arrow">&rsaquo;</span>
-                </a>
-            </div>
-            <div class="col-md-4">
                 <a href="{{ route('admin.data.programs') }}" class="menu-card">
                     <div class="menu-text">
-                        <span class="menu-num">03 &mdash; Programs</span>
+                        <span class="menu-num">02 &mdash; Programs</span>
                         <span class="menu-title">Social Programs</span>
                         <span class="menu-desc">Manage social welfare program beneficiaries, enrollment data, and yearly records.</span>
                     </div>
@@ -234,7 +215,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="col-md-4">
                 <a href="{{ route('admin.data.yearly') }}" class="menu-card">
                     <div class="menu-text">
-                        <span class="menu-num">04 &mdash; Yearly Summary</span>
+                        <span class="menu-num">03 &mdash; Yearly Summary</span>
                         <span class="menu-title">Municipality Yearly Data</span>
                         <span class="menu-desc">Add and manage yearly population, household, PWD, AICS, and Solo Parent summary records for {{ $municipality->name }}.</span>
                     </div>

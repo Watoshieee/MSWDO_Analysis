@@ -1,4 +1,5 @@
 {{-- Colors loaded: P={{ $adminPrimaryColor ?? 'DEFAULT' }} S={{ $adminSecondaryColor ?? 'DEFAULT' }} A={{ $adminAccentColor ?? 'DEFAULT' }} --}}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
 <style>
     :root {
         --primary-blue: {{ $adminPrimaryColor ?? '#2C3E8F' }} !important;

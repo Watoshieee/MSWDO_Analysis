@@ -18,6 +18,7 @@ class Municipality extends Model
 
     protected $fillable = [
         'name',
+        'total_population',
         'total_households',
         'male_population',
         'female_population',
@@ -46,10 +47,5 @@ class Municipality extends Model
     public function applications()
     {
         return $this->hasMany(Application::class, 'municipality', 'name');
-    }
-
-    public function getTotalPopulationAttribute()
-    {
-        return $this->male_population + $this->female_population;
     }
 }
