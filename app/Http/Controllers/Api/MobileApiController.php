@@ -153,17 +153,16 @@ class MobileApiController extends Controller
     {
         $request->validate(['email' => 'required|email']);
 
+        // Always return success to prevent user enumeration
         $user = User::where('email', $request->email)->first();
-        if (!$user) {
-            return response()->json(['success' => false, 'message' => 'User not found.']);
+        if ($user) {
+            $otpCode = $this->otp->generate($user);
+            $this->otp->sendPasswordResetEmail($user, $otpCode);
         }
-
-        $otpCode = $this->otp->generate($user);
-        $this->otp->sendPasswordResetEmail($user, $otpCode);
 
         return response()->json([
             'success' => true,
-            'message' => 'A password reset OTP has been sent to your email address.',
+            'message' => 'If that email exists, a password reset OTP has been sent.',
         ]);
     }
 

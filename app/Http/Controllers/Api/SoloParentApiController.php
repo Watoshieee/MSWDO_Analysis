@@ -395,12 +395,13 @@ class SoloParentApiController extends Controller
 
         // Store notification in database
         \DB::table('notifications')->insert([
-            'user_id' => $userId,
-            'type' => 'solo_parent',
-            'title' => $title,
-            'body' => $body,
-            'is_read' => false,
+            'user_id'    => $userId,
+            'type'       => 'solo_parent',
+            'title'      => $title,
+            'body'       => $body,
+            'is_read'    => false,
             'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         // Send FCM notification (implement based on your FCM setup)
