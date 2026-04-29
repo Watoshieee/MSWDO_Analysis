@@ -97,6 +97,7 @@ Route::middleware('guest')->group(function () {
 
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
     Route::post('/register', [RegisterController::class, 'register']);
+    Route::post('/check-username', [RegisterController::class, 'checkUsername'])->name('check.username');
 
     Route::get('/verify-otp', [OtpController::class, 'showVerifyForm'])->name('otp.verify.form');
     Route::post('/verify-otp', [OtpController::class, 'verify'])->name('otp.verify');

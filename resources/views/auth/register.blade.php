@@ -749,7 +749,32 @@
         if (v.length < 4) { setMsg('msg_username','err','Too short — minimum 4 characters.'); markInput('username','invalid'); return; }
         if (v.length > 20) { setMsg('msg_username','err','Too long — maximum 20 characters.'); markInput('username','invalid'); return; }
         if (!/^[a-zA-Z0-9_]+$/.test(v)) { setMsg('msg_username','err','Only letters, numbers, and underscores — no spaces.'); markInput('username','invalid'); return; }
-        setMsg('msg_username','ok','✓ Valid username!'); markInput('username','valid');
+        
+        // Check username availability via AJAX
+        setMsg('msg_username','hint','Checking availability...');
+        fetch('/check-username', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+            },
+            body: JSON.stringify({ username: v })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.available) {
+                setMsg('msg_username','ok','✓ Username is available!');
+                markInput('username','valid');
+            } else {
+                setMsg('msg_username','err','✗ This username is already taken.');
+                markInput('username','invalid');
+            }
+        })
+        .catch(error => {
+            console.error('Error checking username:', error);
+            setMsg('msg_username','hint','Could not verify availability. Please try again.');
+            markInput('username','');
+        });
     }
 
     function validateEmail() {
@@ -762,7 +787,6 @@
 
     function validateMobile() {
         const v = document.getElementById('mobile_number').value.trim();
-        // Remove non-digits
         const cleaned = v.replace(/\D/g, '');
         
         if (!v) { 
@@ -774,6 +798,13 @@
         // Must be exactly 10 digits and start with 9
         if (cleaned.length !== 10 || !cleaned.startsWith('9')) {
             setMsg('msg_mobile','err','Must be 10 digits starting with 9 (e.g., 9171234567)');
+            markInput('mobile_number','invalid'); 
+            return;
+        }
+        
+        // Check for 5 or more consecutive repeated digits
+        if (/(\d)\1{4,}/.test(cleaned)) {
+            setMsg('msg_mobile','err','Cannot contain 5 or more repeated digits in a row');
             markInput('mobile_number','invalid'); 
             return;
         }
