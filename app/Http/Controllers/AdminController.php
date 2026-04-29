@@ -27,7 +27,7 @@ class AdminController extends Controller
     // ── Shared admin notification helper ─────────────────────────────────
     private function adminNotifData($user): array
     {
-        $lastViewed   = \App\Models\NotificationView::where('user_id', $user->id)->first();
+        $lastViewed = \App\Models\NotificationView::where('user_id', $user->id)->first();
         $lastViewedAt = $lastViewed ? $lastViewed->last_viewed_at : null;
 
         // ── All pending applications (keep list visible after view) ───────────
@@ -110,7 +110,7 @@ class AdminController extends Controller
         // Convert application_date to Carbon
         foreach ($applications as $app) {
             if (is_string($app->application_date)) {
-                $app->application_date = \Carbon\Carbon::parse($app->application_date);
+                $app->application_date = Carbon::parse($app->application_date);
             }
         }
 
@@ -154,9 +154,9 @@ class AdminController extends Controller
         // Load current vision / mission / goals for this municipality
         $visionRow = MunicipalityVision::where('municipality_name', $user->municipality)->first();
         $visionData = [
-            'vision'          => $visionRow?->vision ?? '',
-            'mission'         => $visionRow?->mission ?? '',
-            'goals'           => $visionRow?->goals ?? '',
+            'vision' => $visionRow?->vision ?? '',
+            'mission' => $visionRow?->mission ?? '',
+            'goals' => $visionRow?->goals ?? '',
             'strategic_goals' => $visionRow?->strategic_goals ?? [],
         ];
 
@@ -184,10 +184,10 @@ class AdminController extends Controller
     {
         $request->validate([
             'municipality_name' => 'required|string|max:255',
-            'vision'            => 'nullable|string',
-            'mission'           => 'nullable|string',
-            'goals'             => 'nullable|string',
-            'strategic_goals'   => 'nullable|array',
+            'vision' => 'nullable|string',
+            'mission' => 'nullable|string',
+            'goals' => 'nullable|string',
+            'strategic_goals' => 'nullable|array',
             'strategic_goals.*' => 'nullable|string|max:500',
         ]);
 
@@ -197,14 +197,14 @@ class AdminController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $all  = $request->all();
+        $all = $request->all();
         $data = [];
 
         // Only update VMG fields if they were sent in this request
         if (array_key_exists('vision', $all)) {
-            $data['vision']  = $request->vision;
+            $data['vision'] = $request->vision;
             $data['mission'] = $request->mission;
-            $data['goals']   = $request->goals;
+            $data['goals'] = $request->goals;
         }
 
         // Only update strategic_goals if they were sent in this request
@@ -265,9 +265,12 @@ class AdminController extends Controller
         extract($this->adminNotifData($admin));
 
         return view('admin.requirements', compact(
-            'applications', 'municipality',
-            'adminNewApplications', 'adminNewUploads',
-            'adminNewAppointments', 'adminNotifCount',
+            'applications',
+            'municipality',
+            'adminNewApplications',
+            'adminNewUploads',
+            'adminNewAppointments',
+            'adminNotifCount',
             'archivedApplications'
         ));
     }
@@ -335,7 +338,7 @@ class AdminController extends Controller
     // ── Mark Solo Parent ID as ready for pickup ───────────────────────────────
     public function markIdReady($id)
     {
-        $admin       = Auth::user();
+        $admin = Auth::user();
         $application = Application::where('id', $id)
             ->where('municipality', $admin->municipality)
             ->firstOrFail();
@@ -388,7 +391,7 @@ class AdminController extends Controller
             ->where('municipality', $admin->municipality)
             ->where('id_status', 'processing')
             ->update([
-                'id_status'   => 'ready_for_pickup',
+                'id_status' => 'ready_for_pickup',
                 'id_ready_at' => now(),
             ]);
 
@@ -518,8 +521,90 @@ class AdminController extends Controller
             && $fileMonitoring->overall_status === 'approved';
 
         return view('admin.view-requirement', compact(
-            'fileMonitoring', 'application', 'hasDocuments', 'allApproved'
+            'fileMonitoring',
+            'application',
+            'hasDocuments',
+            'allApproved'
         ));
+    }
+
+    /**
+     * Serve an uploaded requirement file securely through the controller.
+     * This bypasses the storage symlink (which often fails on Hostinger)
+     * and streams the file directly from disk.
+     *
+     * Tries multiple path strategies to accommodate different Hostinger
+     * deployment layouts (public_html root vs. public/ sub-folder).
+     *
+     * Pass ?dl=1 to force a file download instead of inline preview.
+     */
+    public function serveFile(Request $request, $id)
+    {
+        $admin = Auth::user();
+
+        // Load the file upload and verify it belongs to this admin's municipality
+        $fileUpload = FileUpload::with('fileMonitoring')
+            ->where('id', $id)
+            ->whereHas('fileMonitoring', function ($q) use ($admin) {
+                $q->where('municipality', $admin->municipality);
+            })
+            ->firstOrFail();
+
+        $filePath = $fileUpload->file_path;
+
+        if (!$filePath) {
+            abort(404, 'No file path stored for this record.');
+        }
+
+        // ── Candidate paths to try in order ─────────────────────────────────
+        // 1. Standard Laravel: storage/app/public/{filePath}
+        // 2. Hostinger root deployment: {base_path}/storage/app/public/{filePath}
+        // 3. Fallback: public/storage/{filePath} (if symlink was manually created)
+        $candidates = [
+            \Illuminate\Support\Facades\Storage::disk('public')->path($filePath),
+            base_path('storage/app/public/' . $filePath),
+            public_path('storage/' . $filePath),
+        ];
+
+        $fullPath = null;
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate) && is_file($candidate)) {
+                $fullPath = $candidate;
+                break;
+            }
+        }
+
+        if (!$fullPath) {
+            Log::warning('serveFile: file not found for upload ID ' . $id, [
+                'file_path' => $filePath,
+                'candidates' => $candidates,
+            ]);
+            abort(404, 'File not found on disk. Path: ' . $filePath);
+        }
+
+        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+
+        $mimeMap = [
+            'pdf' => 'application/pdf',
+            'jpg' => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'gif' => 'image/gif',
+            'webp' => 'image/webp',
+            'bmp' => 'image/bmp',
+        ];
+
+        $mime = $mimeMap[$ext] ?? 'application/octet-stream';
+        $forceDownload = $request->query('dl') === '1';
+        $disposition = $forceDownload
+            ? 'attachment; filename="' . basename($filePath) . '"'
+            : 'inline; filename="' . basename($filePath) . '"';
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => $disposition,
+            'Cache-Control' => 'private, max-age=3600',
+        ]);
     }
 
 
@@ -604,7 +689,7 @@ class AdminController extends Controller
                     $mailStatus = match ($newOverall) {
                         'approved' => 'approved',
                         'rejected' => 'rejected',
-                        default    => 'in_review',
+                        default => 'in_review',
                     };
 
                     Mail::to($fileMonitoring->application->user->email)
@@ -625,33 +710,37 @@ class AdminController extends Controller
      */
     public function detailedAnalysis()
     {
-        $user         = Auth::user();
+        $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
         $applications = $this->loadApplications($user->municipality);
 
-        [$totalApplications, $pendingApplications,
-         $approvedApplications, $rejectedApplications,
-         $applicationsByProgram] = $this->buildApplicationStats($applications);
+        [
+            $totalApplications,
+            $pendingApplications,
+            $approvedApplications,
+            $rejectedApplications,
+            $applicationsByProgram
+        ] = $this->buildApplicationStats($applications);
 
         $programShareOverview = $this->buildProgramOverview($user->municipality);
-        
+
         // Get demographic data for this municipality
         $totalPop = $municipality->male_population + $municipality->female_population;
         $totalHouseholds = $municipality->total_households;
-        
+
         // Gender distribution
         $genderData = [
             'male' => $municipality->male_population,
             'female' => $municipality->female_population,
         ];
-        
+
         // Age group distribution
         $ageGroupData = [
             '0-19' => $municipality->population_0_19,
             '20-59' => $municipality->population_20_59,
             '60+' => $municipality->population_60_100,
         ];
-        
+
         // Program beneficiaries - use same data as Program Share Overview
         $programBeneficiaries = $programShareOverview->toArray();
 
@@ -681,7 +770,7 @@ class AdminController extends Controller
 
         foreach ($applications as $app) {
             if (is_string($app->application_date)) {
-                $app->application_date = \Carbon\Carbon::parse($app->application_date);
+                $app->application_date = Carbon::parse($app->application_date);
             }
         }
 
@@ -691,15 +780,15 @@ class AdminController extends Controller
     /** Return counts + groupBy-program breakdown from a loaded collection. */
     private function buildApplicationStats($applications): array
     {
-        $total    = $applications->count();
-        $pending  = $applications->where('status', 'pending')->count();
+        $total = $applications->count();
+        $pending = $applications->where('status', 'pending')->count();
         $approved = $applications->where('status', 'approved')->count();
         $rejected = $applications->where('status', 'rejected')->count();
 
         $byProgram = $applications->groupBy('program_type')->map(function ($items) {
             return [
-                'total'    => $items->count(),
-                'pending'  => $items->where('status', 'pending')->count(),
+                'total' => $items->count(),
+                'pending' => $items->where('status', 'pending')->count(),
                 'approved' => $items->where('status', 'approved')->count(),
                 'rejected' => $items->where('status', 'rejected')->count(),
             ];
@@ -721,22 +810,22 @@ class AdminController extends Controller
             $overview[$type] = ($overview[$type] ?? 0) + $program->beneficiary_count;
         }
 
-        return collect($overview)->sortByDesc(fn ($count) => $count);
+        return collect($overview)->sortByDesc(fn($count) => $count);
     }
 
     /** Build per-barangay application statistics. */
     private function buildBarangayStats(string $municipality, $applications): array
     {
         $barangays = Barangay::where('municipality', $municipality)->get();
-        $stats     = [];
+        $stats = [];
 
         foreach ($barangays as $barangay) {
             $apps = $applications->where('barangay', $barangay->name);
             $stats[$barangay->name] = [
-                'total'      => $apps->count(),
-                'pending'    => $apps->where('status', 'pending')->count(),
-                'approved'   => $apps->where('status', 'approved')->count(),
-                'rejected'   => $apps->where('status', 'rejected')->count(),
+                'total' => $apps->count(),
+                'pending' => $apps->where('status', 'pending')->count(),
+                'approved' => $apps->where('status', 'approved')->count(),
+                'rejected' => $apps->where('status', 'rejected')->count(),
                 'population' => $barangay->total_population ?? 0,
                 'households' => $barangay->total_households,
             ];
@@ -841,7 +930,7 @@ class AdminController extends Controller
     public function updateApplicationStatus(Request $request, $id)
     {
         $request->validate([
-            'status'        => 'required|in:pending,approved,rejected',
+            'status' => 'required|in:pending,approved,rejected',
             'admin_remarks' => 'required_if:status,rejected|nullable|string|max:1000',
         ]);
 
@@ -854,7 +943,7 @@ class AdminController extends Controller
         // Guard: cannot approve if no documents have been uploaded
         if ($request->status === 'approved') {
             $fileMonitoring = FileMonitoring::where('application_id', $application->id)->first();
-            $uploadCount    = $fileMonitoring
+            $uploadCount = $fileMonitoring
                 ? $fileMonitoring->fileUploads()->whereNotNull('file_path')->count()
                 : 0;
 
@@ -866,8 +955,8 @@ class AdminController extends Controller
             }
         }
 
-        $oldStatus              = $application->status;
-        $application->status       = $request->status;
+        $oldStatus = $application->status;
+        $application->status = $request->status;
         $application->admin_remarks = $request->admin_remarks;
         $application->save();
 
@@ -879,28 +968,28 @@ class AdminController extends Controller
                 $fileMonitoring->overall_status = 'rejected';
                 $fileMonitoring->save();
                 FileUpload::where('file_monitoring_id', $fileMonitoring->id)->update([
-                    'status'        => 'rejected',
+                    'status' => 'rejected',
                     'admin_remarks' => $request->admin_remarks ?? 'Application rejected',
-                    'verified_at'   => now(),
-                    'verified_by'   => Auth::user()->id,
+                    'verified_at' => now(),
+                    'verified_by' => Auth::user()->id,
                 ]);
             } elseif ($request->status === 'approved') {
                 $fileMonitoring->overall_status = 'approved';
                 $fileMonitoring->save();
                 FileUpload::where('file_monitoring_id', $fileMonitoring->id)->update([
-                    'status'        => 'approved',
+                    'status' => 'approved',
                     'admin_remarks' => null,
-                    'verified_at'   => now(),
-                    'verified_by'   => Auth::user()->id,
+                    'verified_at' => now(),
+                    'verified_by' => Auth::user()->id,
                 ]);
             } elseif ($request->status === 'pending') {
                 $fileMonitoring->overall_status = 'pending';
                 $fileMonitoring->save();
                 FileUpload::where('file_monitoring_id', $fileMonitoring->id)->update([
-                    'status'        => 'pending',
+                    'status' => 'pending',
                     'admin_remarks' => null,
-                    'verified_at'   => null,
-                    'verified_by'   => null,
+                    'verified_at' => null,
+                    'verified_by' => null,
                 ]);
             }
         }
@@ -927,12 +1016,12 @@ class AdminController extends Controller
         // Audit log
         Log::info('Application status updated', [
             'application_id' => $application->id,
-            'applicant'      => $application->full_name,
-            'changed_by'     => Auth::user()->id,
-            'old_status'     => $oldStatus,
-            'new_status'     => $request->status,
-            'municipality'   => Auth::user()->municipality,
-            'remarks'        => $request->admin_remarks,
+            'applicant' => $application->full_name,
+            'changed_by' => Auth::user()->id,
+            'old_status' => $oldStatus,
+            'new_status' => $request->status,
+            'municipality' => Auth::user()->municipality,
+            'remarks' => $request->admin_remarks,
         ]);
 
         if ($request->ajax()) {
@@ -973,7 +1062,7 @@ class AdminController extends Controller
     // ── Admin User Management — view users in this municipality ───────────────
     public function users()
     {
-        $admin        = Auth::user();
+        $admin = Auth::user();
         $municipality = Municipality::where('name', $admin->municipality)->first();
 
         // All regular users in this municipality
@@ -983,8 +1072,8 @@ class AdminController extends Controller
             ->get()
             ->map(function ($user) {
                 $apps = Application::where('user_id', $user->id);
-                $user->total_apps    = (clone $apps)->count();
-                $user->pending_apps  = (clone $apps)->where('status', 'pending')->count();
+                $user->total_apps = (clone $apps)->count();
+                $user->pending_apps = (clone $apps)->where('status', 'pending')->count();
                 $user->approved_apps = (clone $apps)->where('status', 'approved')->count();
                 $user->rejected_apps = (clone $apps)->where('status', 'rejected')->count();
                 return $user;
@@ -993,9 +1082,12 @@ class AdminController extends Controller
         extract($this->adminNotifData($admin));
 
         return view('admin.users', compact(
-            'municipality', 'users',
-            'adminNewApplications', 'adminNewAppointments',
-            'adminNewUploads', 'adminNotifCount'
+            'municipality',
+            'users',
+            'adminNewApplications',
+            'adminNewAppointments',
+            'adminNewUploads',
+            'adminNotifCount'
         ));
     }
 
@@ -1011,8 +1103,8 @@ class AdminController extends Controller
             ->get()
             ->map(function ($user) {
                 $apps = Application::where('user_id', $user->id);
-                $user->total_apps    = (clone $apps)->count();
-                $user->pending_apps  = (clone $apps)->where('status', 'pending')->count();
+                $user->total_apps = (clone $apps)->count();
+                $user->pending_apps = (clone $apps)->where('status', 'pending')->count();
                 $user->approved_apps = (clone $apps)->where('status', 'approved')->count();
                 $user->rejected_apps = (clone $apps)->where('status', 'rejected')->count();
                 return $user;

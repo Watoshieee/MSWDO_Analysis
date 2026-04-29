@@ -9,6 +9,8 @@ use App\Http\Controllers\AnalysisController;
 use App\Http\Controllers\ApplicationController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\BarangayDataController;
+use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\SuperAdmin\UserController as SuperAdminUserController;
 
 // ============================================
 // PUBLIC ROUTES
@@ -127,71 +129,9 @@ Route::middleware(['auth', 'ensure_role:user'])->prefix('applications')->name('a
 Route::middleware(['auth'])->post('/applications/upload-batch', [ApplicationController::class, 'uploadBatch'])->name('applications.upload-batch');
 
 // ============================================
-<<<<<<< HEAD
 // BARANGAY ANALYSIS ROUTES (public/admin accessible)
-=======
-// AI CHATBOT (public — guests + auth users)
 // ============================================
-Route::post('/chatbot/message', [App\Http\Controllers\ChatbotController::class, 'reply'])->name('chatbot.reply');
 
-Route::prefix('analysis')->name('analysis.')->group(function () {
-    Route::get('/', [AnalysisController::class, 'index'])->name('index');
-    Route::get('/municipality/{name}', [AnalysisController::class, 'municipality'])->name('municipality');
-    Route::get('/demographic', [AnalysisController::class, 'demographic'])->name('demographic');
-    Route::get('/programs', [AnalysisController::class, 'programs'])->name('programs');
-});
-
-// ============================================
-// GUEST ROUTES
-// ============================================
-Route::middleware('guest')->group(function () {
-    Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
-    Route::post('/login', [LoginController::class, 'login']);
-
-    Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
-    Route::post('/register', [RegisterController::class, 'register']);
-    Route::post('/check-username', [RegisterController::class, 'checkUsername'])->name('check.username');
-
-    Route::get('/verify-otp', [OtpController::class, 'showVerifyForm'])->name('otp.verify.form');
-    Route::post('/verify-otp', [OtpController::class, 'verify'])->name('otp.verify');
-    Route::post('/resend-otp', [OtpController::class, 'resend'])->name('otp.resend');
-});
-
-// Password Reset Routes
-Route::middleware('guest')->group(function () {
-    Route::get('/forgot-password', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'create'])
-        ->name('password.request');
-    Route::post('/forgot-password', [App\Http\Controllers\Auth\PasswordResetLinkController::class, 'store'])
-        ->name('password.email');
-    Route::get('/reset-password/{token}', [App\Http\Controllers\Auth\NewPasswordController::class, 'create'])
-        ->name('password.reset');
-    Route::post('/reset-password', [App\Http\Controllers\Auth\NewPasswordController::class, 'store'])
-        ->name('password.update');
-});
-
-// Change Password Routes (after email verification)
-Route::middleware('guest')->group(function () {
-    Route::get('/change-password', [App\Http\Controllers\Auth\ChangePasswordController::class, 'showChangeForm'])
-        ->name('password.change');
-    Route::post('/change-password', [App\Http\Controllers\Auth\ChangePasswordController::class, 'change'])
-        ->name('password.change.submit');
-});
-// LOGOUT
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-
-// SESSION HEARTBEAT — keeps session alive while tab is open
-Route::middleware(['auth'])->get('/session/ping', function () {
-    return response()->json(['ok' => true, 'ts' => now()->timestamp]);
-})->name('session.ping');
-
-// GENERAL DASHBOARD — users only; admins/superadmins redirected by EnsureUserRole
-Route::middleware(['auth', 'ensure_role:user'])->group(function () {
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-});
-
-// ============================================
-// SUPER ADMIN ROUTES
-// ============================================
 Route::middleware(['auth', 'role:super_admin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     // DASHBOARD
     Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
@@ -289,6 +229,24 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/requirements', [App\Http\Controllers\AdminController::class, 'requirements'])->name('requirements');
     Route::get('/requirements/{id}', [App\Http\Controllers\AdminController::class, 'viewRequirement'])->name('view-requirement');
     Route::post('/requirements/{id}/status', [App\Http\Controllers\AdminController::class, 'updateFileStatus'])->name('update-file-status');
+    // Secure file-serve route — streams files through PHP, bypasses broken storage symlinks on Hostinger
+    Route::get('/files/{id}/serve', [App\Http\Controllers\AdminController::class, 'serveFile'])->name('serve-file');
+    // ⚠️  TEMPORARY DEBUG ROUTE — remove after diagnosing Hostinger 404
+    Route::get('/debug/storage/{id}', function ($id) {
+        $fu = \App\Models\FileUpload::findOrFail($id);
+        $fp = $fu->file_path;
+        return response()->json([
+            'file_path' => $fp,
+            'base_path' => base_path(),
+            'storage_path' => storage_path('app/public'),
+            'public_path' => public_path(),
+            'disk_path' => \Illuminate\Support\Facades\Storage::disk('public')->path($fp ?? ''),
+            'disk_exists' => $fp ? \Illuminate\Support\Facades\Storage::disk('public')->exists($fp) : false,
+            'file_exists_1' => $fp ? file_exists(\Illuminate\Support\Facades\Storage::disk('public')->path($fp)) : false,
+            'file_exists_2' => $fp ? file_exists(base_path('storage/app/public/' . $fp)) : false,
+            'file_exists_3' => $fp ? file_exists(public_path('storage/' . $fp)) : false,
+        ]);
+    })->name('debug.storage');
     Route::get('/users/search', [App\Http\Controllers\AdminController::class, 'searchUsers'])->name('users.search');
 
     // Archive / Restore / Force-delete
@@ -376,13 +334,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         }
     );
 });
-// General dashboard — user-only; admins/superadmins will be redirected by EnsureUserRole
-Route::middleware(['auth', 'ensure_role:user'])->group(function () {
-    Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard');
-});
 // ============================================
 // BARANGAY ANALYSIS ROUTES
->>>>>>> origin/main
 // ============================================
 Route::prefix('barangay-analysis')->name('barangay-analysis.')->group(function () {
     Route::get('/', [App\Http\Controllers\Admin\BarangayAnalysisController::class, 'index'])->name('index');

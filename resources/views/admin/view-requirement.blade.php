@@ -332,8 +332,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <div class="col-md-4 text-center">
                     @if($file->file_path)
                         @php 
-                            $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION)); 
-                            $fileUrl = asset('storage/'.$file->file_path);
+                            $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION));
+                            // Use secure serve-file route to avoid 403 on Hostinger (symlink not needed)
+                            $fileUrl = route('admin.serve-file', $file->id);
                         @endphp
                         @if(in_array($ext, ['jpg','jpeg','png','webp','gif']))
                             <img src="{{ $fileUrl }}"
@@ -566,8 +567,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             currentFileName = fileName;
             currentFileStatus = fileStatus;
             
-            // Set download link
-            downloadBtn.href = fileUrl;
+            // Set download link — use a separate download URL (append ?dl=1 so the controller forces download)
+            downloadBtn.href = fileUrl + '?dl=1';
             downloadBtn.setAttribute('download', fileName + '.' + fileExt);
             
             // Set document name and status
