@@ -40,6 +40,11 @@ return Application::configure(basePath: dirname(__DIR__))
             \App\Http\Middleware\InjectSessionGuard::class,
         ]);
 
+        // Exempt mobile API routes from CSRF verification
+        $middleware->validateCsrfTokens(except: [
+            'mobile-api/*',
+        ]);
+
         // Named middleware aliases
         // - 'role'        → Hard 403 abort if wrong role (used on admin/superadmin routes)
         // - 'ensure_role' → Graceful redirect to correct dashboard (used on user routes)
