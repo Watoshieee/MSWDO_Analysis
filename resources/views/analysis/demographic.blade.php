@@ -707,7 +707,7 @@
     <div
         style="background:#fff;border-bottom:1px solid #e2e8f0;padding:14px 0;position:sticky;top:0;z-index:100;box-shadow:0 2px 8px rgba(44,62,143,0.07);">
         <div class="container d-flex align-items-center gap-3 flex-wrap">
-            <span style="font-weight:700;color:#2C3E8F;font-size:0.93rem;">📅 View Year:</span>
+            <span style="font-weight:700;color:#2C3E8F;font-size:0.93rem;">Year:</span>
             <form method="GET" action="" id="yearFilterForm" class="d-flex gap-2 align-items-center flex-wrap">
                 @foreach($allYears as $yr)
                     <a href="?year={{ $yr }}" style="padding:6px 18px;border-radius:20px;font-weight:600;font-size:0.85rem;text-decoration:none;
@@ -719,11 +719,63 @@
                 <span style="color:#94a3b8;font-size:0.82rem;margin-left:4px;">Showing data for
                     <strong>{{ $selectedYear }}</strong></span>
             </form>
+            
+            {{-- Compact clickable jump links --}}
+            <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                <a href="#population-overview" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Population Overview
+                </a>
+                <a href="#geographic-location" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Geographic Map
+                </a>
+                <a href="#gender-distribution" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Gender Distribution
+                </a>
+                <a href="#age-group-structure" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Age Group Structure
+                </a>
+                <a href="#age-structure" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Age Structure Detail
+                </a>
+                <a href="#population-trend" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Population Trend
+                </a>
+                <a href="#household-analysis" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Household Analysis
+                </a>
+                <a href="#households-beneficiaries" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Households & Beneficiaries
+                </a>
+                <a href="#beneficiaries-distribution" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Beneficiaries Programs
+                </a>
+                <a href="#beneficiaries-trend" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Beneficiaries Trend
+                </a>
+                <a href="#key-insights" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Key Insights
+                </a>
+                <a href="#detailed-data-table" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Detailed Data Table
+                </a>
+            </div>
         </div>
     </div>
 
     <!-- ===== SUMMARY STAT CARDS ===== -->
-    <section class="section-wrapper">
+    <section class="section-wrapper" id="population-overview" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="section-title">Population Overview</h2>
             <div class="row g-4">
@@ -764,7 +816,7 @@
     </section>
 
     <!-- ===== MAP ===== -->
-    <section class="section-wrapper alt" style="background: #e2e8f0 !important;">
+    <section class="section-wrapper alt" style="background: #e2e8f0 !important;" id="geographic-location" style="scroll-margin-top:110px;">
         <div class="container" style="background: transparent !important;">
             <h2 class="section-title">Geographic Location</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">
@@ -814,7 +866,7 @@
     </section>
 
     {{-- ===== SECTION 3: GENDER DISTRIBUTION ===== --}}
-    <section class="section-wrapper">
+    <section class="section-wrapper" id="gender-distribution" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="section-title">⚤ Gender Distribution</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Compare male vs. female population
@@ -843,7 +895,7 @@
     </section>
 
     {{-- ===== SECTION 4: AGE GROUP STACKED BAR ===== --}}
-    <section class="section-wrapper alt" style="background:#f0f5ff !important;">
+    <section class="section-wrapper alt" style="background:#f0f5ff !important;" id="age-group-structure" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="section-title">👥 Age Group Structure</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Is the population youthful, mature,
@@ -860,7 +912,7 @@
     </section>
 
     <!-- ===== AGE STRUCTURE ===== -->
-    <section class="section-wrapper">
+    <section class="section-wrapper" id="age-structure" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="section-title">Age Structure</h2>
             <div class="row g-4">
@@ -949,7 +1001,7 @@
     </section>
 
     {{-- ===== SECTION 2: POPULATION TREND ===== --}}
-    <section class="section-wrapper alt" style="background:#f0f5ff !important;">
+    <section class="section-wrapper alt" style="background:#f0f5ff !important;" id="population-trend" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="section-title">📈 Population Trend (Yearly)</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Track population growth or decline
@@ -965,7 +1017,7 @@
     </section>
 
     {{-- ===== SECTION 5: HOUSEHOLD ANALYSIS ===== --}}
-    <section class="section-wrapper">
+    <section class="section-wrapper" id="household-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="section-title">🏠 Household Analysis</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Compare total households and estimate
@@ -1018,7 +1070,7 @@
     </section>
 
     <!-- ===== HOUSEHOLDS & BENEFICIARIES DISTRIBUTION ===== -->
-    <section class="section-wrapper alt" style="background: #e2e8f0 !important;">
+    <section class="section-wrapper alt" style="background: #e2e8f0 !important;" id="households-beneficiaries" style="scroll-margin-top:110px;">
         <div class="container" style="background: transparent !important;">
             <h2 class="section-title">Households & Beneficiaries Distribution</h2>
             <div class="row g-4" style="background: transparent !important;">
@@ -1061,7 +1113,7 @@
     </section>
 
     {{-- ===== SECTION 6: BENEFICIARIES DISTRIBUTION ===== --}}
-    <section class="section-wrapper alt" style="background:#f0f5ff !important;">
+    <section class="section-wrapper alt" style="background:#f0f5ff !important;" id="beneficiaries-distribution" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="section-title">🤝 Beneficiaries Distribution</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Breakdown of social welfare program
@@ -1090,7 +1142,7 @@
     </section>
 
     {{-- ===== SECTION 7: BENEFICIARIES TREND ===== --}}
-    <section class="section-wrapper">
+    <section class="section-wrapper" id="beneficiaries-trend" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="section-title">📊 Beneficiaries Trend (Yearly)</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Analyze increase or decrease in total
@@ -1107,7 +1159,7 @@
     </section>
 
     {{-- ===== SECTION 8: KEY INSIGHTS ===== --}}
-    <section class="section-wrapper alt" style="background:#1e293b !important;padding:52px 0;">
+    <section class="section-wrapper alt" style="background:#1e293b !important;padding:52px 0;" id="key-insights" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="section-title" style="color:#FDB913;">💡 Key Insights</h2>
             <p style="color:rgba(255,255,255,0.7);margin-top:-18px;margin-bottom:32px;font-size:0.93rem;">Auto-generated
@@ -1131,7 +1183,7 @@
     </section>
 
     <!-- ===== DATA TABLE ===== -->
-    <section class="section-wrapper">
+    <section class="section-wrapper" id="detailed-data-table" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="section-title">Detailed Data Table</h2>
             <div class="data-table-card">
@@ -1202,6 +1254,54 @@
 
     {{-- ===== PHP → JS data bridge ===== --}}
     <script>
+        // Jump link active state
+        document.addEventListener('DOMContentLoaded', function() {
+            const jumpLinks = document.querySelectorAll('.jump-link');
+            const sections = document.querySelectorAll('section[id]');
+            
+            function setActiveLink() {
+                let current = '';
+                const scrollPos = window.scrollY || window.pageYOffset;
+                const windowHeight = window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight;
+                
+                // Check if we're at the bottom of the page
+                if (scrollPos + windowHeight >= documentHeight - 50) {
+                    // Highlight the last section
+                    current = sections[sections.length - 1].getAttribute('id');
+                } else {
+                    sections.forEach(section => {
+                        const sectionTop = section.offsetTop - 150;
+                        const sectionBottom = sectionTop + section.offsetHeight;
+                        
+                        if (scrollPos >= sectionTop && scrollPos < sectionBottom) {
+                            current = section.getAttribute('id');
+                        }
+                    });
+                }
+                
+                jumpLinks.forEach(link => {
+                    link.style.background = '#f1f5f9';
+                    link.style.color = '#334155';
+                    link.style.borderColor = '#cbd5e1';
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.style.background = '#2C3E8F';
+                        link.style.color = '#fff';
+                        link.style.borderColor = '#2C3E8F';
+                    }
+                });
+            }
+            
+            window.addEventListener('scroll', setActiveLink);
+            setActiveLink();
+            
+            jumpLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    setTimeout(() => setActiveLink(), 100);
+                });
+            });
+        });
+        
         const YEARS = @json($allYears);
         const MUNIS = @json($coreNames);
         const COLORS = @json($colors);

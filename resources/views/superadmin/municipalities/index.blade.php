@@ -519,6 +519,72 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             border-left: 4px solid #C41E24;
             border-radius: 12px;
         }
+
+        /* Custom Confirm Modal */
+        .custom-confirm-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.6);
+            z-index: 10000;
+            align-items: center;
+            justify-content: center;
+        }
+        .custom-confirm-modal {
+            background: white;
+            border-radius: 18px;
+            max-width: 480px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .custom-confirm-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 20px 24px;
+            font-weight: 800;
+            font-size: 1.1rem;
+        }
+        .custom-confirm-body {
+            padding: 24px;
+            color: #334155;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            white-space: pre-line;
+        }
+        .custom-confirm-footer {
+            padding: 16px 24px;
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            background: #f8fafc;
+        }
+        .custom-confirm-btn {
+            border: none;
+            border-radius: 10px;
+            padding: 10px 24px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .custom-confirm-cancel {
+            background: white;
+            color: #64748b;
+            border: 1.5px solid #e2e8f0;
+        }
+        .custom-confirm-cancel:hover {
+            border-color: var(--primary-blue);
+            color: var(--primary-blue);
+        }
+        .custom-confirm-ok {
+            background: var(--primary-gradient);
+            color: white;
+        }
+        .custom-confirm-ok:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(44,62,143,0.3);
+        }
     </style>
 </head>
 
@@ -618,8 +684,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     <td>{{ $s->year ?? $municipality->year ?? date('Y') }}</td>
                                     <td>
                                         <div class="d-flex gap-2">
-                                            <a href="{{ route('superadmin.municipalities.barangays', $municipality->id) }}"
-                                                class="btn-action-view">Barangays</a>
                                             <button class="btn-action-edit"
                                                 onclick="openEditModal({
                                                     id: {{ $municipality->id }},
@@ -810,8 +874,37 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
+    <!-- Custom Confirm Modal -->
+    <div id="customConfirmBackdrop" class="custom-confirm-backdrop">
+        <div class="custom-confirm-modal">
+            <div class="custom-confirm-header" id="customConfirmTitle">Confirm Action</div>
+            <div class="custom-confirm-body" id="customConfirmMessage"></div>
+            <div class="custom-confirm-footer">
+                <button class="custom-confirm-btn custom-confirm-cancel" onclick="customConfirmResolve(false)">Cancel</button>
+                <button class="custom-confirm-btn custom-confirm-ok" onclick="customConfirmResolve(true)">OK</button>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Custom confirm function
+        let customConfirmResolveFunc = null;
+        function customConfirm(message, title = 'Confirm Action') {
+            return new Promise((resolve) => {
+                customConfirmResolveFunc = resolve;
+                document.getElementById('customConfirmTitle').textContent = title;
+                document.getElementById('customConfirmMessage').textContent = message;
+                document.getElementById('customConfirmBackdrop').style.display = 'flex';
+            });
+        }
+        function customConfirmResolve(result) {
+            document.getElementById('customConfirmBackdrop').style.display = 'none';
+            if (customConfirmResolveFunc) {
+                customConfirmResolveFunc(result);
+                customConfirmResolveFunc = null;
+            }
+        }
         // ── Open Edit Modal ───────────────────────────────────────────────
         function openEditModal(m) {
             // Set form action to the update route for this municipality
@@ -889,8 +982,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         }
 
         // ── Archive ───────────────────────────────────────────────────────
-        function archiveMunicipality(id, name) {
-            if (!confirm(`Archive "${name}"?\n\nThis municipality will be hidden but can be restored later from the archive.`)) return;
+        async function archiveMunicipality(id, name) {
+            const confirmed = await customConfirm(
+                `Archive "${name}"?\n\nThis municipality will be hidden but can be restored later from the archive.`,
+                'Archive Municipality'
+            );
+            if (!confirmed) return;
 
             const form = document.createElement('form');
             form.method = 'POST';
@@ -903,8 +1000,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         }
 
         // ── Restore ───────────────────────────────────────────────────────
-        function restoreMunicipality(id, name) {
-            if (!confirm(`Restore "${name}"? It will become active again.`)) return;
+        async function restoreMunicipality(id, name) {
+            const confirmed = await customConfirm(
+                `Restore "${name}"? It will become active again.`,
+                'Restore Municipality'
+            );
+            if (!confirmed) return;
 
             fetch('/superadmin/municipalities/' + id + '/restore', {
                 method: 'POST',
@@ -916,8 +1017,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         }
 
         // ── Permanent Delete ──────────────────────────────────────────────
-        function permDeleteMunicipality(id, name) {
-            if (!confirm(`⚠️ PERMANENTLY DELETE "${name}"?\n\nThis will remove it and all its barangay data from the database forever.\n\nThis CANNOT be undone!`)) return;
+        async function permDeleteMunicipality(id, name) {
+            const confirmed = await customConfirm(
+                `⚠️ PERMANENTLY DELETE "${name}"?\n\nThis will remove it and all its barangay data from the database forever.\n\nThis CANNOT be undone!`,
+                'Permanent Delete'
+            );
+            if (!confirmed) return;
 
             fetch('/superadmin/municipalities/' + id + '/force-delete', {
                 method: 'DELETE',

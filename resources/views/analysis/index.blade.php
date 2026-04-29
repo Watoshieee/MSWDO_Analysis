@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Statistical Analysis â€“ MSWDO</title>
+    <title>Statistical Analysis - MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -17,6 +17,10 @@
             --green: #28a745;
             --blue3: #6366f1;
             --grad: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
+        }
+
+        html {
+            scroll-behavior: smooth;
         }
 
         body {
@@ -469,6 +473,52 @@
                     style="background:{{ $yr == $selectedYear ? '#2C3E8F' : '#f1f5f9' }};color:{{ $yr == $selectedYear ? '#fff' : '#334155' }};border:1px solid {{ $yr == $selectedYear ? '#2C3E8F' : '#cbd5e1' }};">{{ $yr }}</a>
             @endforeach
             <span style="color:#94a3b8;font-size:.8rem;">Data for <strong>{{ $selectedYear }}</strong></span>
+
+            {{-- Compact clickable jump links --}}
+            <div style="margin-left:auto;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+            <a href="#descriptive-analysis" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Descriptive Analysis
+                </a>
+                <a href="#population-growth-analysis" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Population Growth
+                </a>
+                <a href="#gender-trend-analysis" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Gender Trend
+                </a>
+                <a href="#age-group-analysis" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Age Group
+                </a>
+
+                <a href="#household-vs-population-analysis" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Household vs Population
+                </a>
+                <a href="#program-beneficiaries-analysis" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Program Beneficiaries
+                </a>
+                <a href="#anova-analysis" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    ANOVA Analysis
+                </a>
+                <a href="#correlation-analysis" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Correlation Analysis
+                </a>
+                <a href="#key-insights-analysis" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Key Insights
+                </a>
+                <a href="#recommendations-analysis" class="jump-link"
+                    style="background:#f1f5f9;color:#334155;border:1px solid #cbd5e1;border-radius:999px;padding:6px 14px;font-size:.8rem;font-weight:700;text-decoration:none;transition:all .2s;white-space:nowrap;">
+                    Recommendations
+                </a>
+                
+            </div>
         </div>
     </div>
 
@@ -514,7 +564,7 @@
     @endphp
 
     {{-- SECTION 1: DESCRIPTIVE ANALYSIS --}}
-    <section class="section-wrap">
+    <section class="section-wrap" id="descriptive-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="sec-title">1. Descriptive Analysis</h2>
             <div class="row g-3 mb-4">
@@ -594,7 +644,7 @@
     </section>
 
     {{-- SECTION 2: POPULATION GROWTH --}}
-    <section class="section-wrap alt">
+    <section class="section-wrap alt" id="population-growth-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="sec-title">2. Population Growth Analysis</h2>
             <div class="row g-4">
@@ -779,7 +829,7 @@
     </style>
 
     {{-- SECTION 3: GENDER TREND --}}
-    <section class="section-wrap">
+    <section class="section-wrap" id="gender-trend-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="sec-title">3. Gender Trend Analysis</h2>
             <div class="row g-4">
@@ -940,14 +990,14 @@
     </section>
 
     {{-- SECTION 4: AGE GROUP --}}
-    <section class="section-wrap alt">
+    <section class="section-wrap alt" id="age-group-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="sec-title">4. Age Group Analysis</h2>
             <div class="row g-4">
                 <div class="col-lg-7">
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Age Groups per Municipality (Stacked)</h6>
-                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Youth (0â€“19), Working Age (20â€“59),
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Youth (0-19), Working Age (20-59),
                             Senior (60+) {{ $selectedYear }}</p>
                         <div class="chart-box tall"><canvas id="ageStacked"></canvas></div>
                     </div>
@@ -977,7 +1027,7 @@
                         <div style="padding-top:12px;border-top:1px solid #f1f5f9;">
                             <p style="font-size:.8rem;color:#64748b;margin:0;line-height:1.6;">
                                 Dominant age group: <strong>{{ $domAge }}</strong>.<br>
-                                {{ $domAge === 'Youth (0â€“19)' ? 'Population is youthful invest in education and livelihood programs.' : ($domAge === 'Working Age (20â€“59)' ? 'Productive population  strong labor force, moderate dependency.' : 'Aging population  prioritize elder care and pension services.') }}
+                                {{ $domAge === 'Youth (0-19)' ? 'Population is youthful invest in education and livelihood programs.' : ($domAge === 'Working Age (20-59)' ? 'Productive population  strong labor force, moderate dependency.' : 'Aging population  prioritize elder care and pension services.') }}
                             </p>
                         </div>
                     </div>
@@ -1101,7 +1151,7 @@
     </section>
 
     {{-- SECTION 5: HOUSEHOLD VS POPULATION --}}
-    <section class="section-wrap">
+    <section class="section-wrap" id="household-vs-population-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="sec-title">5. Household vs Population Analysis</h2>
             <div class="row g-4">
@@ -1144,7 +1194,7 @@
     </section>
 
     {{-- SECTION 6: PROGRAM BENEFICIARIES --}}
-    <section class="section-wrap alt">
+    <section class="section-wrap alt" id="program-beneficiaries-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="sec-title">6. Program Beneficiaries Analysis</h2>
             <div class="row g-4 mb-4">
@@ -1229,7 +1279,7 @@
     </section>
 
     {{-- SECTION 7: ANOVA --}}
-    <section class="section-wrap">
+    <section class="section-wrap" id="anova-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="sec-title">7. ANOVA Analysis</h2>
             <p style="color:#64748b;font-size:.9rem;margin-top:-16px;margin-bottom:24px;">One-way ANOVA tests whether
@@ -1296,7 +1346,7 @@
     </section>
 
     {{-- SECTION 8: CORRELATION --}}
-    <section class="section-wrap alt">
+    <section class="section-wrap alt" id="correlation-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="sec-title">8. Correlation Analysis</h2>
             <p style="color:#64748b;font-size:.9rem;margin-top:-16px;margin-bottom:24px;">Pearson correlation (r)
@@ -1348,7 +1398,7 @@
     </section>
 
     {{-- SECTION 9: KEY INSIGHTS --}}
-    <section class="section-wrap dark">
+    <section class="section-wrap dark" id="key-insights-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="sec-title light">9. Key Insights</h2>
             <div class="row g-3">
@@ -1368,7 +1418,7 @@
     </section>
 
     {{-- SECTION 10: RECOMMENDATIONS --}}
-    <section class="section-wrap">
+    <section class="section-wrap" id="recommendations-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="sec-title">10. Recommendations</h2>
             <div class="row g-3">
@@ -1397,6 +1447,55 @@
     @include('components.chatbot-widget')
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Jump link active state
+        document.addEventListener('DOMContentLoaded', function() {
+            const jumpLinks = document.querySelectorAll('.jump-link');
+            const sections = document.querySelectorAll('[id$="-analysis"]');
+            
+            function setActiveLink() {
+                let current = '';
+                const scrollPos = window.scrollY || window.pageYOffset;
+                const windowHeight = window.innerHeight;
+                const documentHeight = document.documentElement.scrollHeight;
+                
+                // Check if we're at the bottom of the page
+                if (scrollPos + windowHeight >= documentHeight - 50) {
+                    // Highlight the last section
+                    current = sections[sections.length - 1].getAttribute('id');
+                } else {
+                    sections.forEach(section => {
+                        const sectionTop = section.offsetTop - 150;
+                        const sectionBottom = sectionTop + section.offsetHeight;
+                        
+                        if (scrollPos >= sectionTop && scrollPos < sectionBottom) {
+                            current = section.getAttribute('id');
+                        }
+                    });
+                }
+                
+                jumpLinks.forEach(link => {
+                    link.style.background = '#f1f5f9';
+                    link.style.color = '#334155';
+                    link.style.borderColor = '#cbd5e1';
+                    if (link.getAttribute('href') === '#' + current) {
+                        link.style.background = '#2C3E8F';
+                        link.style.color = '#fff';
+                        link.style.borderColor = '#2C3E8F';
+                    }
+                });
+            }
+            
+            window.addEventListener('scroll', setActiveLink);
+            setActiveLink();
+            
+            jumpLinks.forEach(link => {
+                link.addEventListener('click', function(e) {
+                    setTimeout(() => setActiveLink(), 100);
+                });
+            });
+        });
+    </script>
     <script>
         const MUNIS  = @json($coreNames);
         const COLORS = @json($colors);
