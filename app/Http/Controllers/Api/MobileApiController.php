@@ -24,7 +24,8 @@ class MobileApiController extends Controller
         private OtpService $otp,
         private ApplicationService $applicationService,
         private DashboardService $dashboardService,
-    ) {}
+    ) {
+    }
 
     // ── PUBLIC ENDPOINTS ───────────────────────────────────────────────────
 
@@ -49,23 +50,23 @@ class MobileApiController extends Controller
     public function register(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
-            'first_name'    => 'required|string|max:50',
-            'middle_name'   => 'nullable|string|max:50',
-            'last_name'     => 'required|string|max:50',
-            'username'      => 'required|string|max:20|unique:users,username',
-            'email'         => 'required|email|unique:users,email',
+            'first_name' => 'required|string|max:50',
+            'middle_name' => 'nullable|string|max:50',
+            'last_name' => 'required|string|max:50',
+            'username' => 'required|string|max:20|unique:users,username',
+            'email' => 'required|email|unique:users,email',
             'mobile_number' => 'required|string',
-            'birthdate'     => 'required|date',
-            'municipality'  => 'required|string',
-            'barangay'      => 'required|string',
-            'gender'        => 'required|string|in:Male,Female',
+            'birthdate' => 'required|date',
+            'municipality' => 'required|string',
+            'barangay' => 'required|string',
+            'gender' => 'required|string|in:Male,Female',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -74,7 +75,7 @@ class MobileApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $customErrors,
+                'errors' => $customErrors,
             ], 422);
         }
 
@@ -85,7 +86,7 @@ class MobileApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'You must be at least 18 years old to register.',
-                'errors'  => ['birthdate' => ['You must be at least 18 years old to register.']],
+                'errors' => ['birthdate' => ['You must be at least 18 years old to register.']],
             ], 422);
         }
 
@@ -97,7 +98,7 @@ class MobileApiController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Registration successful! Check your Gmail for your password and OTP verification code.',
-                'data'    => ['email' => $user->email],
+                'data' => ['email' => $user->email],
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -111,7 +112,7 @@ class MobileApiController extends Controller
     {
         $request->validate([
             'email' => 'required|email',
-            'otp'   => 'required|string',
+            'otp' => 'required|string',
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -169,8 +170,8 @@ class MobileApiController extends Controller
     public function resetPassword(Request $request): JsonResponse
     {
         $request->validate([
-            'email'    => 'required|email',
-            'otp'      => 'required|string',
+            'email' => 'required|email',
+            'otp' => 'required|string',
             'password' => 'required|string|min:8',
         ]);
 
@@ -197,7 +198,7 @@ class MobileApiController extends Controller
     public function login(Request $request): JsonResponse
     {
         $request->validate([
-            'login'    => 'required|string',
+            'login' => 'required|string',
             'password' => 'required|string',
         ]);
 
@@ -205,10 +206,10 @@ class MobileApiController extends Controller
             $user = $this->auth->attemptLogin($request->login, $request->password);
         } catch (\Illuminate\Auth\AuthenticationException $e) {
             $status = match ($e->getMessage()) {
-                'User not found'           => 404,
-                'Incorrect password'       => 401,
+                'User not found' => 404,
+                'Incorrect password' => 401,
                 'Account not yet verified' => 403,
-                default                    => 401,
+                default => 401,
             };
             return response()->json(['success' => false, 'message' => $e->getMessage()], $status);
         }
@@ -218,15 +219,15 @@ class MobileApiController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Login successful',
-            'token'   => $token,
-            'user'    => [
-                'id'           => $user->id,
-                'full_name'    => $user->full_name,
-                'email'        => $user->email,
-                'username'     => $user->username,
-                'role'         => $user->role,
+            'token' => $token,
+            'user' => [
+                'id' => $user->id,
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'username' => $user->username,
+                'role' => $user->role,
                 'municipality' => $user->municipality,
-                'barangay'     => $user->barangay,
+                'barangay' => $user->barangay,
             ],
         ]);
     }
@@ -240,21 +241,103 @@ class MobileApiController extends Controller
         $recentApps = $this->dashboardService->getRecentApplications($user);
         $announcements = $this->dashboardService->getAnnouncements($user);
 
+        // Calculate unread count
+        $unreadSystemCount = \DB::table('notifications')
+            ->where('user_id', $user->id)
+            ->where('is_read', false)
+            ->count();
+
+        $lastViewed = \App\Models\NotificationView::where('user_id', $user->id)->first();
+        $lastViewedAt = $lastViewed ? $lastViewed->last_viewed_at : null;
+
+        $unreadAnnouncementsCount = $lastViewedAt
+            ? $announcements->filter(function ($ann) use ($lastViewedAt) {
+                return \Carbon\Carbon::parse($ann['created_at'])->gt(\Carbon\Carbon::parse($lastViewedAt));
+            })->count()
+            : $announcements->count();
+
         return response()->json([
             'success' => true,
             'data' => [
                 'stats' => $stats,
-                'recent_applications' => $recentApps->map(fn ($app) => [
-                    'id'           => $app->id,
+                'recent_applications' => $recentApps->map(fn($app) => [
+                    'id' => $app->id,
                     'program_type' => $app->program_type,
-                    'status'       => $app->status,
-                    'barangay'     => $app->barangay ?? '',
+                    'status' => $app->status,
+                    'barangay' => $app->barangay ?? '',
                     'municipality' => $app->municipality ?? '',
-                    'created_at'   => $app->application_date ? $app->application_date->format('F d, Y') : null,
+                    'created_at' => $app->application_date ? $app->application_date->format('F d, Y') : null,
                 ]),
                 'announcements' => $announcements,
+                'unread_notifications_count' => $unreadSystemCount + $unreadAnnouncementsCount,
             ],
         ]);
+    }
+
+    public function notifications(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // 1. Get system notifications
+        $systemNotifs = \DB::table('notifications')
+            ->where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get()
+            ->map(function ($notif) {
+                return [
+                    'id' => 'sys_' . $notif->id,
+                    'title' => $notif->title,
+                    'body' => $notif->body,
+                    'type' => $notif->type, // e.g., 'solo_parent'
+                    'is_read' => (bool) $notif->is_read,
+                    'created_at' => \Carbon\Carbon::parse($notif->created_at)->format('Y-m-d H:i:s'),
+                ];
+            });
+
+        // 2. Get announcements
+        $announcements = $this->dashboardService->getAllAnnouncements($user);
+        $lastViewed = \App\Models\NotificationView::where('user_id', $user->id)->first();
+        $lastViewedAt = $lastViewed ? $lastViewed->last_viewed_at : null;
+
+        $announcementNotifs = $announcements->map(function ($ann) use ($lastViewedAt) {
+            $isRead = $lastViewedAt && \Carbon\Carbon::parse($ann['created_at'])->lte(\Carbon\Carbon::parse($lastViewedAt));
+            return [
+                'id' => 'ann_' . $ann['id'],
+                'title' => $ann['title'],
+                'body' => \Illuminate\Support\Str::limit($ann['content'] ?? 'New Announcement', 120),
+                'type' => 'announcement',
+                'is_read' => $isRead,
+                'created_at' => \Carbon\Carbon::parse($ann['created_at'])->format('Y-m-d H:i:s'),
+            ];
+        });
+
+        // 3. Merge and sort
+        $all = $systemNotifs->concat($announcementNotifs)
+            ->sortByDesc('created_at')
+            ->values()
+            ->all();
+
+        return response()->json(['success' => true, 'data' => $all]);
+    }
+
+    public function markNotificationsRead(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // 1. Mark system notifications as read
+        \DB::table('notifications')
+            ->where('user_id', $user->id)
+            ->where('is_read', false)
+            ->update(['is_read' => true, 'read_at' => now()]);
+
+        // 2. Update announcement view timestamp
+        \App\Models\NotificationView::updateOrCreate(
+            ['user_id' => $user->id],
+            ['last_viewed_at' => now()]
+        );
+
+        return response()->json(['success' => true, 'message' => 'Notifications marked as read']);
     }
 
     public function announcements(Request $request): JsonResponse
@@ -278,7 +361,7 @@ class MobileApiController extends Controller
         } catch (\Exception $e) {
             Log::error('Error fetching applications', [
                 'user_id' => $request->user()->id,
-                'error'   => $e->getMessage(),
+                'error' => $e->getMessage(),
             ]);
             return response()->json(['success' => false, 'message' => 'Failed to fetch applications'], 500);
         }
@@ -288,25 +371,25 @@ class MobileApiController extends Controller
             if ($app->fileMonitoring) {
                 foreach ($app->fileMonitoring->fileUploads as $fu) {
                     $files[] = [
-                        'id'               => $fu->id,
+                        'id' => $fu->id,
                         'requirement_name' => $fu->requirement_name,
-                        'file_name'        => $fu->file_name,
-                        'status'           => $fu->status ?? 'pending',
-                        'admin_remarks'    => $fu->admin_remarks,
+                        'file_name' => $fu->file_name,
+                        'status' => $fu->status ?? 'pending',
+                        'admin_remarks' => $fu->admin_remarks,
                     ];
                 }
             }
 
             return [
-                'id'               => $app->id,
-                'program_type'     => $app->program_type,
+                'id' => $app->id,
+                'program_type' => $app->program_type,
                 // Keep API stable even if some legacy DB rows have NULL status.
-                'status'           => $app->status ?? Application::STATUS_PENDING,
-                'barangay'         => $app->barangay ?? '',
-                'municipality'     => $app->municipality ?? '',
-                'created_at'       => $app->application_date ? $app->application_date->format('F d, Y') : null,
+                'status' => $app->status ?? Application::STATUS_PENDING,
+                'barangay' => $app->barangay ?? '',
+                'municipality' => $app->municipality ?? '',
+                'created_at' => $app->application_date ? $app->application_date->format('F d, Y') : null,
                 'rejection_reason' => $app->admin_remarks,
-                'files'            => $files,
+                'files' => $files,
             ];
         });
 
@@ -338,7 +421,7 @@ class MobileApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -368,7 +451,7 @@ class MobileApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => $e->getMessage(),
-                'code'    => 'APPLICATION_BLOCKED',
+                'code' => 'APPLICATION_BLOCKED',
             ], 409);
         } catch (\Exception $e) {
             return response()->json([
@@ -384,7 +467,7 @@ class MobileApiController extends Controller
 
         $fileUpload = FileUpload::with(['fileMonitoring.application'])
             ->where('id', $fileId)
-            ->whereHas('fileMonitoring', fn ($q) => $q->where('user_id', $user->id))
+            ->whereHas('fileMonitoring', fn($q) => $q->where('user_id', $user->id))
             ->firstOrFail();
 
         if ($fileUpload->status !== 'rejected') {
@@ -427,16 +510,16 @@ class MobileApiController extends Controller
             'success' => true,
             'message' => 'User profile retrieved.',
             'data' => [
-                'id'            => $user->id,
-                'full_name'     => $user->full_name,
-                'email'         => $user->email,
-                'username'      => $user->username,
-                'role'          => $user->role,
-                'municipality'  => $user->municipality,
-                'barangay'      => $user->barangay,
+                'id' => $user->id,
+                'full_name' => $user->full_name,
+                'email' => $user->email,
+                'username' => $user->username,
+                'role' => $user->role,
+                'municipality' => $user->municipality,
+                'barangay' => $user->barangay,
                 'mobile_number' => $user->mobile_number,
-                'birthdate'     => $user->birthdate,
-                'age'           => $user->age,
+                'birthdate' => $user->birthdate,
+                'age' => $user->age,
             ],
         ]);
     }
@@ -456,13 +539,13 @@ class MobileApiController extends Controller
         if ($application->fileMonitoring) {
             foreach ($application->fileMonitoring->fileUploads as $fu) {
                 $files[] = [
-                    'id'               => $fu->id,
+                    'id' => $fu->id,
                     'requirement_name' => $fu->requirement_name,
-                    'file_name'        => $fu->file_name,
-                    'file_url'         => $fu->file_path ? asset('storage/' . $fu->file_path) : null,
-                        'status'           => $fu->status ?? 'pending',
-                    'admin_remarks'    => $fu->admin_remarks,
-                    'uploaded_at'      => $fu->uploaded_at ? $fu->uploaded_at->format('F d, Y h:i A') : null,
+                    'file_name' => $fu->file_name,
+                    'file_url' => $fu->file_path ? asset('storage/' . $fu->file_path) : null,
+                    'status' => $fu->status ?? 'pending',
+                    'admin_remarks' => $fu->admin_remarks,
+                    'uploaded_at' => $fu->uploaded_at ? $fu->uploaded_at->format('F d, Y h:i A') : null,
                 ];
             }
         }
@@ -470,29 +553,29 @@ class MobileApiController extends Controller
         $statusMessage = match ($application->status) {
             Application::STATUS_APPROVED => 'Congratulations! Your application has been approved.',
             Application::STATUS_REJECTED => 'Your application has been rejected.',
-            Application::STATUS_PENDING  => 'Your application is being processed. Please wait for approval.',
-            default                      => 'Status unknown.',
+            Application::STATUS_PENDING => 'Your application is being processed. Please wait for approval.',
+            default => 'Status unknown.',
         };
 
         return response()->json([
             'success' => true,
             'message' => 'Application details retrieved.',
             'data' => [
-                'id'               => $application->id,
-                'program_type'     => $application->program_type,
-                'full_name'        => $application->full_name,
-                'age'              => $application->age,
-                'gender'           => $application->gender,
-                'contact_number'   => $application->contact_number,
-                'barangay'         => $application->barangay ?? '',
-                'municipality'     => $application->municipality ?? '',
-                    'status'           => $application->status ?? Application::STATUS_PENDING,
-                'status_message'   => $statusMessage,
+                'id' => $application->id,
+                'program_type' => $application->program_type,
+                'full_name' => $application->full_name,
+                'age' => $application->age,
+                'gender' => $application->gender,
+                'contact_number' => $application->contact_number,
+                'barangay' => $application->barangay ?? '',
+                'municipality' => $application->municipality ?? '',
+                'status' => $application->status ?? Application::STATUS_PENDING,
+                'status_message' => $statusMessage,
                 'rejection_reason' => $application->admin_remarks,
-                    'can_resubmit'     => ($application->status ?? Application::STATUS_PENDING) === Application::STATUS_REJECTED,
+                'can_resubmit' => ($application->status ?? Application::STATUS_PENDING) === Application::STATUS_REJECTED,
                 'application_date' => $application->application_date ? $application->application_date->format('F d, Y') : null,
-                'stage'            => $application->stage,
-                'files'            => $files,
+                'stage' => $application->stage,
+                'files' => $files,
             ],
         ]);
     }
@@ -522,7 +605,7 @@ class MobileApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Validation error',
-                'errors'  => $validator->errors(),
+                'errors' => $validator->errors(),
             ], 422);
         }
 
@@ -560,7 +643,7 @@ class MobileApiController extends Controller
     public function registerDeviceToken(Request $request): JsonResponse
     {
         $request->validate([
-            'token'       => 'required|string',
+            'token' => 'required|string',
             'device_type' => 'nullable|string|in:android,ios',
             'device_name' => 'nullable|string',
         ]);
@@ -568,12 +651,12 @@ class MobileApiController extends Controller
         \DB::table('device_tokens')->updateOrInsert(
             ['user_id' => $request->user()->id, 'token' => $request->token],
             [
-                'device_type'  => $request->device_type,
-                'device_name'  => $request->device_name,
-                'is_active'    => true,
+                'device_type' => $request->device_type,
+                'device_name' => $request->device_name,
+                'is_active' => true,
                 'last_used_at' => now(),
-                'updated_at'   => now(),
-                'created_at'   => now(),
+                'updated_at' => now(),
+                'created_at' => now(),
             ]
         );
 

@@ -39,6 +39,10 @@ Route::middleware('auth:sanctum')->group(function () {
     // Dashboard & announcements
     Route::get('/dashboard', [MobileApiController::class, 'dashboard']);
     Route::get('/announcements', [MobileApiController::class, 'announcements']);
+    
+    // Notifications
+    Route::get('/notifications', [MobileApiController::class, 'notifications']);
+    Route::post('/notifications/read', [MobileApiController::class, 'markNotificationsRead']);
 
     // Applications CRUD
     Route::get('/applications', [MobileApiController::class, 'applications']);
