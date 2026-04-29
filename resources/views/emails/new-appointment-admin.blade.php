@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Solo Parent Appointment</title>
+    <title>New Appointment – MSWDO</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { font-family: 'Segoe UI', Arial, sans-serif; background: #f0f4ff; color: #1e293b; }
@@ -29,8 +29,16 @@
 </head>
 <body>
 <div class="wrapper">
+@php
+$programLabel = match($appointment->program_type ?? 'Solo_Parent') {
+    'AICS_Medical' => 'AICS Medical Assistance',
+    'AICS_Burial'  => 'AICS Burial Assistance',
+    'Solo_Parent'  => 'Solo Parent ID',
+    default        => 'MSWDO Assistance',
+};
+@endphp
     <div class="header">
-        <h1>📋 New Solo Parent Appointment</h1>
+        <h1>📋 New {{ $programLabel }} Appointment</h1>
         <p>Municipal Social Welfare and Development Office</p>
     </div>
 
@@ -39,7 +47,7 @@
     <div class="body">
         <p class="greeting">Hello, Admin!</p>
         <p class="intro">
-            A new <strong>Solo Parent ID</strong> appointment has been booked in your municipality and is now waiting for your review. Please confirm or reject it at your earliest convenience.
+            A new <strong>{{ $programLabel }}</strong> appointment has been booked in your municipality and is now waiting for your review. Please confirm or reject it at your earliest convenience.
         </p>
 
         <div class="detail-box">
@@ -55,6 +63,10 @@
             <div class="detail-row">
                 <span class="detail-label">Municipality</span>
                 <span class="detail-value">{{ $appointment->municipality }}</span>
+            </div>
+            <div class="detail-row">
+                <span class="detail-label">Program</span>
+                <span class="detail-value">{{ $programLabel }}</span>
             </div>
         </div>
 

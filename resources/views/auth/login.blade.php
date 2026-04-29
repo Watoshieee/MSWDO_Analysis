@@ -1,9 +1,9 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login – MSWDO Analysis</title>
+    <title>Login � MSWDO Analysis</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -38,7 +38,7 @@
             pointer-events: none;
         }
 
-        /* ── CARD ── */
+        /* -- CARD -- */
         .login-wrapper {
             width: 100%;
             max-width: 920px;
@@ -49,7 +49,7 @@
             position: relative; z-index: 1;
         }
 
-        /* ── LEFT SIDE – Branding Panel ── */
+        /* -- LEFT SIDE � Branding Panel -- */
         .brand-panel {
             flex: 1;
             background: linear-gradient(160deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%);
@@ -107,7 +107,7 @@
         }
         .brand-back:hover { color: #FDB913; }
 
-        /* ── RIGHT SIDE – Form Panel ── */
+        /* -- RIGHT SIDE � Form Panel -- */
         .form-panel {
             flex: 1;
             background: white;
@@ -223,7 +223,7 @@
 
 <div class="login-wrapper">
 
-    <!-- ── LEFT: BRANDING ── -->
+    <!-- -- LEFT: BRANDING -- -->
     <div class="brand-panel">
         <div class="brand-logo">
             <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD Logo" style="width:64px;height:64px;object-fit:contain;margin-bottom:4px;">
@@ -237,22 +237,16 @@
         <div class="brand-divider"></div>
         <p>
             Access population data, demographic insights, and program reports for
-            Magdalena, Liliw, and Majayjay — all in one place.
+            Magdalena, Liliw, and Majayjay � all in one place.
         </p>
 
-        <ul class="brand-features">
-            <li><i class="bi bi-bar-chart-fill"></i> Comparative Analysis Charts</li>
-            <li><i class="bi bi-people-fill"></i> Demographic Data & Maps</li>
-            <li><i class="bi bi-shield-check-fill"></i> Secure Staff Access</li>
-            <li><i class="bi bi-heart-fill"></i> MSWDO Program Overviews</li>
-        </ul>
 
         <a href="/analysis" class="brand-back">
             <i class="bi bi-arrow-left"></i> Back to Programs
         </a>
     </div>
 
-    <!-- ── RIGHT: FORM ── -->
+    <!-- -- RIGHT: FORM -- -->
     <div class="form-panel">
         <h3>Sign In</h3>
         <p class="form-sub">Enter your credentials to access the dashboard.</p>

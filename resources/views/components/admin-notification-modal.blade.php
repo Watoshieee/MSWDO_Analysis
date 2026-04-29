@@ -24,6 +24,17 @@
         'Solo_Parent'            => 'Solo Parent',
         'solo_parent'            => 'Solo Parent',
     ];
+
+    $fmtAdminTs = function ($ts) {
+        if (!$ts) return null;
+        try {
+            $c = $ts instanceof \Carbon\CarbonInterface ? $ts : \Carbon\Carbon::parse($ts);
+            $c = $c->copy()->setTimezone('Asia/Manila');
+            return $c;
+        } catch (\Exception $e) {
+            return null;
+        }
+    };
 @endphp
 
 <div class="modal fade" id="adminNotifModal" tabindex="-1" aria-labelledby="adminNotifModalLabel" aria-hidden="true">
@@ -47,9 +58,7 @@
                     @foreach($adminNewApplications as $app)
                         @php
                             $label  = $programLabels[$app->program_type] ?? str_replace('_', ' ', $app->program_type);
-                            $appDate = is_string($app->application_date)
-                                ? \Carbon\Carbon::parse($app->application_date)
-                                : $app->application_date;
+                            $appDate = $fmtAdminTs($app->created_at ?? $app->application_date);
                         @endphp
                         <div class="admin-notif-card" style="background:white;border-radius:14px;padding:18px 20px;margin-bottom:12px;border:1px solid #e2e8f0;border-left:4px solid var(--secondary-yellow,#FDB913);box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:all 0.2s;">
                             <div style="display:flex;gap:14px;align-items:flex-start;">
@@ -67,6 +76,7 @@
                                             </h6>
                                             <p style="font-size:0.74rem;color:#94a3b8;margin:0;">
                                                 {{ $appDate ? $appDate->diffForHumans() : 'Recently' }}
+                                                @if($appDate) <span style="color:#cbd5e1;">•</span> {{ $appDate->format('M d, Y h:i A') }} @endif
                                             </p>
                                         </div>
                                         <span style="padding:3px 10px;border-radius:12px;font-size:0.68rem;font-weight:800;text-transform:uppercase;letter-spacing:0.05em;white-space:nowrap;background:#FFF8E1;color:#856404;flex-shrink:0;">
@@ -82,7 +92,7 @@
                                         @if($app->barangay)
                                         <p style="margin:0;"><strong style="color:#1e293b;">Barangay:</strong> {{ $app->barangay }}</p>
                                         @endif
-                                        <p style="margin:0;"><strong style="color:#1e293b;">Applied:</strong> {{ $appDate ? $appDate->format('M d, Y') : 'N/A' }}</p>
+                                        <p style="margin:0;"><strong style="color:#1e293b;">Applied:</strong> {{ $appDate ? $appDate->format('M d, Y h:i A') : 'N/A' }}</p>
                                     </div>
 
                                     <a href="{{ route('admin.view-requirement', $app->id) }}"
@@ -117,8 +127,15 @@
                                     </div>
                                     <p style="margin:0;font-weight:700;color:#1e293b;font-size:0.9rem;">{{ $appt->user?->full_name ?? 'Unknown' }}</p>
                                     <p style="margin:0;font-size:0.8rem;color:#64748b;">{{ $appt->user?->email ?? '' }}</p>
+                                    @php
+                                        $apptCreated = $fmtAdminTs($appt->created_at);
+                                    @endphp
                                     <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">
-                                        📅 {{ $appt->appointment_date->format('F d, Y') }} at {{ \Carbon\Carbon::createFromFormat('H:i', $appt->appointment_time)->format('h:i A') }}
+                                        {{ $apptCreated ? $apptCreated->diffForHumans() : 'Recently' }}
+                                        @if($apptCreated) <span style="color:#cbd5e1;">•</span> {{ $apptCreated->format('M d, Y h:i A') }} @endif
+                                    </p>
+                                    <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">
+                                        📅 {{ \Carbon\Carbon::parse($appt->appointment_date)->setTimezone('Asia/Manila')->format('F d, Y') }} at {{ \Carbon\Carbon::createFromFormat('H:i', $appt->appointment_time)->setTimezone('Asia/Manila')->format('h:i A') }}
                                         &nbsp;|&nbsp; {{ $appt->interview_type === 'online' ? 'Online' : 'Face-to-Face' }}
                                     </p>
                                 </div>
@@ -146,6 +163,13 @@
                                     </div>
                                     <p style="margin:0;font-weight:700;color:#1e293b;font-size:.9rem;">{{ $fm->application?->full_name ?? 'Unknown' }}</p>
                                     <p style="margin:0;font-size:.8rem;color:#64748b;">{{ $fm->application?->user?->email ?? '' }}</p>
+                                    @php
+                                        $latestUploadAt = $fmtAdminTs($fm->fileUploads->whereNotNull('file_path')->max('uploaded_at'));
+                                    @endphp
+                                    <p style="margin:2px 0 0;font-size:.8rem;color:#64748b;">
+                                        {{ $latestUploadAt ? $latestUploadAt->diffForHumans() : 'Recently' }}
+                                        @if($latestUploadAt) <span style="color:#cbd5e1;">•</span> {{ $latestUploadAt->format('M d, Y h:i A') }} @endif
+                                    </p>
                                     <p style="margin:2px 0 0;font-size:.8rem;color:#64748b;">
                                         &#128196; {{ $fm->fileUploads->whereNotNull('file_path')->count() }} file(s) uploaded
                                         &nbsp;|&nbsp; {{ $fm->municipality }}

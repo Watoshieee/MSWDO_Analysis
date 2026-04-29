@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detailed Analysis – {{ $municipality->name }} – MSWDO</title>
+    <title>Detailed Analysis ï¿½ {{ $municipality->name }} ï¿½ MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -32,7 +32,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             .navbar-toggler { order: 0; }
             .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.93rem; }
+        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.85rem; white-space: nowrap; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
         .user-info { color: white; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1); padding: 9px 22px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; }
@@ -47,7 +47,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .hero-badge { display: inline-block; background: rgba(253,185,19,0.18); color: var(--secondary-yellow); border: 1px solid rgba(253,185,19,0.35); border-radius: 30px; padding: 4px 16px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
         .hero-banner h1 { font-size: 2rem; font-weight: 900; margin-bottom: 4px; }
         .hero-divider { width: 44px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; margin: 10px 0 8px; }
-        .hero-banner p { opacity: 0.82; font-size: 0.93rem; margin: 0; }
+        .hero-banner p { opacity: 0.82; font-size: 0.85rem; margin: 0; }
         .muni-badge-lg { background: rgba(253,185,19,0.18); border: 1px solid rgba(253,185,19,0.35); color: var(--secondary-yellow); border-radius: 12px; padding: 14px 24px; text-align: center; }
         .muni-badge-lg .muni-name { font-size: 1.35rem; font-weight: 900; display: block; }
         .muni-badge-lg .muni-sub  { font-size: 0.72rem; opacity: 0.75; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
@@ -138,6 +138,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.requirements*') ? 'active' : '' }}" href="{{ route('admin.requirements') }}">Applications</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
                     <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.data.*') ? 'active' : '' }}" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
@@ -319,63 +320,78 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             </div>
         </div>
 
-        <!-- ROW 3: Barangay Chart + Table -->
+        <!-- ROW 3: Population & Households + Male vs Female -->
         <div class="row g-4 mb-0 mt-0">
 
-            <!-- Barangay Bar Chart -->
-            <div class="col-md-7">
+            <!-- Population & Households -->
+            <div class="col-md-6">
                 <div class="panel-card">
                     <div class="panel-header">
                         <div>
-                            <div class="panel-header-title">Barangay-level Statistics</div>
-                            <div class="panel-header-sub">Applications per barangay (top 15)</div>
+                            <div class="panel-header-title">Population & Households</div>
+                            <div class="panel-header-sub">{{ $municipality->name }} demographics</div>
                         </div>
-                        <span class="panel-header-badge">{{ count($barangayStats) }} barangays</span>
                     </div>
                     <div class="panel-body">
-                        @if(count($barangayStats) > 0)
-                        <div class="chart-wrap" style="height:360px;">
-                            <canvas id="barangayChart"></canvas>
+                        <div class="chart-wrap" style="height:280px;">
+                            <canvas id="popHouseholdsChart"></canvas>
                         </div>
-                        @else
-                        <div class="no-data">No barangay data available.</div>
-                        @endif
                     </div>
                 </div>
             </div>
 
-            <!-- Barangay Table -->
-            <div class="col-md-5">
-                <div class="panel-card" style="height:100%;">
+            <!-- Male vs Female -->
+            <div class="col-md-6">
+                <div class="panel-card">
                     <div class="panel-header">
                         <div>
-                            <div class="panel-header-title">Barangay Data Table</div>
-                            <div class="panel-header-sub">Population, households &amp; applications</div>
+                            <div class="panel-header-title">Male vs Female</div>
+                            <div class="panel-header-sub">Gender distribution</div>
                         </div>
                     </div>
-                    <div class="table-scroll">
-                        <table class="bgy-table">
-                            <thead>
-                                <tr>
-                                    <th>Barangay</th>
-                                    <th>Total</th>
-                                    <th>Pending</th>
-                                    <th>Approved</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($barangayStats as $name => $stats)
-                                <tr>
-                                    <td><strong>{{ $name }}</strong><br><span style="font-size:0.73rem;color:#94a3b8;">Pop: {{ number_format($stats['population']) }}</span></td>
-                                    <td><strong>{{ $stats['total'] }}</strong></td>
-                                    <td><span class="badge-sm badge-pending">{{ $stats['pending'] }}</span></td>
-                                    <td><span class="badge-sm badge-approved">{{ $stats['approved'] }}</span></td>
-                                </tr>
-                                @empty
-                                <tr><td colspan="4" class="no-data">No data available.</td></tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                    <div class="panel-body">
+                        <div class="chart-wrap" style="height:280px;">
+                            <canvas id="genderChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- ROW 4: Age Group Analysis + Program Beneficiaries -->
+        <div class="row g-4 mb-0 mt-0">
+
+            <!-- Age Group Analysis -->
+            <div class="col-md-6">
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div>
+                            <div class="panel-header-title">Age Group Analysis</div>
+                            <div class="panel-header-sub">Population by age range</div>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="chart-wrap" style="height:280px;">
+                            <canvas id="ageGroupChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Program Beneficiaries Analysis -->
+            <div class="col-md-6">
+                <div class="panel-card">
+                    <div class="panel-header">
+                        <div>
+                            <div class="panel-header-title">Program Beneficiaries Analysis</div>
+                            <div class="panel-header-sub">Beneficiaries by program (2024)</div>
+                        </div>
+                    </div>
+                    <div class="panel-body">
+                        <div class="chart-wrap" style="height:280px;">
+                            <canvas id="beneficiariesChart"></canvas>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -497,73 +513,169 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
         });
 
-        // -- 3. BARANGAY BAR CHART --
-        @php
-            $bgyDisplay = collect($barangayStats)
-                ->sortByDesc(fn($s) => $s['total'])
-                ->take(15);
-        @endphp
-
-        @if(count($barangayStats) > 0)
-        const bgyLabels   = {!! json_encode($bgyDisplay->keys()->values()) !!};
-        const bgyTotal    = {!! json_encode($bgyDisplay->pluck('total')->values()) !!};
-        const bgyPending  = {!! json_encode($bgyDisplay->pluck('pending')->values()) !!};
-        const bgyApproved = {!! json_encode($bgyDisplay->pluck('approved')->values()) !!};
-
-        new Chart(document.getElementById('barangayChart'), {
+        // -- 3. POPULATION & HOUSEHOLDS CHART --
+        new Chart(document.getElementById('popHouseholdsChart'), {
             type: 'bar',
             data: {
-                labels: bgyLabels,
-                datasets: [
-                    {
-                        label: 'Approved',
-                        data: bgyApproved,
-                        backgroundColor: 'rgba(44,62,143,0.85)',
-                        borderRadius: { topLeft: 5, topRight: 5 },
-                        borderSkipped: false,
-                        barPercentage: 0.6,
-                    },
-                    {
-                        label: 'Pending',
-                        data: bgyPending,
-                        backgroundColor: 'rgba(253,185,19,0.85)',
-                        borderRadius: { topLeft: 5, topRight: 5 },
-                        borderSkipped: false,
-                        barPercentage: 0.6,
-                    }
-                ]
+                labels: ['Population', 'Households'],
+                datasets: [{
+                    label: '{{ $municipality->name }}',
+                    data: [{{ $totalPop }}, {{ $totalHouseholds }}],
+                    backgroundColor: ['rgba(44,62,143,0.85)', 'rgba(253,185,19,0.85)'],
+                    borderRadius: { topLeft: 6, topRight: 6 },
+                    borderSkipped: false,
+                    barPercentage: 0.6,
+                }]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                indexAxis: 'y',   // Horizontal bar — cleaner for many barangay names
                 plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { weight: '600' } }
-                    },
+                    legend: { display: false },
                     tooltip: {
                         backgroundColor: '#1E293B',
                         padding: 12,
-                        cornerRadius: 10
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: (ctx) => ` ${ctx.label}: ${ctx.parsed.y.toLocaleString()}`
+                        }
                     }
                 },
                 scales: {
-                    x: {
+                    y: {
                         beginAtZero: true,
-                        stacked: true,
-                        ticks: { stepSize: 1, font: { size: 11 } },
+                        ticks: { callback: v => v.toLocaleString(), font: { size: 11 } },
                         grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
                     },
-                    y: {
-                        stacked: true,
+                    x: {
                         grid: { display: false },
-                        ticks: { font: { size: 10 } }
+                        ticks: { font: { size: 12, weight: '600' } }
                     }
                 }
             }
         });
-        @endif
+
+        // -- 4. GENDER DISTRIBUTION CHART --
+        new Chart(document.getElementById('genderChart'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Male', 'Female'],
+                datasets: [{
+                    data: [{{ $genderData['male'] }}, {{ $genderData['female'] }}],
+                    backgroundColor: ['#2C3E8F', '#FDB913'],
+                    hoverBackgroundColor: ['#1A2A5C', '#E5A500'],
+                    borderWidth: 0,
+                    hoverOffset: 8
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '65%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { weight: '600', size: 12 } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1E293B',
+                        padding: 10,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: (ctx) => ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${Math.round((ctx.parsed / ({{ $genderData['male'] }} + {{ $genderData['female'] }})) * 100)}%)`
+                        }
+                    }
+                }
+            }
+        });
+
+        // -- 5. AGE GROUP ANALYSIS CHART --
+        new Chart(document.getElementById('ageGroupChart'), {
+            type: 'bar',
+            data: {
+                labels: ['0-19 years', '20-59 years', '60+ years'],
+                datasets: [{
+                    label: 'Population',
+                    data: [{{ $ageGroupData['0-19'] }}, {{ $ageGroupData['20-59'] }}, {{ $ageGroupData['60+'] }}],
+                    backgroundColor: ['rgba(44,62,143,0.85)', 'rgba(253,185,19,0.85)', 'rgba(40,167,69,0.85)'],
+                    borderRadius: { topLeft: 6, topRight: 6 },
+                    borderSkipped: false,
+                    barPercentage: 0.6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1E293B',
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: (ctx) => ` ${ctx.label}: ${ctx.parsed.y.toLocaleString()}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => v.toLocaleString(), font: { size: 11 } },
+                        grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+
+        // -- 6. PROGRAM BENEFICIARIES CHART --
+        const beneficiariesLabels = {!! json_encode(array_keys($programBeneficiaries)) !!};
+        const beneficiariesData = {!! json_encode(array_values($programBeneficiaries)) !!};
+        const beneficiariesColors = ['#2C3E8F', '#FDB913', '#28a745', '#C41E24', '#6366f1'];
+
+        new Chart(document.getElementById('beneficiariesChart'), {
+            type: 'bar',
+            data: {
+                labels: beneficiariesLabels,
+                datasets: [{
+                    label: 'Beneficiaries',
+                    data: beneficiariesData,
+                    backgroundColor: beneficiariesColors,
+                    borderRadius: { topLeft: 6, topRight: 6 },
+                    borderSkipped: false,
+                    barPercentage: 0.6,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1E293B',
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: (ctx) => ` ${ctx.label}: ${ctx.parsed.y.toLocaleString()} beneficiaries`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: { callback: v => v.toLocaleString(), font: { size: 11 } },
+                        grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
     </script>
 </body>
 </html>

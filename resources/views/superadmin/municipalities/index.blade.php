@@ -566,11 +566,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
     <div class="main-content">
         <div class="container py-5">
-            @if(session('success'))
-                <div class="alert alert-success mb-4">{{ session('success') }}</div>
-            @endif
-            @if(session('error'))
-                <div class="alert alert-danger mb-4">{{ session('error') }}</div>
+            @php
+                $topNotice = session('success') ?: session('error');
+            @endphp
+            @if($topNotice)
+                <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                    {{ $topNotice }}
+                </div>
             @endif
 
             <div class="d-flex justify-content-between align-items-center mb-4">

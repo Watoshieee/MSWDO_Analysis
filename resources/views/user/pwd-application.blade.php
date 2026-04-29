@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title data-en="PWD Application Guide – MSWDO" data-tl="Gabay sa PWD Application – MSWDO">PWD Application Guide – MSWDO</title>
+    <title data-en="PWD Application Guide - MSWDO" data-tl="Gabay sa PWD Application - MSWDO">PWD Application Guide - MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -21,7 +21,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         body{background:var(--bg-light);color:var(--text-dark);display:flex;flex-direction:column;min-height:100vh;margin:0;}
         a{text-decoration:none;}
 
-        /* -- TOP BAR (not a full nav — just a slim identity bar) -- */
+        /* -- TOP BAR (not a full nav  just a slim identity bar) -- */
         .top-bar{background:var(--primary-gradient);padding:14px 0;box-shadow:0 4px 20px rgba(44,62,143,.2);}
         .top-bar-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
         .brand{display:flex;align-items:center;gap:12px;color:white;font-weight:800;font-size:1.45rem;}
@@ -102,7 +102,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 </head>
 <body>
 
-    <!-- TOP BAR (not a navbar — just brand + back button) -->
+    <!-- TOP BAR (not a navbar  just brand + back button) -->
     <div class="top-bar">
         <div class="container">
             <div class="top-bar-inner">
@@ -130,8 +130,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <div class="hero-badge" data-en="PWD Services" data-tl="Mga Serbisyo para sa PWD">PWD Services</div>
                 <h1 data-en="PWD Application Guide" data-tl="Gabay sa PWD Application">PWD Application Guide</h1>
                 <div class="hero-divider"></div>
-                <p class="hero-sub" data-en="A complete, step-by-step guide to applying for a PWD ID and verifying your membership — all in one place, without visiting external websites." data-tl="Isang kumpletong hakbang-hakbang na gabay sa pag-apply ng PWD ID at pag-verify ng iyong pagkakasapi — lahat sa isang lugar, nang hindi kailangang bumisita sa mga external na website.">
-                    A complete, step-by-step guide to applying for a PWD ID and verifying your membership — all in one place, without visiting external websites.
+                <p class="hero-sub" data-en="A complete, step-by-step guide to applying for a PWD ID and verifying your membership - all in one place, without visiting external websites." data-tl="Isang kumpletong hakbang-hakbang na gabay sa pag-apply ng PWD ID at pag-verify ng iyong pagkakasapi  lahat sa isang lugar, nang hindi kailangang bumisita sa mga external na website.">
+                    A complete, step-by-step guide to applying for a PWD ID and verifying your membership - all in one place, without visiting external websites.
                 </p>
             </div>
         </div>
@@ -140,6 +140,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <!-- MAIN CONTENT -->
     <div class="flex-grow-1 py-5">
         <div class="container">
+            @if(!empty($isPwdBeneficiary))
+            <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                PWD beneficiary na ang account na ito. Re-application is disabled.
+            </div>
+            @endif
             <div class="row g-4">
 
                 <!-- --- LEFT: GUIDES --- -->
@@ -147,8 +152,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                     {{-- APPLICATION GUIDE --}}
                     <div class="section-card">
-                        <div class="section-header">
-                            <div class="sec-icon">??</div>
+                            <div class="section-header">
+                            <div class="sec-icon">ID</div>
                             <div>
                                 <h4 data-en="How to Avail a PWD ID" data-tl="Paano Makuha ang PWD ID">How to Avail a PWD ID</h4>
                                 <p data-en="Follow these 5 steps to complete your application" data-tl="Sundin ang 5 hakbang na ito para makumpleto ang iyong aplikasyon">Follow these 5 steps to complete your application</p>
@@ -163,7 +168,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     <div class="step-desc" data-en="Go to the DOH PWD portal to access all official forms and information." data-tl="Pumunta sa DOH PWD portal para ma-access ang lahat ng opisyal na forms at impormasyon.">
                                         Go to the DOH PWD portal to access all official forms and information.
                                     </div>
-                                    <a href="https://pwd.doh.gov.ph" target="_blank" class="step-link mt-2 d-block">?? https://pwd.doh.gov.ph</a>
+                                    <a href="https://pwd.doh.gov.ph" target="_blank" class="step-link mt-2 d-block">Link: https://pwd.doh.gov.ph</a>
                                 </div>
                             </div>
                             <div class="connector"></div>
@@ -187,7 +192,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         Complete all required fields in the form, then upload the completed form along with your Certificate of Disability to the official website.
                                     </div>
                                     <div class="step-note">
-                                        ?? <span data-en="You may also personally submit your documents at the MSWDO Office (Municipal Hall, Ground Floor) for faster processing." data-tl="Maaari ka ring personal na isumite ang iyong mga dokumento sa opisina ng MSWDO (Municipal Hall, Ground Floor) para mas mabilis na maproseso.">
+                                        <strong>Note:</strong> <span data-en="You may also personally submit your documents at the MSWDO Office (Municipal Hall, Ground Floor) for faster processing." data-tl="Maaari ka ring personal na isumite ang iyong mga dokumento sa opisina ng MSWDO (Municipal Hall, Ground Floor) para mas mabilis na maproseso.">
                                             You may also personally submit your documents at the MSWDO Office (Municipal Hall, Ground Floor) for faster processing.
                                         </span>
                                     </div>
@@ -198,9 +203,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <div class="step-item">
                                 <div class="step-num">4</div>
                                 <div class="step-content">
-                                    <div class="step-title" data-en="Submit Two (2) 1×1 ID Pictures to the MSWDO" data-tl="Isumite ang Dalawang (2) 1×1 ID na Larawan sa MSWDO">Submit Two (2) 1×1 ID Pictures to the MSWDO</div>
-                                    <div class="step-desc" data-en="Once your application is approved online, bring two (2) recent 1×1 ID pictures to the MSWDO office." data-tl="Kapag naaprubahan na ang iyong aplikasyon online, magdala ng dalawang (2) bagong 1×1 ID na larawan sa opisina ng MSWDO.">
-                                        Once your application is approved online, bring two (2) recent 1×1 ID pictures to the MSWDO office.
+                                    <div class="step-title" data-en="Submit Two (2) 1x1 ID Pictures to the MSWDO" data-tl="Isumite ang Dalawang (2) 1x1 ID na Larawan sa MSWDO">Submit Two (2) 1x1 ID Pictures to the MSWDO</div>
+                                    <div class="step-desc" data-en="Once your application is approved online, bring two (2) recent 1x1 ID pictures to the MSWDO office." data-tl="Kapag naaprubahan na ang iyong aplikasyon online, magdala ng dalawang (2) bagong 1x1 ID na larawan sa opisina ng MSWDO.">
+                                        Once your application is approved online, bring two (2) recent 1x1 ID pictures to the MSWDO office.
                                     </div>
                                 </div>
                             </div>
@@ -222,7 +227,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     {{-- VERIFICATION GUIDE --}}
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">??</div>
+                            <div class="sec-icon">OK</div>
                             <div>
                                 <h4 data-en="How to Verify PWD Membership" data-tl="Paano Mag-verify ng PWD Membership">How to Verify PWD Membership</h4>
                                 <p data-en="Check your PWD registration status in 3 simple steps" data-tl="Suriin ang iyong katayuan ng PWD registration sa 3 simpleng hakbang">Check your PWD registration status in 3 simple steps</p>
@@ -237,7 +242,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     <div class="step-desc" data-en="Open the official PWD ID verification portal. You can use the button on this page to launch it directly." data-tl="Buksan ang opisyal na PWD ID verification portal. Maaari mong gamitin ang button sa pahinang ito para direktang buksan ito.">
                                         Open the official PWD ID verification portal. You can use the button on this page to launch it directly.
                                     </div>
-                                    <a href="https://pwd.doh.gov.ph/tbl_pwd_id_verificationlist.php" target="_blank" class="step-link mt-2 d-block">?? pwd.doh.gov.ph/tbl_pwd_id_verificationlist.php</a>
+                                    <a href="https://pwd.doh.gov.ph/tbl_pwd_id_verificationlist.php" target="_blank" class="step-link mt-2 d-block">Link: pwd.doh.gov.ph/tbl_pwd_id_verificationlist.php</a>
                                 </div>
                             </div>
                             <div class="connector"></div>
@@ -274,38 +279,25 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     {{-- Form Download --}}
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">??</div>
                             <div>
                                 <h4 data-en="Download Application Form" data-tl="I-download ang Application Form">Download Application Form</h4>
-                                <p data-en="Official PRPWD Form — issued by DOH, free of charge" data-tl="Opisyal na PRPWD Form — inilabas ng DOH, libre">Official PRPWD Form — issued by DOH, free of charge</p>
+                                <p data-en="Official PRPWD Form - issued by DOH, free of charge" data-tl="Opisyal na PRPWD Form - inilabas ng DOH, libre">Official PRPWD Form - issued by DOH, free of charge</p>
                             </div>
                         </div>
                         <div class="section-body">
-                            {{-- NEW: Fill Online CTA --}}
-                            <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);border-radius:16px;padding:20px 22px;margin-bottom:20px;display:flex;align-items:center;gap:16px;flex-wrap:wrap;">
-                                <div style="flex:1;min-width:180px;">
-                                    <div style="color:var(--secondary-yellow);font-weight:800;font-size:.97rem;margin-bottom:4px;" data-en="?? Fill Out Online (Recommended)" data-tl="?? Punan Online (Inirerekomenda)">?? Fill Out Online (Recommended)</div>
-                                    <div style="color:rgba(255,255,255,.8);font-size:.82rem;line-height:1.5;" data-en="Complete the official form right here — then print and/or submit online to MSWDO." data-tl="Kumpletuhin ang opisyal na form dito mismo — pagkatapos ay i-print at/o isumite online sa MSWDO.">Complete the official form right here — then print and/or submit online to MSWDO.</div>
-                                </div>
-                                <a href="{{ route('user.pwd-form') }}" style="background:var(--secondary-yellow);color:var(--primary-blue);border-radius:10px;padding:12px 24px;font-weight:800;font-size:.9rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;flex-shrink:0;transition:all .3s;"
-                                   onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 22px rgba(253,185,19,.5)'"
-                                   onmouseout="this.style.transform='';this.style.boxShadow=''">
-                                    ?? <span data-en="Open Fillable Form ?" data-tl="Buksan ang Form ?">Open Fillable Form ?</span>
-                                </a>
-                            </div>
                             <div class="info-card mb-4">
                                 <div class="ic-title" data-en="What you will download" data-tl="Ano ang iyong ma-download">What you will download</div>
-                                <div class="ic-body" data-en="The official Persons with Disability (PWD) ID application form (PRPWD form) — recognized by all LGUs in the Philippines. You may print and fill it by hand, or fill it digitally before printing." data-tl="Ang opisyal na Application Form para sa Persons with Disability (PWD) ID (PRPWD form) — kinikilala ng lahat ng LGU sa Pilipinas. Maaari mo itong i-print at punan ng kamay, o punan nang digital bago i-print.">
-                                    The official Persons with Disability (PWD) ID application form (PRPWD form) — recognized by all LGUs in the Philippines. You may fill it digitally or print by hand.
+                                <div class="ic-body" data-en="The official Persons with Disability (PWD) ID application form (PRPWD form) - recognized by all LGUs in the Philippines. You may print and fill it by hand, or fill it digitally before printing." data-tl="Ang opisyal na Application Form para sa Persons with Disability (PWD) ID (PRPWD form) - kinikilala ng lahat ng LGU sa Pilipinas. Maaari mo itong i-print at punan ng kamay, o punan nang digital bago i-print.">
+                                    The official Persons with Disability (PWD) ID application form (PRPWD form) - recognized by all LGUs in the Philippines. You may fill it digitally or print by hand.
                                 </div>
                             </div>
                             <a href="https://pwd.doh.gov.ph/downloads/PRPWD-APPLICATION_FORM.pdf"
                                target="_blank" class="btn-yellow w-100 mb-3">
-                                <span>??</span>
+                                <span>Download</span>
                                 <span data-en="Download PRPWD Form (PDF)" data-tl="I-download ang PRPWD Form (PDF)">Download PRPWD Form (PDF)</span>
                             </a>
                             <a href="https://pwd.doh.gov.ph" target="_blank" class="btn-blue w-100">
-                                <span>??</span>
+                                <span>Portal</span>
                                 <span data-en="Visit Official PWD Portal" data-tl="Bisitahin ang Opisyal na PWD Portal">Visit Official PWD Portal</span>
                             </a>
                         </div>
@@ -314,7 +306,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     {{-- Office Details --}}
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">??</div>
                             <div>
                                 <h4 data-en="MSWDO Office Details" data-tl="Detalye ng Opisina ng MSWDO">MSWDO Office Details</h4>
                                 <p data-en="Where to personally submit your requirements" data-tl="Saan personal na magsumite ng mga kinakailangan">Where to personally submit your requirements</p>
@@ -322,24 +313,24 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </div>
                         <div class="section-body">
                             <div class="info-card">
-                                <div class="ic-title">?? <span data-en="Location" data-tl="Lokasyon">Location</span></div>
+                                <div class="ic-title">Location: <span data-en="Location" data-tl="Lokasyon">Location</span></div>
                                 <div class="ic-body" data-en="Municipal Social Welfare and Development Office, Municipal Hall, Ground Floor" data-tl="Municipal Social Welfare and Development Office, Municipal Hall, Ground Floor">
                                     Municipal Social Welfare and Development Office, Municipal Hall, Ground Floor
                                 </div>
                             </div>
                             <div class="info-card">
-                                <div class="ic-title">?? <span data-en="Office Hours" data-tl="Oras ng Opisina">Office Hours</span></div>
-                                <div class="ic-body" data-en="Monday – Friday · 8:00 AM – 5:00 PM (Closed on Holidays)" data-tl="Lunes – Biyernes · 8:00 AM – 5:00 PM (Sarado sa mga Pista Opisyal)">
-                                    Monday – Friday · 8:00 AM – 5:00 PM <br><small style="color:#94a3b8;">(Closed on Holidays)</small>
+                                <div class="ic-title">Hours: <span data-en="Office Hours" data-tl="Oras ng Opisina">Office Hours</span></div>
+                                <div class="ic-body" data-en="Monday - Friday - 8:00 AM - 5:00 PM (Closed on Holidays)" data-tl="Lunes - Biyernes - 8:00 AM - 5:00 PM (Sarado sa mga Pista Opisyal)">
+                                    Monday - Friday - 8:00 AM - 5:00 PM <br><small style="color:#94a3b8;">(Closed on Holidays)</small>
                                 </div>
                             </div>
                             <div class="info-card yellow">
-                                <div class="ic-title">?? <span data-en="What to Bring" data-tl="Mga Dapat Dalhin">What to Bring</span></div>
+                                <div class="ic-title">Bring: <span data-en="What to Bring" data-tl="Mga Dapat Dalhin">What to Bring</span></div>
                                 <div class="ic-body">
                                     <ul style="margin:0;padding-left:18px;line-height:2;">
                                         <li data-en="Completed PRPWD Application Form" data-tl="Nakumpletong PRPWD Application Form">Completed PRPWD Application Form</li>
                                         <li data-en="Certificate of Disability (original + 1 photocopy)" data-tl="Sertipiko ng Kapansanan (orihinal + 1 photocopy)">Certificate of Disability (original + 1 photocopy)</li>
-                                        <li data-en="Two (2) recent 1×1 ID pictures" data-tl="Dalawang (2) bagong 1×1 ID na larawan">Two (2) recent 1×1 ID pictures</li>
+                                        <li data-en="Two (2) recent 1-1 ID pictures" data-tl="Dalawang (2) bagong 1-1 ID na larawan">Two (2) recent 1-1 ID pictures</li>
                                         <li data-en="Valid government-issued ID" data-tl="Valid na ID na inilabas ng gobyerno">Valid government-issued ID</li>
                                     </ul>
                                 </div>
@@ -351,16 +342,34 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             </div>
 
             {{-- -- UPLOAD REQUIREMENTS CARD (full-width, between columns and verifier) -- --}}
-            @if(session('upload_success'))
-            <div style="background:#d4edda;border-left:4px solid #28a745;border-radius:12px;padding:12px 18px;margin-bottom:16px;font-size:.88rem;color:#155724;font-weight:600;">
-                ? {{ session('upload_success') }}
+            @php
+                $topNotice = session('upload_success') ?: session('error');
+            @endphp
+            @if($topNotice)
+            <div style="position:fixed;top:{{ !empty($isPwdBeneficiary) ? '150px' : '84px' }};right:18px;z-index:1081;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                {{ $topNotice }}
             </div>
             @endif
 
+            @if(!empty($isPwdBeneficiary))
+            <div class="section-card" style="margin-bottom:28px;">
+                <div class="section-header">
+                    <div>
+                        <h4>PWD Beneficiary Status</h4>
+                        <p>Re-application is disabled for existing beneficiaries.</p>
+                    </div>
+                </div>
+                <div class="section-body">
+                    <div style="background:#EEF2FF;border-left:4px solid #2C3E8F;border-radius:10px;padding:12px 16px;font-size:.88rem;color:#1e293b;line-height:1.7;">
+                        Naka-register ka na bilang PWD beneficiary. Para sa updates o concerns, bumisita sa MSWDO office.
+                    </div>
+                </div>
+            </div>
+            @else
             <div class="section-card" style="margin-bottom:28px;">
                 <div class="section-header" style="flex-direction:column;align-items:flex-start;gap:4px;">
                     <div style="display:flex;align-items:center;gap:14px;width:100%;">
-                        <div class="sec-icon">??</div>
+
                         <div style="flex:1;">
                             <h4>Submit Your PWD Requirements Online</h4>
                             <p style="margin:0;opacity:.85;font-size:.85rem;">Upload digital copies of your documents. The admin will review each one.</p>
@@ -401,9 +410,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         $badge = match($fStatus) {
                             'approved'  => '<span style="background:#d4edda;color:#155724;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">? Approved</span>',
                             'rejected'  => '<span style="background:#f8d7da;color:#721c24;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">? Rejected</span>',
-                            'in_review' => '<span style="background:#d1ecf1;color:#0c5460;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">?? In Review</span>',
-                            'pending'   => '<span style="background:#FFF3D6;color:#856404;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">?? Pending</span>',
-                            default     => '<span style="background:#e9ecef;color:#6c757d;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">?? Not uploaded</span>',
+                            'in_review' => '<span style="background:#d1ecf1;color:#0c5460;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">In Review</span>',
+                            'pending'   => '<span style="background:#FFF3D6;color:#856404;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">? Pending</span>',
+                            default     => '<span style="background:#e9ecef;color:#6c757d;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">Not uploaded</span>',
                         };
                     @endphp
                     <div class="col-md-6">
@@ -436,7 +445,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             @if(!$uf || $fStatus === 'rejected')
                             <div class="pwd-upload-box">
                                 <div style="font-size:.75rem;font-weight:600;color:#856404;margin-bottom:6px;">
-                                    {{ $fStatus === 'rejected' ? '?? Choose replacement file' : '?? Choose file to upload' }}
+                                    {{ $fStatus === 'rejected' ? 'Choose replacement file' : 'Choose file to upload' }}
                                 </div>
                                 <input type="file"
                                        class="req-file form-control form-control-sm"
@@ -455,7 +464,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div id="inline-upload-wrap" style="display:none;margin-top:18px;background:#EEF2FF;border:1.5px solid #A0B6E8;border-radius:12px;padding:14px 18px;">
                         <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
                             <div style="flex:1;min-width:0;">
-                                <div id="inline-label" style="font-weight:800;color:#2C3E8F;font-size:.88rem;">?? 0 files selected</div>
+                                <div id="inline-label" style="font-weight:800;color:#2C3E8F;font-size:.88rem;">0 files selected</div>
                                 <div style="margin-top:6px;height:5px;background:#dbe4ff;border-radius:3px;overflow:hidden;">
                                     <div id="inline-bar" style="height:100%;width:0%;background:#2C3E8F;border-radius:3px;transition:width .3s;"></div>
                                 </div>
@@ -466,22 +475,23 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                            padding:9px 24px;font-weight:900;font-size:.85rem;
                                            cursor:pointer;white-space:nowrap;flex-shrink:0;
                                            box-shadow:0 3px 10px rgba(246,201,14,.35);">
-                                ?? Upload All Selected
+                                Upload All Selected
                             </button>
                         </div>
                     </div>
 
                     <div style="font-size:.8rem;color:#6c757d;margin-top:12px;">
-                        ?? Track all your uploaded documents in
+                        Track all your uploaded documents in
                         <a href="{{ route('user.my-requirements') }}" style="color:#2C3E8F;font-weight:600;">My Requirements ?</a>
                     </div>
                 </div>
             </div>
+            @endif
 
             {{-- PWD VERIFIER fullwidth CTA --}}
             <div class="section-card">
                 <div class="section-header">
-                    <div class="sec-icon">??</div>
+                    <div class="sec-icon">VER</div>
                     <div>
                         <h4 data-en="PWD Membership Verifier" data-tl="PWD Membership Verifier">PWD Membership Verifier</h4>
                         <p data-en="Open the official DOH verification portal to check any PWD registration status" data-tl="Buksan ang opisyal na DOH verification portal para suriin ang anumang katayuan ng PWD registration">Open the official DOH verification portal to check any PWD registration status</p>
@@ -491,13 +501,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="row g-4 align-items-center">
                         <div class="col-lg-5">
                             <div style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border-radius:16px;padding:28px;border:1px solid rgba(44,62,143,.1);">
-                                <div style="font-size:2.4rem;margin-bottom:14px;">??</div>
+                                <div style="font-size:2.4rem;margin-bottom:14px;">Verify</div>
                                 <h5 style="font-weight:800;color:var(--primary-blue);margin-bottom:10px;" data-en="Verify Your PWD ID" data-tl="I-verify ang Iyong PWD ID">Verify Your PWD ID</h5>
                                 <p style="font-size:.87rem;color:#475569;line-height:1.65;margin-bottom:20px;" data-en="Search using your 16-digit PWD ID number or your full registered name to confirm your membership status in the DOH database." data-tl="Maghanap gamit ang iyong 16-digit na PWD ID number o ang iyong buong nakarehistrong pangalan para kumpirmahin ang iyong katayuan ng pagkakasapi sa DOH database.">
                                     Search using your 16-digit PWD ID number or your full registered name to confirm your membership status in the DOH database.
                                 </p>
                                 <a href="https://pwd.doh.gov.ph/tbl_pwd_id_verificationlist.php" target="_blank" class="btn-yellow w-100">
-                                    <span>??</span>
+                                    <span>Open</span>
                                     <span data-en="Launch PWD Verifier ?" data-tl="Buksan ang PWD Verifier ?">Launch PWD Verifier ?</span>
                                 </a>
                             </div>
@@ -505,19 +515,19 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="col-lg-7">
                             <div class="d-flex flex-column gap-3">
                                 <div class="info-card">
-                                    <div class="ic-title" data-en="Search Option 1 — PWD ID Number" data-tl="Opsyon sa Paghahanap 1 — PWD ID Number">Search Option 1 — PWD ID Number</div>
+                                    <div class="ic-title" data-en="Search Option 1 - PWD ID Number" data-tl="Opsyon sa Paghahanap 1 - PWD ID Number">Search Option 1 - PWD ID Number</div>
                                     <div class="ic-body" data-en="Enter your complete 16-digit PWD ID number in the format: XXXX-XXXX-XXXX-XXXX." data-tl="Ilagay ang inyong kumpletong 16-digit na PWD ID number sa format: XXXX-XXXX-XXXX-XXXX.">
                                         Enter your complete 16-digit PWD ID number. Format: <strong>XXXX-XXXX-XXXX-XXXX</strong>
                                     </div>
                                 </div>
                                 <div class="info-card">
-                                    <div class="ic-title" data-en="Search Option 2 — Full Name" data-tl="Opsyon sa Paghahanap 2 — Buong Pangalan">Search Option 2 — Full Name</div>
+                                    <div class="ic-title" data-en="Search Option 2 - Full Name" data-tl="Opsyon sa Paghahanap 2 - Buong Pangalan">Search Option 2 - Full Name</div>
                                     <div class="ic-body" data-en="Enter the full registered name of the PWD member, exactly as written on the application form." data-tl="Ilagay ang buong nakarehistrong pangalan ng miyembro ng PWD, nang eksakto tulad ng nakasulat sa application form.">
                                         Enter the full registered name of the PWD member, exactly as written on the application form.
                                     </div>
                                 </div>
                                 <div class="info-card yellow">
-                                    <div class="ic-title">?? <span data-en="Privacy & Security" data-tl="Privacy at Seguridad">Privacy & Security</span></div>
+                                    <div class="ic-title"><span data-en="Privacy & Security" data-tl="Privacy at Seguridad">Privacy & Security</span></div>
                                     <div class="ic-body" data-en="The verification portal is hosted and managed directly by the Department of Health (DOH). MSWDO does not receive or store any information you enter on that portal." data-tl="Ang verification portal ay direktang ino-host at pinapamahalaan ng Department of Health (DOH). Hindi tinatanggap o iniimbak ng MSWDO ang anumang impormasyon na iyong inilalagay sa portal na iyon.">
                                         The verification portal is hosted and managed directly by the Department of Health (DOH). MSWDO does not receive or store any information you enter there.
                                     </div>
@@ -535,7 +545,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                            style="background:var(--secondary-yellow);color:var(--primary-blue);border-radius:12px;padding:13px 30px;font-weight:800;font-size:.92rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:all .3s;"
                            onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(253,185,19,.5)'"
                            onmouseout="this.style.transform='';this.style.boxShadow=''">
-                            ?? <span data-en="Open Verifier Now" data-tl="Buksan ang Verifier Ngayon">Open Verifier Now</span>
+                            Open <span data-en="Open Verifier Now" data-tl="Buksan ang Verifier Ngayon">Open Verifier Now</span>
                         </a>
                     </div>
                 </div>
@@ -578,15 +588,17 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         }
 
         /* -- UPLOAD ALL (inline panel) -- */
+        const _IS_PWD_BENEFICIARY = @json(!empty($isPwdBeneficiary));
         const _CSRF2       = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
         const _UPLOAD_URL2 = '{{ route("user.pwd-upload-requirement") }}';
 
         function onFileChosen() {
+            if (_IS_PWD_BENEFICIARY) return;
             const selected = [...document.querySelectorAll('.req-file')].filter(i => i.files[0]);
             const wrap = document.getElementById('inline-upload-wrap');
             const lbl  = document.getElementById('inline-label');
             if (selected.length > 0) {
-                lbl.textContent = `?? ${selected.length} file${selected.length > 1 ? 's' : ''} selected — ready to upload`;
+                lbl.textContent = `${selected.length} file${selected.length > 1 ? 's' : ''} selected - ready to upload`;
                 wrap.style.display = 'block';
             } else {
                 wrap.style.display = 'none';
@@ -594,6 +606,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         }
 
         async function uploadAll() {
+            if (_IS_PWD_BENEFICIARY) {
+                alert('Beneficiary ka na ng PWD program. Re-application is disabled.');
+                return;
+            }
             const inputs = [...document.querySelectorAll('.req-file')].filter(i => i.files[0]);
             if (!inputs.length) return;
 
@@ -606,7 +622,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
             let done = 0;
             for (const inp of inputs) {
-                status.textContent = `Uploading ${done + 1} of ${inputs.length}: "${inp.dataset.req}"…`;
+                status.textContent = `Uploading ${done + 1} of ${inputs.length}: "${inp.dataset.req}"-`;
                 const fd = new FormData();
                 fd.append('_token',           _CSRF2);
                 fd.append('requirement_name', inp.dataset.req);
@@ -622,7 +638,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     status.textContent = `? Failed: "${inp.dataset.req}"`;
                 }
             }
-            lbl.textContent = `? ${done} of ${inputs.length} uploaded — refreshing…`;
+            lbl.textContent = `? ${done} of ${inputs.length} uploaded - refreshing-`;
             setTimeout(() => location.reload(), 900);
         }
 

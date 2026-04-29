@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>AICS Burial Assistance - MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <style>
@@ -64,7 +65,20 @@
         <a class="brand" href="{{ route('user.dashboard') }}">
             <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD"> MSWDO
         </a>
-        <a href="{{ route('user.aics-category') }}" class="back-btn">&#8592; Back to AICS Categories</a>
+        <div style="display:flex;align-items:center;gap:12px;">
+            {{-- Notification Bell --}}
+            <button type="button" data-bs-toggle="modal" data-bs-target="#announcementsModal"
+                style="background:rgba(255,255,255,0.12);color:white;border:2px solid rgba(255,255,255,0.3);border-radius:50%;width:40px;height:40px;font-size:1.05rem;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;transition:all 0.3s;position:relative;"
+                title="Notifications">
+                <i class="bi bi-bell-fill"></i>
+                @if(isset($notificationCount) && $notificationCount > 0)
+                <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">
+                    {{ $notificationCount > 9 ? '9+' : $notificationCount }}
+                </span>
+                @endif
+            </button>
+            <a href="{{ route('user.aics-category') }}" class="back-btn">&#8592; Back to AICS Categories</a>
+        </div>
     </div>
 </div>
 
@@ -79,16 +93,124 @@
 
 <div class="container py-4" style="flex:1;">
 
-    @if(session('upload_success'))
-    <div style="background:#d4edda;border-left:4px solid #28a745;border-radius:12px;padding:12px 18px;margin-bottom:16px;font-size:.88rem;color:#155724;font-weight:600;">
-        &#10003; {{ session('upload_success') }}
+    @php
+        $topNotice = session('upload_success') ?: session('appt_success') ?: session('error') ?: session('appt_error');
+    @endphp
+    @if($topNotice)
+    <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+        {{ $topNotice }}
     </div>
     @endif
-    @if(session('error'))
-    <div style="background:#f8d7da;border-left:4px solid #dc3545;border-radius:12px;padding:12px 18px;margin-bottom:16px;font-size:.88rem;color:#721c24;font-weight:600;">
-        &#10007; {{ session('error') }}
+
+    {{-- ── ACTIVE APPOINTMENT CARD ── --}}
+    @if(isset($appointment) && $appointment && in_array($appointment->status, ['pending','confirmed']))
+    <div style="background:white;border-radius:20px;border:1px solid #c7d2fe;box-shadow:0 4px 20px rgba(44,62,143,.08);overflow:hidden;margin-bottom:24px;">
+        <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:18px 26px;display:flex;align-items:center;gap:14px;">
+            <div style="width:42px;height:42px;background:rgba(253,185,19,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📅</div>
+            <div style="flex:1;">
+                <div style="font-weight:800;font-size:1rem;">Your Appointment</div>
+                <div style="opacity:.8;font-size:.8rem;margin-top:2px;">AICS Burial Assistance</div>
+            </div>
+            {!! $appointment->status_badge !!}
+        </div>
+        <div style="padding:20px 26px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:14px;margin-bottom:16px;">
+                <div style="background:#f0f4ff;border-radius:10px;padding:12px 14px;">
+                    <div style="font-size:.72rem;color:#64748b;font-weight:600;margin-bottom:3px;">DATE</div>
+                    <div style="font-weight:800;color:#1e293b;font-size:.9rem;">{{ $appointment->formatted_date }}</div>
+                </div>
+                <div style="background:#f0f4ff;border-radius:10px;padding:12px 14px;">
+                    <div style="font-size:.72rem;color:#64748b;font-weight:600;margin-bottom:3px;">TIME</div>
+                    <div style="font-weight:800;color:#1e293b;font-size:.9rem;">{{ $appointment->formatted_time }}</div>
+                </div>
+                <div style="background:#f0f4ff;border-radius:10px;padding:12px 14px;">
+                    <div style="font-size:.72rem;color:#64748b;font-weight:600;margin-bottom:3px;">TYPE</div>
+                    <div style="font-weight:800;color:#1e293b;font-size:.9rem;">{{ $appointment->interview_label }}</div>
+                </div>
+            </div>
+            @if($appointment->admin_notes)
+            <div style="background:#FFF3D6;border-left:3px solid #FDB913;border-radius:8px;padding:10px 14px;font-size:.84rem;color:#856404;margin-bottom:14px;">
+                <strong>Admin Note:</strong> {{ $appointment->admin_notes }}
+            </div>
+            @endif
+            <form method="POST" action="{{ route('user.appointments.cancel', $appointment->id) }}" onsubmit="return confirm('Cancel this appointment?')">
+                @csrf
+                <button type="submit" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;cursor:pointer;">
+                    🚫 Cancel Appointment
+                </button>
+            </form>
+        </div>
+    </div>
+    @else
+
+    {{-- ── BOOKING FORM ── --}}
+    <div style="background:white;border-radius:20px;border:1px solid #c7d2fe;box-shadow:0 4px 20px rgba(44,62,143,.08);overflow:hidden;margin-bottom:24px;">
+        <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:20px 26px;display:flex;align-items:center;gap:14px;">
+            <div style="width:42px;height:42px;background:rgba(253,185,19,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📅</div>
+            <div>
+                <div style="font-weight:800;font-size:1rem;">Schedule an Appointment</div>
+                <div style="opacity:.8;font-size:.8rem;margin-top:2px;">Book your AICS Burial interview slot with the MSWDO</div>
+            </div>
+        </div>
+        <div style="padding:24px 26px;">
+            <div style="background:#eef2ff;border-radius:10px;padding:12px 16px;font-size:.83rem;color:#4338ca;font-weight:600;margin-bottom:20px;">
+                ℹ️ Office hours: <strong>Monday – Friday, 8:00 AM – 5:00 PM</strong> (lunch 12:00–1:00 PM excluded) &bull; Max 5 appointments per time slot.
+            </div>
+            @if(isset($appointment) && $appointment && $appointment->status === 'rejected')
+            <div style="background:#fee2e2;border-left:4px solid #dc3545;border-radius:12px;padding:14px 18px;font-size:.85rem;color:#991b1b;font-weight:600;margin-bottom:16px;">
+                ❌ Your previous appointment was <strong>rejected</strong>. You may book a new slot below.
+                @if($appointment->admin_notes)<br>Admin reason: {{ $appointment->admin_notes }}@endif
+            </div>
+            @endif
+            <form id="aicsBurialApptForm" method="POST" action="{{ route('user.appointments.store') }}">
+                @csrf
+                <input type="hidden" name="program_type" value="AICS_Burial">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📆 Select Date <span style="color:red">*</span></label>
+                        <input type="date" id="aicsBurialDate" name="appointment_date"
+                               min="{{ $minDate }}" max="{{ $maxDate }}"
+                               class="form-control"
+                               style="border-radius:10px;border:1.5px solid #c7d2fe;font-weight:600;font-size:.88rem;"
+                               required>
+                        <div style="font-size:.7rem;color:#94a3b8;margin-top:4px;">Weekdays only (Mon–Fri)</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">⏰ Select Time Slot <span style="color:red">*</span></label>
+                        <select id="aicsBurialTime" name="appointment_time" class="form-control"
+                                style="border-radius:10px;border:1.5px solid #c7d2fe;font-weight:600;font-size:.88rem;" required disabled>
+                            <option value="">Select date first</option>
+                        </select>
+                        <div id="aicsBurialSlotMsg" style="font-size:.7rem;color:#94a3b8;margin-top:4px;"></div>
+                    </div>
+                    <div class="col-md-4">
+                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">💬 Interview Type <span style="color:red">*</span></label>
+                        <select name="interview_type" class="form-control"
+                                style="border-radius:10px;border:1.5px solid #c7d2fe;font-weight:600;font-size:.88rem;" required>
+                            <option value="face_to_face">🏢 Face-to-Face</option>
+                            <option value="online">📱 Online (via phone call)</option>
+                        </select>
+                    </div>
+                    <div class="col-12">
+                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📝 Additional Notes (optional)</label>
+                        <textarea name="user_notes" rows="2" class="form-control"
+                                  placeholder="Any concerns or special requests…"
+                                  style="border-radius:10px;border:1.5px solid #c7d2fe;font-size:.85rem;"
+                                  maxlength="500"></textarea>
+                    </div>
+                    <div class="col-12">
+                        <button type="submit" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:12px;padding:12px 32px;font-weight:800;font-size:.92rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+                            📅 Book Appointment
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
     </div>
     @endif
+
+    {{-- ═══ REQUIREMENTS — visible only once appointment is CONFIRMED ═══ --}}
+    @if(isset($appointment) && $appointment && $appointment->status === 'confirmed')
 
     <div class="note">
         &#128204; <strong>Note:</strong> Prepare <strong>2 copies</strong> of every requirement.
@@ -220,6 +342,43 @@
         </div>
     </div>
 
+    @else
+    {{-- ── Waiting / no-appointment notice ─────────────────────────────────── --}}
+    <div style="background:white;border-radius:20px;border:1.5px dashed #c7d2fe;padding:40px 32px;text-align:center;margin-bottom:24px;">
+        <div style="font-size:3rem;margin-bottom:14px;">
+            @if(!isset($appointment) || !$appointment)
+                📅
+            @elseif($appointment->status === 'pending')
+                ⏳
+            @else
+                ❌
+            @endif
+        </div>
+        @if(!isset($appointment) || !$appointment)
+            <div style="font-weight:800;font-size:1.05rem;color:#1e293b;margin-bottom:8px;">Book an Appointment First</div>
+            <div style="color:#64748b;font-size:.88rem;max-width:460px;margin:0 auto;">
+                You need to schedule and complete an interview with the MSWDO before you can submit your requirements. Use the form above to book your slot.
+            </div>
+        @elseif($appointment->status === 'pending')
+            <div style="font-weight:800;font-size:1.05rem;color:#1e293b;margin-bottom:8px;">Waiting for Appointment Confirmation</div>
+            <div style="color:#64748b;font-size:.88rem;max-width:460px;margin:0 auto;">
+                Your appointment on <strong>{{ $appointment->formatted_date }}</strong> at <strong>{{ $appointment->formatted_time }}</strong> is pending admin confirmation. Requirements will be unlocked once confirmed.
+            </div>
+        @elseif($appointment->status === 'rejected')
+            <div style="font-weight:800;font-size:1.05rem;color:#991b1b;margin-bottom:8px;">Appointment Rejected</div>
+            <div style="color:#64748b;font-size:.88rem;max-width:460px;margin:0 auto;">
+                Your appointment was rejected. Please book a new slot above to continue your application.
+                @if($appointment->admin_notes)<br><span style="color:#dc3545;font-size:.82rem;margin-top:6px;display:block;">Reason: {{ $appointment->admin_notes }}</span>@endif
+            </div>
+        @elseif($appointment->status === 'cancelled')
+            <div style="font-weight:800;font-size:1.05rem;color:#475569;margin-bottom:8px;">Appointment Cancelled</div>
+            <div style="color:#64748b;font-size:.88rem;max-width:460px;margin:0 auto;">
+                You cancelled your appointment. Book a new slot above to continue.
+            </div>
+        @endif
+    </div>
+    @endif
+
     <div class="text-center pb-4">
         <a href="{{ route('user.dashboard') }}" class="back-btn d-inline-flex" style="font-size:.9rem;padding:11px 26px;">&#8592; Return to Dashboard</a>
     </div>
@@ -229,6 +388,7 @@
     <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
 </div>
 
+@include('components.user-notification-modal')
 @include('components.chat-modal')
 @include('components.chatbot-widget')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
@@ -243,14 +403,49 @@ function validateAicsFile(input) {
     }
     return true;
 }
-document.getElementById('aicsBurialBatch').addEventListener('submit', function(e) {
+document.getElementById('aicsBurialBatch')?.addEventListener('submit', function(e) {
     const inputs = this.querySelectorAll('.batch-file-input');
     const hasFile = Array.from(inputs).some(i => i.files.length > 0);
     if (!hasFile) { e.preventDefault(); alert('Please select at least one file before uploading.'); return; }
     inputs.forEach(i => { if (!i.files.length) i.disabled = true; });
     const btn = document.getElementById('aicsBurialBatch-btn');
-    btn.textContent = 'Uploading...'; btn.disabled = true;
+    if (btn) { btn.textContent = 'Uploading...'; btn.disabled = true; }
 });
+
+// ── Appointment slot loader ──────────────────────────────────────────────────
+const aicsBurialDateEl = document.getElementById('aicsBurialDate');
+const aicsBurialTimeEl = document.getElementById('aicsBurialTime');
+const aicsBurialMsgEl  = document.getElementById('aicsBurialSlotMsg');
+if (aicsBurialDateEl) {
+    aicsBurialDateEl.addEventListener('change', function () {
+        const d = this.value;
+        if (!d) return;
+        const day = new Date(d + 'T00:00:00').getDay();
+        if (day === 0 || day === 6) {
+            aicsBurialMsgEl.textContent = '⚠️ Weekends are not available.';
+            aicsBurialTimeEl.innerHTML = '<option value="">Not available</option>';
+            aicsBurialTimeEl.disabled = true;
+            return;
+        }
+        aicsBurialMsgEl.textContent = 'Loading available slots…';
+        aicsBurialTimeEl.disabled = true;
+        fetch(`/user/appointments/slots?date=${d}`, {headers:{'Accept':'application/json'}})
+        .then(r => r.json())
+        .then(slots => {
+            const available = slots.filter(s => !s.full);
+            if (!available.length) {
+                aicsBurialTimeEl.innerHTML = '<option value="">No available slots</option>';
+                aicsBurialMsgEl.textContent = '⚠️ No slots available for this date.';
+                return;
+            }
+            aicsBurialTimeEl.innerHTML = '<option value="">-- Select time --</option>' +
+                available.map(s => `<option value="${s.time}">${s.label} (${s.remaining} left)</option>`).join('');
+            aicsBurialTimeEl.disabled = false;
+            aicsBurialMsgEl.textContent = `✅ ${available.length} slot(s) available`;
+        })
+        .catch(() => { aicsBurialMsgEl.textContent = 'Failed to load slots. Try again.'; });
+    });
+}
 </script>
 </body>
 </html>

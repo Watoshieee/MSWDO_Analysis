@@ -3,8 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solo Parent – AICS Category | MSWDO</title>
+    <title>Solo Parent -AICS Category | MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
 html, body { overscroll-behavior: none; margin: 0; padding: 0; }
@@ -80,10 +81,23 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.dashboard') }}">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('user.programs') }}">Programs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
+                    {{-- Notification Bell --}}
+                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal"
+                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
+                        title="Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($notificationCount) && $notificationCount > 0)
+                        <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">
+                            {{ $notificationCount > 9 ? '9+' : $notificationCount }}
+                        </span>
+                        @endif
+                    </button>
                     <div class="user-pill">{{ $user->full_name }}</div>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -98,13 +112,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="container mt-4 pb-5">
 
         <a href="{{ route('user.programs') }}" class="back-link">
-            ? Back to Programs
+             Back to Programs
         </a>
 
         <!-- HERO -->
         <div class="page-hero">
             <div class="hero-badge">Assistance in Crisis (AICS)</div>
-            <h1>AICS – Choose a Category</h1>
+            <h1>AICS -Choose a Category</h1>
             <div class="hero-divider"></div>
             <p>Assistance to Individuals in Crisis Situation (AICS) provides targeted financial aid to individuals and families facing emergencies. Select the type of assistance you need to begin your application.</p>
         </div>
@@ -117,8 +131,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="col-md-4">
                 <a href="{{ route('user.aics-medical') }}" class="aics-card-link">
                     <div class="aics-card">
-                        <div class="card-icon">??</div>
-                        <span class="card-num">01 — AICS</span>
+                        <span class="card-num">01 - AICS</span>
                         <div class="card-title">Medical Assistance</div>
                         <div class="card-desc">Financial support for medical needs including hospital bills, medicines, laboratory tests, and other health-related expenses for individuals in crisis situations.</div>
                         <span class="card-arrow">View Requirements ?</span>
@@ -130,8 +143,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="col-md-4">
                 <a href="{{ route('user.aics-burial') }}" class="aics-card-link">
                     <div class="aics-card">
-                        <div class="card-icon">???</div>
-                        <span class="card-num">02 — AICS</span>
+                        <span class="card-num">02 - AICS</span>
                         <div class="card-title">Burial Assistance</div>
                         <div class="card-desc">Financial aid to help individuals and families manage funeral and burial expenses for an immediate family member who has passed away.</div>
                         <span class="card-arrow">View Requirements ?</span>
@@ -142,8 +154,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <!-- EMERGENCY SHELTER (UNAVAILABLE) -->
             <div class="col-md-4">
                 <div class="aics-card disabled">
-                    <div class="card-icon">??</div>
-                    <span class="card-num">03 — AICS</span>
+                    <span class="card-num">03 - AICS</span>
                     <div class="card-title">Emergency Shelter Assistance</div>
                     <div class="card-desc">Support for solo parents who have lost or are at risk of losing their shelter due to disaster, calamity, or emergency situations.</div>
                     <span class="card-badge-unavail">? Not yet available</span>
@@ -163,6 +174,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
+    @include('components.user-notification-modal')
     @include('components.chat-modal')
     @include('components.chatbot-widget')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

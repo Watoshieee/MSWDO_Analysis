@@ -25,13 +25,19 @@ class User extends Authenticatable
         'password',
         'email',
         'full_name',
+        'first_name',
+        'last_name',
+        'middle_name',
         'birthdate',
+        'date_of_birth',
         'age',
         'gender',
         'role',
         'municipality',
         'barangay',
         'mobile_number',
+        'phone_number',
+        'address',
         'status',
         'email_verified_at',
         'otp_code',
@@ -143,5 +149,35 @@ class User extends Authenticatable
         $this->reset_token = null;
         $this->reset_token_expires_at = null;
         $this->save();
+    }
+
+    // Accessor for full_name (handles both old and new structure)
+    public function getFullNameAttribute($value)
+    {
+        // If full_name exists in database, return it
+        if ($value) {
+            return $value;
+        }
+        
+        // Otherwise, construct from first_name, middle_name, last_name
+        $parts = array_filter([
+            $this->attributes['first_name'] ?? null,
+            $this->attributes['middle_name'] ?? null,
+            $this->attributes['last_name'] ?? null,
+        ]);
+        
+        return implode(' ', $parts);
+    }
+
+    // Accessor for phone_number (handles both mobile_number and phone_number)
+    public function getPhoneNumberAttribute($value)
+    {
+        return $value ?? ($this->attributes['mobile_number'] ?? null);
+    }
+
+    // Accessor for date_of_birth (handles both birthdate and date_of_birth)
+    public function getDateOfBirthAttribute($value)
+    {
+        return $value ?? ($this->attributes['birthdate'] ?? null);
     }
 }

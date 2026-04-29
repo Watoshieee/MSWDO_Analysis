@@ -55,6 +55,10 @@ class RegisterController extends Controller
                     'required', 'string',
                     'regex:/^9\d{9}$/',
                 ],
+                'gender' => [
+                    'required', 'string',
+                    'in:Male,Female,Other',
+                ],
                 'birthdate' => [
                     'required', 'date',
                     'before:' . now()->subYears(18)->format('Y-m-d'),
@@ -78,6 +82,8 @@ class RegisterController extends Controller
                 'email.unique'            => 'This email address is already registered.',
                 'mobile_number.required'  => 'Mobile number is required.',
                 'mobile_number.regex'     => 'Mobile number must be 10 digits starting with 9 (e.g., 9171234567).',
+                'gender.required'         => 'Please select your gender.',
+                'gender.in'               => 'Please select a valid gender option.',
                 'birthdate.before'        => 'You must be at least 18 years old to register.',
                 'birthdate.after'         => 'Birthdate cannot be more than 150 years ago.',
                 'municipality.in'         => 'Please select a valid municipality.',
@@ -106,6 +112,7 @@ class RegisterController extends Controller
                     'mobile_number' => trim($validated['mobile_number']),
                     'password'      => Hash::make($tempPassword),
                     'full_name'     => trim($validated['full_name']),
+                    'gender'        => $validated['gender'],
                     'birthdate'     => $validated['birthdate'],
                     'age'           => $age,
                     'municipality'  => $validated['municipality'],

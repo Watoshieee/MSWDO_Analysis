@@ -25,8 +25,14 @@ class NewAppointmentAdminMail extends Mailable
 
     public function envelope(): Envelope
     {
+        $programLabel = match($this->appointment->program_type) {
+            'AICS_Medical' => 'AICS Medical Assistance',
+            'AICS_Burial'  => 'AICS Burial Assistance',
+            default        => 'Solo Parent',
+        };
+
         return new Envelope(
-            subject: '[MSWDO] New Solo Parent Appointment – ' . $this->appointment->municipality,
+            subject: '[MSWDO] New ' . $programLabel . ' Appointment – ' . $this->appointment->municipality,
         );
     }
 

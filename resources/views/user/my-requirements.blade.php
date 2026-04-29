@@ -12,9 +12,9 @@
 html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         :root {
-            --primary-blue: #2C3E8F;
-            --secondary-yellow: #FDB913;
-            --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
+            --primary-blue: {{ $primaryColor ?? '#2C3E8F' }};
+            --secondary-yellow: {{ $secondaryColor ?? '#FDB913' }};
+            --primary-gradient: linear-gradient(135deg, {{ $primaryColor ?? '#2C3E8F' }} 0%, #1A2A5C 100%);
             --bg-light: #F8FAFC; --bg-white: #FFFFFF; --bg-soft-blue: #F0F5FF;
             --border-light: #E2E8F0; --text-dark: #1E293B;
             --secondary-yellow-light: #FFF3D6;
@@ -31,10 +31,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             .navbar-toggler { order: 0; }
             .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.95rem; }
+        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 8px 14px !important; font-size: 0.88rem; white-space: nowrap; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-info { color:white; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.1); padding:9px 22px; border-radius:40px; font-size:0.92rem; font-weight:600; }
+        .navbar-nav { flex-wrap: nowrap; }
+        .user-info { color:white; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.1); padding:9px 22px; border-radius:40px; font-size:0.92rem; font-weight:600; white-space: nowrap; }
         .logout-btn { background:transparent; border:2px solid rgba(255,255,255,0.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; transition:all 0.3s; font-size:0.88rem; cursor:pointer; }
         .logout-btn:hover { background:var(--secondary-yellow); color:var(--primary-blue); border-color:var(--secondary-yellow); }
 
@@ -161,8 +162,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             justify-content: space-between;
             padding: 16px 20px;
         }
-        .toast-notification.success { background: #d4edda; border-left: 5px solid #28a745; color: #155724; }
-        .toast-notification.error { background: #f8d7da; border-left: 5px solid #dc3545; color: #721c24; }
+        .toast-notification.success { background: linear-gradient(135deg,#2C3E8F,#1A2A5C); border-left: 5px solid #FDB913; color: #ffffff; }
+        .toast-notification.error { background: linear-gradient(135deg,#2C3E8F,#1A2A5C); border-left: 5px solid #FDB913; color: #ffffff; }
         .toast-notification.hiding { animation: slideUp 0.4s ease forwards; }
         
         @keyframes slideDown {
@@ -219,6 +220,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/user/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="/user/programs">Programs</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>

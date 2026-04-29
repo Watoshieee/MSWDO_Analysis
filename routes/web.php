@@ -72,6 +72,8 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::get('/dashboard', [UserController::class, 'dashboard'])->name('dashboard');
     Route::get('/user/dashboard', [UserController::class, 'dashboard'])->name('user.dashboard');
     Route::get('/user/programs', [UserController::class, 'programs'])->name('user.programs');
+    Route::get('/user/profile', [UserController::class, 'profile'])->name('user.profile');
+    Route::put('/user/profile', [UserController::class, 'updateProfile'])->name('user.profile.update');
     Route::get('/user/announcements', [UserController::class, 'announcements'])->name('user.announcements');
     Route::get('/user/my-requirements', [UserController::class, 'myRequirements'])->name('user.my-requirements');
     Route::put('/user/resubmit-requirement/{fileUploadId}', [UserController::class, 'resubmitRequirement'])->name('user.resubmit-requirement');

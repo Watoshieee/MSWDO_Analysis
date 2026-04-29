@@ -12,6 +12,7 @@
                 <!-- User List -->
                 <div id="userSelection" class="p-4">
                     <p class="text-muted mb-3" style="font-size:0.9rem;">Select a user to view conversation:</p>
+                    <input type="text" id="userSearchInput" class="form-control mb-3" placeholder="Search users..." style="border-radius:10px;">
                     <div id="userList"></div>
                 </div>
 
@@ -247,6 +248,8 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('messageInput').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') sendMessage();
     });
+    
+    document.getElementById('userSearchInput').addEventListener('input', filterUsers);
 });
 
 function loadUnreadCount() {
@@ -263,30 +266,45 @@ function loadUnreadCount() {
         });
 }
 
+let allUsers = [];
+
 function loadUsers() {
     fetch('/admin/chat/users')
         .then(r => r.json())
         .then(users => {
-            const list = document.getElementById('userList');
-            if (users.length === 0) {
-                list.innerHTML = '<p class="text-muted text-center">No messages yet.</p>';
-                return;
-            }
-            
-            list.innerHTML = users.map(user => `
-                <div class="user-card" onclick="selectUser(${user.id}, '${user.full_name}')">
-                    <div class="user-avatar">${user.full_name.charAt(0)}</div>
-                    <div class="user-info">
-                        <div class="user-name">${user.full_name}</div>
-                        <div class="user-role">User</div>
-                    </div>
-                    ${user.unread_count > 0 ? `<div class="user-unread">${user.unread_count}</div>` : ''}
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="color:#94a3b8;">
-                        <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
-                    </svg>
-                </div>
-            `).join('');
+            allUsers = users;
+            displayUsers(users);
         });
+}
+
+function displayUsers(users) {
+    const list = document.getElementById('userList');
+    if (users.length === 0) {
+        list.innerHTML = '<p class="text-muted text-center">No users found.</p>';
+        return;
+    }
+    
+    list.innerHTML = users.map(user => `
+        <div class="user-card" onclick="selectUser(${user.id}, '${user.full_name}')">
+            <div class="user-avatar">${user.full_name.charAt(0)}</div>
+            <div class="user-info">
+                <div class="user-name">${user.full_name}</div>
+                <div class="user-role">User</div>
+            </div>
+            ${user.unread_count > 0 ? `<div class="user-unread">${user.unread_count}</div>` : ''}
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="color:#94a3b8;">
+                <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
+            </svg>
+        </div>
+    `).join('');
+}
+
+function filterUsers() {
+    const searchTerm = document.getElementById('userSearchInput').value.toLowerCase();
+    const filtered = allUsers.filter(user => 
+        user.full_name.toLowerCase().includes(searchTerm)
+    );
+    displayUsers(filtered);
 }
 
 function selectUser(userId, userName) {
@@ -321,6 +339,7 @@ function backToUserList() {
     document.getElementById('chatInterface').style.display = 'none';
     document.querySelector('.back-to-users')?.remove();
     document.getElementById('chatMessages').innerHTML = '';
+    document.getElementById('userSearchInput').value = '';
     loadUsers();
 }
 

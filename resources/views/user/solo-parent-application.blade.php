@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title data-en="Solo Parent ID Guide � MSWDO" data-tl="Gabay sa Solo Parent ID � MSWDO">Solo Parent ID Guide � MSWDO</title>
+    <title data-en="Solo Parent ID Guide  MSWDO" data-tl="Gabay sa Solo Parent ID - MSWDO">Solo Parent ID Guide  MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
@@ -102,7 +102,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <button class="lang-btn"        data-lang="tl" onclick="setLang('tl')">TL</button>
                     </div>
                     <a href="{{ route('user.dashboard') }}" class="back-btn">
-                        ? <span data-en="Back to Dashboard" data-tl="Bumalik sa Dashboard">Back to Dashboard</span>
+                         <span data-en="Back to Dashboard" data-tl="Bumalik sa Dashboard">Back to Dashboard</span>
                     </a>
                 </div>
             </div>
@@ -117,9 +117,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <h1 data-en="Solo Parent ID Application Guide" data-tl="Gabay sa Pag-apply ng Solo Parent ID">Solo Parent ID Application Guide</h1>
                 <div class="hero-divider"></div>
                 <p class="hero-sub"
-                   data-en="A complete, step-by-step guide to applying for a Solo Parent ID through the MSWDO � from scheduling an appointment to receiving your ID."
-                   data-tl="Isang kumpletong hakbang-hakbang na gabay sa pag-apply ng Solo Parent ID sa MSWDO � mula sa pag-schedule ng appointment hanggang sa pagtanggap ng iyong ID.">
-                    A complete, step-by-step guide to applying for a Solo Parent ID through the MSWDO � from scheduling an appointment to receiving your ID.
+                   data-en="A complete, step-by-step guide to applying for a Solo Parent ID through the MSWDO  from scheduling an appointment to receiving your ID."
+                   data-tl="Isang kumpletong hakbang-hakbang na gabay sa pag-apply ng Solo Parent ID sa MSWDO  mula sa pag-schedule ng appointment hanggang sa pagtanggap ng iyong ID.">
+                    A complete, step-by-step guide to applying for a Solo Parent ID through the MSWDO  from scheduling an appointment to receiving your ID.
                 </p>
             </div>
         </div>
@@ -131,19 +131,33 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="container" style="padding-top:32px;">
 
         {{-- Flash messages --}}
-        @if(session('appt_success'))
-        <div style="background:#d4edda;border-left:4px solid #28a745;border-radius:12px;padding:14px 20px;margin-bottom:16px;font-size:.9rem;color:#155724;font-weight:600;">
-            ✅ {{ session('appt_success') }}
+        @php
+            $topNotice = session('appt_success') ?: session('appt_error');
+        @endphp
+        @if($topNotice)
+        <div style="position:fixed;top:{{ !empty($isSoloParentBeneficiary) ? '150px' : '84px' }};right:18px;z-index:1081;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+            {{ $topNotice }}
         </div>
         @endif
-        @if(session('appt_error'))
-        <div style="background:#f8d7da;border-left:4px solid #dc3545;border-radius:12px;padding:14px 20px;margin-bottom:16px;font-size:.9rem;color:#721c24;font-weight:600;">
-            ⚠️ {{ session('appt_error') }}
+
+        @if(!empty($isSoloParentBeneficiary))
+        <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+            Solo Parent beneficiary na ang account na ito. Re-application is disabled.
         </div>
         @endif
 
         {{-- ── ACTIVE APPOINTMENT CARD ── --}}
-        @if($appointment && in_array($appointment->status, ['pending','confirmed']))
+        @if(!empty($isSoloParentBeneficiary))
+        <div style="background:white;border-radius:20px;border:1px solid #c7d6f5;box-shadow:0 4px 20px rgba(44,62,143,.12);overflow:hidden;margin-bottom:24px;">
+            <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:18px 26px;display:flex;align-items:center;gap:14px;">
+                <div style="width:42px;height:42px;background:rgba(255,255,255,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">🪪</div>
+                <div style="font-weight:800;font-size:1rem;">Solo Parent Beneficiary</div>
+            </div>
+            <div style="padding:20px 26px;color:#1e293b;font-size:.9rem;line-height:1.7;">
+                May na-release na / beneficiary na ang iyong Solo Parent application, kaya disabled na ang new appointment at re-application.
+            </div>
+        </div>
+        @elseif($appointment && in_array($appointment->status, ['pending','confirmed']))
         <div style="background:white;border-radius:20px;border:1px solid #c7d2fe;box-shadow:0 4px 20px rgba(44,62,143,.08);overflow:hidden;margin-bottom:24px;">
             <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:18px 26px;display:flex;align-items:center;gap:14px;">
                 <div style="width:42px;height:42px;background:rgba(253,185,19,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📅</div>
@@ -336,7 +350,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">??</div>
                             <div>
                                 <h4 data-en="How to Apply for a Solo Parent ID" data-tl="Paano Mag-apply ng Solo Parent ID">How to Apply for a Solo Parent ID</h4>
                                 <p data-en="Follow these 7 steps to complete your application" data-tl="Sundin ang 7 hakbang na ito para makumpleto ang iyong aplikasyon">Follow these 7 steps to complete your application</p>
@@ -365,7 +378,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         The admin will review your request and send a confirmation notification through the website and your registered email.
                                     </div>
                                     <div class="step-note">
-                                        ?? <span data-en="Make sure your registered email is active and accessible." data-tl="Siguraduhing aktibo at naa-access ang iyong nakarehistrong email.">Make sure your registered email is active and accessible.</span>
+                                         <span data-en="Make sure your registered email is active and accessible." data-tl="Siguraduhing aktibo at naa-access ang iyong nakarehistrong email.">Make sure your registered email is active and accessible.</span>
                                     </div>
                                 </div>
                             </div>
@@ -380,7 +393,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         Go to the MSWDO office for a face-to-face interview if you are nearby. Otherwise, attend the scheduled online interview.
                                     </div>
                                     <div class="step-note">
-                                        ?? <span data-en="MSWDO Office � Municipal Hall, Ground Floor, Monday�Friday 8:00 AM�5:00 PM." data-tl="Opisina ng MSWDO � Municipal Hall, Ground Floor, Lunes�Biyernes 8:00 AM�5:00 PM.">MSWDO Office � Municipal Hall, Ground Floor, Monday�Friday 8:00 AM�5:00 PM.</span>
+                                        <span data-en="MSWDO Office - Municipal Hall, Ground Floor, Monday-Friday 8:00 AM�5:00 PM." data-tl="Opisina ng MSWDO - Municipal Hall, Ground Floor, Lunes-Biyernes 8:00 AM-5:00 PM.">MSWDO Office - Municipal Hall, Ground Floor, Monday�Friday 8:00 AM�5:00 PM.</span>
                                     </div>
                                 </div>
                             </div>
@@ -419,7 +432,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         Prepare and submit the hard copies of your required documents to the MSWDO office.
                                     </div>
                                     <div class="step-note">
-                                        ?? <span data-en="Bring original copies and at least one photocopy of each document for verification." data-tl="Magdala ng mga orihinal na kopya at hindi bababa sa isang photocopy ng bawat dokumento para sa pag-verify.">Bring original copies and at least one photocopy of each document for verification.</span>
+                                         <span data-en="Bring original copies and at least one photocopy of each document for verification." data-tl="Magdala ng mga orihinal na kopya at hindi bababa sa isang photocopy ng bawat dokumento para sa pag-verify.">Bring original copies and at least one photocopy of each document for verification.</span>
                                     </div>
                                 </div>
                             </div>
@@ -434,7 +447,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         Your Solo Parent ID will be processed by the MSWDO. You will be notified once it is ready for release.
                                     </div>
                                     <div class="step-note">
-                                        ?? <span data-en="You will receive a notification via email and the website when your ID is ready for pickup." data-tl="Makakatanggap ka ng abiso sa pamamagitan ng email at website kapag handa na ang iyong ID para makuha.">You will receive a notification via email and the website when your ID is ready for pickup.</span>
+                                        <span data-en="You will receive a notification via email and the website when your ID is ready for pickup." data-tl="Makakatanggap ka ng abiso sa pamamagitan ng email at website kapag handa na ang iyong ID para makuha.">You will receive a notification via email and the website when your ID is ready for pickup.</span>
                                     </div>
                                 </div>
                             </div>
@@ -452,7 +465,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     {{-- ✅ VALIDATED: Show real requirements + upload form --}}
                     <div class="section-card">
                         <div class="section-header" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);">
-                            <div class="sec-icon" style="background:rgba(255,255,255,.2);">🏆</div>
                             <div>
                                 <h4>Required Documents</h4>
                                 <p>You are eligible! Please upload the following documents.</p>
@@ -647,7 +659,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     {{-- 📋 DEFAULT: Coming Soon placeholder --}}
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">??</div>
                             <div>
                                 <h4 data-en="Required Documents" data-tl="Mga Kinakailangang Dokumento">Required Documents</h4>
                                 <p data-en="Documents needed for your Solo Parent ID application" data-tl="Mga dokumentong kailangan para sa iyong aplikasyon">Documents needed for your Solo Parent ID application</p>
@@ -655,7 +666,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </div>
                         <div class="section-body">
                             <div class="info-card placeholder" style="padding:32px 22px;">
-                                <div style="font-size:2.5rem;margin-bottom:12px;">??</div>
                                 <div style="font-weight:700;color:#6c757d;font-size:.95rem;margin-bottom:8px;"
                                      data-en="Requirements List Coming Soon"
                                      data-tl="Listahan ng mga Kinakailangan — Malapit na">
@@ -674,7 +684,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <!-- MSWDO Office Details -->
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">??</div>
                             <div>
                                 <h4 data-en="MSWDO Office Details" data-tl="Detalye ng Opisina ng MSWDO">MSWDO Office Details</h4>
                                 <p data-en="Where to personally submit your requirements" data-tl="Saan personal na magsumite ng mga kinakailangan">Where to personally submit your requirements</p>
@@ -682,19 +691,19 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </div>
                         <div class="section-body">
                             <div class="info-card">
-                                <div class="ic-title">?? <span data-en="Location" data-tl="Lokasyon">Location</span></div>
+                                <div class="ic-title"><span data-en="Location" data-tl="Lokasyon">Location</span></div>
                                 <div class="ic-body" data-en="Municipal Social Welfare and Development Office, Municipal Hall, Ground Floor" data-tl="Municipal Social Welfare and Development Office, Municipal Hall, Ground Floor">
                                     Municipal Social Welfare and Development Office, Municipal Hall, Ground Floor
                                 </div>
                             </div>
                             <div class="info-card">
-                                <div class="ic-title">?? <span data-en="Office Hours" data-tl="Oras ng Opisina">Office Hours</span></div>
-                                <div class="ic-body" data-en="Monday � Friday � 8:00 AM � 5:00 PM (Closed on Holidays)" data-tl="Lunes � Biyernes � 8:00 AM � 5:00 PM (Sarado sa mga Pista Opisyal)">
-                                    Monday � Friday � 8:00 AM � 5:00 PM <br><small style="color:#94a3b8;">(Closed on Holidays)</small>
+                                <div class="ic-title"><span data-en="Office Hours" data-tl="Oras ng Opisina">Office Hours</span></div>
+                                <div class="ic-body" data-en="Monday - Friday - 8:00 AM - 5:00 PM (Closed on Holidays)" data-tl="Lunes - Biyernes - 8:00 AM - 5:00 PM (Sarado sa mga Pista Opisyal)">
+                                    Monday - Friday - 8:00 AM - 5:00 PM <br><small style="color:#94a3b8;">(Closed on Holidays)</small>
                                 </div>
                             </div>
                             <div class="info-card yellow">
-                                <div class="ic-title">?? <span data-en="Interview Options" data-tl="Mga Opsyon sa Panayam">Interview Options</span></div>
+                                <div class="ic-title"><span data-en="Interview Options" data-tl="Mga Opsyon sa Panayam">Interview Options</span></div>
                                 <div class="ic-body">
                                     <ul style="margin:0;padding-left:18px;line-height:2;">
                                         <li data-en="Face-to-face at the MSWDO office" data-tl="Harapan sa opisina ng MSWDO">Face-to-face at the MSWDO office</li>
@@ -708,26 +717,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 </div>
             </div>
 
-            <!-- Bottom CTA strip -->
-            <div class="cta-strip mt-2 mb-4">
-                <div>
-                    <div class="cta-text-main" data-en="Ready to apply for your Solo Parent ID?" data-tl="Handa ka na bang mag-apply para sa iyong Solo Parent ID?">Ready to apply for your Solo Parent ID?</div>
-                    <div class="cta-text-sub" data-en="Schedule an appointment through this portal or visit the MSWDO office directly." data-tl="Mag-schedule ng appointment sa pamamagitan ng portal na ito o direktang bisitahin ang opisina ng MSWDO.">Schedule an appointment through this portal or visit the MSWDO office directly.</div>
-                </div>
-                <a href="{{ route('user.dashboard') }}"
-                   style="background:var(--secondary-yellow);color:var(--purple);border-radius:12px;padding:13px 30px;font-weight:800;font-size:.92rem;text-decoration:none;display:inline-flex;align-items:center;gap:8px;white-space:nowrap;transition:all .3s;"
-                   onmouseover="this.style.transform='translateY(-2px)';this.style.boxShadow='0 8px 24px rgba(253,185,19,.5)'"
-                   onmouseout="this.style.transform='';this.style.boxShadow=''">
-                    ?? <span data-en="Go to Dashboard" data-tl="Pumunta sa Dashboard">Go to Dashboard</span>
-                </a>
-            </div>
 
-            <!-- Back link -->
-            <div class="text-center py-2">
-                <a href="{{ route('user.dashboard') }}" class="back-btn d-inline-flex" style="font-size:.92rem;padding:12px 28px;background:transparent;border-color:rgba(124,58,237,.4);color:var(--purple);">
-                    ? <span data-en="Return to Dashboard" data-tl="Bumalik sa Dashboard">Return to Dashboard</span>
-                </a>
-            </div>
+           
 
         </div>
     </div>

@@ -9,13 +9,18 @@ use App\Models\Appointment;
 use App\Models\SocialWelfareProgram;
 use App\Models\FileMonitoring;
 use App\Models\FileUpload;
+use App\Models\MunicipalityVision;
 use App\Mail\RequirementsReviewedMail;
 use App\Mail\SoloParentFilesUploadedMail;
 use App\Mail\SoloParentIdReadyMail;
+use App\Mail\PwdValidatedMail;
+use App\Mail\PwdIdReadyMail;
+use App\Mail\AicsStatusMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class AdminController extends Controller
 {
@@ -25,43 +30,55 @@ class AdminController extends Controller
         $lastViewed   = \App\Models\NotificationView::where('user_id', $user->id)->first();
         $lastViewedAt = $lastViewed ? $lastViewed->last_viewed_at : null;
 
-        // ── New pending applications ──────────────────────────────────────────
+        // ── All pending applications (keep list visible after view) ───────────
         $query = Application::where('municipality', $user->municipality)
             ->where('status', 'pending')
             ->with('user')
             ->orderBy('application_date', 'desc');
 
-        $adminNewApplications = $lastViewedAt
-            ? (clone $query)->where('application_date', '>', $lastViewedAt)->get()
-            : (clone $query)->where('application_date', '>=', now()->subDays(3))->get();
+        $adminNewApplications = (clone $query)->get();
 
-        // ── New pending Solo Parent appointments (booked after last viewed) ───
+        $newApplicationsCount = $lastViewedAt
+            ? $adminNewApplications->filter(function ($app) use ($lastViewedAt) {
+                return $app->application_date
+                    && Carbon::parse($app->application_date)->gt(Carbon::parse($lastViewedAt));
+            })->count()
+            : $adminNewApplications->count();
+
+        // ── All pending appointments (keep list visible after view) ───────────
         $apptQuery = Appointment::where('municipality', $user->municipality)
-            ->where('program_type', 'Solo_Parent')
             ->where('status', 'pending')
             ->with('user')
             ->orderBy('created_at', 'desc');
 
-        $adminNewAppointments = $lastViewedAt
-            ? (clone $apptQuery)->where('created_at', '>', $lastViewedAt)->get()
-            : (clone $apptQuery)->where('created_at', '>=', now()->subDays(3))->get();
+        $adminNewAppointments = (clone $apptQuery)->get();
 
-        // ── New Solo Parent document uploads waiting for review ─────────────────
+        $newAppointmentsCount = $lastViewedAt
+            ? $adminNewAppointments->filter(function ($appt) use ($lastViewedAt) {
+                return $appt->created_at
+                    && Carbon::parse($appt->created_at)->gt(Carbon::parse($lastViewedAt));
+            })->count()
+            : $adminNewAppointments->count();
+
+        // ── All pending Solo Parent document uploads (keep visible) ────────────
         $uploadsQuery = FileMonitoring::where('municipality', $user->municipality)
             ->where('overall_status', 'pending')
             ->whereHas('application', fn($q) => $q->where('program_type', 'Solo_Parent'))
             ->whereHas('fileUploads', fn($q) => $q->whereNotNull('file_path'))
             ->with(['application.user', 'fileUploads']);
 
-        $adminNewUploads = $lastViewedAt
-            ? (clone $uploadsQuery)->whereHas('fileUploads', fn($q) =>
-                    $q->where('uploaded_at', '>', $lastViewedAt)->whereNotNull('file_path')
-              )->get()
-            : (clone $uploadsQuery)->whereHas('fileUploads', fn($q) =>
-                    $q->where('uploaded_at', '>=', now()->subDays(3))->whereNotNull('file_path')
-              )->get();
+        $adminNewUploads = (clone $uploadsQuery)->get();
 
-        $adminNotifCount = $adminNewApplications->count() + $adminNewAppointments->count() + $adminNewUploads->count();
+        $newUploadsCount = $lastViewedAt
+            ? $adminNewUploads->filter(function ($fm) use ($lastViewedAt) {
+                $latestUpload = $fm->fileUploads
+                    ->whereNotNull('file_path')
+                    ->max('uploaded_at');
+                return $latestUpload && Carbon::parse($latestUpload)->gt(Carbon::parse($lastViewedAt));
+            })->count()
+            : $adminNewUploads->count();
+
+        $adminNotifCount = $newApplicationsCount + $newAppointmentsCount + $newUploadsCount;
 
         return compact('adminNewApplications', 'adminNewAppointments', 'adminNewUploads', 'adminNotifCount');
     }
@@ -134,6 +151,15 @@ class AdminController extends Controller
 
         extract($this->adminNotifData($user));
 
+        // Load current vision / mission / goals for this municipality
+        $visionRow = MunicipalityVision::where('municipality_name', $user->municipality)->first();
+        $visionData = [
+            'vision'          => $visionRow?->vision ?? '',
+            'mission'         => $visionRow?->mission ?? '',
+            'goals'           => $visionRow?->goals ?? '',
+            'strategic_goals' => $visionRow?->strategic_goals ?? [],
+        ];
+
         return view('admin.dashboard', compact(
             'municipality',
             'applications',
@@ -147,16 +173,86 @@ class AdminController extends Controller
             'totalPrograms',
             'adminNewApplications',
             'adminNewAppointments',
-            'adminNotifCount'
+            'adminNewUploads',
+            'adminNotifCount',
+            'visionData'
         ));
     }
 
-    public function requirements()
+    // ── Save Vision / Mission / Goals + Strategic Goals ──────────────────────
+    public function saveVisionMission(Request $request)
+    {
+        $request->validate([
+            'municipality_name' => 'required|string|max:255',
+            'vision'            => 'nullable|string',
+            'mission'           => 'nullable|string',
+            'goals'             => 'nullable|string',
+            'strategic_goals'   => 'nullable|array',
+            'strategic_goals.*' => 'nullable|string|max:500',
+        ]);
+
+        $admin = Auth::user();
+        // Ensure admin can only edit their own municipality
+        if ($admin->municipality !== $request->municipality_name) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        $all  = $request->all();
+        $data = [];
+
+        // Only update VMG fields if they were sent in this request
+        if (array_key_exists('vision', $all)) {
+            $data['vision']  = $request->vision;
+            $data['mission'] = $request->mission;
+            $data['goals']   = $request->goals;
+        }
+
+        // Only update strategic_goals if they were sent in this request
+        if (array_key_exists('strategic_goals', $all)) {
+            $strategicGoals = collect($request->strategic_goals ?? [])
+                ->filter(fn($v) => trim($v) !== '')
+                ->values()
+                ->toArray();
+            $data['strategic_goals'] = $strategicGoals;
+        }
+
+        if (empty($data)) {
+            return response()->json(['success' => false, 'message' => 'Nothing to save.'], 400);
+        }
+
+        MunicipalityVision::updateOrCreate(
+            ['municipality_name' => $request->municipality_name],
+            $data
+        );
+
+        return response()->json(['success' => true, 'message' => 'Saved successfully!']);
+    }
+
+    public function requirements(Request $request)
     {
         $admin = Auth::user();
         $municipality = $admin->municipality;
 
-        $applications = Application::where('municipality', $municipality)
+        $applicationsQuery = Application::where('municipality', $municipality);
+
+        if ($request->filled('app_search')) {
+            $search = trim((string) $request->input('app_search'));
+            $applicationsQuery->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', '%' . $search . '%')
+                    ->orWhere('contact_number', 'like', '%' . $search . '%')
+                    ->orWhere('barangay', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($request->filled('app_status')) {
+            $applicationsQuery->where('status', $request->input('app_status'));
+        }
+
+        if ($request->filled('app_program')) {
+            $applicationsQuery->where('program_type', $request->input('app_program'));
+        }
+
+        $applications = $applicationsQuery
             ->orderBy('application_date', 'desc')
             ->paginate(20);
 
@@ -242,58 +338,163 @@ class AdminController extends Controller
         $admin       = Auth::user();
         $application = Application::where('id', $id)
             ->where('municipality', $admin->municipality)
-            ->where('program_type', 'Solo_Parent')
             ->firstOrFail();
 
-        // Guard: all documents must be approved before marking ID ready
-        $fileMonitoring = FileMonitoring::where('application_id', $application->id)->first();
-        if (!$fileMonitoring || $fileMonitoring->overall_status !== 'approved') {
-            $errorMsg = 'Cannot mark ID as ready: not all required documents have been approved yet.';
-
-            if (request()->expectsJson()) {
-                return response()->json(['success' => false, 'message' => $errorMsg], 422);
+        $isSoloParent = $application->program_type === 'Solo_Parent';
+        $isPwd = in_array($application->program_type, ['PWD_Assistance', 'PWD_New', 'PWD_Renewal'], true);
+        $isAics = in_array($application->program_type, ['AICS_Medical', 'AICS_Burial'], true);
+        if (!$isSoloParent && !$isPwd && !$isAics) {
+            $msg = 'Unsupported program for ID readiness.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
             }
-            return redirect()
-                ->route('admin.view-requirement', $application->id)
-                ->with('error', $errorMsg);
+            return redirect()->back()->with('error', $msg);
+        }
+
+        if ($isPwd && $application->id_status !== 'processing') {
+            $msg = 'PWD application must be validated before marking ID ready.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
+        if ($isSoloParent && !($application->status === 'approved' && $application->id_status === 'processing')) {
+            $msg = 'Solo Parent requirements must be fully approved before marking ID ready.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
+        if ($isAics && !($application->status === 'approved' && $application->id_status === 'processing')) {
+            $msg = 'AICS application must be validated before marking grants ready.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
+        if ($application->id_status === 'ready_for_pickup') {
+            $msg = 'Already marked as ready. No new email sent.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => true, 'message' => $msg]);
+            }
+            return redirect()->back()->with('success', $msg);
+        }
+
+        // Atomic transition to prevent duplicate email sends on rapid repeated clicks.
+        $updated = Application::where('id', $application->id)
+            ->where('municipality', $admin->municipality)
+            ->where('id_status', 'processing')
+            ->update([
+                'id_status'   => 'ready_for_pickup',
+                'id_ready_at' => now(),
+            ]);
+
+        if ($updated === 0) {
+            $msg = 'Already marked as ready. No new email sent.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => true, 'message' => $msg]);
+            }
+            return redirect()->back()->with('success', $msg);
+        }
+
+        $application->refresh();
+
+        $user = \App\Models\User::find($application->user_id);
+        if ($user && $user->email) {
+            try {
+                if ($isSoloParent) {
+                    Mail::to($user->email)->send(new SoloParentIdReadyMail($application, $user));
+                } elseif ($isPwd) {
+                    Mail::to($user->email)->send(new PwdIdReadyMail($application, $user));
+                } else {
+                    Mail::to($user->email)->send(new AicsStatusMail($application, $user, 'ready_for_pickup'));
+                }
+            } catch (\Exception $e) {
+                Log::error('IdReadyMail failed: ' . $e->getMessage());
+            }
+        }
+
+        $label = $isPwd ? 'PWD ID' : ($isAics ? 'AICS grant' : 'Solo Parent ID');
+        $msg = $label . ' marked as ready. Email sent to ' . ($user?->email ?? 'user') . '.';
+
+        if (request()->expectsJson() || request()->ajax()) {
+            return response()->json([
+                'success' => true,
+                'message' => $msg,
+            ]);
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
+
+    // ── Validate PWD application after admin approval ─────────────────────────
+    public function validatePwdApplication($id)
+    {
+        $admin = Auth::user();
+        $application = Application::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->whereIn('program_type', ['PWD_Assistance', 'PWD_New', 'PWD_Renewal'])
+            ->firstOrFail();
+
+        if ($application->status !== 'approved') {
+            return redirect()->back()->with('error', 'Only approved PWD applications can be validated.');
+        }
+
+        if ($application->id_status === 'ready_for_pickup') {
+            return redirect()->back()->with('error', 'PWD ID is already marked ready for pickup.');
         }
 
         $application->update([
-            'id_status'   => 'ready_for_pickup',
-            'id_ready_at' => now(),
+            'id_status' => 'processing',
+            'completed_at' => now(),
         ]);
 
         $user = \App\Models\User::find($application->user_id);
         if ($user && $user->email) {
             try {
-                Mail::to($user->email)->send(new SoloParentIdReadyMail($application, $user));
+                Mail::to($user->email)->send(new PwdValidatedMail($application, $user));
             } catch (\Exception $e) {
-                Log::error('SoloParentIdReadyMail failed', [
-                    'application_id' => $application->id,
-                    'user_id'        => $user->id,
-                    'error'          => $e->getMessage(),
-                ]);
+                Log::error('PwdValidatedMail failed: ' . $e->getMessage());
             }
         }
 
-        Log::info('Solo Parent ID marked as ready', [
-            'application_id' => $application->id,
-            'applicant'      => $application->full_name,
-            'marked_by'      => $admin->id,
-            'municipality'   => $admin->municipality,
-            'notified_email' => $user?->email,
-        ]);
+        return redirect()->back()->with('success', 'PWD requirements validated. User notified by email.');
+    }
 
-        $successMsg = 'ID marked as ready for pickup.' .
-            ($user?->email ? ' Email notification sent to ' . $user->email . '.' : '');
+    public function validateAicsApplication($id)
+    {
+        $admin = Auth::user();
+        $application = Application::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->whereIn('program_type', ['AICS_Medical', 'AICS_Burial'])
+            ->firstOrFail();
 
-        if (request()->expectsJson()) {
-            return response()->json(['success' => true, 'message' => $successMsg]);
+        if ($application->status !== 'approved') {
+            return redirect()->back()->with('error', 'Only approved AICS applications can be validated.');
         }
 
-        return redirect()
-            ->route('admin.view-requirement', $application->id)
-            ->with('success', $successMsg);
+        if ($application->id_status === 'ready_for_pickup') {
+            return redirect()->back()->with('error', 'AICS grant is already marked ready for pickup.');
+        }
+
+        $application->update([
+            'id_status' => 'processing',
+            'completed_at' => now(),
+        ]);
+
+        $user = \App\Models\User::find($application->user_id);
+        if ($user && $user->email) {
+            try {
+                Mail::to($user->email)->send(new AicsStatusMail($application, $user, 'processing'));
+            } catch (\Exception $e) {
+                Log::error('AicsStatusMail validate failed: ' . $e->getMessage());
+            }
+        }
+
+        return redirect()->back()->with('success', 'AICS requirements validated. User notified by email.');
     }
 
 
@@ -356,7 +557,11 @@ class AdminController extends Controller
             $fileMonitoring->overall_status = 'rejected';
         } elseif ($approvedFiles == $totalFiles && $totalFiles > 0) {
             $fileMonitoring->overall_status = 'approved';
-            $fileMonitoring->application->update(['status' => 'approved']);
+            $appUpdates = ['status' => 'approved', 'completed_at' => now()];
+            if (in_array(($fileMonitoring->application->program_type ?? null), ['Solo_Parent', 'AICS_Medical', 'AICS_Burial'], true)) {
+                $appUpdates['id_status'] = 'processing';
+            }
+            $fileMonitoring->application->update($appUpdates);
         } else {
             $fileMonitoring->overall_status = 'in_review';
         }
@@ -375,31 +580,31 @@ class AdminController extends Controller
             'created_at' => now()
         ]);
 
-        // ── Email user when their Solo Parent requirements are reviewed ────────
-        if ($fileMonitoring->application && $fileMonitoring->application->program_type === 'Solo_Parent') {
+        // ── Email user when requirements are reviewed (all program types) ────────
+        if ($fileMonitoring->application && $fileMonitoring->application->user) {
             $fileMonitoring->load('fileUploads', 'application.user');
             $newOverall = $fileMonitoring->overall_status;
 
-            // Notify user when a file is individually rejected
-            if ($request->status === 'rejected') {
+            // Notify user on every approve/reject action.
+            // - If all files are approved => send "approved"
+            // - If any file is rejected   => send "rejected"
+            // - Otherwise                 => send generic "in_review" update
+            if (in_array($request->status, ['approved', 'rejected'], true)) {
                 try {
-                    Mail::to($fileMonitoring->application->user->email)
-                        ->send(new RequirementsReviewedMail($fileMonitoring, 'rejected'));
-                } catch (\Exception $e) {
-                    Log::error('Requirements reviewed (reject) email failed: ' . $e->getMessage());
-                }
-            }
+                    $mailStatus = match ($newOverall) {
+                        'approved' => 'approved',
+                        'rejected' => 'rejected',
+                        default    => 'in_review',
+                    };
 
-            // Notify user when ALL files are approved (overall becomes 'approved')
-            if ($newOverall === 'approved') {
-                try {
                     Mail::to($fileMonitoring->application->user->email)
-                        ->send(new RequirementsReviewedMail($fileMonitoring, 'approved'));
+                        ->send(new RequirementsReviewedMail($fileMonitoring, $mailStatus));
                 } catch (\Exception $e) {
-                    Log::error('Requirements reviewed (all approved) email failed: ' . $e->getMessage());
+                    Log::error('Requirements reviewed email failed: ' . $e->getMessage());
                 }
             }
         }
+
 
         return redirect()->back()->with('success', 'File status updated successfully!');
     }
@@ -419,7 +624,26 @@ class AdminController extends Controller
          $applicationsByProgram] = $this->buildApplicationStats($applications);
 
         $programShareOverview = $this->buildProgramOverview($user->municipality);
-        $barangayStats        = $this->buildBarangayStats($user->municipality, $applications);
+        
+        // Get demographic data for this municipality
+        $totalPop = $municipality->male_population + $municipality->female_population;
+        $totalHouseholds = $municipality->total_households;
+        
+        // Gender distribution
+        $genderData = [
+            'male' => $municipality->male_population,
+            'female' => $municipality->female_population,
+        ];
+        
+        // Age group distribution
+        $ageGroupData = [
+            '0-19' => $municipality->population_0_19,
+            '20-59' => $municipality->population_20_59,
+            '60+' => $municipality->population_60_100,
+        ];
+        
+        // Program beneficiaries - use same data as Program Share Overview
+        $programBeneficiaries = $programShareOverview->toArray();
 
         return view('admin.detailed-analysis', compact(
             'municipality',
@@ -430,7 +654,11 @@ class AdminController extends Controller
             'rejectedApplications',
             'applicationsByProgram',
             'programShareOverview',
-            'barangayStats'
+            'totalPop',
+            'totalHouseholds',
+            'genderData',
+            'ageGroupData',
+            'programBeneficiaries'
         ));
     }
 
@@ -730,5 +958,89 @@ class AdminController extends Controller
         ];
 
         return view('admin.barangay', compact('barangay', 'applications', 'statistics'));
+    }
+
+    // ── Admin User Management — view users in this municipality ───────────────
+    public function users()
+    {
+        $admin        = Auth::user();
+        $municipality = Municipality::where('name', $admin->municipality)->first();
+
+        // All regular users in this municipality
+        $users = \App\Models\User::where('municipality', $admin->municipality)
+            ->where('role', 'user')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($user) {
+                $apps = Application::where('user_id', $user->id);
+                $user->total_apps    = (clone $apps)->count();
+                $user->pending_apps  = (clone $apps)->where('status', 'pending')->count();
+                $user->approved_apps = (clone $apps)->where('status', 'approved')->count();
+                $user->rejected_apps = (clone $apps)->where('status', 'rejected')->count();
+                return $user;
+            });
+
+        extract($this->adminNotifData($admin));
+
+        return view('admin.users', compact(
+            'municipality', 'users',
+            'adminNewApplications', 'adminNewAppointments',
+            'adminNewUploads', 'adminNotifCount'
+        ));
+    }
+
+    public function searchUsers(Request $request)
+    {
+        $admin = Auth::user();
+        $q = strtolower(trim((string) $request->query('q', '')));
+        $appFilter = (string) $request->query('app_filter', '');
+
+        $users = \App\Models\User::where('municipality', $admin->municipality)
+            ->where('role', 'user')
+            ->orderBy('created_at', 'desc')
+            ->get()
+            ->map(function ($user) {
+                $apps = Application::where('user_id', $user->id);
+                $user->total_apps    = (clone $apps)->count();
+                $user->pending_apps  = (clone $apps)->where('status', 'pending')->count();
+                $user->approved_apps = (clone $apps)->where('status', 'approved')->count();
+                $user->rejected_apps = (clone $apps)->where('status', 'rejected')->count();
+                return $user;
+            });
+
+        if ($q !== '') {
+            $users = $users->filter(function ($u) use ($q) {
+                return str_contains(strtolower((string) $u->full_name), $q)
+                    || str_contains(strtolower((string) $u->email), $q)
+                    || str_contains(strtolower((string) ($u->barangay ?? '')), $q);
+            })->values();
+        }
+
+        if ($appFilter === 'with') {
+            $users = $users->filter(fn($u) => (int) $u->total_apps > 0)->values();
+        } elseif ($appFilter === 'without') {
+            $users = $users->filter(fn($u) => (int) $u->total_apps === 0)->values();
+        }
+
+        return response()->json([
+            'count' => $users->count(),
+            'users' => $users->map(function ($u) {
+                return [
+                    'id' => $u->id,
+                    'full_name' => $u->full_name,
+                    'email' => $u->email,
+                    'phone_number' => $u->phone_number,
+                    'barangay' => $u->barangay,
+                    'gender' => $u->gender,
+                    'date_of_birth' => $u->date_of_birth,
+                    'created_at' => optional($u->created_at)->toDateString(),
+                    'email_verified_at' => $u->email_verified_at,
+                    'total_apps' => (int) $u->total_apps,
+                    'pending_apps' => (int) $u->pending_apps,
+                    'approved_apps' => (int) $u->approved_apps,
+                    'rejected_apps' => (int) $u->rejected_apps,
+                ];
+            })->values(),
+        ]);
     }
 }

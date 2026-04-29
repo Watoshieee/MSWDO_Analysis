@@ -32,7 +32,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             .navbar-toggler { order: 0; }
             .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
         }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.93rem; }
+        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.85rem; white-space: nowrap; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
         .user-info { color: white; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1); padding: 9px 22px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; }
@@ -75,7 +75,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .f-input:focus { border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(44,62,143,0.08); outline: none; }
         .program-box { background: var(--bg-soft-blue); border: 1px solid var(--border-light); border-radius: 12px; padding: 13px 14px; }
         .program-box .p-name { font-size: 0.72rem; font-weight: 800; color: var(--primary-blue); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; display: block; }
-        .btn-update { background: var(--primary-gradient); color: white; border: none; border-radius: 12px; padding: 12px 24px; font-weight: 800; font-size: 0.95rem; cursor: pointer; transition: all 0.3s; margin-top: 20px; display: block; width: 100%; }
+        .btn-update { background: var(--primary-gradient); color: white; border: none; border-radius: 12px; padding: 12px 24px; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.3s; margin-top: 20px; display: block; width: 100%; }
         .btn-update:hover { box-shadow: 0 8px 24px rgba(44,62,143,0.28); transform: translateY(-1px); }
 
         /* ── YEARLY HISTORY ── */
@@ -135,6 +135,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
@@ -171,8 +172,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="main-content">
     <div class="container mt-4">
 
-        @if(session('success'))
-            <div class="alert-s">{{ session('success') }}</div>
+        @php
+            $topNotice = session('success') ?: session('error');
+        @endphp
+        @if($topNotice)
+            <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                {{ $topNotice }}
+            </div>
         @endif
         @if($errors->any())
             <div class="alert-e"><ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul></div>

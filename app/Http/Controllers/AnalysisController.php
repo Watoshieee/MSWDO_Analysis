@@ -9,6 +9,7 @@ use App\Models\MunicipalityYearlySummary;
 use App\Models\MunicipalityMonthlySummary;
 use App\Models\Application;
 use App\Models\AdminMunicipalityData;
+use App\Models\MunicipalityVision;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -57,6 +58,26 @@ class AnalysisController extends Controller
             }
         }
 
+        // Municipality color palette
+        $palette = ['#2C3E8F', '#FDB913', '#C41E24', '#16a34a', '#7c3aed', '#0891b2'];
+        $colors = [];
+        foreach (array_values($coreNames) as $i => $n) {
+            $colors[$n] = $palette[$i % count($palette)];
+        }
+
+        // Vision / Mission / Goals per municipality
+        $visionRows = MunicipalityVision::whereIn('municipality_name', $coreNames)->get()->keyBy('municipality_name');
+        $visionData = [];
+        foreach ($coreNames as $n) {
+            $row = $visionRows[$n] ?? null;
+            $visionData[$n] = [
+                'vision'          => $row?->vision ?? '',
+                'mission'         => $row?->mission ?? '',
+                'goals'           => $row?->goals ?? '',
+                'strategic_goals' => $row?->strategic_goals ?? [],
+            ];
+        }
+
         return view('analysis.programs', compact(
             'allYears',
             'yearlyByMuni',
@@ -64,7 +85,9 @@ class AnalysisController extends Controller
             'programTypes',
             'summaryYears',
             'yearlyPopulation',
-            'coreNames'
+            'coreNames',
+            'colors',
+            'visionData'
         ));
     }
 
@@ -691,6 +714,19 @@ class AnalysisController extends Controller
             ['label' => 'AICS & Households',  'text' => "High AICS uptake correlates with household density. Increase crisis assistance (AICS) funding proportionally with household growth."],
         ];
 
+        // ── Vision / Mission / Goals per municipality ────────────────────────
+        $visionRows = MunicipalityVision::whereIn('municipality_name', $coreNames)->get()->keyBy('municipality_name');
+        $visionData = [];
+        foreach ($coreNames as $n) {
+            $row = $visionRows[$n] ?? null;
+            $visionData[$n] = [
+                'vision'          => $row?->vision ?? '',
+                'mission'         => $row?->mission ?? '',
+                'goals'           => $row?->goals ?? '',
+                'strategic_goals' => $row?->strategic_goals ?? [],
+            ];
+        }
+
         return view('analysis.index', compact(
             'coreNames', 'colors', 'allYears', 'selectedYear',
             'snapshot', 'populationTrend', 'maleTrend', 'femaleTrend',
@@ -700,7 +736,8 @@ class AnalysisController extends Controller
             'correlations', 'corrPopBenef', 'corrAge60Senior', 'corrHhAics',
             'insights', 'recommendations',
             'highestPop', 'lowestPop', 'highestBenef', 'fastest',
-            'domAge', 'topProgram', 'progTotals'
+            'domAge', 'topProgram', 'progTotals',
+            'visionData'
         ));
     }
 

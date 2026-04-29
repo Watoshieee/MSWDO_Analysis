@@ -54,19 +54,35 @@
 
     <div class="body">
         <p class="greeting">Hello, {{ $fileMonitoring->application->user->full_name ?? 'Applicant' }}!</p>
+        @php
+        $programLabel = match($fileMonitoring->application->program_type ?? '') {
+            'AICS_Medical' => 'AICS Medical Assistance',
+            'AICS_Burial'  => 'AICS Burial Assistance',
+            'PWD_Assistance',
+            'PWD_New',
+            'PWD_Renewal'  => 'PWD ID',
+            'Senior_Citizen_Pension',
+            'Senior_Citizen' => 'Senior Citizen Assistance',
+            '4Ps'          => '4Ps',
+            'SLP'          => 'SLP',
+            'ESA'          => 'ESA',
+            'Solo_Parent'  => 'Solo Parent ID',
+            default        => str_replace('_', ' ', $fileMonitoring->application->program_type ?? 'Program'),
+        };
+        @endphp
         <p class="intro">
             @if($overallStatus === 'approved')
-                Great news! All of your submitted documents for the <strong>Solo Parent ID</strong> application have been reviewed and <strong>approved</strong>. Your ID will now be processed by the MSWDO office.
+                Great news! All of your submitted documents for the <strong>{{ $programLabel }}</strong> application have been reviewed and <strong>approved</strong>. Your application will now be processed by the MSWDO office.
             @elseif($overallStatus === 'rejected')
-                The MSWDO office has reviewed your submitted documents for the <strong>Solo Parent ID</strong> application. Some documents require your attention. Please review the details below and resubmit the declined documents.
+                The MSWDO office has reviewed your submitted documents for the <strong>{{ $programLabel }}</strong> application. Some documents require your attention. Please review the details below and resubmit the declined documents.
             @else
-                Your submitted documents for the <strong>Solo Parent ID</strong> application are currently under review. We will notify you once the review is complete.
+                Your submitted documents for the <strong>{{ $programLabel }}</strong> application are currently under review. We will notify you once the review is complete.
             @endif
         </p>
 
         @if($overallStatus === 'approved')
         <div class="success-box">
-            🎉 <strong>Congratulations!</strong> Your Solo Parent ID application is now being processed. You will be contacted when your ID is ready for pickup.
+            🎉 <strong>Congratulations!</strong> Your <strong>{{ $programLabel }}</strong> application has been fully approved. You will be contacted when your application is ready for the next step.
         </div>
         @endif
 
