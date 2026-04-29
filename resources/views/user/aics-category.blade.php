@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Solo Parent � AICS Category | MSWDO</title>
+    <title>Solo Parent -AICS Category | MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -112,13 +112,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="container mt-4 pb-5">
 
         <a href="{{ route('user.programs') }}" class="back-link">
-            ? Back to Programs
+             Back to Programs
         </a>
 
         <!-- HERO -->
         <div class="page-hero">
             <div class="hero-badge">Assistance in Crisis (AICS)</div>
-            <h1>AICS � Choose a Category</h1>
+            <h1>AICS -Choose a Category</h1>
             <div class="hero-divider"></div>
             <p>Assistance to Individuals in Crisis Situation (AICS) provides targeted financial aid to individuals and families facing emergencies. Select the type of assistance you need to begin your application.</p>
         </div>
@@ -131,8 +131,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="col-md-4">
                 <a href="{{ route('user.aics-medical') }}" class="aics-card-link">
                     <div class="aics-card">
-                        <div class="card-icon">??</div>
-                        <span class="card-num">01 � AICS</span>
+                        <span class="card-num">01 - AICS</span>
                         <div class="card-title">Medical Assistance</div>
                         <div class="card-desc">Financial support for medical needs including hospital bills, medicines, laboratory tests, and other health-related expenses for individuals in crisis situations.</div>
                         <span class="card-arrow">View Requirements ?</span>
@@ -144,8 +143,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="col-md-4">
                 <a href="{{ route('user.aics-burial') }}" class="aics-card-link">
                     <div class="aics-card">
-                        <div class="card-icon">???</div>
-                        <span class="card-num">02 � AICS</span>
+                        <span class="card-num">02 - AICS</span>
                         <div class="card-title">Burial Assistance</div>
                         <div class="card-desc">Financial aid to help individuals and families manage funeral and burial expenses for an immediate family member who has passed away.</div>
                         <span class="card-arrow">View Requirements ?</span>
@@ -156,8 +154,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <!-- EMERGENCY SHELTER (UNAVAILABLE) -->
             <div class="col-md-4">
                 <div class="aics-card disabled">
-                    <div class="card-icon">??</div>
-                    <span class="card-num">03 � AICS</span>
+                    <span class="card-num">03 - AICS</span>
                     <div class="card-title">Emergency Shelter Assistance</div>
                     <div class="card-desc">Support for solo parents who have lost or are at risk of losing their shelter due to disaster, calamity, or emergency situations.</div>
                     <span class="card-badge-unavail">? Not yet available</span>

@@ -455,7 +455,7 @@
                 Statistical Analysis Dashboard</div>
             <h1>Comparative Socioeconomic Analysis</h1>
             <div class="hero-divider"></div>
-            <p>Comprehensive statistical analysis of Magdalena, Liliw, and Majayjay â€” covering population, gender, age
+            <p>Comprehensive statistical analysis of Magdalena, Liliw, and Majayjay covering population, gender, age
                 groups, households, social welfare programs, ANOVA, and Pearson correlation.</p>
         </div>
     </section>
@@ -493,19 +493,24 @@
         /** @var string $domAge */
         /** @var string $topProgram */
         /** @var array $progTotals */
-        $muniColors = $colors; // dynamic â€” set in AnalysisController from DB
+        $muniColors = $colors; // dynamic set in AnalysisController from DB
         $totalPop = array_sum(array_map(fn($n) => $snapshot[$n]['population'], $coreNames));
         $totalHH = array_sum(array_map(fn($n) => $snapshot[$n]['households'], $coreNames));
         $totalBenef = array_sum(array_map(fn($n) => $snapshot[$n]['beneficiaries'], $coreNames));
-        $popArr = array_map(fn($n) => $snapshot[$n]['population'], $coreNames);
+        $popArr = [];
+        $benArr = [];
+        $hhArr = [];
+        foreach ($coreNames as $n) {
+            $popArr[$n] = (int) ($snapshot[$n]['population'] ?? 0);
+            $benArr[$n] = (int) ($snapshot[$n]['beneficiaries'] ?? 0);
+            $hhArr[$n]  = (int) ($snapshot[$n]['households'] ?? 0);
+        }
         arsort($popArr);
-        $highPop = array_keys($popArr)[0] ?? '';
-        $benArr = array_map(fn($n) => $snapshot[$n]['beneficiaries'], $coreNames);
         arsort($benArr);
-        $highBen = array_keys($benArr)[0] ?? '';
-        $hhArr = array_map(fn($n) => $snapshot[$n]['households'], $coreNames);
         arsort($hhArr);
-        $highHH = array_keys($hhArr)[0] ?? '';
+        $highPop = array_key_first($popArr) ?? ($highestPop ?? '');
+        $highBen = array_key_first($benArr) ?? ($highestBenef ?? '');
+        $highHH = array_key_first($hhArr) ?? '';
     @endphp
 
     {{-- SECTION 1: DESCRIPTIVE ANALYSIS --}}
@@ -540,7 +545,7 @@
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Population, Households & Beneficiaries per
                             Municipality</h6>
-                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Grouped bar chart â€”
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Grouped bar chart 
                             {{ $selectedYear }}</p>
                         <div class="chart-box"><canvas id="descBar"></canvas></div>
                     </div>
@@ -596,7 +601,7 @@
                 <div class="col-lg-8">
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Population per Year per Municipality</h6>
-                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Line chart â€” all recorded years</p>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Line chart  all recorded years</p>
                         <div class="chart-box tall"><canvas id="popTrend"></canvas></div>
                     </div>
                 </div>
@@ -717,12 +722,11 @@
                                 <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Supporting Evidence</span>
                             </div>
                             <div style="display:flex;flex-direction:column;gap:10px;">
-                                @php
+                                @php    
                                 $growthRefs = [
-                                    ['authors' => 'PhilAtlas (2020)', 'url' => 'https://www.philatlas.com/luzon/r04a/laguna/magdalena.html', 'label' => 'Magdalena, Laguna â€” Population Data'],
-                                    ['authors' => 'Magpantay & Sanchez (2023)', 'url' => 'https://journals.uplb.edu.ph/index.php/JESAM/article/download/1030/853', 'label' => 'JESAM â€” Environmental & Socio-demographic Study'],
-                                    ['authors' => 'Dayo, Rola, et al.', 'url' => 'https://journals.uplb.edu.ph/index.php/JPAD/article/download/719/676', 'label' => 'JPAD â€” Population & Agricultural Development'],
-                                    ['authors' => 'Sandoval et al. (2023)', 'url' => 'https://www.researchgate.net/profile/Ryan-Labana/publication/371812110_Water_Quality_Assessment_of_Santa_Cruz_River_in_2011_and_2022_in_the_Vicinity_of_Liliw_and_Nagcarlan_Laguna_Philippines/links/669b155b02e9686cd11091b5/Water-Quality-Assessment-of-Santa-Cruz-River-in-2011-and-2022-in-the-Vicinity-of-Liliw-and-Nagcarlan-Laguna-Philippines.pdf', 'label' => 'Water Quality Assessment â€” Santa Cruz River, Laguna'],
+                                    ['authors' => 'PhilAtlas (2020)', 'url' => 'https://www.philatlas.com/luzon/r04a/laguna/magdalena.html', 'label' => 'Magdalena, Laguna Population Data'],
+                                    ['authors' => 'Magpantay & Sanchez (2023)', 'url' => 'https://journals.uplb.edu.ph/index.php/JESAM/article/download/1030/853', 'label' => 'JESAM  Environmental & Socio-demographic Study'],
+                                    ['authors' => 'Sandoval et al. (2023)', 'url' => 'https://www.researchgate.net/profile/Ryan-Labana/publication/371812110_Water_Quality_Assessment_of_Santa_Cruz_River_in_2011_and_2022_in_the_Vicinity_of_Liliw_and_Nagcarlan_Laguna_Philippines/links/669b155b02e9686cd11091b5/Water-Quality-Assessment-of-Santa-Cruz-River-in-2011-and-2022-in-the-Vicinity-of-Liliw-and-Nagcarlan-Laguna-Philippines.pdf', 'label' => 'Water Quality Assessment Santa Cruz River, Laguna'],
                                 ];
                                 @endphp
                                 @foreach($growthRefs as $idx => $ref)
@@ -769,6 +773,8 @@
     <style>
         @media (max-width: 768px) {
             .growth-detail-grid { grid-template-columns: 1fr !important; }
+            .gender-detail-grid { grid-template-columns: 1fr !important; }
+            .age-detail-grid { grid-template-columns: 1fr !important; }
         }
     </style>
 
@@ -806,6 +812,133 @@
         </div>
     </section>
 
+    {{-- GENDER ANALYSIS DETAIL PANEL --}}
+    <section class="section-wrap" style="padding-top:0;padding-bottom:40px;">
+        <div class="container">
+            @php
+                $maleLead = $totalM - $totalF;
+                $sexTotal = $totalM + $totalF;
+                $maleShare = $sexTotal > 0 ? round(($totalM / $sexTotal) * 100, 1) : 0;
+                $femaleShare = $sexTotal > 0 ? round(($totalF / $sexTotal) * 100, 1) : 0;
+                $genderLeadMuni = [];
+                foreach ($coreNames as $n) {
+                    $m = (int) ($snapshot[$n]['male'] ?? 0);
+                    $f = (int) ($snapshot[$n]['female'] ?? 0);
+                    if ($m > $f) $genderLeadMuni[] = $n;
+                }
+                $genderLeadList = !empty($genderLeadMuni) ? implode(', ', $genderLeadMuni) : 'none';
+            @endphp
+
+            <div class="card-base" style="border-top:4px solid #FDB913;padding:0;overflow:hidden;">
+                <div style="background:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%);padding:22px 28px 18px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#FDB913;flex-shrink:0;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1A2A5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </span>
+                        <span style="font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#FDB913;">Key Finding</span>
+                    </div>
+                    <p style="color:rgba(255,255,255,.93);font-size:.93rem;line-height:1.7;margin:0;">
+                        <strong style="color:#FDB913;">Male population is higher</strong> in {{ $selectedYear }}:
+                        <strong style="color:#FDB913;">{{ number_format($totalM) }}</strong> males vs
+                        <strong style="color:#FDB913;">{{ number_format($totalF) }}</strong> females
+                        (difference: <strong style="color:#FDB913;">{{ number_format(abs($maleLead)) }}</strong>).
+                    </p>
+                </div>
+
+                <div style="padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:28px;" class="gender-detail-grid">
+                    <div>
+                        <div style="display:flex;align-items:center;margin-bottom:16px;">
+                            <span style="display:inline-block;width:4px;height:20px;background:#FDB913;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                            <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Explanation of Gender Pattern</span>
+                        </div>
+
+                        <div style="display:flex;flex-direction:column;gap:14px;">
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Migration Selectivity</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">
+                                        As discussed in migration literature, mobility can be sex-selective, especially for employment-related movement. This can produce male-heavy local counts in specific years.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Observed Local Structure</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">
+                                        In this dataset, male counts are higher across {{ $genderLeadList }}. This supports a consistent pattern rather than a one-time anomaly.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Program Planning Implication</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">
+                                        Current composition is {{ $maleShare }}% male and {{ $femaleShare }}% female. MSWDO planning should remain gender-responsive and validated yearly using official PSA updates.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:20px;">
+                        <div>
+                            <div style="display:flex;align-items:center;margin-bottom:14px;">
+                                <span style="display:inline-block;width:4px;height:20px;background:#2C3E8F;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                                <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Supporting Evidence</span>
+                            </div>
+                            @php
+                                $genderRefs = [
+                                    ['authors' => 'PSA (2018 National Migration Survey)', 'url' => 'https://rssocar.psa.gov.ph/content/2018-national-migration-survey-migration-experiences-filipinos', 'label' => 'Migration Experiences of Filipinos'],
+                                    ['authors' => 'PSA Infographic (Single Population)', 'url' => 'https://psa.gov.ph/sites/default/files/infographics/Infographic_Single%20Population_v3_PMMJ_CRD-signed_0.pdf?width=950&height=700&iframe=true&fbclid=IwY2xjawRciFZleHRuA2FlbQIxMABicmlkETE2SjdJbmdlemJMdG1yMlI1c3J0YwZhcHBfaWQQMjIyMDM5MTc4ODIwMDg5MgABHnQg31NhU56d1SpggmQudMV4Oxb5e-RJha_xwUjt_Hc13-XI_sL3Tpg_ald5_aem_PprTzfjNOX3YMRobsob_cQ', 'label' => 'Sex and Civil Status Profile Infographic'],
+                                ];
+                            @endphp
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                @foreach($genderRefs as $idx => $ref)
+                                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:11px 14px;display:flex;gap:12px;align-items:flex-start;">
+                                    <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#2C3E8F;color:#fff;font-size:.65rem;font-weight:800;flex-shrink:0;margin-top:1px;">{{ $idx + 1 }}</span>
+                                    <div>
+                                        <div style="font-weight:700;font-size:.8rem;color:#1e293b;margin-bottom:2px;">{{ $ref['authors'] }}</div>
+                                        <div style="font-size:.75rem;color:#64748b;margin-bottom:4px;">{{ $ref['label'] }}</div>
+                                        <a href="{{ $ref['url'] }}" target="_blank" rel="noopener noreferrer"
+                                           style="font-size:.72rem;color:#2C3E8F;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                            View Source
+                                        </a>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        <div style="background:linear-gradient(135deg,#F0F5FF 0%,#E5EEFF 100%);border:1px solid #c7d7f5;border-radius:14px;padding:18px 20px;">
+                            <div style="display:flex;align-items:center;margin-bottom:12px;">
+                                <span style="display:inline-block;width:4px;height:20px;background:#FDB913;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                                <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Conclusion</span>
+                            </div>
+                            <p style="font-size:.83rem;color:#334155;line-height:1.75;margin:0;">
+                                The selected-year analysis shows a male-leading population profile. This can be explained by local demographic composition and migration behavior documented in national-level RRL.
+                            </p>
+                            <p style="font-size:.83rem;color:#334155;line-height:1.75;margin:12px 0 0;">
+                                For policy use, maintain gender-responsive targeting while validating this gap every year using updated official statistics.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
     {{-- SECTION 4: AGE GROUP --}}
     <section class="section-wrap alt">
         <div class="container">
@@ -815,7 +948,7 @@
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Age Groups per Municipality (Stacked)</h6>
                         <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Youth (0â€“19), Working Age (20â€“59),
-                            Senior (60+) â€” {{ $selectedYear }}</p>
+                            Senior (60+) {{ $selectedYear }}</p>
                         <div class="chart-box tall"><canvas id="ageStacked"></canvas></div>
                     </div>
                 </div>
@@ -844,7 +977,121 @@
                         <div style="padding-top:12px;border-top:1px solid #f1f5f9;">
                             <p style="font-size:.8rem;color:#64748b;margin:0;line-height:1.6;">
                                 Dominant age group: <strong>{{ $domAge }}</strong>.<br>
-                                {{ $domAge === 'Youth (0â€“19)' ? 'Population is youthful â€” invest in education and livelihood programs.' : ($domAge === 'Working Age (20â€“59)' ? 'Productive population â€” strong labor force, moderate dependency.' : 'Aging population â€” prioritize elder care and pension services.') }}
+                                {{ $domAge === 'Youth (0â€“19)' ? 'Population is youthful invest in education and livelihood programs.' : ($domAge === 'Working Age (20â€“59)' ? 'Productive population  strong labor force, moderate dependency.' : 'Aging population  prioritize elder care and pension services.') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- AGE GROUP ANALYSIS DETAIL PANEL --}}
+    <section class="section-wrap" style="padding-top:0;padding-bottom:40px;">
+        <div class="container">
+            @php
+                $totalYouth = array_sum(array_map(fn($n) => (int) ($snapshot[$n]['age_0_19'] ?? 0), $coreNames));
+                $totalWorking = array_sum(array_map(fn($n) => (int) ($snapshot[$n]['age_20_59'] ?? 0), $coreNames));
+                $totalSenior = array_sum(array_map(fn($n) => (int) ($snapshot[$n]['age_60_100'] ?? 0), $coreNames));
+                $ageGrandTotal = $totalYouth + $totalWorking + $totalSenior;
+                $youthPct = $ageGrandTotal > 0 ? round(($totalYouth / $ageGrandTotal) * 100, 1) : 0;
+                $workingPct = $ageGrandTotal > 0 ? round(($totalWorking / $ageGrandTotal) * 100, 1) : 0;
+                $seniorPct = $ageGrandTotal > 0 ? round(($totalSenior / $ageGrandTotal) * 100, 1) : 0;
+            @endphp
+
+            <div class="card-base" style="border-top:4px solid #FDB913;padding:0;overflow:hidden;">
+                <div style="background:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%);padding:22px 28px 18px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#FDB913;flex-shrink:0;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1A2A5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </span>
+                        <span style="font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#FDB913;">Key Finding</span>
+                    </div>
+                    <p style="color:rgba(255,255,255,.93);font-size:.93rem;line-height:1.7;margin:0;">
+                        Age-group records for {{ $selectedYear }} show a <strong style="color:#FDB913;">consistent dominance of Working Age (20-59)</strong>
+                        across municipalities, with totals at <strong style="color:#FDB913;">{{ number_format($totalWorking) }}</strong>
+                        ({{ $workingPct }}%), higher than Youth ({{ number_format($totalYouth) }}) and Senior ({{ number_format($totalSenior) }}).
+                    </p>
+                </div>
+
+                <div style="padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:28px;" class="age-detail-grid">
+                    <div>
+                        <div style="display:flex;align-items:center;margin-bottom:16px;">
+                            <span style="display:inline-block;width:4px;height:20px;background:#FDB913;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                            <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Explanation of Age Pattern</span>
+                        </div>
+
+                        <div style="display:flex;flex-direction:column;gap:14px;">
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Consistent Working-Age Lead</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">
+                                        Across the municipalities in the selected records, Working Age (20-59) remains the largest group. This indicates a stable productive-age base in the local demographic profile.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Balanced Dependency Pressure</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">
+                                        Dependency ratios around the mid-50% range suggest that dependent age groups are significant, but still supported by a larger working-age segment.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20V10"/><path d="M18 20V4"/><path d="M6 20v-4"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Service Planning Implication</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">
+                                        With Youth at {{ $youthPct }}%, Working Age at {{ $workingPct }}%, and Senior at {{ $seniorPct }}, program design should prioritize livelihood and employment support while sustaining child and senior-targeted services.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;flex-direction:column;gap:20px;">
+                        <div>
+                            <div style="display:flex;align-items:center;margin-bottom:14px;">
+                                <span style="display:inline-block;width:4px;height:20px;background:#2C3E8F;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                                <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Supporting Evidence</span>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:11px 14px;display:flex;gap:12px;align-items:flex-start;">
+                                    <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#2C3E8F;color:#fff;font-size:.65rem;font-weight:800;flex-shrink:0;margin-top:1px;">1</span>
+                                    <div>
+                                        <div style="font-weight:700;font-size:.8rem;color:#1e293b;margin-bottom:2px;">PhilAtlas Laguna Profile</div>
+                                        <div style="font-size:.75rem;color:#64748b;margin-bottom:4px;">Regional and municipal demographic reference (Laguna)</div>
+                                        <a href="https://www.philatlas.com/luzon/r04a/laguna.html" target="_blank" rel="noopener noreferrer"
+                                           style="font-size:.72rem;color:#2C3E8F;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                            View Source
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div style="background:linear-gradient(135deg,#F0F5FF 0%,#E5EEFF 100%);border:1px solid #c7d7f5;border-radius:14px;padding:18px 20px;">
+                            <div style="display:flex;align-items:center;margin-bottom:12px;">
+                                <span style="display:inline-block;width:4px;height:20px;background:#FDB913;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                                <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Conclusion</span>
+                            </div>
+                            <p style="font-size:.83rem;color:#334155;line-height:1.75;margin:0;">
+                                The records indicate a consistent age-structure pattern where Working Age remains the largest segment, while Youth and Senior groups continue to contribute to dependency demand.
+                            </p>
+                            <p style="font-size:.83rem;color:#334155;line-height:1.75;margin:12px 0 0;">
+                                This supports a dual strategy: reinforce productivity-focused interventions and maintain social protection for younger and older dependents.
                             </p>
                         </div>
                     </div>
@@ -862,7 +1109,7 @@
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Population vs Households Combo Chart</h6>
                         <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Bars = Population, Line =
-                            Households â€” {{ $selectedYear }}</p>
+                            Households  {{ $selectedYear }}</p>
                         <div class="chart-box tall"><canvas id="hhCombo"></canvas></div>
                     </div>
                 </div>
@@ -925,7 +1172,7 @@
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Programs per Municipality (Stacked)</h6>
                         <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">PWD, AICS, Solo Parent, 4Ps, Senior
-                            â€” {{ $selectedYear }}</p>
+                             {{ $selectedYear }}</p>
                         <div class="chart-box tall"><canvas id="benefStacked"></canvas></div>
                     </div>
                 </div>
@@ -992,7 +1239,7 @@
                     @php $res = $$var; @endphp
                     <div class="col-lg-6">
                         <div class="card-base">
-                            <h6 style="font-weight:700;color:var(--blue);">ANOVA â€” {{ $label }}</h6>
+                            <h6 style="font-weight:700;color:var(--blue);">ANOVA  {{ $label }}</h6>
                             @if($res)
                                 <div class="d-flex align-items-center gap-3 mb-3">
                                     <div>
@@ -1082,11 +1329,11 @@
                             <p style="font-size:.8rem;color:#64748b;margin:0;">
                                 @if($r === null) Insufficient data for correlation.
                                 @elseif($abs >= 0.7) <strong>Strong {{ $r >= 0 ? 'positive' : 'negative' }}</strong>
-                                    relationship â€” as {{ $corr['xLabel'] }} {{ $r >= 0 ? 'increases' : 'decreases' }},
+                                    relationship  as {{ $corr['xLabel'] }} {{ $r >= 0 ? 'increases' : 'decreases' }},
                                     {{ $corr['yLabel'] }} {{ $r >= 0 ? 'increases' : 'decreases' }} significantly.
                                 @elseif($abs >= 0.4) <strong>Moderate {{ $r >= 0 ? 'positive' : 'negative' }}</strong>
                                     relationship detected between {{ $corr['xLabel'] }} and {{ $corr['yLabel'] }}.
-                                @else <strong>Weak</strong> relationship â€” {{ $corr['xLabel'] }} and {{ $corr['yLabel'] }}
+                                @else <strong>Weak</strong> relationship  {{ $corr['xLabel'] }} and {{ $corr['yLabel'] }}
                                     show little linear dependency.
                                 @endif
                             </p>

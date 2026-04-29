@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Applications � MSWDO Admin</title>
+    <title>Applications - MSWDO Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @include('components.admin-colors')
@@ -412,10 +412,53 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         }
         .ui-toast.show { display: block; }
         .ui-toast small { display: block; opacity: 0.75; font-weight: 600; margin-top: 2px; }
+
+        /* ── Navy loading overlay for async/admin actions ───────────────────── */
+        .ui-loading-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(1.5px);
+            z-index: 12050;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .ui-loading-box {
+            width: 100%;
+            max-width: 360px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #2C3E8F, #1A2A5C);
+            color: #fff;
+            box-shadow: 0 16px 44px rgba(15, 23, 42, .35);
+            border: 1px solid rgba(255,255,255,.15);
+            padding: 20px 18px;
+            text-align: center;
+        }
+        .ui-loading-spinner {
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 10px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,.25);
+            border-top-color: #FDB913;
+            animation: uiSpin .8s linear infinite;
+        }
+        .ui-loading-title { font-weight: 800; font-size: .98rem; letter-spacing: .01em; }
+        .ui-loading-sub { margin-top: 4px; opacity: .85; font-size: .8rem; }
+        @keyframes uiSpin { to { transform: rotate(360deg); } }
     </style>
 </head>
 
 <body>
+    <div id="uiLoadingBackdrop" class="ui-loading-backdrop" aria-hidden="true">
+        <div class="ui-loading-box" role="status" aria-live="polite">
+            <div class="ui-loading-spinner"></div>
+            <div class="ui-loading-title">Processing Request</div>
+            <div class="ui-loading-sub">Please wait while we update records.</div>
+        </div>
+    </div>
 
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
@@ -500,6 +543,29 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 </div>
                 <div class="p-0">
+                    <form method="GET" action="{{ route('admin.requirements') }}" style="padding:14px 16px;border-bottom:1px solid #e2e8f0;background:#f8faff;">
+                        <div style="display:grid;grid-template-columns:2fr 1fr 1fr auto auto;gap:10px;align-items:center;">
+                            <input type="text" name="app_search" value="{{ request('app_search') }}" placeholder="Search applicant, contact, barangay..."
+                                class="form-control" style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
+                            <select name="app_status" class="form-select" style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
+                                <option value="">All status</option>
+                                <option value="pending" {{ request('app_status') === 'pending' ? 'selected' : '' }}>Pending</option>
+                                <option value="approved" {{ request('app_status') === 'approved' ? 'selected' : '' }}>Approved</option>
+                                <option value="rejected" {{ request('app_status') === 'rejected' ? 'selected' : '' }}>Rejected</option>
+                            </select>
+                            <select name="app_program" class="form-select" style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
+                                <option value="">All programs</option>
+                                <option value="PWD_Assistance" {{ request('app_program') === 'PWD_Assistance' ? 'selected' : '' }}>PWD Assistance</option>
+                                <option value="PWD_New" {{ request('app_program') === 'PWD_New' ? 'selected' : '' }}>PWD New</option>
+                                <option value="PWD_Renewal" {{ request('app_program') === 'PWD_Renewal' ? 'selected' : '' }}>PWD Renewal</option>
+                                <option value="Solo_Parent" {{ request('app_program') === 'Solo_Parent' ? 'selected' : '' }}>Solo Parent</option>
+                                <option value="AICS_Medical" {{ request('app_program') === 'AICS_Medical' ? 'selected' : '' }}>AICS Medical</option>
+                                <option value="AICS_Burial" {{ request('app_program') === 'AICS_Burial' ? 'selected' : '' }}>AICS Burial</option>
+                            </select>
+                            <button type="submit" class="btn-action btn-view" style="padding:8px 14px;">Filter</button>
+                            <a href="{{ route('admin.requirements') }}" class="btn-action" style="padding:8px 14px;background:#eef2ff;color:#1e3a8a;border:1px solid #c7d2fe;">Reset</a>
+                        </div>
+                    </form>
                     @if($applications->count() > 0)
                         <div class="table-responsive">
                             <table class="table mb-0">
@@ -522,9 +588,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                             </td>
                                             <td><span class="prog-tag">{{ str_replace('_', ' ', $app->program_type) }}</span>
                                             </td>
-                                            <td style="font-size:.85rem;color:#475569;">{{ $app->barangay ?: '�' }}</td>
+                                            <td style="font-size:.85rem;color:#475569;">{{ $app->barangay ?: '—' }}</td>
                                             <td style="font-size:.82rem;color:#64748b;">
-                                                {{ $app->application_date ? \Carbon\Carbon::parse($app->application_date)->format('M j, Y') : '�' }}
+                                                {{ $app->application_date ? \Carbon\Carbon::parse($app->application_date)->format('M j, Y') : '—' }}
                                             </td>
                                             <td>
                                                 @if($app->status === 'approved')
@@ -620,7 +686,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 </tbody>
                             </table>
                         </div>
-                        <div class="p-3">{{ $applications->links() }}</div>
+                        <div class="p-3">{{ $applications->appends(request()->query())->links() }}</div>
                     @else
                         <div class="empty-state">
                             <div class="empty-num">00</div>
@@ -641,6 +707,24 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </button>
                         <span id="apptCount" style="font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.15);padding:4px 12px;border-radius:20px;">Loading&hellip;</span>
                     </div>
+                </div>
+                <div style="padding:14px 16px;border-bottom:1px solid #e2e8f0;background:#f8faff;display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;">
+                    <input id="apptSearchInput" type="text" placeholder="Search applicant, email, notes..." class="form-control"
+                        style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
+                    <select id="apptStatusFilter" class="form-select" style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
+                        <option value="">All status</option>
+                        <option value="pending">Pending</option>
+                        <option value="confirmed">Confirmed</option>
+                        <option value="validated">Validated</option>
+                        <option value="rejected">Rejected</option>
+                        <option value="cancelled">Cancelled</option>
+                    </select>
+                    <select id="apptProgramFilter" class="form-select" style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
+                        <option value="">All programs</option>
+                        <option value="Solo_Parent">Solo Parent</option>
+                        <option value="AICS_Medical">AICS Medical</option>
+                        <option value="AICS_Burial">AICS Burial</option>
+                    </select>
                 </div>
                 <div class="p-3" id="apptTableWrap">
                     <div style="text-align:center;padding:30px;color:#94a3b8;font-size:.9rem;">Loading appointments&hellip;</div>
@@ -667,82 +751,117 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <script>
             var rejectTargetId = null;
             var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            var _allAppointments = [];
+            var _apptFilterTimer = null;
+
+            function normalizeText(v) {
+                return String(v || '').toLowerCase();
+            }
+
+            function applyAppointmentFilters() {
+                const term = normalizeText(document.getElementById('apptSearchInput')?.value);
+                const status = normalizeText(document.getElementById('apptStatusFilter')?.value);
+                const program = normalizeText(document.getElementById('apptProgramFilter')?.value);
+                const filtered = _allAppointments.filter(a => {
+                    const hay = [
+                        a.user_name,
+                        a.user_email,
+                        a.user_notes,
+                        a.program_type,
+                        a.status,
+                        a.date,
+                        a.time,
+                    ].map(normalizeText).join(' ');
+                    if (term && !hay.includes(term)) return false;
+                    if (status && normalizeText(a.status) !== status) return false;
+                    if (program && normalizeText(a.program_type) !== program) return false;
+                    return true;
+                });
+                renderAppointments(filtered);
+            }
 
             function loadAppointments() {
                 fetch('/admin/appointments', {headers:{'X-Requested-With':'XMLHttpRequest','Accept':'application/json'}})
                 .then(r => r.json())
                 .then(data => {
-                    document.getElementById('apptCount').textContent = data.length + ' Total';
-                    if (!data.length) {
-                        document.getElementById('apptTableWrap').innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;font-size:.9rem;">No appointments yet.</div>';
-                        return;
-                    }
-
-                    let rows = data.map(a => {
-                        // Program type label + color
-                        const progLabels = {
-                            'Solo_Parent': {label:'Solo Parent', color:'#4f46e5', bg:'#ede9fe'},
-                            'AICS_Medical': {label:'AICS Medical', color:'#0891b2', bg:'#e0f2fe'},
-                            'AICS_Burial':  {label:'AICS Burial',  color:'#7c3aed', bg:'#f5f3ff'},
-                        };
-                        const prog = progLabels[a.program_type] || {label: a.program_type.replace('_',' '), color:'#64748b', bg:'#f1f5f9'};
-                        const progBadge = `<span style="background:${prog.bg};color:${prog.color};border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:700;white-space:nowrap;">${prog.label}</span>`;
-
-                        // Action buttons differ by program type
-                        let actions = '';
-                        const isSoloParent = a.program_type === 'Solo_Parent';
-
-                        if (a.status === 'pending') {
-                            actions = `
-                                <button onclick="confirmAppt(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">✅ Approve</button>
-                                <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">❌ Reject</button>
-                            `;
-                        } else if (a.status === 'confirmed') {
-                            if (isSoloParent) {
-                                actions = `
-                                    <button onclick="validateAppt(${a.id})" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">🏆 Eligible</button>
-                                    <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">❌ Reject</button>
-                                `;
-                            } else {
-                                actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">✅ Approved</span>`;
-                            }
-                        } else if (a.status === 'validated') {
-                            // Solo Parent only
-                            if (a.id_status === 'ready_for_pickup') {
-                                actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">🎫 ID Ready</span>`;
-                            } else if (a.id_status === 'processing') {
-                                actions = `<button onclick="markIdReady(${a.solo_parent_app_id},'${encodeURIComponent(a.user_name)}')" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">🎫 ID Ready</button>`;
-                            } else {
-                                actions = `<span style="background:#fff7ed;color:#9a3412;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">⏳ Waiting Requirements Validation</span>`;
-                            }
-                        } else {
-                            actions = '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
-                        }
-                        return `<tr>
-                            <td style="font-weight:700;">${a.user_name}<br><small style="color:#94a3b8;font-size:.72rem;">${a.user_email}</small></td>
-                            <td>${progBadge}</td>
-                            <td>${a.date}<br><small style="color:#64748b;">${a.day}</small></td>
-                            <td>${a.time}</td>
-                            <td>${a.interview_type}</td>
-                            <td>${a.status_badge}</td>
-                            <td>${a.user_notes ? `<span title="${a.user_notes}" style="cursor:help;">📝</span>` : '—'}</td>
-                            <td><div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">${actions}<button onclick="archiveAppt(${a.id},'${encodeURIComponent(a.user_name)}')" style="background:#f8faff;color:#64748b;border:1.5px solid #e2e8f0;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">&#128193; Archive</button></div></td>
-                        </tr>`;
-                    }).join('');
-
-                    document.getElementById('apptTableWrap').innerHTML = `
-                        <div class="table-responsive">
-                        <table class="table mb-0" style="font-size:.85rem;">
-                            <thead><tr>
-                                <th>Applicant</th><th>Program</th><th>Date</th><th>Time</th><th>Type</th><th>Status</th><th>Notes</th><th>Actions</th>
-                            </tr></thead>
-                            <tbody>${rows}</tbody>
-                        </table>
-                        </div>`;
+                    _allAppointments = Array.isArray(data) ? data : [];
+                    applyAppointmentFilters();
                 })
                 .catch(e => {
                     document.getElementById('apptTableWrap').innerHTML = '<div style="padding:20px;color:#dc3545;">Failed to load appointments.</div>';
                 });
+            }
+
+            function renderAppointments(data) {
+                document.getElementById('apptCount').textContent = data.length + ' Total';
+                if (!data.length) {
+                    document.getElementById('apptTableWrap').innerHTML = '<div style="text-align:center;padding:30px;color:#94a3b8;font-size:.9rem;">No matching appointments found.</div>';
+                    return;
+                }
+
+                let rows = data.map(a => {
+                    const progLabels = {
+                        'Solo_Parent': {label:'Solo Parent', color:'#4f46e5', bg:'#ede9fe'},
+                        'AICS_Medical': {label:'AICS Medical', color:'#0891b2', bg:'#e0f2fe'},
+                        'AICS_Burial':  {label:'AICS Burial',  color:'#7c3aed', bg:'#f5f3ff'},
+                    };
+                    const prog = progLabels[a.program_type] || {label: a.program_type.replace('_',' '), color:'#64748b', bg:'#f1f5f9'};
+                    const progBadge = `<span style="background:${prog.bg};color:${prog.color};border-radius:20px;padding:2px 10px;font-size:.72rem;font-weight:700;white-space:nowrap;">${prog.label}</span>`;
+
+                    let actions = '';
+                    const isSoloParent = a.program_type === 'Solo_Parent';
+
+                    if (a.status === 'pending') {
+                        actions = `
+                            <button onclick="confirmAppt(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">✅ Approve</button>
+                            <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">❌ Reject</button>
+                        `;
+                    } else if (a.status === 'confirmed') {
+                        if (isSoloParent) {
+                            actions = `
+                                <button onclick="validateAppt(${a.id})" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">🏆 Eligible</button>
+                                <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">❌ Reject</button>
+                            `;
+                        } else {
+                            actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">✅ Approved</span>`;
+                        }
+                    } else if (a.status === 'validated') {
+                        if (a.id_status === 'ready_for_pickup') {
+                            actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">🎫 ID Ready</span>`;
+                        } else if (a.id_status === 'processing') {
+                            actions = `<button onclick="markIdReady(${a.solo_parent_app_id},'${encodeURIComponent(a.user_name)}')" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">🎫 ID Ready</button>`;
+                        } else {
+                            actions = `<span style="background:#fff7ed;color:#9a3412;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">⏳ Waiting Requirements Validation</span>`;
+                        }
+                    } else {
+                        actions = '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
+                    }
+                    const noteText = (a.user_notes || '').trim();
+                    const notesCell = noteText
+                        ? `<div style="max-width:230px;white-space:normal;line-height:1.35;background:#eef3ff;border:1px solid #c7d6f5;color:#1e3a8a;border-radius:10px;padding:6px 9px;font-size:.76rem;font-weight:600;" title="${noteText}">${noteText}</div>`
+                        : '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
+
+                    return `<tr>
+                        <td style="font-weight:700;">${a.user_name}<br><small style="color:#94a3b8;font-size:.72rem;">${a.user_email}</small></td>
+                        <td>${progBadge}</td>
+                        <td>${a.date}<br><small style="color:#64748b;">${a.day}</small></td>
+                        <td>${a.time}</td>
+                        <td>${a.interview_type}</td>
+                        <td>${a.status_badge}</td>
+                        <td>${notesCell}</td>
+                        <td><div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">${actions}<button onclick="archiveAppt(${a.id},'${encodeURIComponent(a.user_name)}')" style="background:#f8faff;color:#64748b;border:1.5px solid #e2e8f0;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">&#128193; Archive</button></div></td>
+                    </tr>`;
+                }).join('');
+
+                document.getElementById('apptTableWrap').innerHTML = `
+                    <div class="table-responsive">
+                    <table class="table mb-0" style="font-size:.85rem;">
+                        <thead><tr>
+                            <th>Applicant</th><th>Program</th><th>Date</th><th>Time</th><th>Type</th><th>Status</th><th>Notes</th><th>Actions</th>
+                        </tr></thead>
+                        <tbody>${rows}</tbody>
+                    </table>
+                    </div>`;
             }
 
             function confirmAppt(id) {
@@ -752,6 +871,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     { okText: 'Approve', cancelText: 'Cancel' }
                 ).then(ok => {
                     if (!ok) return;
+                    showLoading('Approving Appointment', 'Sending notification and updating status...');
                     fetch(`/admin/appointments/${id}/confirm`, {
                         method: 'POST',
                         headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
@@ -759,7 +879,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     }).then(r => r.json()).then(d => {
                         uiToast(d.message || 'Confirmed.');
                         loadAppointments();
-                    }).catch(() => uiToast('Error confirming appointment.', 'Error'));
+                    }).catch(() => uiToast('Error confirming appointment.', 'Error'))
+                      .finally(() => hideLoading());
                 });
             }
 
@@ -770,6 +891,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     { okText: 'Eligible', cancelText: 'Cancel' }
                 ).then(ok => {
                     if (!ok) return;
+                    showLoading('Marking Eligible', 'Preparing requirements and sending notification...');
                     fetch(`/admin/appointments/${id}/validate`, {
                         method: 'POST',
                         headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
@@ -781,7 +903,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         } else {
                             uiToast(d.message || 'Error validating appointment.', 'Error');
                         }
-                    }).catch(() => uiToast('Error validating appointment.', 'Error'));
+                    }).catch(() => uiToast('Error validating appointment.', 'Error'))
+                      .finally(() => hideLoading());
                 });
             }
 
@@ -797,6 +920,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             function submitReject() {
                 const notes = document.getElementById('rejectNotes').value.trim();
                 if (!notes) { alert('Please enter a reason for rejection.'); return; }
+                showLoading('Rejecting Appointment', 'Sending rejection notification...');
                 fetch(`/admin/appointments/${rejectTargetId}/reject`, {
                     method: 'POST',
                     headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
@@ -805,11 +929,21 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     closeRejectModal();
                     alert(d.message);
                     loadAppointments();
-                }).catch(() => alert('Error rejecting appointment.'));
+                }).catch(() => alert('Error rejecting appointment.'))
+                  .finally(() => hideLoading());
             }
 
             // Load on page ready
-            document.addEventListener('DOMContentLoaded', loadAppointments);
+            document.addEventListener('DOMContentLoaded', function () {
+                loadAppointments();
+                const wireFilter = () => {
+                    if (_apptFilterTimer) clearTimeout(_apptFilterTimer);
+                    _apptFilterTimer = setTimeout(applyAppointmentFilters, 180);
+                };
+                document.getElementById('apptSearchInput')?.addEventListener('input', wireFilter);
+                document.getElementById('apptStatusFilter')?.addEventListener('change', applyAppointmentFilters);
+                document.getElementById('apptProgramFilter')?.addEventListener('change', applyAppointmentFilters);
+            });
             </script>
 
         <div class="footer-strip">
@@ -952,6 +1086,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             { okText: 'Archive', cancelText: 'Cancel' }
         );
         if (!ok) return;
+        showLoading('Archiving Application', 'Moving record to archive...');
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = '/admin/applications/' + id + '/archive';
@@ -968,6 +1103,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             { okText: 'Delete', cancelText: 'Cancel' }
         ).then(ok => {
             if (!ok) return;
+            showLoading('Deleting Application', 'Removing record permanently...');
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = '/admin/applications/' + id + '/direct-delete';
@@ -1088,6 +1224,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         ).then(ok => {
             if (!ok) return;
             _markReadyInFlight[appId] = true;
+            showLoading('Marking ID Ready', 'Finalizing release status and notifying user...');
             fetch('/admin/applications/' + appId + '/mark-id-ready', {
                 method: 'POST',
                 headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
@@ -1096,6 +1233,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 loadAppointments();
             }).finally(() => {
                 _markReadyInFlight[appId] = false;
+                hideLoading();
             }).catch(() => uiToast('Failed to mark ID as ready.', 'Error'));
         });
     }
@@ -1108,6 +1246,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             { okText: 'Archive', cancelText: 'Cancel' }
         ).then(ok => {
             if (!ok) return;
+            showLoading('Archiving Appointment', 'Moving appointment to archive...');
             fetch('/admin/appointments/' + id + '/archive', {
                 method: 'DELETE',
                 headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
@@ -1115,7 +1254,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 uiToast(d.message || 'Archived.');
                 loadAppointments();
                 loadArchivedAppts();
-            }).catch(() => uiToast('Archive failed.', 'Error'));
+            }).catch(() => uiToast('Archive failed.', 'Error'))
+              .finally(() => hideLoading());
         });
     }
 
@@ -1164,11 +1304,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         uiConfirm('Restore appointment?', 'Restore this appointment?', { okText: 'Restore', cancelText: 'Cancel' })
         .then(ok => {
             if (!ok) return;
+            showLoading('Restoring Appointment', 'Please wait...');
             fetch('/admin/appointments/' + id + '/restore', {
                 method: 'PATCH',
                 headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
             }).then(r => r.json()).then(d => { uiToast(d.message || 'Restored.'); loadArchivedAppts(); loadAppointments(); })
-              .catch(() => uiToast('Restore failed.', 'Error'));
+              .catch(() => uiToast('Restore failed.', 'Error'))
+              .finally(() => hideLoading());
         });
     }
 
@@ -1179,11 +1321,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             { okText: 'Delete', cancelText: 'Cancel' }
         ).then(ok => {
             if (!ok) return;
+            showLoading('Deleting Appointment', 'Removing archived appointment...');
             fetch('/admin/appointments/' + id + '/force-delete', {
                 method: 'DELETE',
                 headers: {'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json'},
             }).then(r => r.json()).then(d => { uiToast(d.message || 'Deleted.'); loadArchivedAppts(); })
-              .catch(() => uiToast('Delete failed.', 'Error'));
+              .catch(() => uiToast('Delete failed.', 'Error'))
+              .finally(() => hideLoading());
         });
     }
     </script>
@@ -1287,6 +1431,41 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             __uiToastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
         }
 
+        function showLoading(title = 'Processing Request', subtitle = 'Please wait while we update records.') {
+            const backdrop = document.getElementById('uiLoadingBackdrop');
+            if (!backdrop) return;
+            const titleEl = backdrop.querySelector('.ui-loading-title');
+            const subEl = backdrop.querySelector('.ui-loading-sub');
+            if (titleEl) titleEl.textContent = title;
+            if (subEl) subEl.textContent = subtitle;
+            backdrop.style.display = 'flex';
+            backdrop.setAttribute('aria-hidden', 'false');
+        }
+
+        function hideLoading() {
+            const backdrop = document.getElementById('uiLoadingBackdrop');
+            if (!backdrop) return;
+            backdrop.style.display = 'none';
+            backdrop.setAttribute('aria-hidden', 'true');
+        }
+
+        function resolveLoadingCopy(title, okText, btnText) {
+            const hay = `${title || ''} ${okText || ''} ${btnText || ''}`.toLowerCase();
+            if (hay.includes('validate aics')) return ['Validating AICS Requirements', 'Checking files and notifying the applicant...'];
+            if (hay.includes('validate') && hay.includes('pwd')) return ['Validating PWD Requirements', 'Updating status and sending notification...'];
+            if (hay.includes('mark pwd id ready') || (hay.includes('id ready') && hay.includes('pwd'))) {
+                return ['Marking PWD ID Ready', 'Finalizing release status and notifying the user...'];
+            }
+            if (hay.includes('claim ready')) return ['Marking Claim Ready', 'Finalizing grant release and notifying the user...'];
+            if (hay.includes('id ready')) return ['Marking ID Ready', 'Finalizing release status and notifying the user...'];
+            if (hay.includes('restore')) return ['Restoring Record', 'Bringing archived record back to active list...'];
+            if (hay.includes('permanently delete') || hay.includes('delete')) return ['Deleting Record', 'Removing record permanently...'];
+            if (hay.includes('archive')) return ['Archiving Record', 'Moving record to archive...'];
+            if (hay.includes('approve')) return ['Approving Request', 'Applying approval and sending updates...'];
+            if (hay.includes('eligible')) return ['Marking Eligible', 'Preparing requirements and notifying user...'];
+            return ['Processing Request', 'Applying changes...'];
+        }
+
         // Close dialog when clicking backdrop
         document.getElementById('uiConfirmBackdrop')?.addEventListener('click', function (e) {
             if (e.target === this) uiConfirmClose(false);
@@ -1305,11 +1484,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             const message = btn.getAttribute('data-confirm-message') || 'Continue?';
             const okText = btn.getAttribute('data-confirm-ok') || 'OK';
             const cancelText = btn.getAttribute('data-confirm-cancel') || 'Cancel';
+            const btnText = (btn.textContent || '').trim();
             uiConfirm(title, message, { okText, cancelText }).then(ok => {
                 if (!ok) return;
                 btn.disabled = true;
                 btn.style.opacity = '.65';
                 btn.style.cursor = 'not-allowed';
+                const [loadingTitle, loadingSub] = resolveLoadingCopy(title, okText, btnText);
+                showLoading(loadingTitle, loadingSub);
                 form.submit();
             });
         }, true);

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Review Requirements � {{ $application->full_name }}</title>
+    <title>Review Requirements - {{ $application->full_name }}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -130,9 +130,52 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .file-info-detail p { margin: 5px 0; font-size: 0.85rem; }
 
         .footer-strip { background:var(--primary-gradient); color:rgba(255,255,255,.8); text-align:center; padding:18px; font-size:.84rem; margin-top:40px; }
+
+        /* Navy loading overlay for approve/reject actions */
+        .ui-loading-backdrop {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.55);
+            backdrop-filter: blur(1.5px);
+            z-index: 12050;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .ui-loading-box {
+            width: 100%;
+            max-width: 360px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, #2C3E8F, #1A2A5C);
+            color: #fff;
+            box-shadow: 0 16px 44px rgba(15, 23, 42, .35);
+            border: 1px solid rgba(255,255,255,.15);
+            padding: 20px 18px;
+            text-align: center;
+        }
+        .ui-loading-spinner {
+            width: 44px;
+            height: 44px;
+            margin: 0 auto 10px;
+            border-radius: 50%;
+            border: 3px solid rgba(255,255,255,.25);
+            border-top-color: #FDB913;
+            animation: uiSpin .8s linear infinite;
+        }
+        .ui-loading-title { font-weight: 800; font-size: .98rem; letter-spacing: .01em; }
+        .ui-loading-sub { margin-top: 4px; opacity: .85; font-size: .8rem; }
+        @keyframes uiSpin { to { transform: rotate(360deg); } }
     </style>
 </head>
 <body>
+    <div id="uiLoadingBackdrop" class="ui-loading-backdrop" aria-hidden="true">
+        <div class="ui-loading-box" role="status" aria-live="polite">
+            <div class="ui-loading-spinner"></div>
+            <div class="ui-loading-title">Processing Request</div>
+            <div class="ui-loading-sub">Please wait while we update records.</div>
+        </div>
+    </div>
 
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
@@ -182,7 +225,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <p>{{ str_replace('_', ' ', $application->program_type) }} &mdash; Reviewing submitted documents</p>
                 </div>
                 <a href="{{ route('admin.requirements') }}" class="btn btn-light btn-sm fw-bold px-4" style="border-radius:30px;">
-                    ? Back to List
+                    Back to List
                 </a>
             </div>
         </div>
@@ -201,11 +244,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 </div>
                 <div class="col-md-2">
                     <div style="font-size:.75rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Barangay</div>
-                    <div>{{ $application->barangay ?: '�' }}</div>
+                    <div>{{ $application->barangay ?: '—' }}</div>
                 </div>
                 <div class="col-md-2">
                     <div style="font-size:.75rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Date Filed</div>
-                    <div>{{ $application->application_date ? \Carbon\Carbon::parse($application->application_date)->format('M d, Y') : '�' }}</div>
+                    <div>{{ $application->application_date ? \Carbon\Carbon::parse($application->application_date)->format('M d, Y') : '—' }}</div>
                 </div>
                 <div class="col-md-2">
                     <div style="font-size:.75rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Status</div>
@@ -255,19 +298,19 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                  onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')"
                                  onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
                                  title="Click to view full size">
-                            <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;display:none;cursor:pointer;" 
-                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">???</div>
+                            <div style="font-size:.82rem;line-height:1.2;margin-bottom:6px;display:none;cursor:pointer;color:#475569;font-weight:700;" 
+                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">Preview</div>
                         @elseif($ext === 'pdf')
-                            <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;cursor:pointer;" 
-                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">??</div>
+                            <div style="font-size:.82rem;line-height:1.2;margin-bottom:6px;cursor:pointer;color:#475569;font-weight:700;" 
+                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">Preview PDF</div>
                         @else
-                            <div style="font-size:2.8rem;line-height:1;margin-bottom:6px;cursor:pointer;" 
-                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">??</div>
+                            <div style="font-size:.82rem;line-height:1.2;margin-bottom:6px;cursor:pointer;color:#475569;font-weight:700;" 
+                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">Preview File</div>
                         @endif
                         <div class="mt-2">
                             <button onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')"
                                     class="btn-view">
-                                ?? View Document
+                                View Document
                             </button>
                         </div>
                     @else
@@ -280,12 +323,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     @if($file->file_path)
                         @if($status === 'approved')
                             <div style="color:#28a745;font-weight:700;font-size:.88rem;">
-                                <span style="font-size:1rem;">?</span> Already Approved
+                                Already Approved
                             </div>
                         @elseif($status === 'rejected')
                             <div style="background:#fff5f5;border:1px solid #f8d7da;border-radius:10px;padding:12px 16px;">
                                 <div style="color:#dc3545;font-weight:700;font-size:.88rem;margin-bottom:6px;">
-                                    <span style="font-size:1rem;">?</span> Document Rejected
+                                    Document Rejected
                                 </div>
                                 <div style="font-size:.75rem;color:#721c24;line-height:1.5;">
                                     Waiting for user to re-upload a corrected document.
@@ -294,11 +337,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         @else
                             <div class="action-gap" style="justify-content:flex-end;">
                                 {{-- Approve form --}}
-                                <form action="{{ route('admin.update-file-status', $file->id) }}" method="POST" class="d-inline">
+                                <form action="{{ route('admin.update-file-status', $file->id) }}" method="POST" class="d-inline js-loading-submit" data-loading-title="Approving Requirement" data-loading-sub="Updating document status and notifying the applicant...">
                                     @csrf
                                     <input type="hidden" name="status" value="approved">
                                     <input type="hidden" name="admin_remarks" value="">
-                                    <button type="submit" class="btn-action btn-approve">? Approve</button>
+                                    <button type="submit" class="btn-action btn-approve">Approve</button>
                                 </form>
 
                                 {{-- Decline triggers modal --}}
@@ -307,7 +350,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     data-bs-target="#declineModal"
                                     data-file-id="{{ $file->id }}"
                                     data-file-name="{{ $file->requirement_name }}">
-                                    ? Decline
+                                    Decline
                                 </button>
                             </div>
                         @endif
@@ -343,10 +386,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="text-muted">Loading document...</div>
                     </div>
                     <div class="file-info-detail" id="fileInfoDetail">
-                        <p><strong>Document Name:</strong> <span id="modalDocName" class="fw-bold" style="color: var(--primary-blue);">�</span></p>
-                        <p><strong>File Type:</strong> <span id="modalFileType">�</span></p>
+                        <p><strong>Document Name:</strong> <span id="modalDocName" class="fw-bold" style="color: var(--primary-blue);">—</span></p>
+                        <p><strong>File Type:</strong> <span id="modalFileType">—</span></p>
                         <p><strong>File Size:</strong> <span id="modalFileSize">Loading...</span></p>
-                        <p><strong>Status:</strong> <span id="modalFileStatus" class="s-badge">�</span></p>
+                        <p><strong>Status:</strong> <span id="modalFileStatus" class="s-badge">—</span></p>
                     </div>
                 </div>
                 <div class="modal-footer" style="justify-content:space-between;">
@@ -356,15 +399,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                     <div id="modalActionButtons" style="display:none;">
                         {{-- Approve form --}}
-                        <form id="modalApproveForm" method="POST" class="d-inline" style="display:none;">
+                        <form id="modalApproveForm" method="POST" class="d-inline js-loading-submit" data-loading-title="Approving Requirement" data-loading-sub="Updating document status and notifying the applicant..." style="display:none;">
                             @csrf
                             <input type="hidden" name="status" value="approved">
                             <input type="hidden" name="admin_remarks" value="">
-                            <button type="submit" class="btn-action btn-approve">? Approve</button>
+                            <button type="submit" class="btn-action btn-approve">Approve</button>
                         </form>
                         {{-- Decline button --}}
                         <button type="button" id="modalDeclineBtn" class="btn-action btn-decline" style="display:none;">
-                            ? Decline
+                            Decline
                         </button>
                     </div>
                 </div>
@@ -377,16 +420,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content" style="border-radius:16px;border:none;overflow:hidden;">
                 <div class="modal-header" style="background:var(--primary-gradient);color:white;border:none;padding:18px 24px;">
-                    <h5 class="modal-title" id="declineModalLabel" style="font-weight:800;">? Decline Document</h5>
+                    <h5 class="modal-title" id="declineModalLabel" style="font-weight:800;">Decline Document</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
-                <form id="declineForm" action="" method="POST">
+                <form id="declineForm" action="" method="POST" data-loading-title="Declining Requirement" data-loading-sub="Saving remarks and notifying the applicant...">
                     @csrf
                     <input type="hidden" name="status" value="rejected">
                     <div class="modal-body" style="padding:24px;">
                         <div style="margin-bottom:16px;">
                             <div style="font-size:.8rem;color:#64748b;margin-bottom:6px;">Document being declined:</div>
-                            <div style="font-weight:700;color:#1e293b;" id="declineDocName">�</div>
+                            <div style="font-weight:700;color:#1e293b;" id="declineDocName">—</div>
                         </div>
                         <label class="form-label" style="font-size:0.85rem;font-weight:700;color:#1e293b;">
                             Rejection Reason <span style="color:#dc3545;">*</span>
@@ -411,7 +454,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             Please select a rejection reason.
                         </div>
                         <div style="font-size:.72rem;color:#94a3b8;margin-top:10px;background:#f8f9fa;padding:10px 12px;border-radius:8px;border-left:3px solid #6c757d;">
-                            ?? The applicant will see this message and can re-upload the corrected document.
+                            The applicant will see this message and can re-upload the corrected document.
                         </div>
                     </div>
                     <div class="modal-footer" style="border:none;padding:16px 24px 20px;gap:8px;">
@@ -441,7 +484,32 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         
         document.addEventListener('DOMContentLoaded', function() {
             fileViewerModal = new bootstrap.Modal(document.getElementById('fileViewerModal'));
+            document.querySelectorAll('.js-loading-submit').forEach(form => {
+                form.addEventListener('submit', function () {
+                    const submitBtn = this.querySelector('button[type="submit"]');
+                    if (submitBtn) {
+                        submitBtn.disabled = true;
+                        submitBtn.style.opacity = '.65';
+                        submitBtn.style.cursor = 'not-allowed';
+                    }
+                    showLoading(
+                        this.getAttribute('data-loading-title') || 'Processing Request',
+                        this.getAttribute('data-loading-sub') || 'Please wait while we update records.'
+                    );
+                });
+            });
         });
+
+        function showLoading(title = 'Processing Request', subtitle = 'Please wait while we update records.') {
+            const backdrop = document.getElementById('uiLoadingBackdrop');
+            if (!backdrop) return;
+            const titleEl = backdrop.querySelector('.ui-loading-title');
+            const subEl = backdrop.querySelector('.ui-loading-sub');
+            if (titleEl) titleEl.textContent = title;
+            if (subEl) subEl.textContent = subtitle;
+            backdrop.style.display = 'flex';
+            backdrop.setAttribute('aria-hidden', 'false');
+        }
         
         function openFileModal(fileUrl, fileName, fileExt, fileId, fileStatus) {
             const container = document.getElementById('fileViewerContainer');
@@ -502,7 +570,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 // For other file types, show message and download option
                 container.innerHTML = `
                     <div class="text-center">
-                        <div style="font-size: 4rem; margin-bottom: 20px;">??</div>
+                        <div style="font-size: 1rem; margin-bottom: 20px; color:#475569; font-weight:700;">No Preview Available</div>
                         <h6>File cannot be previewed</h6>
                         <p class="text-muted">This file type (${ext.toUpperCase()}) cannot be displayed in the browser.</p>
                         <a href="${fileUrl}" class="btn btn-primary" download>Download File</a>
@@ -625,6 +693,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             // For non-Other reasons, use the reason as final remarks (comments are already auto-filled)
             var finalRemarks = comments || reason;
             document.getElementById('declineRemarks').value = finalRemarks;
+            const declineBtn = document.getElementById('confirmDeclineBtn');
+            if (declineBtn) {
+                declineBtn.disabled = true;
+                declineBtn.style.opacity = '.65';
+                declineBtn.style.cursor = 'not-allowed';
+            }
+            showLoading(
+                this.getAttribute('data-loading-title') || 'Declining Requirement',
+                this.getAttribute('data-loading-sub') || 'Saving remarks and notifying the applicant...'
+            );
         });
     </script>
 </body>

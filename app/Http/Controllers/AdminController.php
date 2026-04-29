@@ -228,12 +228,31 @@ class AdminController extends Controller
         return response()->json(['success' => true, 'message' => 'Saved successfully!']);
     }
 
-    public function requirements()
+    public function requirements(Request $request)
     {
         $admin = Auth::user();
         $municipality = $admin->municipality;
 
-        $applications = Application::where('municipality', $municipality)
+        $applicationsQuery = Application::where('municipality', $municipality);
+
+        if ($request->filled('app_search')) {
+            $search = trim((string) $request->input('app_search'));
+            $applicationsQuery->where(function ($q) use ($search) {
+                $q->where('full_name', 'like', '%' . $search . '%')
+                    ->orWhere('contact_number', 'like', '%' . $search . '%')
+                    ->orWhere('barangay', 'like', '%' . $search . '%');
+            });
+        }
+
+        if ($request->filled('app_status')) {
+            $applicationsQuery->where('status', $request->input('app_status'));
+        }
+
+        if ($request->filled('app_program')) {
+            $applicationsQuery->where('program_type', $request->input('app_program'));
+        }
+
+        $applications = $applicationsQuery
             ->orderBy('application_date', 'desc')
             ->paginate(20);
 

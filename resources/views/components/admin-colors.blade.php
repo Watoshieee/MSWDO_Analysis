@@ -49,12 +49,12 @@
     .floating-btn-chat {
         bottom: 28px;
         right: 28px;
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+        background: linear-gradient(135deg, var(--primary-blue) 0%, #1A2A5C 100%);
         color: white;
     }
     
     .floating-btn-chat:hover {
-        background: linear-gradient(135deg, #f5576c 0%, #f093fb 100%);
+        background: linear-gradient(135deg, #1A2A5C 0%, var(--primary-blue) 100%);
     }
     
     /* Tooltip */

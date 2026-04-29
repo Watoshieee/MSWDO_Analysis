@@ -279,7 +279,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     {{-- Form Download --}}
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">PDF</div>
                             <div>
                                 <h4 data-en="Download Application Form" data-tl="I-download ang Application Form">Download Application Form</h4>
                                 <p data-en="Official PRPWD Form - issued by DOH, free of charge" data-tl="Opisyal na PRPWD Form - inilabas ng DOH, libre">Official PRPWD Form - issued by DOH, free of charge</p>
@@ -355,7 +354,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             @if(!empty($isPwdBeneficiary))
             <div class="section-card" style="margin-bottom:28px;">
                 <div class="section-header">
-                    <div class="sec-icon">??</div>
                     <div>
                         <h4>PWD Beneficiary Status</h4>
                         <p>Re-application is disabled for existing beneficiaries.</p>
@@ -371,7 +369,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="section-card" style="margin-bottom:28px;">
                 <div class="section-header" style="flex-direction:column;align-items:flex-start;gap:4px;">
                     <div style="display:flex;align-items:center;gap:14px;width:100%;">
-                        <div class="sec-icon">UP</div>
+
                         <div style="flex:1;">
                             <h4>Submit Your PWD Requirements Online</h4>
                             <p style="margin:0;opacity:.85;font-size:.85rem;">Upload digital copies of your documents. The admin will review each one.</p>
