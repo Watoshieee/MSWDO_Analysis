@@ -239,11 +239,24 @@ class AdminController extends Controller
     // ── Mark Solo Parent ID as ready for pickup ───────────────────────────────
     public function markIdReady($id)
     {
-        $admin = Auth::user();
+        $admin       = Auth::user();
         $application = Application::where('id', $id)
             ->where('municipality', $admin->municipality)
             ->where('program_type', 'Solo_Parent')
             ->firstOrFail();
+
+        // Guard: all documents must be approved before marking ID ready
+        $fileMonitoring = FileMonitoring::where('application_id', $application->id)->first();
+        if (!$fileMonitoring || $fileMonitoring->overall_status !== 'approved') {
+            $errorMsg = 'Cannot mark ID as ready: not all required documents have been approved yet.';
+
+            if (request()->expectsJson()) {
+                return response()->json(['success' => false, 'message' => $errorMsg], 422);
+            }
+            return redirect()
+                ->route('admin.view-requirement', $application->id)
+                ->with('error', $errorMsg);
+        }
 
         $application->update([
             'id_status'   => 'ready_for_pickup',
@@ -255,22 +268,40 @@ class AdminController extends Controller
             try {
                 Mail::to($user->email)->send(new SoloParentIdReadyMail($application, $user));
             } catch (\Exception $e) {
-                Log::error('SoloParentIdReadyMail failed: ' . $e->getMessage());
+                Log::error('SoloParentIdReadyMail failed', [
+                    'application_id' => $application->id,
+                    'user_id'        => $user->id,
+                    'error'          => $e->getMessage(),
+                ]);
             }
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'ID marked as ready. Email sent to ' . ($user?->email ?? 'user') . '.',
+        Log::info('Solo Parent ID marked as ready', [
+            'application_id' => $application->id,
+            'applicant'      => $application->full_name,
+            'marked_by'      => $admin->id,
+            'municipality'   => $admin->municipality,
+            'notified_email' => $user?->email,
         ]);
+
+        $successMsg = 'ID marked as ready for pickup.' .
+            ($user?->email ? ' Email notification sent to ' . $user->email . '.' : '');
+
+        if (request()->expectsJson()) {
+            return response()->json(['success' => true, 'message' => $successMsg]);
+        }
+
+        return redirect()
+            ->route('admin.view-requirement', $application->id)
+            ->with('success', $successMsg);
     }
+
 
 
     public function viewRequirement($id)
     {
         $admin = Auth::user();
 
-        // $id is the Application ID from the requirements list
         $application = Application::where('id', $id)
             ->where('municipality', $admin->municipality)
             ->firstOrFail();
@@ -279,7 +310,15 @@ class AdminController extends Controller
             ->where('application_id', $id)
             ->first(); // null if no documents uploaded yet
 
-        return view('admin.view-requirement', compact('fileMonitoring', 'application'));
+        $hasDocuments = $fileMonitoring
+            && $fileMonitoring->fileUploads->whereNotNull('file_path')->count() > 0;
+
+        $allApproved = $fileMonitoring
+            && $fileMonitoring->overall_status === 'approved';
+
+        return view('admin.view-requirement', compact(
+            'fileMonitoring', 'application', 'hasDocuments', 'allApproved'
+        ));
     }
 
 
@@ -564,74 +603,74 @@ class AdminController extends Controller
     public function updateApplicationStatus(Request $request, $id)
     {
         $request->validate([
-            'status' => 'required|in:pending,approved,rejected',
+            'status'        => 'required|in:pending,approved,rejected',
             'admin_remarks' => 'required_if:status,rejected|nullable|string|max:1000',
         ]);
 
         $application = Application::findOrFail($id);
 
         if ($application->municipality !== Auth::user()->municipality) {
-            return response()->json(['error' => 'Unauthorized'], 403);
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        $oldStatus = $application->status;
-        $application->status = $request->status;
+        // Guard: cannot approve if no documents have been uploaded
+        if ($request->status === 'approved') {
+            $fileMonitoring = FileMonitoring::where('application_id', $application->id)->first();
+            $uploadCount    = $fileMonitoring
+                ? $fileMonitoring->fileUploads()->whereNotNull('file_path')->count()
+                : 0;
+
+            if ($uploadCount === 0) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot approve: this applicant has not submitted any documents yet.',
+                ], 422);
+            }
+        }
+
+        $oldStatus              = $application->status;
+        $application->status       = $request->status;
         $application->admin_remarks = $request->admin_remarks;
         $application->save();
 
-        // Update FileMonitoring and FileUpload records
+        // Sync FileMonitoring and FileUpload records
         $fileMonitoring = FileMonitoring::where('application_id', $application->id)->first();
-        
+
         if ($fileMonitoring) {
             if ($request->status === 'rejected') {
-                // Update overall status
                 $fileMonitoring->overall_status = 'rejected';
                 $fileMonitoring->save();
-
-                // Update ALL file uploads to rejected with the rejection reason
-                FileUpload::where('file_monitoring_id', $fileMonitoring->id)
-                    ->update([
-                        'status' => 'rejected',
-                        'admin_remarks' => $request->admin_remarks ?? 'Application rejected',
-                        'verified_at' => now(),
-                        'verified_by' => Auth::user()->id,
-                    ]);
-            }
-            elseif ($request->status === 'approved') {
-                // Update overall status
+                FileUpload::where('file_monitoring_id', $fileMonitoring->id)->update([
+                    'status'        => 'rejected',
+                    'admin_remarks' => $request->admin_remarks ?? 'Application rejected',
+                    'verified_at'   => now(),
+                    'verified_by'   => Auth::user()->id,
+                ]);
+            } elseif ($request->status === 'approved') {
                 $fileMonitoring->overall_status = 'approved';
                 $fileMonitoring->save();
-
-                // Update ALL file uploads to approved
-                FileUpload::where('file_monitoring_id', $fileMonitoring->id)
-                    ->update([
-                        'status' => 'approved',
-                        'admin_remarks' => null,
-                        'verified_at' => now(),
-                        'verified_by' => Auth::user()->id,
-                    ]);
-            }
-            elseif ($request->status === 'pending') {
-                // Reset to pending
+                FileUpload::where('file_monitoring_id', $fileMonitoring->id)->update([
+                    'status'        => 'approved',
+                    'admin_remarks' => null,
+                    'verified_at'   => now(),
+                    'verified_by'   => Auth::user()->id,
+                ]);
+            } elseif ($request->status === 'pending') {
                 $fileMonitoring->overall_status = 'pending';
                 $fileMonitoring->save();
-
-                // Reset ALL file uploads to pending
-                FileUpload::where('file_monitoring_id', $fileMonitoring->id)
-                    ->update([
-                        'status' => 'pending',
-                        'admin_remarks' => null,
-                        'verified_at' => null,
-                        'verified_by' => null,
-                    ]);
+                FileUpload::where('file_monitoring_id', $fileMonitoring->id)->update([
+                    'status'        => 'pending',
+                    'admin_remarks' => null,
+                    'verified_at'   => null,
+                    'verified_by'   => null,
+                ]);
             }
         }
 
-        // Update barangay approved applications count
+        // Update barangay approved count
         if ($oldStatus !== 'approved' && $request->status === 'approved') {
             $barangay = Barangay::where('municipality', $application->municipality)
-                ->where('name', $application->barangay)
-                ->first();
+                ->where('name', $application->barangay)->first();
             if ($barangay) {
                 $barangay->total_approved_applications += 1;
                 $barangay->save();
@@ -640,13 +679,23 @@ class AdminController extends Controller
 
         if ($oldStatus === 'approved' && $request->status !== 'approved') {
             $barangay = Barangay::where('municipality', $application->municipality)
-                ->where('name', $application->barangay)
-                ->first();
+                ->where('name', $application->barangay)->first();
             if ($barangay && $barangay->total_approved_applications > 0) {
                 $barangay->total_approved_applications -= 1;
                 $barangay->save();
             }
         }
+
+        // Audit log
+        Log::info('Application status updated', [
+            'application_id' => $application->id,
+            'applicant'      => $application->full_name,
+            'changed_by'     => Auth::user()->id,
+            'old_status'     => $oldStatus,
+            'new_status'     => $request->status,
+            'municipality'   => Auth::user()->municipality,
+            'remarks'        => $request->admin_remarks,
+        ]);
 
         if ($request->ajax()) {
             return response()->json(['success' => true, 'message' => 'Application status updated']);

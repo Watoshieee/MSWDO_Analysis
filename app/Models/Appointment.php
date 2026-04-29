@@ -46,19 +46,23 @@ class Appointment extends Model
     /**
      * Count confirmed appointments in a specific date+time slot.
      */
-    public static function slotCount(string $date, string $time, string $municipality): int
+    public static function slotCount(string $date, string $time, ?string $municipality = null): int
     {
-        return static::where('appointment_date', $date)
+        $query = static::where('appointment_date', $date)
             ->where('appointment_time', $time)
-            ->where('municipality', $municipality)
-            ->whereIn('status', ['pending', 'confirmed'])
-            ->count();
+            ->whereIn('status', ['pending', 'confirmed']);
+            
+        if ($municipality) {
+            $query->where('municipality', $municipality);
+        }
+        
+        return $query->count();
     }
 
     /**
      * Returns slot data for a given date scoped to a municipality.
      */
-    public static function slotsForDate(string $date, string $municipality): array
+    public static function slotsForDate(string $date, ?string $municipality = null): array
     {
         $slots = [];
         foreach (static::availableSlots() as $time) {

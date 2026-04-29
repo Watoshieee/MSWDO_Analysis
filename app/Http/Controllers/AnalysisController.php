@@ -20,7 +20,8 @@ class AnalysisController extends Controller
      */
     public function index(Request $request)
     {
-        $coreNames = Municipality::orderBy('name')->pluck('name')->toArray();
+        // Only show data for these three municipalities
+        $coreNames = ['Liliw', 'Magdalena', 'Majayjay'];
 
         $allYears = SocialWelfareProgram::whereIn('municipality', $coreNames)
             ->distinct()->orderBy('year')->pluck('year')->toArray();
@@ -311,7 +312,8 @@ class AnalysisController extends Controller
      */
     public function demographic(Request $request)
     {
-        $coreNames = Municipality::orderBy('name')->pluck('name')->toArray();
+        // Only show data for these three municipalities
+        $coreNames = ['Liliw', 'Magdalena', 'Majayjay'];
         $palette   = ['#2C3E8F','#FDB913','#6366f1','#16a34a','#9333ea','#0891b2','#ea580c','#db2777','#65a30d','#d97706'];
         $colors    = [];
         foreach ($coreNames as $i => $n) { $colors[$n] = $palette[$i % count($palette)]; }
@@ -455,7 +457,8 @@ class AnalysisController extends Controller
      */
     public function programs(Request $request)
     {
-        $coreNames = Municipality::orderBy('name')->pluck('name')->toArray();
+        // Only show data for these three municipalities
+        $coreNames = ['Liliw', 'Magdalena', 'Majayjay'];
         $palette   = ['#2C3E8F','#FDB913','#6366f1','#16a34a','#9333ea','#0891b2','#ea580c','#db2777','#65a30d','#d97706'];
         $colors    = [];
         foreach ($coreNames as $i => $n) { $colors[$n] = $palette[$i % count($palette)]; }

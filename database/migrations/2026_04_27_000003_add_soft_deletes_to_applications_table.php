@@ -9,7 +9,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('applications', function (Blueprint $table) {
-            $table->softDeletes(); // adds deleted_at TIMESTAMP NULL
+            if (!Schema::hasColumn('applications', 'deleted_at')) {
+                $table->softDeletes();
+            }
         });
     }
 

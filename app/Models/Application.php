@@ -9,6 +9,11 @@ class Application extends Model
 {
     use SoftDeletes;
 
+    // Status constants
+    const STATUS_PENDING = 'pending';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_REJECTED = 'rejected';
+
     // timestamps disabled — table has no created_at/updated_at (but does have deleted_at)
     public $timestamps = false;
 
@@ -36,13 +41,15 @@ class Application extends Model
         'completed_at',
         'proof_photo_path',
         'id_status',
-        'id_ready_at'
+        'id_ready_at',
+        'admin_remarks',
     ];
 
     protected $casts = [
         'form_data'        => 'array',
         'application_date' => 'datetime',
         'completed_at'     => 'datetime',
+        'id_ready_at'      => 'datetime',
         'deleted_at'       => 'datetime',
     ];
 
