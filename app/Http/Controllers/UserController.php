@@ -12,9 +12,93 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Database\Eloquent\SoftDeletes; // <-- ADD THIS (optional, for type hinting)
+use App\Mail\NewApplicationNotification;
+use App\Mail\AppointmentStatusMail;
+use App\Models\Appointment;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class UserController extends Controller
 {
+    // ── Shared notification helper ──────────────────────────────────────────
+    private function notificationData($user): array
+    {
+        $lastViewed   = \App\Models\NotificationView::where('user_id', $user->id)->first();
+        $lastViewedAt = $lastViewed ? $lastViewed->last_viewed_at : null;
+
+        $documentNotifications = FileUpload::whereHas('fileMonitoring', fn($q) => $q->where('user_id', $user->id))
+            ->whereIn('status', ['approved', 'rejected'])
+            ->with(['fileMonitoring.application'])
+            ->orderBy('verified_at', 'desc')
+            ->orderBy('uploaded_at', 'desc')
+            ->get();
+
+        $rejectedApplications = Application::where('user_id', $user->id)
+            ->where('status', 'rejected')
+            ->with('fileMonitoring.fileUploads')
+            ->orderBy('application_date', 'desc')
+            ->get();
+
+        // New announcements — created after last-viewed, or last 7 days if never viewed
+        try {
+            $annQuery = \App\Models\Announcement::forUser($user)->orderBy('created_at', 'desc');
+            $newAnnouncements = $lastViewedAt
+                ? (clone $annQuery)->where('created_at', '>', $lastViewedAt)->get()
+                : (clone $annQuery)->where('created_at', '>=', now()->subDays(7))->get();
+        } catch (\Exception $e) {
+            $newAnnouncements = collect();
+        }
+
+        $newDocCount = $lastViewedAt
+            ? $documentNotifications->filter(function ($d) use ($lastViewedAt) {
+                $ts = $d->verified_at ?? $d->uploaded_at;
+                return $ts && Carbon::parse($ts)->gt(Carbon::parse($lastViewedAt));
+            })->count()
+            : $documentNotifications->count();
+
+        $newAppCount = $lastViewedAt
+            ? $rejectedApplications->filter(function ($a) use ($lastViewedAt) {
+                return $a->application_date
+                    && Carbon::parse($a->application_date)->gt(Carbon::parse($lastViewedAt));
+            })->count()
+            : $rejectedApplications->count();
+
+        // ── Validated Solo Parent appointment (user is now eligible) ──────────
+        $validatedAppointment = Appointment::where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->where('status', 'validated')
+            ->latest('validated_at')
+            ->first();
+
+        $newValidatedCount = 0;
+        if ($validatedAppointment) {
+            $validatedTs = $validatedAppointment->validated_at ?? $validatedAppointment->updated_at;
+            if (!$lastViewedAt || ($validatedTs && Carbon::parse($validatedTs)->gt(Carbon::parse($lastViewedAt)))) {
+                $newValidatedCount = 1;
+            }
+        }
+
+        // ── Solo Parent ID ready for pickup ───────────────────────────────────
+        $idReadyApplication = Application::where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->where('id_status', 'ready_for_pickup')
+            ->latest('id_ready_at')
+            ->first();
+
+        $idReadyCount = 0;
+        if ($idReadyApplication) {
+            $readyTs = $idReadyApplication->id_ready_at;
+            if (!$lastViewedAt || ($readyTs && Carbon::parse($readyTs)->gt(Carbon::parse($lastViewedAt)))) {
+                $idReadyCount = 1;
+            }
+        }
+
+        $notificationCount = $newDocCount + $newAppCount + $newAnnouncements->count() + $newValidatedCount + $idReadyCount;
+
+        return compact('documentNotifications', 'rejectedApplications', 'newAnnouncements', 'notificationCount', 'validatedAppointment', 'idReadyApplication');
+    }
+
     public function dashboard()
     {
         $user = Auth::user();
@@ -42,34 +126,61 @@ class UserController extends Controller
 
         $announcements = collect();
 
+        $notifData = $this->notificationData($user);
+        extract($notifData); // documentNotifications, rejectedApplications, newAnnouncements, notificationCount
+
         return view('user.dashboard', compact(
             'totalApplications',
             'pendingCount',
             'approvedCount',
             'rejectedCount',
             'recentApplications',
-            'announcements'
+            'announcements',
+            'documentNotifications',
+            'rejectedApplications',
+            'newAnnouncements',
+            'notificationCount'
         ));
     }
 
     public function programs()
     {
-        return view('user.programs');
+        $user = Auth::user();
+        extract($this->notificationData($user));
+        return view('user.programs', compact('documentNotifications', 'rejectedApplications', 'newAnnouncements', 'notificationCount'));
     }
 
-    public function announcements()
+    public function announcements(Request $request)
     {
+        $user = Auth::user();
+
+        // Notification bell data (shared helper)
+        extract($this->notificationData($user));
+
+        // ── Announcements page query ─────────────────────────────────────────
         try {
-            $announcements = \App\Models\Announcement::where('is_active', true)
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
-        }
-        catch (\Exception $e) {
-            // If table doesn't exist yet, return empty collection
+            $query = \App\Models\Announcement::forUser($user)
+                ->orderBy('created_at', 'desc');
+
+            if ($request->filled('type')) {
+                $query->where('type', $request->type);
+            }
+            if ($request->filled('program')) {
+                $query->where('program_type', $request->program);
+            }
+
+            $announcements = $query->paginate(12)->withQueryString();
+        } catch (\Exception $e) {
             $announcements = collect();
         }
 
-        return view('user.announcements', compact('announcements'));
+        $types    = \App\Models\Announcement::TYPES;
+        $programs = \App\Models\Announcement::PROGRAMS;
+
+        return view('user.announcements', compact(
+            'announcements', 'types', 'programs',
+            'documentNotifications', 'rejectedApplications', 'newAnnouncements', 'notificationCount'
+        ));
     }
 
 
@@ -109,68 +220,87 @@ public function myRequirements()
             ];
         }
 
-        return view('user.my-requirements', compact('requirementsData'));
+        extract($this->notificationData($user));
+
+        return view('user.my-requirements', compact('requirementsData', 'documentNotifications', 'rejectedApplications', 'newAnnouncements', 'notificationCount'));
     }
     /**
      * Resubmit a rejected requirement
-     */public function resubmitRequirement(Request $request, $fileUploadId)
+     */
+    public function resubmitRequirement(Request $request, $fileUploadId)
     {
-        $user = Auth::user();
+        try {
+            $user = Auth::user();
 
-        $request->validate([
-            'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120'
-        ]);
+            $request->validate([
+                'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:25600' // 25MB max for PDF, 5MB for images (validated client-side)
+            ]);
 
-        $fileUpload = FileUpload::where('id', $fileUploadId)
-            ->whereHas('fileMonitoring', function ($q) use ($user) {
-            $q->where('user_id', $user->id);
-        })
-            ->firstOrFail();
+            $fileUpload = FileUpload::with('fileMonitoring.application')
+                ->findOrFail($fileUploadId);
+            
+            // Verify ownership
+            if (!$fileUpload->fileMonitoring || $fileUpload->fileMonitoring->user_id != $user->id) {
+                return redirect()->back()->with('error', 'Unauthorized access to this file.');
+            }
 
-        // Delete old file
-        if ($fileUpload->file_path && Storage::disk('public')->exists($fileUpload->file_path)) {
-            Storage::disk('public')->delete($fileUpload->file_path);
+            // Validate file size based on type
+            $file = $request->file('file');
+            $isImage = in_array($file->getMimeType(), ['image/jpeg', 'image/jpg', 'image/png']);
+            $maxSize = $isImage ? 5 * 1024 * 1024 : 25 * 1024 * 1024; // 5MB for images, 25MB for PDF
+            
+            if ($file->getSize() > $maxSize) {
+                $maxSizeLabel = $isImage ? '5MB' : '25MB';
+                return redirect()->back()->with('error', "File size must be less than {$maxSizeLabel} for " . ($isImage ? 'images' : 'PDF files') . '.');
+            }
+
+            // Delete old file
+            if ($fileUpload->file_path && Storage::disk('public')->exists($fileUpload->file_path)) {
+                Storage::disk('public')->delete($fileUpload->file_path);
+            }
+
+            // Upload new file
+            $originalName = $file->getClientOriginalName();
+            $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
+            $applicationId = $fileUpload->fileMonitoring->application_id;
+            $path = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
+
+            // Update file upload record
+            $fileUpload->update([
+                'file_name' => $originalName,
+                'file_path' => $path,
+                'status' => 'pending', // Reset to pending
+                'remarks' => null, // Clear old remarks
+                'admin_remarks' => null, // Clear admin remarks
+                'verified_at' => null,
+                'verified_by' => null,
+                'uploaded_at' => now()
+            ]);
+
+            // Update overall status of file monitoring
+            $fileMonitoring = $fileUpload->fileMonitoring;
+            $totalFiles = $fileMonitoring->fileUploads()->count();
+            $pendingFiles = $fileMonitoring->fileUploads()->where('status', 'pending')->count();
+            $rejectedFiles = $fileMonitoring->fileUploads()->where('status', 'rejected')->count();
+
+            if ($rejectedFiles > 0) {
+                $fileMonitoring->overall_status = 'rejected';
+            }
+            elseif ($pendingFiles > 0) {
+                $fileMonitoring->overall_status = 'pending';
+                // Also update application status back to pending
+                $fileMonitoring->application->update(['status' => 'pending']);
+            }
+            else {
+                $fileMonitoring->overall_status = 'in_review';
+            }
+            $fileMonitoring->save();
+
+            return redirect()->back()->with('success', 'Document re-uploaded successfully! Waiting for admin review.');
+        } catch (\Exception $e) {
+            \Log::error('Resubmit Error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to upload file: ' . $e->getMessage());
         }
-
-        // Upload new file
-        $file = $request->file('file');
-        $originalName = $file->getClientOriginalName();
-        $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
-        $applicationId = $fileUpload->fileMonitoring->application_id;
-        $path = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
-
-        // Update file upload record
-        $fileUpload->update([
-            'file_name' => $originalName,
-            'file_path' => $path,
-            'status' => 'pending', // Reset to pending
-            'remarks' => null, // Clear old remarks
-            'admin_remarks' => null, // Clear admin remarks
-            'verified_at' => null,
-            'verified_by' => null,
-            'uploaded_at' => now()
-        ]);
-
-        // Update overall status of file monitoring
-        $fileMonitoring = $fileUpload->fileMonitoring;
-        $totalFiles = $fileMonitoring->fileUploads()->count();
-        $pendingFiles = $fileMonitoring->fileUploads()->where('status', 'pending')->count();
-        $rejectedFiles = $fileMonitoring->fileUploads()->where('status', 'rejected')->count();
-
-        if ($rejectedFiles > 0) {
-            $fileMonitoring->overall_status = 'rejected';
-        }
-        elseif ($pendingFiles > 0) {
-            $fileMonitoring->overall_status = 'pending';
-            // Also update application status back to pending
-            $fileMonitoring->application->update(['status' => 'pending']);
-        }
-        else {
-            $fileMonitoring->overall_status = 'in_review';
-        }
-        $fileMonitoring->save();
-
-        return redirect()->back()->with('success', 'Document re-uploaded successfully! Waiting for admin review.');
     }
     public function pwdApplication()
     {
@@ -275,7 +405,41 @@ public function myRequirements()
 
     public function soloParentApplication()
     {
-        return view('user.solo-parent-application');
+        $user = Auth::user();
+
+        // Load user's active/recent appointment
+        $appointment = Appointment::where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->orderByRaw("FIELD(status,'pending','confirmed','rejected','cancelled')")
+            ->orderBy('appointment_date', 'desc')
+            ->first();
+
+        // Tomorrow reminder: send email once if appointment is tomorrow and not yet reminded
+        if ($appointment
+            && in_array($appointment->status, ['pending', 'confirmed'])
+            && $appointment->reminded_at === null
+            && Carbon::parse($appointment->appointment_date)->isTomorrow()
+        ) {
+            try {
+                Mail::to($user->email)->send(new AppointmentStatusMail($appointment, 'reminder'));
+                $appointment->update(['reminded_at' => now()]);
+            } catch (\Exception $e) {
+                Log::error('Appointment reminder email failed: ' . $e->getMessage());
+            }
+        }
+
+        $minDate = Carbon::tomorrow()->format('Y-m-d');
+        $maxDate = Carbon::now()->addDays(30)->format('Y-m-d');
+
+        // If validated, load the associated Application with its file monitoring / uploads
+        $soloParentApplication = null;
+        if ($appointment && $appointment->solo_parent_app_id) {
+            $soloParentApplication = Application::with([
+                'fileMonitoring.fileUploads'
+            ])->find($appointment->solo_parent_app_id);
+        }
+
+        return view('user.solo-parent-application', compact('appointment', 'minDate', 'maxDate', 'soloParentApplication'));
     }
 
     public function uploadPwdRequirement(Request $request)
@@ -297,6 +461,8 @@ public function myRequirements()
             ->latest('id')
             ->first();
 
+        $isNewApplication = !$application;
+
         if (!$application) {
             // gender column is ENUM('Male','Female') NOT NULL — must be valid
             $genderRaw = strtolower(trim($user->gender ?? ''));
@@ -316,6 +482,23 @@ public function myRequirements()
                 'year' => now()->year,
                 'stage' => 'documents_upload',
             ]);
+
+            // Notify admin(s) by email on first application creation
+            if ($isNewApplication) {
+                try {
+                    $admins = User::where('role', 'admin')
+                        ->where('municipality', $application->municipality)
+                        ->get();
+                    foreach ($admins as $admin) {
+                        Mail::to($admin->email)->send(new NewApplicationNotification($application));
+                    }
+                } catch (\Exception $e) {
+                    Log::error('PWD admin email notification failed: ' . $e->getMessage(), [
+                        'application_id' => $application->id,
+                        'municipality'   => $application->municipality,
+                    ]);
+                }
+            }
         }
 
         // Ensure file_monitoring record exists
@@ -474,6 +657,23 @@ public function myRequirements()
         ['overall_status' => 'pending', 'municipality' => $user->municipality ?? '']
         );
 
+        // Notify admin by email only when the application is FIRST created
+        if ($application->wasRecentlyCreated) {
+            try {
+                $admins = User::where('role', 'admin')
+                    ->where('municipality', $application->municipality)
+                    ->get();
+                foreach ($admins as $admin) {
+                    Mail::to($admin->email)->send(new NewApplicationNotification($application));
+                }
+            } catch (\Exception $e) {
+                Log::error('Admin email notification failed: ' . $e->getMessage(), [
+                    'application_id' => $application->id,
+                    'municipality'   => $application->municipality,
+                ]);
+            }
+        }
+
         $file = $request->file('file');
         $folder = 'applications/' . $application->id . '/requirements';
         $filePath = $file->store($folder, 'public');
@@ -497,6 +697,102 @@ public function myRequirements()
             ->with('upload_success', '"' . $request->requirement_name . '" uploaded successfully!');
     }
 
+    /**
+     * Batch upload: accept multiple files (one per requirement) in a single request.
+     * Each file input is named files[REQUIREMENT_NAME].
+     */
+    private function uploadAicsBatch(Request $request, string $programType, string $redirectRoute): \Illuminate\Http\RedirectResponse
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'files'   => 'required|array|min:1',
+            'files.*' => 'required|file|mimes:jpg,jpeg,png,pdf|max:25600',
+        ]);
+
+        $genderRaw = strtolower(trim($user->gender ?? ''));
+        $gender    = $genderRaw === 'female' ? 'Female' : 'Male';
+
+        $application = Application::firstOrCreate(
+            ['user_id' => $user->id, 'program_type' => $programType],
+            [
+                'municipality'    => $user->municipality ?? '',
+                'barangay'        => $user->barangay ?? '',
+                'full_name'       => $user->full_name ?? $user->name ?? '',
+                'age'             => is_numeric($user->age ?? null) ? (int)$user->age : 0,
+                'gender'          => $gender,
+                'contact_number'  => $user->contact_number ?? '',
+                'status'          => 'pending',
+                'application_date'=> now(),
+                'year'            => now()->year,
+                'stage'           => 'documents_upload',
+            ]
+        );
+
+        $fileMonitoring = FileMonitoring::firstOrCreate(
+            ['application_id' => $application->id],
+            ['overall_status' => 'pending', 'municipality' => $user->municipality ?? '']
+        );
+
+        // Notify admin only on first application creation
+        if ($application->wasRecentlyCreated) {
+            try {
+                $admins = User::where('role', 'admin')
+                    ->where('municipality', $application->municipality)
+                    ->get();
+                foreach ($admins as $admin) {
+                    Mail::to($admin->email)->send(new NewApplicationNotification($application));
+                }
+            } catch (\Exception $e) {
+                Log::error('Admin email notification failed (batch): ' . $e->getMessage(), [
+                    'application_id' => $application->id,
+                ]);
+            }
+        }
+
+        $uploadedCount = 0;
+        foreach ($request->file('files') as $reqName => $file) {
+            $reqNameClean = str_replace(['[', ']'], '', $reqName);
+            $folder   = 'applications/' . $application->id . '/requirements';
+            $filePath = $file->store($folder, 'public');
+
+            FileUpload::updateOrCreate(
+                ['file_monitoring_id' => $fileMonitoring->id, 'requirement_name' => $reqNameClean],
+                [
+                    'file_path'    => $filePath,
+                    'file_name'    => $file->getClientOriginalName(),
+                    'status'       => 'pending',
+                    'uploaded_at'  => now(),
+                    'admin_remarks'=> null,
+                ]
+            );
+            $uploadedCount++;
+        }
+
+        // Refresh overall status
+        $uploads = FileUpload::where('file_monitoring_id', $fileMonitoring->id)->get();
+        if ($uploads->where('status', 'rejected')->count() > 0)
+            $fileMonitoring->overall_status = 'rejected';
+        elseif ($uploads->where('status', 'approved')->count() === $uploads->count())
+            $fileMonitoring->overall_status = 'approved';
+        else
+            $fileMonitoring->overall_status = 'in_review';
+        $fileMonitoring->save();
+
+        return redirect()->route($redirectRoute)
+            ->with('upload_success', $uploadedCount . ' document(s) uploaded successfully!');
+    }
+
+    public function uploadAicsMedicalBatch(Request $request)
+    {
+        return $this->uploadAicsBatch($request, 'AICS_Medical', 'user.aics-medical');
+    }
+
+    public function uploadAicsBurialBatch(Request $request)
+    {
+        return $this->uploadAicsBatch($request, 'AICS_Burial', 'user.aics-burial');
+    }
+
     public function uploadAicsMedical(Request $request)
     {
         return $this->uploadAicsRequirement($request, 'AICS_Medical', 'user.aics-medical');
@@ -505,6 +801,18 @@ public function myRequirements()
     public function uploadAicsBurial(Request $request)
     {
         return $this->uploadAicsRequirement($request, 'AICS_Burial', 'user.aics-burial');
+    }
+
+    public function markNotificationsViewed()
+    {
+        $user = Auth::user();
+        
+        \App\Models\NotificationView::updateOrCreate(
+            ['user_id' => $user->id],
+            ['last_viewed_at' => now()]
+        );
+        
+        return response()->json(['success' => true]);
     }
 
 }

@@ -4,273 +4,181 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>MSWDO Comparative Analysis</title>
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>Statistical Analysis – MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        html,
-        body {
-            overscroll-behavior: none;
-            margin: 0;
-            padding: 0;
-        }
-
         :root {
-            /* Blue as MAIN color */
-            --primary-blue: #2C3E8F;
-            --primary-blue-light: #E5EEFF;
-            --primary-blue-soft: #5D7BB9;
-
-            /* Yellow as SECONDARY */
-            --secondary-yellow: #FDB913;
-            --secondary-yellow-light: #FFF3D6;
-
-            /* Red as MINIMAL accent */
-            --accent-red: #C41E24;
-            --accent-red-light: #FCE8E8;
-
-            /* Gradients */
-            --primary-gradient: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
-            --secondary-gradient: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
-
-            /* Backgrounds */
-            --bg-light: #f1f5f9;
-            --bg-white: #f8fafc;
-            --bg-soft-blue: #e0e7ff;
+            --blue: #2C3E8F;
+            --blue-lt: #E5EEFF;
+            --yellow: #FDB913;
+            --green: #28a745;
+            --blue3: #6366f1;
+            --grad: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
         }
 
         body {
             background: #e2e8f0;
-            font-family: 'Inter', 'Segoe UI', sans-serif;
+            font-family: 'Inter', sans-serif;
+            margin: 0;
         }
 
-
-        /* Navbar */
         .navbar {
-            background: var(--primary-gradient) !important;
-            box-shadow: 0 4px 24px rgba(44, 62, 143, 0.18);
+            background: var(--grad) !important;
+            box-shadow: 0 4px 20px rgba(44, 62, 143, .18);
             padding: 14px 0;
         }
 
         .navbar-brand {
             font-weight: 800;
-            font-size: 1.55rem;
-            color: white !important;
+            font-size: 1.5rem;
+            color: #fff !important;
             display: flex;
             align-items: center;
             gap: 10px;
         }
 
-        .navbar-toggler {
-            order: -1;
-        }
-
-        .navbar-brand {
-            order: 0;
-            margin-left: auto !important;
-            margin-right: 0 !important;
-        }
-
-        @media (min-width: 992px) {
-            .navbar-toggler {
-                order: 0;
-            }
-
-            .navbar-brand {
-                order: 0;
-                margin-left: 0 !important;
-                margin-right: auto !important;
-            }
-        }
-
         .nav-link {
-            color: rgba(255, 255, 255, 0.88) !important;
+            color: rgba(255, 255, 255, .88) !important;
             font-weight: 600;
-            transition: all 0.25s;
             border-radius: 8px;
             padding: 10px 18px !important;
-            font-size: 0.95rem;
         }
 
         .nav-link:hover {
-            background: rgba(255, 255, 255, 0.15);
-            color: white !important;
+            background: rgba(255, 255, 255, .15);
+            color: #fff !important;
         }
 
         .nav-link.active {
-            background: var(--secondary-yellow);
-            color: var(--primary-blue) !important;
+            background: var(--yellow);
+            color: var(--blue) !important;
             font-weight: 700;
         }
 
         .user-info {
-            color: white;
+            color: #fff;
             display: flex;
             align-items: center;
             gap: 12px;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, .1);
             padding: 9px 22px;
             border-radius: 40px;
-            font-size: 0.92rem;
-            font-weight: 500;
+            font-size: .92rem;
         }
 
         .logout-btn {
             background: transparent;
-            border: 2px solid rgba(255, 255, 255, 0.8);
-            color: white;
+            border: 2px solid rgba(255, 255, 255, .8);
+            color: #fff;
             border-radius: 30px;
             padding: 6px 18px;
             font-weight: 700;
-            transition: all 0.3s;
-            font-size: 0.88rem;
             cursor: pointer;
         }
 
         .logout-btn:hover {
-            background: var(--secondary-yellow);
-            color: var(--primary-blue);
-            border-color: var(--secondary-yellow);
+            background: var(--yellow);
+            color: var(--blue);
+            border-color: var(--yellow);
         }
 
         .btn-login {
-            background: white;
-            color: var(--primary-blue);
-            border: 2px solid white;
+            background: #fff;
+            color: var(--blue);
+            border: 2px solid #fff;
             border-radius: 30px;
             padding: 8px 25px;
             font-weight: 700;
             text-decoration: none;
-            transition: all 0.3s;
         }
 
         .btn-login:hover {
-            background: var(--secondary-yellow);
-            color: var(--primary-blue);
-            border-color: var(--secondary-yellow);
-            transform: translateY(-2px);
+            background: var(--yellow);
+            color: var(--blue);
+            border-color: var(--yellow);
         }
 
-        .btn-register {
-            background: transparent;
-            border: 2px solid white;
-            color: white;
-            border-radius: 30px;
-            padding: 8px 25px;
-            font-weight: 700;
-            text-decoration: none;
-            transition: all 0.3s;
-        }
-
-        .btn-register:hover {
-            background: var(--secondary-yellow);
-            color: var(--primary-blue);
-            transform: translateY(-2px);
-        }
-
-
-        /* Page Header */
-        .page-title {
-            font-size: 2rem;
-            font-weight: 700;
-            color: var(--primary-blue);
+        .hero {
+            background: var(--grad);
+            color: #fff;
+            padding: 52px 0 42px;
             position: relative;
-            padding-bottom: 15px;
-            margin-bottom: 30px;
+            overflow: hidden;
         }
 
-        .page-title:after {
+        .hero::before {
             content: '';
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 80px;
+            top: -60px;
+            right: -60px;
+            width: 280px;
+            height: 280px;
+            border-radius: 50%;
+            background: rgba(253, 185, 19, .1);
+        }
+
+        .hero h1 {
+            font-size: 2.4rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+        }
+
+        .hero-divider {
+            width: 50px;
             height: 4px;
-            background: var(--primary-gradient);
+            background: var(--yellow);
             border-radius: 2px;
+            margin: 14px 0;
         }
 
-        .page-title i {
-            color: var(--secondary-yellow);
+        .hero p {
+            opacity: .85;
+            font-size: .98rem;
+            line-height: 1.7;
+            max-width: 680px;
         }
 
-        /* Year Filter Buttons */
-        .year-btn:hover {
-            filter: brightness(0.92);
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(44,62,143,0.15);
+        .year-bar {
+            background: #fff;
+            border-bottom: 1px solid #e2e8f0;
+            padding: 12px 0;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 8px rgba(44, 62, 143, .06);
         }
 
-        /* Stat Cards — white with top accent bar */
-        .stat-card {
-            background: #f8fafc;
-            border-radius: 18px;
-            border: 1px solid #cbd5e1;
-            overflow: hidden;
-            height: 100%;
+        .year-pill {
+            padding: 5px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: .83rem;
+            text-decoration: none;
+            transition: all .2s;
         }
 
-        .accent-bar {
-            height: 4px;
+        .section-wrap {
+            padding: 48px 0;
         }
 
-        .acc-blue {
-            background: linear-gradient(90deg, #2C3E8F, #5578d9);
+        .section-wrap.alt {
+            background: #f0f5ff;
         }
 
-        .acc-green {
-            background: linear-gradient(90deg, #16a34a, #22c55e);
+        .section-wrap.dark {
+            background: #1e293b;
         }
 
-        .acc-yellow {
-            background: linear-gradient(90deg, #FDB913, #E5A500);
-        }
-
-        .acc-teal {
-            background: linear-gradient(90deg, #0891b2, #22d3ee);
-        }
-
-        .acc-red {
-            background: linear-gradient(90deg, #dc2626, #ef4444);
-        }
-
-        .sc-body {
-            padding: 18px 20px 16px;
-        }
-
-        .sc-label {
-            font-size: 0.7rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: .1em;
-            color: #64748b;
-            margin-bottom: 6px;
-        }
-
-        .sc-value {
-            font-size: 1.9rem;
-            font-weight: 900;
-            color: var(--primary-blue);
-            line-height: 1.1;
-            margin-bottom: 3px;
-        }
-
-        .sc-sub {
-            font-size: 0.75rem;
-            color: #64748b;
-            font-weight: 500;
-        }
-
-        /* Section header (yellow-underline style) */
         .sec-title {
-            font-size: 1rem;
+            font-size: 1.35rem;
             font-weight: 800;
-            color: var(--primary-blue);
+            color: var(--blue);
+            padding-bottom: 12px;
+            margin-bottom: 24px;
             position: relative;
-            padding-bottom: 10px;
-            margin-bottom: 4px;
         }
 
         .sec-title::after {
@@ -278,1434 +186,1117 @@
             position: absolute;
             bottom: 0;
             left: 0;
-            width: 34px;
+            width: 44px;
             height: 4px;
-            background: var(--secondary-yellow);
+            background: var(--yellow);
             border-radius: 2px;
         }
 
-        .sec-sub {
-            font-size: 0.8rem;
-            color: #64748b;
-            margin: 8px 0 0;
+        .sec-title.light {
+            color: #FDB913;
         }
 
-        /* Chart Cards */
-        .chart-card {
+        .card-base {
             background: #f8fafc;
-            border-radius: 20px;
-            padding: 20px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
             border: 1px solid #cbd5e1;
+            border-radius: 18px;
+            padding: 24px;
             position: relative;
             overflow: hidden;
         }
 
-        .chart-card::before {
+        .card-base::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
             height: 4px;
-            background: var(--primary-gradient);
+            background: var(--grad);
         }
 
-        .chart-card .card-header {
-            background: transparent;
-            border: none;
-            padding: 0 0 15px 0;
+        .card-base.y::before {
+            background: linear-gradient(135deg, #1d4ed8, #1e40af);
         }
 
-        .chart-card .card-header h5 {
-            color: var(--primary-blue);
-            font-weight: 600;
-            margin: 0;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+        .card-base.g::before {
+            background: linear-gradient(135deg, #0891b2, #0369a1);
         }
 
-        .chart-card .card-header h5 i {
-            color: var(--secondary-yellow);
+        .card-base.r::before {
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
         }
 
-        .chart-container {
-            position: relative;
-            height: 400px;
-            width: 100%;
+        .card-base.card-plain::before {
+            display: none;
         }
 
-        /* Municipality beneficiary cards — white with accent bar */
-        .program-card {
-            background: #f8fafc;
-            border-radius: 18px;
-            border: 1px solid #cbd5e1;
-            overflow: hidden;
-            height: 100%;
-        }
-
-        .program-card .pc-body {
-            padding: 20px 22px 18px;
-        }
-
-        .program-card .pc-muni {
-            font-size: 0.7rem;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: .1em;
-            color: #64748b;
-            margin-bottom: 6px;
-        }
-
-        .program-card .pc-value {
+        .stat-num {
             font-size: 2rem;
-            font-weight: 900;
-            color: var(--primary-blue);
-            line-height: 1.1;
-            margin-bottom: 2px;
+            font-weight: 800;
+            color: var(--blue);
         }
 
-        .program-card .pc-label {
-            font-size: 0.75rem;
+        .stat-lbl {
             color: #64748b;
+            font-size: .85rem;
             font-weight: 500;
         }
 
-        .program-card .pc-active {
-            font-size: 0.72rem;
-            color: #64748b;
-            margin-top: 6px;
-        }
-
-        .legend-item {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            margin-right: 5px;
-        }
-
-        /* Municipality Cards */
-        .municipality-card {
-            background: #f8fafc;
-            border-radius: 20px;
-            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.03);
-            border: 1px solid #cbd5e1;
-            height: 100%;
-            transition: all 0.3s ease;
-            overflow: hidden;
-        }
-
-        .municipality-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 12px 30px rgba(44, 62, 143, 0.1);
-            border-color: var(--primary-blue-soft);
-        }
-
-        .municipality-card .card-header {
-            background: var(--primary-gradient);
-            color: white;
-            padding: 15px 20px;
-            border: none;
-        }
-
-        .municipality-card .card-header h5 {
-            margin: 0;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .municipality-card .card-header h5 i {
-            color: var(--secondary-yellow);
-        }
-
-        .municipality-card .card-body {
-            padding: 20px;
-        }
-
-        .municipality-card .table {
-            margin-bottom: 0;
-            font-size: 0.95rem;
-        }
-
-        .municipality-card .table td {
-            padding: 8px 0;
-            border: none;
-        }
-
-        .badge.bg-warning {
-            background: var(--secondary-yellow) !important;
-            color: var(--primary-blue);
-            padding: 5px 10px;
-            border-radius: 20px;
-        }
-
-        .badge.bg-success {
-            background: #28a745 !important;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-        }
-
-        .badge.bg-danger {
-            background: var(--accent-red) !important;
-            color: white;
-            padding: 5px 10px;
-            border-radius: 20px;
-        }
-
-        .btn-view {
-            background: var(--primary-blue-light);
-            color: var(--primary-blue);
-            border: 1px solid var(--primary-blue-soft);
-            border-radius: 30px;
-            padding: 8px 20px;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .btn-view:hover {
-            background: var(--primary-gradient);
-            color: white;
-            transform: translateY(-2px);
-        }
-
-        .program-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 6px 0;
-            border-bottom: 1px dashed #E2E8F0;
-        }
-
-        .program-item:last-child {
-            border-bottom: none;
-        }
-
-        .program-name {
-            color: #475569;
-            font-size: 0.9rem;
-        }
-
-        .program-count {
-            font-weight: 600;
-            color: var(--primary-blue);
-            background: var(--bg-soft-blue);
-            padding: 2px 10px;
-            border-radius: 20px;
-        }
-
-        /* Alerts */
-        .alert-success {
-            background: var(--bg-soft-blue);
-            color: var(--primary-blue);
-            border-left: 5px solid var(--primary-blue);
-            border-radius: 12px;
-        }
-
-        .alert-info {
-            background: var(--secondary-yellow-light);
-            color: var(--primary-blue);
-            border-left: 5px solid var(--secondary-yellow);
-            border-radius: 12px;
-        }
-
-        .alert-warning {
-            background: var(--accent-red-light);
-            color: var(--accent-red);
-            border-left: 5px solid var(--accent-red);
-            border-radius: 12px;
-        }
-
-        @media (max-width: 768px) {
-            .page-title {
-                font-size: 1.5rem;
-            }
-
-            .chart-container {
-                height: 300px;
-            }
-
-            .stat-card h2 {
-                font-size: 2rem;
-            }
-        }
-
-        .btn-group .btn-light {
-            background-color: rgba(255, 255, 255, 0.2);
-            border-color: transparent;
-            color: white;
-            transition: all 0.3s ease;
-        }
-
-        .btn-group .btn-light:hover {
-            background-color: rgba(255, 255, 255, 0.3);
-            color: white;
-        }
-
-        .btn-group .btn-light.active {
-            background-color: var(--secondary-yellow);
-            color: var(--primary-blue);
-            border-color: transparent;
-        }
-
-        .btn-group .btn-light i {
-            margin-right: 5px;
-        }
-
-        /* ===== HERO BANNER ===== */
-        .hero-banner {
-            background: var(--primary-gradient);
-            color: white;
-            padding: 58px 0 48px;
+        .chart-box {
             position: relative;
-            overflow: hidden;
+            height: 300px;
         }
 
-        .hero-banner::before {
-            content: '';
-            position: absolute;
-            top: -70px;
-            right: -70px;
-            width: 320px;
-            height: 320px;
-            border-radius: 50%;
-            background: rgba(253, 185, 19, 0.1);
+        .chart-box.tall {
+            height: 340px;
         }
 
-        .hero-banner::after {
-            content: '';
-            position: absolute;
-            bottom: -80px;
-            left: -50px;
-            width: 250px;
-            height: 250px;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.05);
-        }
-
-        .hero-banner .hero-badge {
-            display: inline-block;
-            background: rgba(253, 185, 19, 0.18);
-            color: var(--secondary-yellow);
-            border: 1px solid rgba(253, 185, 19, 0.35);
-            border-radius: 30px;
-            padding: 5px 18px;
-            font-size: 0.78rem;
-            font-weight: 700;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-            margin-bottom: 18px;
-        }
-
-        .hero-banner h1 {
-            font-size: 2.6rem;
-            font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 14px;
-        }
-
-        .hero-divider {
-            width: 55px;
-            height: 4px;
-            background: var(--secondary-yellow);
-            border-radius: 2px;
-            margin: 16px 0;
-        }
-
-        .hero-banner p {
-            font-size: 1.02rem;
-            opacity: 0.87;
-            max-width: 700px;
-            line-height: 1.75;
-        }
-
-        .hero-stat-pill {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            background: rgba(255, 255, 255, 0.12);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 30px;
-            padding: 8px 20px;
-            font-size: 0.9rem;
+        table thead th {
+            background: var(--grad);
+            color: #fff;
             font-weight: 600;
-            margin-right: 10px;
-            margin-top: 10px;
+            border: none;
+            padding: 11px 14px;
+            font-size: .85rem;
         }
 
-        .hero-stat-pill span {
-            color: var(--secondary-yellow);
-            font-size: 1.05rem;
-            font-weight: 800;
+        table thead th:first-child {
+            border-radius: 8px 0 0 0;
         }
 
-        /* ===== FOOTER ===== */
+        table thead th:last-child {
+            border-radius: 0 8px 0 0;
+        }
+
+        table tbody td {
+            padding: 10px 14px;
+            font-size: .85rem;
+            vertical-align: middle;
+        }
+
+        .badge-sig {
+            background: #dcfce7;
+            color: #166534;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: .78rem;
+            font-weight: 700;
+        }
+
+        .badge-nosig {
+            background: #fef9c3;
+            color: #854d0e;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: .78rem;
+            font-weight: 700;
+        }
+
+        .badge-strong {
+            background: #dbeafe;
+            color: #1e40af;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: .78rem;
+            font-weight: 700;
+        }
+
+        .badge-moderate {
+            background: #e0f2fe;
+            color: #0369a1;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: .78rem;
+            font-weight: 700;
+        }
+
+        .badge-weak {
+            background: #f1f5f9;
+            color: #475569;
+            border-radius: 20px;
+            padding: 4px 12px;
+            font-size: .78rem;
+            font-weight: 700;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, .06);
+            border: 1px solid rgba(255, 255, 255, .1);
+            border-radius: 14px;
+            padding: 20px;
+            transition: background .2s;
+        }
+
+        .insight-card:hover {
+            background: rgba(255, 255, 255, .11);
+        }
+
+        .rec-card {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 20px;
+            border-left: 4px solid var(--blue);
+        }
+
         .footer-strip {
-            background: var(--primary-gradient);
-            color: rgba(255, 255, 255, 0.75);
+            background: var(--grad);
+            color: #fff;
             text-align: center;
-            padding: 18px 0;
-            font-size: 0.85rem;
-            margin-top: 60px;
+            padding: 20px;
+            font-size: .88rem;
         }
 
-        .footer-strip strong {
-            color: white;
+        @media(max-width:768px) {
+            .hero h1 {
+                font-size: 1.8rem;
+            }
         }
     </style>
 </head>
 
 <body>
-    <!-- Navigation Bar — role-aware -->
+
+    {{-- NAVBAR --}}
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/analysis">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD"
+                    style="width:34px;height:34px;object-fit:contain;"> MSWDO
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-
-                {{-- ── SUPER ADMIN NAV ── --}}
+            <div class="collapse navbar-collapse" id="nav">
                 @auth
                     @if(Auth::user()->isSuperAdmin())
                         <ul class="navbar-nav me-auto">
                             <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.dashboard') }}">Dashboard</a>
                             </li>
-                            <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a>
-                            </li>
                             <li class="nav-item"><a class="nav-link"
                                     href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.data.dashboard') }}">Data
                                     Management</a></li>
-                            <li class="nav-item"><a class="nav-link active" href="/analysis">Public View</a></li>
+                            <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
                         </ul>
                         <div class="d-flex">
-                            <div class="user-info">
-                                <span>{{ Auth::user()->full_name }}</span>
-                                <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                    @csrf
+                            <div class="user-info"><span>{{ Auth::user()->full_name }}</span>
+                                <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
                                     <button type="submit" class="logout-btn">Logout</button>
                                 </form>
                             </div>
                         </div>
-                        {{-- ── ADMIN NAV ── --}}
                     @elseif(Auth::user()->isAdmin())
                         <ul class="navbar-nav me-auto">
                             <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a>
-                            </li>
                             <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data
                                     Management</a></li>
-                            <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a>
-                            </li>
-                            <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Public View</a></li>
+                            <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
                         </ul>
                         <div class="d-flex">
-                            <div class="user-info">
-                                <span>{{ Auth::user()->full_name }}</span>
-                                <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                    @csrf
+                            <div class="user-info"><span>{{ Auth::user()->full_name }}</span>
+                                <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
                                     <button type="submit" class="logout-btn">Logout</button>
                                 </form>
                             </div>
                         </div>
                     @else
-                        {{-- ── USER / GUEST PUBLIC NAV ── --}}
                         <ul class="navbar-nav me-auto">
                             <li class="nav-item"><a class="nav-link" href="/analysis">Programs</a></li>
                             <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
                             <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
                         </ul>
                         <div class="d-flex">
-                            <div class="user-info">
-                                <span>{{ Auth::user()->full_name }}</span>
-                                <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                    @csrf
+                            <div class="user-info"><span>{{ Auth::user()->full_name }}</span>
+                                <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
                                     <button type="submit" class="logout-btn">Logout</button>
                                 </form>
                             </div>
                         </div>
                     @endif
                 @else
-                    {{-- ── GUEST NAV ── --}}
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item"><a class="nav-link" href="/analysis">Programs</a></li>
                         <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
                         <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
                     </ul>
-                    <div class="d-flex">
-                        <a href="{{ route('login') }}" class="btn-login me-2">Login</a>
-                        <a href="{{ route('register') }}" class="btn-register">Register</a>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('login') }}" class="btn-login">Login</a>
                     </div>
                 @endauth
-
             </div>
         </div>
     </nav>
 
-    <!-- ===== HERO BANNER ===== -->
-    <section class="hero-banner">
-        <div class="container" style="position:relative;z-index:2;">
-            <div class="hero-badge">Comparative Analysis</div>
-            <h1>Magdalena, Liliw &amp; Majayjay</h1>
+    {{-- HERO --}}
+    <section class="hero">
+        <div class="container" style="position:relative;z-index:1;">
+            <div
+                style="display:inline-block;background:rgba(253,185,19,.18);color:#FDB913;border:1px solid rgba(253,185,19,.35);border-radius:30px;padding:4px 16px;font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:16px;">
+                Statistical Analysis Dashboard</div>
+            <h1>Comparative Socioeconomic Analysis</h1>
             <div class="hero-divider"></div>
-            <p>A side-by-side comparison of population demographics, social welfare program beneficiaries, and household
-                statistics across the three municipalities.</p>
-            <div class="mt-3">
-                <span class="hero-stat-pill">Population &amp; Households</span>
-                <span class="hero-stat-pill">Program Beneficiaries</span>
-                <span class="hero-stat-pill">Trends &amp; Insights</span>
+            <p>Comprehensive statistical analysis of Magdalena, Liliw, and Majayjay — covering population, gender, age
+                groups, households, social welfare programs, ANOVA, and Pearson correlation.</p>
+        </div>
+    </section>
+
+    {{-- YEAR FILTER --}}
+    <div class="year-bar">
+        <div class="container d-flex align-items-center gap-3 flex-wrap">
+            <span style="font-weight:700;color:var(--blue);font-size:.9rem;">Year:</span>
+            @foreach($allYears as $yr)
+                <a href="?year={{ $yr }}" class="year-pill"
+                    style="background:{{ $yr == $selectedYear ? '#2C3E8F' : '#f1f5f9' }};color:{{ $yr == $selectedYear ? '#fff' : '#334155' }};border:1px solid {{ $yr == $selectedYear ? '#2C3E8F' : '#cbd5e1' }};">{{ $yr }}</a>
+            @endforeach
+            <span style="color:#94a3b8;font-size:.8rem;">Data for <strong>{{ $selectedYear }}</strong></span>
+        </div>
+    </div>
+
+    @php
+        /** @var string[] $coreNames */
+        /** @var array<string,string> $colors */
+        /** @var int[] $allYears */
+        /** @var int $selectedYear */
+        /** @var array<string,array<string,int|float>> $snapshot */
+        /** @var array<string,array<int,int>> $populationTrend */
+        /** @var array<string,array<int,int>> $householdsTrend */
+        /** @var array<string,array<int,int>> $maleTrend */
+        /** @var array<string,array<int,int>> $femaleTrend */
+        /** @var array<string,array<int,int>> $benefTrend */
+        /** @var array<string,array<int,float|null>> $growthRates */
+        /** @var array|null $anovaPopResult */
+        /** @var array|null $anovaBenefResult */
+        /** @var array $correlations */
+        /** @var array $insights */
+        /** @var array $recommendations */
+        /** @var string $fastest */
+        /** @var string $domAge */
+        /** @var string $topProgram */
+        /** @var array $progTotals */
+        $muniColors = $colors; // dynamic — set in AnalysisController from DB
+        $totalPop = array_sum(array_map(fn($n) => $snapshot[$n]['population'], $coreNames));
+        $totalHH = array_sum(array_map(fn($n) => $snapshot[$n]['households'], $coreNames));
+        $totalBenef = array_sum(array_map(fn($n) => $snapshot[$n]['beneficiaries'], $coreNames));
+        $popArr = array_map(fn($n) => $snapshot[$n]['population'], $coreNames);
+        arsort($popArr);
+        $highPop = array_keys($popArr)[0] ?? '';
+        $benArr = array_map(fn($n) => $snapshot[$n]['beneficiaries'], $coreNames);
+        arsort($benArr);
+        $highBen = array_keys($benArr)[0] ?? '';
+        $hhArr = array_map(fn($n) => $snapshot[$n]['households'], $coreNames);
+        arsort($hhArr);
+        $highHH = array_keys($hhArr)[0] ?? '';
+    @endphp
+
+    {{-- SECTION 1: DESCRIPTIVE ANALYSIS --}}
+    <section class="section-wrap">
+        <div class="container">
+            <h2 class="sec-title">1. Descriptive Analysis</h2>
+            <div class="row g-3 mb-4">
+                <div class="col-md-4">
+                    <div class="card-base text-center">
+                        <div class="stat-num">{{ number_format($totalPop) }}</div>
+                        <div class="stat-lbl">Total Population ({{ $selectedYear }})</div>
+                        <div style="font-size:.78rem;color:#22c55e;margin-top:4px;">Highest: {{ $highPop }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card-base y text-center">
+                        <div class="stat-num">{{ number_format($totalHH) }}</div>
+                        <div class="stat-lbl">Total Households</div>
+                        <div style="font-size:.78rem;color:#22c55e;margin-top:4px;">Highest: {{ $highHH }}</div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card-base g text-center">
+                        <div class="stat-num">{{ number_format($totalBenef) }}</div>
+                        <div class="stat-lbl">Total Beneficiaries</div>
+                        <div style="font-size:.78rem;color:#22c55e;margin-top:4px;">Highest: {{ $highBen }}</div>
+                    </div>
+                </div>
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card-base">
+                        <h6 style="font-weight:700;color:var(--blue);">Population, Households & Beneficiaries per
+                            Municipality</h6>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Grouped bar chart —
+                            {{ $selectedYear }}</p>
+                        <div class="chart-box"><canvas id="descBar"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card-base h-100">
+                        <h6 style="font-weight:700;color:var(--blue);">Key Differences</h6>
+                        <div class="table-responsive mt-2">
+                            <table class="table table-sm mb-0">
+                                <thead>
+                                    <tr>
+                                        <th>Municipality</th>
+                                        <th class="text-end">Population</th>
+                                        <th class="text-end">Benef. %</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($coreNames as $n)
+                                        <tr>
+                                            <td><span
+                                                    style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ $muniColors[$n] }};margin-right:5px;"></span>{{ $n }}
+                                            </td>
+                                            <td class="text-end fw-bold">{{ number_format($snapshot[$n]['population']) }}
+                                            </td>
+                                            <td class="text-end"><span
+                                                    style="color:var(--blue);font-weight:600;">{{ $snapshot[$n]['benef_pct'] }}%</span>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                        <div style="margin-top:16px;padding-top:14px;border-top:1px solid #f1f5f9;">
+                            <p style="font-size:.8rem;color:#64748b;margin:0;">
+                                <strong>{{ $highPop }}</strong> leads in population.
+                                <strong>{{ $highBen }}</strong> has the most welfare beneficiaries.
+                                Beneficiary rates range from
+                                {{ min(array_map(fn($n) => $snapshot[$n]['benef_pct'], $coreNames)) }}% to
+                                {{ max(array_map(fn($n) => $snapshot[$n]['benef_pct'], $coreNames)) }}%.
+                            </p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </section>
 
-    <div class="container mt-4">
-        <!-- Session Messages -->
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    {{-- SECTION 2: POPULATION GROWTH --}}
+    <section class="section-wrap alt">
+        <div class="container">
+            <h2 class="sec-title">2. Population Growth Analysis</h2>
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card-base">
+                        <h6 style="font-weight:700;color:var(--blue);">Population per Year per Municipality</h6>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Line chart — all recorded years</p>
+                        <div class="chart-box tall"><canvas id="popTrend"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card-base h-100">
+                        <h6 style="font-weight:700;color:var(--blue);">Growth Rates</h6>
+                        @foreach($coreNames as $n)
+                            @php
+                                $rates = array_filter($growthRates[$n], fn($v) => $v !== null);
+                                $avg = count($rates) > 0 ? round(array_sum($rates) / count($rates), 2) : 0;
+                            @endphp
+                            <div style="margin-bottom:18px;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                                    <span style="font-weight:600;font-size:.88rem;color:#1e293b;">
+                                        <span
+                                            style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ $muniColors[$n] }};margin-right:5px;"></span>{{ $n }}
+                                    </span>
+                                    <span
+                                        style="font-weight:700;color:{{ $avg >= 0 ? '#16a34a' : '#dc2626' }};font-size:.9rem;">{{ $avg >= 0 ? '+' : '' }}{{ $avg }}%</span>
+                                </div>
+                                <div style="background:#f1f5f9;border-radius:20px;height:8px;overflow:hidden;">
+                                    <div
+                                        style="height:100%;background:{{ $muniColors[$n] }};border-radius:20px;width:{{ min(abs($avg) / 5 * 100, 100) }}%;">
+                                    </div>
+                                </div>
+                                <div style="font-size:.75rem;color:#94a3b8;margin-top:3px;">Avg. yearly growth</div>
+                            </div>
+                        @endforeach
+                        <p
+                            style="font-size:.8rem;color:#64748b;margin:0;padding-top:10px;border-top:1px solid #f1f5f9;">
+                            <strong>{{ $fastest }}</strong> shows the fastest average population growth among the three
+                            municipalities.
+                        </p>
+                    </div>
+                </div>
             </div>
-        @endif
-
-        @if(session('error'))
-            <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-triangle-fill"></i> {{ session('error') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-            </div>
-        @endif
-
-        <div style="margin:8px 0 20px;">
-            <div class="sec-title" style="font-size:1.4rem;">Comparative Analysis: Magdalena, Liliw &amp; Majayjay</div>
-            <p class="sec-sub" style="margin-bottom:0;">Side-by-side population, household, and social welfare statistics across the three municipalities.</p>
         </div>
+    </section>
 
-        <div style="background:#ffffff; border:1px solid #cbd5e1; border-left:4px solid var(--secondary-yellow); border-radius:12px; padding:16px 24px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:15px; margin-bottom:28px; box-shadow:0 4px 15px rgba(0,0,0,0.03);">
-            <div>
-                <div style="font-size:1.05rem; font-weight:800; color:var(--primary-blue); margin-bottom:4px;">Filter Analysis by Year</div>
-                <div style="font-size:0.85rem; color:#64748b;">Select a specific year to update all comparative charts and statistics.</div>
+    {{-- POPULATION GROWTH ANALYSIS DETAIL PANEL --}}
+    <section class="section-wrap" style="padding-top:0;padding-bottom:40px;">
+        <div class="container">
+            <div class="card-base" style="border-top:4px solid #FDB913;padding:0;overflow:hidden;">
+
+                {{-- KEY FINDING --}}
+                <div style="background:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%);padding:22px 28px 18px;">
+                    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+                        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:50%;background:#FDB913;flex-shrink:0;">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#1A2A5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+                        </span>
+                        <span style="font-size:.68rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#FDB913;">Key Finding</span>
+                    </div>
+                    <p style="color:rgba(255,255,255,.93);font-size:.93rem;line-height:1.7;margin:0;">
+                        <strong style="color:#FDB913;">Magdalena</strong> shows the highest population growth rate at
+                        <strong style="color:#FDB913;">5.74%</strong>, indicating rapid demographic expansion compared to nearby municipalities.
+                    </p>
+                </div>
+
+                <div style="padding:28px;display:grid;grid-template-columns:1fr 1fr;gap:28px;" class="growth-detail-grid">
+
+                    {{-- LEFT COL: EXPLANATION --}}
+                    <div>
+                        <div style="display:flex;align-items:center;margin-bottom:16px;">
+                            <span style="display:inline-block;width:4px;height:20px;background:#FDB913;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                            <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Explanation of Growth Trend</span>
+                        </div>
+
+                        <div style="display:flex;flex-direction:column;gap:14px;">
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Young Population Structure</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">Higher birth rates due to lower median age contribute to sustained natural population increase.</div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Sustained Growth Trend</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">Continuous increase based on census data reflects a long-term upward demographic trajectory.</div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Resource Availability & Settlement Expansion</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">Access to water and land in the Santa Cruz watershed supports population growth, leading to expansion of settlements and built-up areas.</div>
+                                </div>
+                            </div>
+
+                            <div style="display:flex;gap:14px;align-items:flex-start;background:#F0F5FF;border-radius:12px;padding:14px 16px;">
+                                <span style="display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:10px;background:#2C3E8F;flex-shrink:0;">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+                                </span>
+                                <div>
+                                    <div style="font-weight:700;font-size:.85rem;color:#1e293b;margin-bottom:3px;">Increasing Human Activities & Environmental Interaction</div>
+                                    <div style="font-size:.81rem;color:#64748b;line-height:1.6;">Rising population leads to increased land use, water consumption, and environmental changes, reflecting strong interaction between people and natural resources.</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- RIGHT COL: EVIDENCE + CONCLUSION --}}
+                    <div style="display:flex;flex-direction:column;gap:20px;">
+
+                        {{-- Supporting Evidence --}}
+                        <div>
+                            <div style="display:flex;align-items:center;margin-bottom:14px;">
+                                <span style="display:inline-block;width:4px;height:20px;background:#2C3E8F;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                                <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Supporting Evidence</span>
+                            </div>
+                            <div style="display:flex;flex-direction:column;gap:10px;">
+                                @php
+                                $growthRefs = [
+                                    ['authors' => 'PhilAtlas (2020)', 'url' => 'https://www.philatlas.com/luzon/r04a/laguna/magdalena.html', 'label' => 'Magdalena, Laguna — Population Data'],
+                                    ['authors' => 'Magpantay & Sanchez (2023)', 'url' => 'https://journals.uplb.edu.ph/index.php/JESAM/article/download/1030/853', 'label' => 'JESAM — Environmental & Socio-demographic Study'],
+                                    ['authors' => 'Dayo, Rola, et al.', 'url' => 'https://journals.uplb.edu.ph/index.php/JPAD/article/download/719/676', 'label' => 'JPAD — Population & Agricultural Development'],
+                                    ['authors' => 'Sandoval et al. (2023)', 'url' => 'https://www.researchgate.net/profile/Ryan-Labana/publication/371812110_Water_Quality_Assessment_of_Santa_Cruz_River_in_2011_and_2022_in_the_Vicinity_of_Liliw_and_Nagcarlan_Laguna_Philippines/links/669b155b02e9686cd11091b5/Water-Quality-Assessment-of-Santa-Cruz-River-in-2011-and-2022-in-the-Vicinity-of-Liliw-and-Nagcarlan-Laguna-Philippines.pdf', 'label' => 'Water Quality Assessment — Santa Cruz River, Laguna'],
+                                ];
+                                @endphp
+                                @foreach($growthRefs as $idx => $ref)
+                                <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:11px 14px;display:flex;gap:12px;align-items:flex-start;">
+                                    <span style="display:inline-flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:6px;background:#2C3E8F;color:#fff;font-size:.65rem;font-weight:800;flex-shrink:0;margin-top:1px;">{{ $idx + 1 }}</span>
+                                    <div>
+                                        <div style="font-weight:700;font-size:.8rem;color:#1e293b;margin-bottom:2px;">{{ $ref['authors'] }}</div>
+                                        <div style="font-size:.75rem;color:#64748b;margin-bottom:4px;">{{ $ref['label'] }}</div>
+                                        <a href="{{ $ref['url'] }}" target="_blank" rel="noopener noreferrer"
+                                           style="font-size:.72rem;color:#2C3E8F;text-decoration:none;display:inline-flex;align-items:center;gap:4px;">
+                                            <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                                            View Source
+                                        </a>
+                                    </div>
+                                </div>
+                                @endforeach
+                            </div>
+                        </div>
+
+                        {{-- Conclusion --}}
+                        <div style="background:linear-gradient(135deg,#F0F5FF 0%,#E5EEFF 100%);border:1px solid #c7d7f5;border-radius:14px;padding:18px 20px;">
+                            <div style="display:flex;align-items:center;margin-bottom:12px;">
+                                <span style="display:inline-block;width:4px;height:20px;background:#FDB913;border-radius:2px;margin-right:10px;flex-shrink:0;"></span>
+                                <span style="font-weight:800;font-size:.85rem;text-transform:uppercase;letter-spacing:.08em;color:#2C3E8F;">Conclusion</span>
+                            </div>
+                            <p style="font-size:.83rem;color:#334155;line-height:1.75;margin:0;">
+                                The rapid population increase in Magdalena is driven by a combination of <strong>demographic factors</strong> and
+                                <strong>environmental-resource dynamics</strong>. The availability of water and land supports continuous settlement expansion,
+                                while increasing human activities further accelerate growth.
+                            </p>
+                            <p style="font-size:.83rem;color:#334155;line-height:1.75;margin:12px 0 0;">
+                                However, this growth also places pressure on natural resources, particularly <strong>water systems and land use</strong>.
+                                As population increases, environmental impacts such as changes in land cover and water quality become more evident.
+                                Therefore, <strong>sustainable resource management</strong> is essential to balance population growth with environmental protection.
+                            </p>
+                        </div>
+
+                    </div>
+                </div>
             </div>
-            <div class="year-filter-buttons" style="display:flex;gap:6px;flex-wrap:wrap;">
-                @foreach($allYears as $year)
-                <a href="/analysis/programs?year={{ $year }}" class="year-btn" style="background:{{ request('year', $currentYear ?? date('Y')) == $year ? 'var(--primary-gradient)' : '#E2E8F0' }};color:{{ request('year', $currentYear ?? date('Y')) == $year ? 'white' : '#64748b' }};border:none;border-radius:8px;padding:8px 16px;font-size:0.85rem;font-weight:700;text-decoration:none;transition:all 0.2s;">{{ $year }}</a>
+        </div>
+    </section>
+
+    <style>
+        @media (max-width: 768px) {
+            .growth-detail-grid { grid-template-columns: 1fr !important; }
+        }
+    </style>
+
+    {{-- SECTION 3: GENDER TREND --}}
+    <section class="section-wrap">
+        <div class="container">
+            <h2 class="sec-title">3. Gender Trend Analysis</h2>
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card-base">
+                        <h6 style="font-weight:700;color:var(--blue);">Male vs Female Trend Over Years</h6>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Combined across all municipalities
+                        </p>
+                        <div class="chart-box tall"><canvas id="genderTrend"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card-base h-100">
+                        <h6 style="font-weight:700;color:var(--blue);">Male vs Female per Municipality</h6>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">{{ $selectedYear }}</p>
+                        <div class="chart-box"><canvas id="genderBar"></canvas></div>
+                        @php
+                            $totalM = array_sum(array_map(fn($n) => $snapshot[$n]['male'], $coreNames));
+                            $totalF = array_sum(array_map(fn($n) => $snapshot[$n]['female'], $coreNames));
+                        @endphp
+                        <div
+                            style="margin-top:14px;padding-top:12px;border-top:1px solid #f1f5f9;font-size:.8rem;color:#64748b;">
+                            <strong>Total Male:</strong> {{ number_format($totalM) }} &nbsp;|&nbsp;
+                            <strong>Total Female:</strong> {{ number_format($totalF) }}<br>
+                            {{ $totalM > $totalF ? 'Male-dominant across municipalities.' : ($totalF > $totalM ? 'Female-dominant across municipalities.' : 'Balanced gender distribution.') }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- SECTION 4: AGE GROUP --}}
+    <section class="section-wrap alt">
+        <div class="container">
+            <h2 class="sec-title">4. Age Group Analysis</h2>
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card-base">
+                        <h6 style="font-weight:700;color:var(--blue);">Age Groups per Municipality (Stacked)</h6>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Youth (0–19), Working Age (20–59),
+                            Senior (60+) — {{ $selectedYear }}</p>
+                        <div class="chart-box tall"><canvas id="ageStacked"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card-base h-100">
+                        <h6 style="font-weight:700;color:var(--blue);">Dependency Ratios</h6>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">(Youth + Senior) / Working Age ×
+                            100</p>
+                        @foreach($coreNames as $n)
+                            <div style="margin-bottom:18px;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                                    <span style="font-weight:600;font-size:.88rem;">
+                                        <span
+                                            style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ $muniColors[$n] }};margin-right:5px;"></span>{{ $n }}
+                                    </span>
+                                    <span
+                                        style="font-weight:700;color:var(--blue);">{{ $snapshot[$n]['dependency_ratio'] }}%</span>
+                                </div>
+                                <div style="background:#f1f5f9;border-radius:20px;height:8px;overflow:hidden;">
+                                    <div
+                                        style="height:100%;border-radius:20px;background:{{ $muniColors[$n] }};width:{{ min($snapshot[$n]['dependency_ratio'], 100) }}%;">
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                        <div style="padding-top:12px;border-top:1px solid #f1f5f9;">
+                            <p style="font-size:.8rem;color:#64748b;margin:0;line-height:1.6;">
+                                Dominant age group: <strong>{{ $domAge }}</strong>.<br>
+                                {{ $domAge === 'Youth (0–19)' ? 'Population is youthful — invest in education and livelihood programs.' : ($domAge === 'Working Age (20–59)' ? 'Productive population — strong labor force, moderate dependency.' : 'Aging population — prioritize elder care and pension services.') }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- SECTION 5: HOUSEHOLD VS POPULATION --}}
+    <section class="section-wrap">
+        <div class="container">
+            <h2 class="sec-title">5. Household vs Population Analysis</h2>
+            <div class="row g-4">
+                <div class="col-lg-8">
+                    <div class="card-base">
+                        <h6 style="font-weight:700;color:var(--blue);">Population vs Households Combo Chart</h6>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Bars = Population, Line =
+                            Households — {{ $selectedYear }}</p>
+                        <div class="chart-box tall"><canvas id="hhCombo"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card-base h-100">
+                        <h6 style="font-weight:700;color:var(--blue);">Average Household Size</h6>
+                        @foreach($coreNames as $n)
+                            <div style="margin-bottom:20px;">
+                                <div style="display:flex;justify-content:space-between;margin-bottom:5px;">
+                                    <span style="font-weight:600;font-size:.88rem;">
+                                        <span
+                                            style="display:inline-block;width:8px;height:8px;border-radius:50%;background:{{ $muniColors[$n] }};margin-right:5px;"></span>{{ $n }}
+                                    </span>
+                                    <span
+                                        style="font-weight:800;color:{{ $muniColors[$n] }};">{{ $snapshot[$n]['avg_hh_size'] }}
+                                        <small style="color:#94a3b8;font-weight:500;">persons/hh</small></span>
+                                </div>
+                                <div style="background:#f1f5f9;border-radius:20px;height:8px;overflow:hidden;">
+                                    <div
+                                        style="height:100%;border-radius:20px;background:{{ $muniColors[$n] }};width:{{ min($snapshot[$n]['avg_hh_size'] / 10 * 100, 100) }}%;">
+                                    </div>
+                                </div>
+                                <div style="font-size:.75rem;color:#94a3b8;margin-top:3px;">
+                                    {{ number_format($snapshot[$n]['households']) }} households ·
+                                    {{ number_format($snapshot[$n]['population']) }} pop.</div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- SECTION 6: PROGRAM BENEFICIARIES --}}
+    <section class="section-wrap alt">
+        <div class="container">
+            <h2 class="sec-title">6. Program Beneficiaries Analysis</h2>
+            <div class="row g-4 mb-4">
+                <div class="col-md-4">
+                    <div class="card-base text-center">
+                        <div class="stat-num" style="font-size:1.5rem;">{{ $topProgram }}</div>
+                        <div class="stat-lbl">Highest Demand Program</div>
+                        <div style="font-size:.78rem;color:#22c55e;margin-top:4px;">
+                            {{ number_format($progTotals[$topProgram]) }} total beneficiaries</div>
+                    </div>
+                </div>
+                @foreach($coreNames as $n)
+                    <div class="col-md-{{ count($coreNames) == 3 ? '2-2' : '4' }}" style="flex:1;">
+                        <div class="card-base card-plain text-center" style="border-top:4px solid #2C3E8F;">
+                            <div style="font-weight:700;color:var(--blue);margin-bottom:8px;">{{ $n }}</div>
+                            <div style="font-size:1.4rem;font-weight:800;color:var(--blue);">
+                                {{ number_format($snapshot[$n]['beneficiaries']) }}</div>
+                            <div class="stat-lbl">Total Beneficiaries</div>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+            <div class="row g-4">
+                <div class="col-lg-7">
+                    <div class="card-base">
+                        <h6 style="font-weight:700;color:var(--blue);">Programs per Municipality (Stacked)</h6>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">PWD, AICS, Solo Parent, 4Ps, Senior
+                            — {{ $selectedYear }}</p>
+                        <div class="chart-box tall"><canvas id="benefStacked"></canvas></div>
+                    </div>
+                </div>
+                <div class="col-lg-5">
+                    <div class="card-base">
+                        <h6 style="font-weight:700;color:var(--blue);">Beneficiaries Trend (Yearly)</h6>
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">Total beneficiaries over all years
+                        </p>
+                        <div class="chart-box tall"><canvas id="benefTrend"></canvas></div>
+                    </div>
+                </div>
+            </div>
+            <div class="table-responsive mt-4">
+                <table class="table table-hover mb-0" style="background:#f8fafc;border-radius:12px;overflow:hidden;">
+                    <thead>
+                        <tr>
+                            <th>Program</th>
+                            @foreach($coreNames as $n)<th class="text-center">{{ $n }}</th>@endforeach
+                            <th class="text-center">Total</th>
+                            <th>Highest</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @php
+                            $programs6 = [
+                                'PWD' => array_map(fn($n) => $snapshot[$n]['pwd'], $coreNames),
+                                'AICS' => array_map(fn($n) => $snapshot[$n]['aics'], $coreNames),
+                                'Solo Parent' => array_map(fn($n) => $snapshot[$n]['solo_parent'], $coreNames),
+                                '4Ps' => array_map(fn($n) => $snapshot[$n]['four_ps'], $coreNames),
+                                'Senior' => array_map(fn($n) => $snapshot[$n]['senior'], $coreNames),
+                            ];
+                        @endphp
+                        @foreach($programs6 as $prog => $vals)
+                            @php $tot6 = array_sum($vals);
+                                $maxV = !empty($vals) ? max($vals) : 0;
+                            $maxIdx = (int) array_search($maxV, $vals); @endphp
+                            <tr>
+                                <td><strong>{{ $prog }}</strong></td>
+                                @foreach($vals as $i => $v)
+                                    <td class="text-center"
+                                        style="{{ $v == $maxV ? 'font-weight:700;color:var(--blue);' : '' }}">
+                                        {{ number_format($v) }}</td>
+                                @endforeach
+                                <td class="text-center fw-bold">{{ number_format($tot6) }}</td>
+                                <td><span
+                                        style="background:var(--blue-lt);color:var(--blue);border-radius:10px;padding:2px 10px;font-size:.78rem;font-weight:700;">{{ $coreNames[$maxIdx] }}</span>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+
+    {{-- SECTION 7: ANOVA --}}
+    <section class="section-wrap">
+        <div class="container">
+            <h2 class="sec-title">7. ANOVA Analysis</h2>
+            <p style="color:#64748b;font-size:.9rem;margin-top:-16px;margin-bottom:24px;">One-way ANOVA tests whether
+                significant differences exist among municipalities (α = 0.05).</p>
+            <div class="row g-4">
+                @foreach([['Population', 'anovaPopResult'], ['Beneficiaries', 'anovaBenefResult']] as [$label, $var])
+                    @php $res = $$var; @endphp
+                    <div class="col-lg-6">
+                        <div class="card-base">
+                            <h6 style="font-weight:700;color:var(--blue);">ANOVA — {{ $label }}</h6>
+                            @if($res)
+                                <div class="d-flex align-items-center gap-3 mb-3">
+                                    <div>
+                                        <div style="font-size:.75rem;color:#94a3b8;">F-Statistic</div>
+                                        <div style="font-size:1.6rem;font-weight:800;color:var(--blue);">{{ $res['F'] }}</div>
+                                    </div>
+                                    <div>
+                                        <div style="font-size:.75rem;color:#94a3b8;">df (between / within)</div>
+                                        <div style="font-size:1.1rem;font-weight:700;color:#334155;">{{ $res['dfBetween'] }} /
+                                            {{ $res['dfWithin'] }}</div>
+                                    </div>
+                                    <div class="ms-auto">
+                                        @if($res['significant'])
+                                            <span class="badge-sig">Significant (p &lt; 0.05)</span>
+                                        @else
+                                            <span class="badge-nosig">Not Significant (p &gt; 0.05)</span>
+                                        @endif
+                                    </div>
+                                </div>
+                                <p style="font-size:.83rem;color:#475569;margin-bottom:16px;">
+                                    @if($res['significant'])
+                                        There are statistically significant differences in {{ strtolower($label) }} among the three
+                                        municipalities. The observed differences are unlikely due to chance.
+                                    @else
+                                        No statistically significant difference in {{ strtolower($label) }} was detected. The
+                                        municipalities perform similarly relative to the variability in data.
+                                    @endif
+                                </p>
+                                <div style="margin-top:8px;">
+                                    <div style="font-size:.75rem;color:#94a3b8;margin-bottom:6px;">Group Means</div>
+                                    @foreach($coreNames as $i => $n)
+                                        <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;">
+                                            <span style="width:70px;font-size:.82rem;font-weight:600;">{{ $n }}</span>
+                                            <div style="flex:1;background:#f1f5f9;border-radius:20px;height:8px;overflow:hidden;">
+                                                @php $maxMean = max($res['groupMeans']); @endphp
+                                                <div
+                                                    style="height:100%;background:{{ $muniColors[$n] }};border-radius:20px;width:{{ $maxMean > 0 ? round($res['groupMeans'][$i] / $maxMean * 100) : 0 }}%;">
+                                                </div>
+                                            </div>
+                                            <span
+                                                style="font-size:.82rem;font-weight:700;color:var(--blue);width:70px;text-align:right;">{{ number_format($res['groupMeans'][$i]) }}</span>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p style="color:#94a3b8;font-size:.85rem;">Insufficient data to perform ANOVA. At least 2 data
+                                    points per group required.</p>
+                            @endif
+                        </div>
+                    </div>
                 @endforeach
             </div>
         </div>
+    </section>
 
-        <!-- Summary Stats (existing) -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="accent-bar acc-blue"></div>
-                    <div class="sc-body">
-                        <div class="sc-label">Total Population</div>
-                        <div class="sc-value">
-                            {{ number_format(array_sum(array_column($comparisonData, 'total_population'))) }}</div>
-                        <div class="sc-sub">3 Municipalities</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="accent-bar acc-green"></div>
-                    <div class="sc-body">
-                        <div class="sc-label">Total Households</div>
-                        <div class="sc-value">
-                            {{ number_format(array_sum(array_column($comparisonData, 'households'))) }}</div>
-                        <div class="sc-sub">Registered households</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="accent-bar acc-yellow"></div>
-                    <div class="sc-body">
-                        <div class="sc-label">Total Beneficiaries</div>
-                        <div class="sc-value">
-                            {{ number_format(array_sum(array_column($comparisonData, 'beneficiaries_current'))) }}</div>
-                        <div class="sc-sub">Program Beneficiaries</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="accent-bar acc-teal"></div>
-                    <div class="sc-body">
-                        <div class="sc-label">Approved Applications</div>
-                        <div class="sc-value">
-                            {{ number_format(array_sum(array_column($comparisonData, 'approved_apps'))) }}</div>
-                        <div class="sc-sub">Total approved</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Comparative Analysis Card with Toggle Buttons -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="card stat-card" style="background:#f8fafc; border:1px solid #cbd5e1;">
-                    <div class="card-header text-white d-flex justify-content-between align-items-center"
-                        style="background:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%); border:none; padding:16px 20px;">
-                        <h5 class="mb-0" style="font-weight:700; font-size:0.97rem;">Comparative Analysis: Population,
-                            Households &amp; Beneficiaries</h5>
-                        <div class="btn-group" role="group" aria-label="Chart type toggle">
-                            <button type="button" class="btn btn-light btn-sm active" id="barBtn"
-                                onclick="showBarChart()">Bar Graph</button>
-                            <button type="button" class="btn btn-light btn-sm" id="lineBtn"
-                                onclick="showLineChart()">Line Graph</button>
-                        </div>
-                    </div>
-                    <div class="card-body">
-                        <!-- Bar Chart Container -->
-                        <div id="barChartContainer" class="chart-container" style="position: relative; height: 400px;">
-                            <canvas id="comparativeBarChart"></canvas>
-                        </div>
-                        <!-- Line Chart Container (initially hidden) -->
-                        <div id="lineChartContainer" class="chart-container"
-                            style="position: relative; height: 400px; display: none;">
-                            <canvas id="comparativeLineChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-
-
-        <!-- Program Beneficiaries Overview Cards -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="chart-card">
-                    <div class="card-header"
-                        style="border-bottom:1px solid #cbd5e1; padding:18px 22px 16px; background:#f8fafc;">
-                        <div class="sec-title">Program Beneficiaries Overview</div>
-                        <div class="sec-sub">Total beneficiaries per municipality</div>
-                    </div>
-                    <div class="card-body" style="padding:18px 22px;">
-                        <div class="row g-3">
-                            <div class="col-md-4">
-                                <div class="program-card">
-                                    <div class="accent-bar acc-green"></div>
-                                    <div class="pc-body">
-                                        <div class="pc-muni">Magdalena</div>
-                                        <div class="pc-value">
-                                            {{ number_format($municipalityProgramTotals['Magdalena']) }}</div>
-                                        <div class="pc-label">Total Beneficiaries</div>
-                                        <div class="pc-active">{{ $comparisonData['Magdalena']['programs']->count() }}
-                                            active programs</div>
-                                    </div>
+    {{-- SECTION 8: CORRELATION --}}
+    <section class="section-wrap alt">
+        <div class="container">
+            <h2 class="sec-title">8. Correlation Analysis</h2>
+            <p style="color:#64748b;font-size:.9rem;margin-top:-16px;margin-bottom:24px;">Pearson correlation (r)
+                measures strength and direction of linear relationships.</p>
+            <div class="row g-4">
+                @foreach($correlations as $i => $corr)
+                    @php
+                        $r = $corr['r'];
+                        $abs = $r !== null ? abs($r) : 0;
+                        $badge = $abs >= 0.7 ? 'badge-strong' : ($abs >= 0.4 ? 'badge-moderate' : 'badge-weak');
+                        $color = $abs >= 0.7 ? '#1e40af' : ($abs >= 0.4 ? '#0369a1' : '#475569');
+                    @endphp
+                    <div class="col-lg-4">
+                        <div class="card-base h-100">
+                            <h6 style="font-weight:700;color:var(--blue);font-size:.92rem;">{{ $corr['label'] }}</h6>
+                            <div class="d-flex align-items-center gap-3 my-3">
+                                <div style="font-size:2rem;font-weight:800;color:{{ $color }};">
+                                    {{ $r !== null ? $r : 'N/A' }}</div>
+                                <div>
+                                    <span class="{{ $badge }}">{{ $corr['strength'] }}</span>
+                                    <div style="font-size:.75rem;color:#94a3b8;margin-top:3px;">Pearson r</div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="program-card">
-                                    <div class="accent-bar acc-yellow"></div>
-                                    <div class="pc-body">
-                                        <div class="pc-muni">Liliw</div>
-                                        <div class="pc-value">{{ number_format($municipalityProgramTotals['Liliw']) }}
-                                        </div>
-                                        <div class="pc-label">Total Beneficiaries</div>
-                                        <div class="pc-active">{{ $comparisonData['Liliw']['programs']->count() }}
-                                            active programs</div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="program-card">
-                                    <div class="accent-bar acc-blue"></div>
-                                    <div class="pc-body">
-                                        <div class="pc-muni">Majayjay</div>
-                                        <div class="pc-value">
-                                            {{ number_format($municipalityProgramTotals['Majayjay']) }}</div>
-                                        <div class="pc-label">Total Beneficiaries</div>
-                                        <div class="pc-active">{{ $comparisonData['Majayjay']['programs']->count() }}
-                                            active programs</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Program Beneficiaries Comparison Graph -->
-        <div class="row mb-4">
-            <div class="col-12">
-                <div class="chart-card">
-                    <div class="card-header"
-                        style="border-bottom:1px solid #cbd5e1; padding:18px 22px 16px; background:#f8fafc;">
-                        <div class="sec-title">Program Beneficiaries Comparison</div>
-                        <div class="sec-sub">Breakdown by municipality and program type</div>
-                    </div>
-                    <div class="card-body">
-                        <!-- Graph Legend -->
-                        <div class="text-center mb-3">
-                            <span class="me-3">
-                                <span class="legend-item" style="background-color: #28a745;"></span>
-                                Magdalena
-                            </span>
-                            <span class="me-3">
-                                <span class="legend-item" style="background-color: #FDB913;"></span>
-                                Liliw
-                            </span>
-                            <span class="me-3">
-                                <span class="legend-item" style="background-color: #2C3E8F;"></span>
-                                Majayjay
-                            </span>
-                        </div>
-
-                        <!-- Chart Container -->
-                        <div class="chart-container">
-                            <canvas id="programComparisonChart"></canvas>
-                        </div>
-
-                        <!-- Graph Insights -->
-                        <div class="row g-3 mt-2">
-                            <div class="col-md-4">
-                                <div class="alert alert-success">
-                                    <strong>Highest Total:</strong>
-                                    @php $highestTotal = array_keys($municipalityProgramTotals, max($municipalityProgramTotals))[0]; @endphp
-                                    {{ $highestTotal }} ({{ number_format(max($municipalityProgramTotals)) }}
-                                    beneficiaries)
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="alert alert-info">
-                                    <strong>Most Programs:</strong>
-                                    @php
-                                        $mostPrograms = 'Magdalena';
-                                        $maxCount = $comparisonData['Magdalena']['programs']->count();
-                                        if ($comparisonData['Liliw']['programs']->count() > $maxCount) {
-                                            $mostPrograms = 'Liliw';
-                                            $maxCount = $comparisonData['Liliw']['programs']->count();
-                                        }
-                                        if ($comparisonData['Majayjay']['programs']->count() > $maxCount) {
-                                            $mostPrograms = 'Majayjay';
-                                            $maxCount = $comparisonData['Majayjay']['programs']->count();
-                                        }
-                                    @endphp
-                                    {{ $mostPrograms }} ({{ $maxCount }} programs)
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="alert alert-warning">
-                                    <strong>Total Across All:</strong>
-                                    {{ number_format(array_sum($municipalityProgramTotals)) }} beneficiaries
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Charts Section -->
-        <div class="row">
-            <div class="col-md-6">
-                <div class="chart-card">
-                    <div class="card-header"
-                        style="border-bottom:1px solid #cbd5e1; padding:18px 22px 16px; background:#f8fafc;">
-                        <div class="sec-title">Population Distribution by Municipality</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="populationChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="chart-card">
-                    <div class="card-header"
-                        style="border-bottom:1px solid #cbd5e1; padding:18px 22px 16px; background:#f8fafc;">
-                        <div class="sec-title">Application Status</div>
-                    </div>
-                    <div class="card-body">
-                        <div class="chart-container">
-                            <canvas id="applicationChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Municipality Summary Cards - Compact Design -->
-        <div class="row mt-5 mb-4">
-            <div class="col-12">
-                <div class="sec-title" style="font-size:1.3rem;">Municipality Overview</div>
-                <p class="sec-sub">Quick summary of key statistics per municipality</p>
-            </div>
-        </div>
-
-        <div class="row g-4 mb-5">
-            @foreach($comparisonData as $municipality => $data)
-                <div class="col-md-4">
-                    <div class="municipality-card">
-                        <div class="card-header">
-                            <h5>{{ $municipality }}</h5>
-                        </div>
-                        <div class="card-body">
-                            <!-- Key Stats Grid -->
-                            <div class="row g-2 mb-3">
-                                <div class="col-6">
-                                    <div
-                                        style="background: #dbeafe; border-radius: 12px; padding: 12px; text-align: center;">
-                                        <div
-                                            style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">
-                                            Population</div>
-                                        <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary-blue);">
-                                            {{ number_format($data['total_population']) }}</div>
-                                    </div>
-                                </div>
-                                <div class="col-6">
-                                    <div
-                                        style="background: #fef3c7; border-radius: 12px; padding: 12px; text-align: center;">
-                                        <div
-                                            style="font-size: 0.7rem; font-weight: 700; color: #64748b; text-transform: uppercase; margin-bottom: 4px;">
-                                            Households</div>
-                                        <div style="font-size: 1.5rem; font-weight: 900; color: var(--primary-blue);">
-                                            {{ number_format($data['households']) }}</div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Key Stats Summary -->
-                            <div style="background: #f1f5f9; border-radius: 12px; padding: 14px; margin-bottom: 12px;">
+                            <div
+                                style="background:#f1f5f9;border-radius:20px;height:10px;overflow:hidden;margin-bottom:12px;">
                                 <div
-                                    style="font-size: 0.8rem; font-weight: 700; color: var(--primary-blue); margin-bottom: 8px;">
-                                    2024 Statistics</div>
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span style="font-size: 0.85rem; color: #475569;">Total Population</span>
-                                    <span
-                                        style="font-size: 0.9rem; font-weight: 700; color: var(--primary-blue);">{{ number_format($data['total_population']) }}</span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center mb-2">
-                                    <span style="font-size: 0.85rem; color: #475569;">Households</span>
-                                    <span
-                                        style="font-size: 0.9rem; font-weight: 700; color: var(--primary-blue);">{{ number_format($data['households']) }}</span>
-                                </div>
-                                <div class="d-flex justify-content-between align-items-center">
-                                    <span style="font-size: 0.85rem; color: #475569;">Beneficiaries</span>
-                                    <span
-                                        style="font-size: 0.9rem; font-weight: 700; color: var(--primary-blue);">{{ number_format($data['beneficiaries_current']) }}</span>
+                                    style="height:100%;border-radius:20px;background:{{ $abs >= 0.7 ? '#2C3E8F' : ($abs >= 0.4 ? '#FDB913' : '#94a3b8') }};width:{{ round($abs * 100) }}%;">
                                 </div>
                             </div>
-
-                            <!-- Applications Summary -->
-                            <div style="background: #f1f5f9; border-radius: 12px; padding: 14px; margin-bottom: 12px;">
-                                <div
-                                    style="font-size: 0.8rem; font-weight: 700; color: var(--primary-blue); margin-bottom: 8px;">
-                                    Application Status</div>
-                                <div class="d-flex justify-content-around text-center">
-                                    <div>
-                                        <div style="font-size: 1.3rem; font-weight: 900; color: #f59e0b;">
-                                            {{ $data['pending_apps'] }}</div>
-                                        <div style="font-size: 0.7rem; color: #64748b;">Pending</div>
-                                    </div>
-                                    <div>
-                                        <div style="font-size: 1.3rem; font-weight: 900; color: #28a745;">
-                                            {{ $data['approved_apps'] }}</div>
-                                        <div style="font-size: 0.7rem; color: #64748b;">Approved</div>
-                                    </div>
-                                    <div>
-                                        <div style="font-size: 1.3rem; font-weight: 900; color: #C41E24;">
-                                            {{ $data['rejected_apps'] }}</div>
-                                        <div style="font-size: 0.7rem; color: #64748b;">Rejected</div>
-                                    </div>
-                                </div>
+                            <p style="font-size:.8rem;color:#64748b;margin:0;">
+                                @if($r === null) Insufficient data for correlation.
+                                @elseif($abs >= 0.7) <strong>Strong {{ $r >= 0 ? 'positive' : 'negative' }}</strong>
+                                    relationship — as {{ $corr['xLabel'] }} {{ $r >= 0 ? 'increases' : 'decreases' }},
+                                    {{ $corr['yLabel'] }} {{ $r >= 0 ? 'increases' : 'decreases' }} significantly.
+                                @elseif($abs >= 0.4) <strong>Moderate {{ $r >= 0 ? 'positive' : 'negative' }}</strong>
+                                    relationship detected between {{ $corr['xLabel'] }} and {{ $corr['yLabel'] }}.
+                                @else <strong>Weak</strong> relationship — {{ $corr['xLabel'] }} and {{ $corr['yLabel'] }}
+                                    show little linear dependency.
+                                @endif
+                            </p>
+                            <div style="margin-top:14px;">
+                                <canvas id="corrChart{{ $i }}" height="120"></canvas>
                             </div>
-
-                            <!-- Top Programs -->
-                            <div style="background: #f1f5f9; border-radius: 12px; padding: 14px;">
-                                <div
-                                    style="font-size: 0.8rem; font-weight: 700; color: var(--primary-blue); margin-bottom: 8px;">
-                                    Top Programs</div>
-                                @php
-                                    $topPrograms = collect($data['programs'])->sortDesc()->take(3);
-                                @endphp
-                                @forelse($topPrograms as $program => $count)
-                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                        <span
-                                            style="font-size: 0.8rem; color: #475569;">{{ str_replace('_', ' ', $program) }}</span>
-                                        <span
-                                            style="font-size: 0.85rem; font-weight: 700; color: var(--primary-blue); background: var(--bg-soft-blue); padding: 2px 8px; border-radius: 10px;">{{ number_format($count) }}</span>
-                                    </div>
-                                @empty
-                                    <p style="font-size: 0.8rem; color: #94a3b8; text-align: center; margin: 0;">No program data
-                                    </p>
-                                @endforelse
-                            </div>
-                        </div>
-                        <div class="card-footer bg-transparent border-0 pb-3 text-center">
-                            <a href="/analysis/municipality/{{ $municipality }}" class="btn-view">View Full Details
-                                &rarr;</a>
                         </div>
                     </div>
-                </div>
-            @endforeach
+                @endforeach
+            </div>
         </div>
+    </section>
+
+    {{-- SECTION 9: KEY INSIGHTS --}}
+    <section class="section-wrap dark">
+        <div class="container">
+            <h2 class="sec-title light">9. Key Insights</h2>
+            <div class="row g-3">
+                @foreach($insights as $i => $insight)
+                    <div class="col-md-6">
+                        <div class="insight-card">
+                            <div
+                                style="font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#FDB913;margin-bottom:6px;">
+                                Finding {{ $i + 1 }}</div>
+                            <p style="color:rgba(255,255,255,.88);font-size:.88rem;line-height:1.65;margin:0;">
+                                {{ $insight }}</p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    {{-- SECTION 10: RECOMMENDATIONS --}}
+    <section class="section-wrap">
+        <div class="container">
+            <h2 class="sec-title">10. Recommendations</h2>
+            <div class="row g-3">
+                @foreach($recommendations as $rec)
+                    <div class="col-md-6">
+                        <div class="rec-card">
+                            <div
+                                style="font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;">
+                                {{ $rec['label'] }}</div>
+                            <p style="font-size:.88rem;color:#475569;margin:0;line-height:1.65;">{{ $rec['text'] }}</p>
+                        </div>
+                    </div>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    <div class="footer-strip">MSWDO &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            // Program Comparison Chart
-            const programLabels = {!! json_encode(array_keys($programComparison ?? [])) !!};
-            const magdalenaData = {!! json_encode(array_column($programComparison ?? [], 'magdalena')) !!};
-            const liliwData = {!! json_encode(array_column($programComparison ?? [], 'liliw')) !!};
-            const majayjayData = {!! json_encode(array_column($programComparison ?? [], 'majayjay')) !!};
+        const MUNIS = @json($coreNames);
+        const COLORS = @json($colors);
+        const YEARS = @json($allYears);
+        const SNAP = @json($snapshot);
+        const POP = @json($populationTrend);
+        const HH = @json($householdsTrend);
+        const MALE = @json($maleTrend);
+        const FEMALE = @json($femaleTrend);
+        const BENEF = @json($benefTrend);
+        const PWD = @json($pwdTrend);
+        const AICS = @json($aicsTrend);
+        const SOLO = @json($soloTrend);
+        const FPS = @json($fpsTrend);
+        const SENIOR = @json($seniorTrend);
+        const CORRS = @json($correlations);
 
-            const formattedLabels = programLabels.map(label => label.replace(/_/g, ' '));
+        const opts = (extra = {}) => ({ responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: v => v.toLocaleString() } }, x: { grid: { display: false } } }, ...extra });
 
-            new Chart(document.getElementById('programComparisonChart'), {
-                type: 'bar',
-                data: {
-                    labels: formattedLabels,
-                    datasets: [
-                        {
-                            label: 'Magdalena',
-                            data: magdalenaData,
-                            backgroundColor: '#28a745',
-                            borderRadius: 6,
-                            barPercentage: 0.7
-                        },
-                        {
-                            label: 'Liliw',
-                            data: liliwData,
-                            backgroundColor: '#FDB913',
-                            borderRadius: 6,
-                            barPercentage: 0.7
-                        },
-                        {
-                            label: 'Majayjay',
-                            data: majayjayData,
-                            backgroundColor: '#2C3E8F',
-                            borderRadius: 6,
-                            barPercentage: 0.7
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { display: false },
-                        tooltip: {
-                            mode: 'index',
-                            intersect: false,
-                            callbacks: {
-                                label: function (context) {
-                                    return context.dataset.label + ': ' + context.raw.toLocaleString() + ' beneficiaries';
-                                }
-                            }
-                        }
-                    },
-                    scales: {
-                        y: {
-                            beginAtZero: true,
-                            grid: { color: 'rgba(0, 0, 0, 0.05)' },
-                            title: { display: true, text: 'Number of Beneficiaries' }
-                        },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-
-            // Population Chart
-            new Chart(document.getElementById('populationChart'), {
-                type: 'bar',
-                data: {
-                    labels: {!! json_encode(array_keys($comparisonData)) !!},
-                    datasets: [{
-                        label: 'Population',
-                        data: {!! json_encode(array_column($comparisonData, 'total_population')) !!},
-                        backgroundColor: '#2C3E8F',
-                        borderRadius: 6,
-                        barPercentage: 0.7
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-
-            // Application Chart
-            new Chart(document.getElementById('applicationChart'), {
-                type: 'bar',
-                data: {
-                    labels: {!! json_encode(array_keys($comparisonData)) !!},
-                    datasets: [
-                        {
-                            label: 'Pending',
-                            data: {!! json_encode(array_column($comparisonData, 'pending_apps')) !!},
-                            backgroundColor: '#FDB913',
-                            borderRadius: 6,
-                            barPercentage: 0.7
-                        },
-                        {
-                            label: 'Approved',
-                            data: {!! json_encode(array_column($comparisonData, 'approved_apps')) !!},
-                            backgroundColor: '#28a745',
-                            borderRadius: 6,
-                            barPercentage: 0.7
-                        },
-                        {
-                            label: 'Rejected',
-                            data: {!! json_encode(array_column($comparisonData, 'rejected_apps')) !!},
-                            backgroundColor: '#C41E24',
-                            borderRadius: 6,
-                            barPercentage: 0.7
-                        }
-                    ]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    plugins: {
-                        legend: { position: 'top', labels: { usePointStyle: true } }
-                    },
-                    scales: {
-                        y: { beginAtZero: true, grid: { color: 'rgba(0, 0, 0, 0.05)' } },
-                        x: { grid: { display: false } }
-                    }
-                }
-            });
-
-            // ===== COMPARATIVE CHARTS (Bar & Line) =====
-            // Data for both charts
-            const barChartData = {
-                labels: {!! json_encode(array_keys($comparisonData)) !!},
-                datasets: [
-                    {
-                        label: 'Population',
-                        data: {!! json_encode(array_column($comparisonData, 'total_population')) !!},
-                        backgroundColor: '#2C3E8F',
-                        borderRadius: 6,
-                        barPercentage: 0.7,
-                        categoryPercentage: 0.8
-                    },
-                    {
-                        label: 'Households',
-                        data: {!! json_encode(array_column($comparisonData, 'households')) !!},
-                        backgroundColor: '#FDB913',
-                        borderRadius: 6,
-                        barPercentage: 0.7,
-                        categoryPercentage: 0.8
-                    },
-                    {
-                        label: 'Beneficiaries',
-                        data: {!! json_encode(array_column($comparisonData, 'beneficiaries_current')) !!},
-                        backgroundColor: '#C41E24',
-                        borderRadius: 6,
-                        barPercentage: 0.7,
-                        categoryPercentage: 0.8
-                    }
+        // Section 1 – Descriptive Bar
+        new Chart(document.getElementById('descBar'), {
+            type: 'bar', data: {
+                labels: MUNIS, datasets: [
+                    { label: 'Population', data: MUNIS.map(m => SNAP[m]?.population ?? 0), backgroundColor: '#2C3E8F', borderRadius: 6 },
+                    { label: 'Households', data: MUNIS.map(m => SNAP[m]?.households ?? 0), backgroundColor: '#FDB913', borderRadius: 6 },
+                    { label: 'Beneficiaries', data: MUNIS.map(m => SNAP[m]?.beneficiaries ?? 0), backgroundColor: '#28a745', borderRadius: 6 },
                 ]
-            };
-
-            const lineChartData = {
-                labels: {!! json_encode(array_keys($comparisonData)) !!},
-                datasets: [
-                    {
-                        label: 'Population',
-                        data: {!! json_encode(array_column($comparisonData, 'total_population')) !!},
-                        borderColor: '#2C3E8F',
-                        backgroundColor: 'rgba(44, 62, 143, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.1,
-                        fill: false,
-                        pointBackgroundColor: '#2C3E8F',
-                        pointBorderColor: 'white',
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    },
-                    {
-                        label: 'Households',
-                        data: {!! json_encode(array_column($comparisonData, 'households')) !!},
-                        borderColor: '#FDB913',
-                        backgroundColor: 'rgba(253, 185, 19, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.1,
-                        fill: false,
-                        pointBackgroundColor: '#FDB913',
-                        pointBorderColor: 'white',
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    },
-                    {
-                        label: 'Beneficiaries',
-                        data: {!! json_encode(array_column($comparisonData, 'beneficiaries_current')) !!},
-                        borderColor: '#C41E24',
-                        backgroundColor: 'rgba(196, 30, 36, 0.1)',
-                        borderWidth: 3,
-                        tension: 0.1,
-                        fill: false,
-                        pointBackgroundColor: '#C41E24',
-                        pointBorderColor: 'white',
-                        pointRadius: 6,
-                        pointHoverRadius: 8
-                    }
-                ]
-            };
-
-            // Chart options (shared)
-            const chartOptions = {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: {
-                            usePointStyle: true,
-                            boxWidth: 10
-                        }
-                    },
-                    tooltip: {
-                        mode: 'index',
-                        intersect: false,
-                        callbacks: {
-                            label: function (context) {
-                                return context.dataset.label + ': ' + context.raw.toLocaleString();
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        grid: {
-                            color: 'rgba(0, 0, 0, 0.05)'
-                        },
-                        ticks: {
-                            callback: function (value) {
-                                return value.toLocaleString();
-                            }
-                        }
-                    },
-                    x: {
-                        grid: {
-                            display: false
-                        }
-                    }
-                }
-            };
-
-            // Initialize Bar Chart
-            window.barChart = new Chart(document.getElementById('comparativeBarChart'), {
-                type: 'bar',
-                data: barChartData,
-                options: chartOptions
-            });
-
-            // Initialize Line Chart
-            window.lineChart = new Chart(document.getElementById('comparativeLineChart'), {
-                type: 'line',
-                data: lineChartData,
-                options: chartOptions
-            });
+            }, options: opts()
         });
 
-        // Toggle Functions (outside DOMContentLoaded para accessible globally)
-        function showBarChart() {
-            document.getElementById('barChartContainer').style.display = 'block';
-            document.getElementById('lineChartContainer').style.display = 'none';
+        // Section 2 – Population Trend
+        new Chart(document.getElementById('popTrend'), { type: 'line', data: { labels: YEARS, datasets: MUNIS.map(m => ({ label: m, data: YEARS.map(y => POP[m]?.[y] ?? 0), borderColor: COLORS[m], backgroundColor: COLORS[m] + '22', fill: true, tension: .4, borderWidth: 3, pointRadius: 5 })) }, options: opts({ plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } } }) });
 
-            document.getElementById('barBtn').classList.add('active');
-            document.getElementById('lineBtn').classList.remove('active');
-        }
+        // Section 3 – Gender Trend
+        const maleTot = YEARS.map(y => MUNIS.reduce((s, m) => s + (MALE[m]?.[y] ?? 0), 0));
+        const femTot = YEARS.map(y => MUNIS.reduce((s, m) => s + (FEMALE[m]?.[y] ?? 0), 0));
+        new Chart(document.getElementById('genderTrend'), {
+            type: 'line', data: {
+                labels: YEARS, datasets: [
+                    { label: 'Male (All)', data: maleTot, borderColor: '#2C3E8F', backgroundColor: '#2C3E8F22', fill: true, tension: .4, borderWidth: 3, pointRadius: 5 },
+                    { label: 'Female (All)', data: femTot, borderColor: '#FDB913', backgroundColor: '#FDB91322', fill: true, tension: .4, borderWidth: 3, pointRadius: 5 },
+                ]
+            }, options: opts({ plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } } })
+        });
 
-        function showLineChart() {
-            document.getElementById('barChartContainer').style.display = 'none';
-            document.getElementById('lineChartContainer').style.display = 'block';
+        new Chart(document.getElementById('genderBar'), {
+            type: 'bar', data: {
+                labels: MUNIS, datasets: [
+                    { label: 'Male', data: MUNIS.map(m => SNAP[m]?.male ?? 0), backgroundColor: '#2C3E8F', borderRadius: 6 },
+                    { label: 'Female', data: MUNIS.map(m => SNAP[m]?.female ?? 0), backgroundColor: '#FDB913', borderRadius: 6 },
+                ]
+            }, options: opts()
+        });
 
-            document.getElementById('lineBtn').classList.add('active');
-            document.getElementById('barBtn').classList.remove('active');
-        }
+        // Section 4 – Age Stacked
+        new Chart(document.getElementById('ageStacked'), {
+            type: 'bar', data: {
+                labels: MUNIS, datasets: [
+                    { label: 'Youth (0-19)', data: MUNIS.map(m => SNAP[m]?.age_0_19 ?? 0), backgroundColor: '#2C3E8F', borderRadius: 4 },
+                    { label: 'Working Age (20-59)', data: MUNIS.map(m => SNAP[m]?.age_20_59 ?? 0), backgroundColor: '#FDB913', borderRadius: 4 },
+                    { label: 'Senior (60+)', data: MUNIS.map(m => SNAP[m]?.age_60_100 ?? 0), backgroundColor: '#28a745', borderRadius: 4 },
+                ]
+            }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: v => v.toLocaleString() } }, x: { stacked: true, grid: { display: false } } } }
+        });
+
+        // Section 5 – HH Combo
+        new Chart(document.getElementById('hhCombo'), {
+            data: {
+                labels: MUNIS, datasets: [
+                    { type: 'bar', label: 'Population', data: MUNIS.map(m => SNAP[m]?.population ?? 0), backgroundColor: '#2C3E8F88', borderRadius: 6, yAxisID: 'y' },
+                    { type: 'line', label: 'Households', data: MUNIS.map(m => SNAP[m]?.households ?? 0), borderColor: '#FDB913', backgroundColor: '#FDB91322', borderWidth: 3, tension: .4, pointRadius: 7, yAxisID: 'y2' },
+                ]
+            }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { beginAtZero: true, position: 'left', grid: { color: '#f1f5f9' }, ticks: { callback: v => v.toLocaleString() } }, y2: { beginAtZero: true, position: 'right', grid: { drawOnChartArea: false }, ticks: { callback: v => v.toLocaleString() } }, x: { grid: { display: false } } } }
+        });
+
+        // Section 6 – Benef Stacked
+        new Chart(document.getElementById('benefStacked'), {
+            type: 'bar', data: {
+                labels: MUNIS, datasets: [
+                    { label: 'PWD', data: MUNIS.map(m => SNAP[m]?.pwd ?? 0), backgroundColor: '#2C3E8F', borderRadius: 4 },
+                    { label: 'AICS', data: MUNIS.map(m => SNAP[m]?.aics ?? 0), backgroundColor: '#FDB913', borderRadius: 4 },
+                    { label: 'Solo Parent', data: MUNIS.map(m => SNAP[m]?.solo_parent ?? 0), backgroundColor: '#6366f1', borderRadius: 4 },
+                    { label: '4Ps', data: MUNIS.map(m => SNAP[m]?.four_ps ?? 0), backgroundColor: '#28a745', borderRadius: 4 },
+                    { label: 'Senior', data: MUNIS.map(m => SNAP[m]?.senior ?? 0), backgroundColor: '#8B5CF6', borderRadius: 4 },
+                ]
+            }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'top' } }, scales: { y: { stacked: true, beginAtZero: true, grid: { color: '#f1f5f9' }, ticks: { callback: v => v.toLocaleString() } }, x: { stacked: true, grid: { display: false } } } }
+        });
+
+        // Section 6 – Benef Trend
+        new Chart(document.getElementById('benefTrend'), { type: 'line', data: { labels: YEARS, datasets: MUNIS.map(m => ({ label: m, data: YEARS.map(y => BENEF[m]?.[y] ?? 0), borderColor: COLORS[m], backgroundColor: COLORS[m] + '22', fill: true, tension: .4, borderWidth: 3, pointRadius: 5 })) }, options: opts({ plugins: { legend: { position: 'top' }, tooltip: { mode: 'index', intersect: false } } }) });
+
+        // Section 8 – Correlation scatter/bar
+        CORRS.forEach((c, i) => {
+            const ctx = document.getElementById('corrChart' + i);
+            if (!ctx) return;
+            new Chart(ctx, {
+                type: 'bar', data: {
+                    labels: c.xData.map((_, j) => 'P' + (j + 1)), datasets: [
+                        { label: c.xLabel, data: c.xData, backgroundColor: '#2C3E8F55', borderRadius: 3 },
+                        { label: c.yLabel, data: c.yData, backgroundColor: '#FDB91388', borderRadius: 3 },
+                    ]
+                }, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { font: { size: 10 } } } }, scales: { y: { beginAtZero: true, ticks: { font: { size: 9 }, callback: v => v.toLocaleString() } }, x: { ticks: { font: { size: 9 } }, grid: { display: false } } } }
+            });
+        });
     </script>
 
-    <!-- Footer -->
-    <div class="footer-strip">
-        <i class="bi bi-heart-fill me-1" style="color:#FDB913;"></i>
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
-
-
-    {{-- ── User back-button (non-admin authenticated users only) ── --}}
-    @auth
-        @if(!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin())
-            <style>
-                html,
-                body {
-                    overscroll-behavior: none;
-                    margin: 0;
-                    padding: 0;
-                }
-
-                .back-dashboard-btn {
-                    position: fixed;
-                    bottom: 32px;
-                    left: 32px;
-                    z-index: 9999;
-                    display: flex;
-                    align-items: center;
-                    gap: 10px;
-                    background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);
-                    color: white;
-                    border: none;
-                    border-radius: 50px;
-                    padding: 13px 22px 13px 18px;
-                    font-family: 'Inter', sans-serif;
-                    font-weight: 700;
-                    font-size: 0.88rem;
-                    box-shadow: 0 8px 28px rgba(44, 62, 143, 0.35);
-                    cursor: pointer;
-                    text-decoration: none;
-                    transition: all 0.3s ease;
-                    animation: slideInUp 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-                }
-
-                .back-dashboard-btn:hover {
-                    transform: translateY(-4px);
-                    box-shadow: 0 14px 36px rgba(44, 62, 143, 0.45);
-                    color: white;
-                }
-
-                .back-dashboard-btn .btn-dot {
-                    width: 8px;
-                    height: 8px;
-                    border-radius: 50%;
-                    background: #FDB913;
-                    flex-shrink: 0;
-                    box-shadow: 0 0 0 3px rgba(253, 185, 19, 0.25);
-                }
-
-                .back-dashboard-btn .btn-label {
-                    letter-spacing: 0.02em;
-                }
-
-                .back-dashboard-btn .btn-arrow {
-                    width: 26px;
-                    height: 26px;
-                    border-radius: 50%;
-                    background: rgba(253, 185, 19, 0.22);
-                    color: #FDB913;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 1rem;
-                    font-weight: 900;
-                    flex-shrink: 0;
-                    transition: transform 0.25s ease;
-                }
-
-                .back-dashboard-btn:hover .btn-arrow {
-                    transform: translateX(-3px);
-                }
-
-                @keyframes slideInUp {
-                    from {
-                        opacity: 0;
-                        transform: translateY(30px);
-                    }
-
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
-                }
-            </style>
-            <a href="{{ route('user.dashboard') }}" class="back-dashboard-btn" title="Return to your dashboard">
-                <span class="btn-arrow">&#8592;</span>
-                <span class="btn-dot"></span>
-                <span class="btn-label">My Dashboard</span>
-            </a>
-        @endif
-    @endauth
-
-    {{-- ── Back button: super-admin ── --}}
     @auth
         @if(Auth::user()->isSuperAdmin())
             <style>
-                html,
-                body {
-                    overscroll-behavior: none;
-                    margin: 0;
-                    padding: 0;
-                }
-
                 .admin-back-btn {
                     position: fixed;
-                    bottom: 32px;
-                    left: 32px;
+                    bottom: 28px;
+                    left: 28px;
                     z-index: 9999;
                     display: flex;
                     align-items: center;
                     gap: 10px;
-                    background: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
-                    color: #1A2A5C;
+                    background: var(--grad);
+                    color: #fff;
                     border: none;
                     border-radius: 50px;
-                    padding: 13px 22px 13px 18px;
+                    padding: 12px 22px 12px 16px;
                     font-family: 'Inter', sans-serif;
                     font-weight: 800;
-                    font-size: 0.88rem;
-                    box-shadow: 0 8px 28px rgba(253, 185, 19, 0.45);
+                    font-size: .85rem;
+                    box-shadow: 0 8px 28px rgba(44, 62, 143, .4);
                     cursor: pointer;
                     text-decoration: none;
-                    transition: all 0.3s ease;
-                    animation: adminSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+                    transition: all .3s;
                 }
 
                 .admin-back-btn:hover {
                     transform: translateY(-4px);
-                    box-shadow: 0 14px 36px rgba(253, 185, 19, 0.55);
-                    color: #1A2A5C;
-                }
-
-                .admin-back-btn .abtn-dot {
-                    width: 8px;
-                    height: 8px;
-                    border-radius: 50%;
-                    background: #1A2A5C;
-                    flex-shrink: 0;
-                    box-shadow: 0 0 0 3px rgba(26, 42, 92, 0.18);
-                }
-
-                .admin-back-btn .abtn-label {
-                    letter-spacing: 0.02em;
-                }
-
-                .admin-back-btn .abtn-arrow {
-                    width: 26px;
-                    height: 26px;
-                    border-radius: 50%;
-                    background: rgba(26, 42, 92, 0.12);
-                    color: #1A2A5C;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 1rem;
-                    font-weight: 900;
-                    flex-shrink: 0;
-                    transition: transform 0.25s ease;
-                }
-
-                .admin-back-btn:hover .abtn-arrow {
-                    transform: translateX(-3px);
-                }
-
-                @keyframes adminSlideIn {
-                    from {
-                        opacity: 0;
-                        transform: translateY(30px);
-                    }
-
-                    to {
-                        opacity: 1;
-                        transform: translateY(0);
-                    }
+                    color: #fff;
                 }
             </style>
-            <a href="{{ route('superadmin.dashboard') }}" class="admin-back-btn" title="Return to Super Admin Dashboard">
-                <span class="abtn-arrow">&#8592;</span>
-                <span class="abtn-dot"></span>
-                <span class="abtn-label">Super Admin Dashboard</span>
-            </a>
-            {{-- ── Back button: admin ── --}}
+            <a href="{{ route('superadmin.dashboard') }}" class="admin-back-btn">&#8592; Super Admin Dashboard</a>
         @elseif(Auth::user()->isAdmin())
             <style>
-                html,
-                body {
-                    overscroll-behavior: none;
-                    margin: 0;
-                    padding: 0;
-                }
-
                 .admin-back-btn {
                     position: fixed;
-                    bottom: 32px;
-                    left: 32px;
+                    bottom: 28px;
+                    left: 28px;
                     z-index: 9999;
                     display: flex;
                     align-items: center;
                     gap: 10px;
-                    background: linear-gradient(135deg, #FDB913 0%, #E5A500 100%);
+                    background: linear-gradient(135deg, #FDB913, #E5A500);
                     color: #1A2A5C;
                     border: none;
                     border-radius: 50px;
-                    padding: 13px 22px 13px 18px;
+                    padding: 12px 22px 12px 16px;
                     font-family: 'Inter', sans-serif;
                     font-weight: 800;
-                    font-size: 0.88rem;
-                    box-shadow: 0 8px 28px rgba(253, 185, 19, 0.45);
+                    font-size: .85rem;
+                    box-shadow: 0 8px 28px rgba(253, 185, 19, .45);
                     cursor: pointer;
                     text-decoration: none;
-                    transition: all 0.3s ease;
-                    animation: adminSlideIn 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+                    transition: all .3s;
                 }
 
                 .admin-back-btn:hover {
                     transform: translateY(-4px);
-                    box-shadow: 0 14px 36px rgba(253, 185, 19, 0.55);
                     color: #1A2A5C;
-                }
-
-                .admin-back-btn .abtn-dot {
-                    width: 8px;
-                    height: 8px;
-                    border-radius: 50%;
-                    background: #1A2A5C;
-                    flex-shrink: 0;
-                    box-shadow: 0 0 0 3px rgba(26, 42, 92, 0.18);
-                }
-
-                .admin-back-btn .abtn-label {
-                    letter-spacing: 0.02em;
-                }
-
-                .admin-back-btn .abtn-arrow {
-                    width: 26px;
-                    height: 26px;
-                    border-radius: 50%;
-                    background: rgba(26, 42, 92, 0.12);
-                    color: #1A2A5C;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    font-size: 1rem;
-                    font-weight: 900;
-                    flex-shrink: 0;
-                    transition: transform 0.25s ease;
-                }
-
-                .admin-back-btn:hover .abtn-arrow {
-                    transform: translateX(-3px);
                 }
             </style>
-            <a href="{{ route('admin.dashboard') }}" class="admin-back-btn" title="Return to Admin Dashboard">
-                <span class="abtn-arrow">&#8592;</span>
-                <span class="abtn-dot"></span>
-                <span class="abtn-label">Admin Dashboard</span>
-            </a>
+            <a href="{{ route('admin.dashboard') }}" class="admin-back-btn">&#8592; Admin Dashboard</a>
         @endif
     @endauth
+
+
+    @include('components.chatbot-widget')
 
 </body>
 

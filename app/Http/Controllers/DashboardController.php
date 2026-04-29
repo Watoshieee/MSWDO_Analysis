@@ -19,11 +19,6 @@ class DashboardController extends Controller
             return redirect()->route('login');
         }
         
-        Log::info('Dashboard access:', [
-            'user_id' => $user->id,
-            'role' => $user->role
-        ]);
-        
         // Redirect based on role
         if ($user->isSuperAdmin()) {
             return redirect()->route('superadmin.dashboard');
@@ -38,7 +33,6 @@ class DashboardController extends Controller
     {
         $user = Auth::user();
         
-        // Double-check authorization
         if (!$user || !$user->isSuperAdmin()) {
             Log::warning('Unauthorized super admin dashboard access:', [
                 'user_id' => $user ? $user->id : null,
@@ -48,9 +42,17 @@ class DashboardController extends Controller
         }
 
         $municipalities = Municipality::whereIn('name', ['Magdalena', 'Liliw', 'Majayjay'])->get();
-        $totalApplications = Application::count();
-        $pendingApplications = Application::where('status', 'pending')->count();
-        $approvedApplications = Application::where('status', 'approved')->count();
+
+        // Single aggregated query instead of 3 separate count() calls
+        $appStats = Application::selectRaw('
+            COUNT(*) as total,
+            SUM(status = "pending") as pending,
+            SUM(status = "approved") as approved
+        ')->first();
+
+        $totalApplications   = (int) ($appStats->total ?? 0);
+        $pendingApplications = (int) ($appStats->pending ?? 0);
+        $approvedApplications = (int) ($appStats->approved ?? 0);
         $totalUsers = \App\Models\User::count();
         
         $recentUsers = \App\Models\User::latest()->take(5)->get();

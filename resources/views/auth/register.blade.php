@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -180,7 +180,7 @@
         <!-- ── LEFT PANEL ── -->
         <div class="left-panel">
             <div class="brand">
-                <img src="/images/mswd-logo.png" alt="MSWDO">
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWDO">
                 <div>
                     <div class="brand-name">MSWDO</div>
                     <div class="brand-sub">Municipal Social Welfare &amp; Development</div>

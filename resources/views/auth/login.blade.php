@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -226,7 +226,7 @@
     <!-- ── LEFT: BRANDING ── -->
     <div class="brand-panel">
         <div class="brand-logo">
-            <img src="/images/mswd-logo.png" alt="MSWD Logo" style="width:64px;height:64px;object-fit:contain;margin-bottom:4px;">
+            <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD Logo" style="width:64px;height:64px;object-fit:contain;margin-bottom:4px;">
             <div>
                 <div class="logo-text">MSWDO</div>
                 <div class="logo-sub">Municipal Social Welfare & Development</div>

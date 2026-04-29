@@ -8,14 +8,41 @@ use App\Models\Barangay;
 use App\Models\ProgramRequirement;
 use App\Models\FileMonitoring;
 use App\Models\FileUpload;
+use App\Mail\NewApplicationNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 
 class ApplicationController extends Controller
 {
+    /**
+     * Send email notification to all admins in the application's municipality.
+     * Dynamic — no hardcoded emails or programs. Any admin created by super admin
+     * with the matching municipality will automatically receive notifications.
+     */
+    private function notifyAdmins(Application $application): void
+    {
+        try {
+            $admins = User::where('role', 'admin')
+                ->where('municipality', $application->municipality)
+                ->get();
+
+            foreach ($admins as $admin) {
+                Mail::to($admin->email)
+                    ->send(new NewApplicationNotification($application));
+            }
+        } catch (\Exception $e) {
+            // Never let a mail failure break the user's submission flow
+            Log::error('Admin email notification failed: ' . $e->getMessage(), [
+                'application_id' => $application->id,
+                'municipality'   => $application->municipality,
+            ]);
+        }
+    }
+
     /**
      * Display a listing of applications with filters.
      */
@@ -223,6 +250,9 @@ public function uploadBatch(Request $request)
             ]);
         }
         
+        // Notify municipality admin(s) via email
+        $this->notifyAdmins($application);
+
         return response()->json([
             'success' => true,
             'message' => 'Application submitted successfully! Your documents are now pending review.'
@@ -364,6 +394,9 @@ public function uploadBatch(Request $request)
         // Create application
         $application = Application::create($data);
 
+        // Notify municipality admin(s) via email
+        $this->notifyAdmins($application);
+
         return redirect()->route('applications.show', $application->id)
             ->with('success', 'Application created successfully!');
     }
@@ -416,9 +449,12 @@ public function uploadBatch(Request $request)
             
             // Create application
             $application = Application::create($data);
-            
-            \Log::info('Application created successfully with ID: ' . $application->id);
-            
+
+            // Notify municipality admin(s) via email
+            $this->notifyAdmins($application);
+
+            Log::info('Application created successfully with ID: ' . $application->id);
+
             // Redirect to requirements upload page
             return redirect()->route('applications.requirements', $application->id)
                 ->with('success', 'Application created! Please upload the required documents.');
@@ -618,63 +654,138 @@ public function uploadBatch(Request $request)
     }
 
     /**
-     * Upload requirement file
+     * Upload requirement file — supports both single (file) and batch (files[]) uploads
      */
     public function uploadRequirement(Request $request, $applicationId)
     {
-        $request->validate([
-            'requirement_name' => 'required|string',
-            'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120'
-        ]);
-        
         $application = Application::findOrFail($applicationId);
         $user = Auth::user();
-        
+
         // Check authorization
         if ($user->isUser() && $application->user_id !== $user->id) {
             abort(403);
         }
-        
+
         $fileMonitoring = FileMonitoring::where('application_id', $applicationId)->firstOrFail();
-        
-        $file = $request->file('file');
+
+        // ── BATCH UPLOAD (files[] from "Upload All" form) ─────────────────────
+        if ($request->hasFile('files') && $request->input('requirement_name') === 'batch_upload') {
+            $request->validate([
+                'files'   => 'required|array|min:1',
+                'files.*' => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
+            ]);
+
+            $uploadedCount = 0;
+            foreach ($request->file('files') as $file) {
+                $originalName  = $file->getClientOriginalName();
+                // Use cleaned filename (without extension) as requirement_name
+                $reqName = pathinfo($originalName, PATHINFO_FILENAME);
+                $reqName = preg_replace('/[_\-]+/', ' ', $reqName); // underscores/dashes -> spaces
+                $reqName = trim(preg_replace('/\s+/', ' ', $reqName));
+
+                $filename = time() . '_' . $uploadedCount . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
+                $path = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
+
+                // Update existing record or create new one
+                $existing = FileUpload::where('file_monitoring_id', $fileMonitoring->id)
+                    ->where('requirement_name', $reqName)
+                    ->first();
+
+                if ($existing) {
+                    if ($existing->file_path && Storage::disk('public')->exists($existing->file_path)) {
+                        Storage::disk('public')->delete($existing->file_path);
+                    }
+                    $existing->update([
+                        'file_name'   => $originalName,
+                        'file_path'   => $path,
+                        'status'      => 'pending',
+                        'remarks'     => null,
+                        'uploaded_at' => now(),
+                    ]);
+                } else {
+                    FileUpload::create([
+                        'file_monitoring_id' => $fileMonitoring->id,
+                        'file_name'          => $originalName,
+                        'file_path'          => $path,
+                        'requirement_name'   => $reqName,
+                        'status'             => 'pending',
+                        'uploaded_at'        => now(),
+                    ]);
+                }
+                $uploadedCount++;
+            }
+
+            $fileMonitoring->updateOverallStatus();
+
+            // Notify admin about new uploads
+            try {
+                $fileMonitoring->load('application.user', 'fileUploads');
+                $admins = \App\Models\User::where('municipality', $fileMonitoring->municipality)
+                    ->where('role', 'admin')->get();
+                foreach ($admins as $adminUser) {
+                    \Illuminate\Support\Facades\Mail::to($adminUser->email)
+                        ->send(new \App\Mail\SoloParentFilesUploadedMail($fileMonitoring));
+                }
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Admin upload notification failed: ' . $e->getMessage());
+            }
+
+            return redirect()->back()->with('success', "✅ {$uploadedCount} file(s) uploaded successfully.");
+        }
+
+        // ── SINGLE FILE UPLOAD (per-requirement row) ───────────────────────────
+        $request->validate([
+            'requirement_name' => 'required|string',
+            'file'             => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ]);
+
+        $file         = $request->file('file');
         $originalName = $file->getClientOriginalName();
-        $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
-        $path = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
-        
-        // Update file upload record
+        $filename     = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
+        $path         = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
+
         $fileUpload = FileUpload::where('file_monitoring_id', $fileMonitoring->id)
             ->where('requirement_name', $request->requirement_name)
             ->first();
-        
+
         if ($fileUpload) {
-            // Delete old file if exists
             if ($fileUpload->file_path && Storage::disk('public')->exists($fileUpload->file_path)) {
                 Storage::disk('public')->delete($fileUpload->file_path);
             }
-            
             $fileUpload->update([
-                'file_name' => $originalName,
-                'file_path' => $path,
-                'status' => 'pending',
-                'remarks' => null,
-                'uploaded_at' => now()
+                'file_name'   => $originalName,
+                'file_path'   => $path,
+                'status'      => 'pending',
+                'remarks'     => null,
+                'uploaded_at' => now(),
             ]);
         } else {
             FileUpload::create([
                 'file_monitoring_id' => $fileMonitoring->id,
-                'file_name' => $originalName,
-                'file_path' => $path,
-                'requirement_name' => $request->requirement_name,
-                'status' => 'pending',
-                'uploaded_at' => now()
+                'file_name'          => $originalName,
+                'file_path'          => $path,
+                'requirement_name'   => $request->requirement_name,
+                'status'             => 'pending',
+                'uploaded_at'        => now(),
             ]);
         }
-        
-        // Update overall status
+
         $fileMonitoring->updateOverallStatus();
-        
-        return redirect()->back()->with('success', 'File uploaded successfully.');
+
+        // Notify admin about new upload
+        try {
+            $fileMonitoring->load('application.user', 'fileUploads');
+            $admins = \App\Models\User::where('municipality', $fileMonitoring->municipality)
+                ->where('role', 'admin')->get();
+            foreach ($admins as $adminUser) {
+                \Illuminate\Support\Facades\Mail::to($adminUser->email)
+                    ->send(new \App\Mail\SoloParentFilesUploadedMail($fileMonitoring));
+            }
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Admin upload notification failed: ' . $e->getMessage());
+        }
+
+        return redirect()->back()->with('success', '✅ File uploaded successfully.');
     }
 
     /**

@@ -659,7 +659,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid px-4">
             <a class="navbar-brand" href="{{ route('superadmin.dashboard') }}">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -717,80 +717,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
             <!-- ===================== RECORDS TAB ===================== -->
             <div class="section-tab active" id="tab-records">
-                <!-- Barangay Aggregates Panel -->
-                @if($barangayAggregates->isNotEmpty())
-                    <div class="sync-panel">
-                        <div class="sync-panel-header">
-                            <div class="sync-title">
-                                ?? Barangay-Computed Totals
-                                <span class="sync-badge">Auto-calculated from Barangay Data</span>
-                            </div>
-                            <form method="POST" action="{{ route('superadmin.data.programs.sync-barangays') }}">
-                                @csrf
-                                <button type="submit" class="btn-sync"
-                                    onclick="return confirm('Sync barangay totals to programs table? Existing AICS, PWD, and Solo Parent records will be updated.')">
-                                    ?? Sync to Programs Table
-                                </button>
-                            </form>
-                        </div>
-                        <p style="font-size:.82rem;color:#6B7280;margin-bottom:14px;">These are the <strong>live
-                                sums</strong> computed from all barangay records. Click <em>Sync</em> to save them as the
-                            official beneficiary counts in the programs table.</p>
-                        <div class="table-responsive">
-                            <table class="sync-table">
-                                <thead>
-                                    <tr>
-                                        <th>Municipality</th>
-                                        <th>Year</th>
-                                        <th>AICS (from Barangays)</th>
-                                        <th>PWD (from Barangays)</th>
-                                        <th>Solo Parent (from Barangays)</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($barangayAggregates as $agg)
-                                        @php
-                                            $key = "{$agg->municipality}|{$agg->year}";
-                                            $stored = [
-                                                'AICS' => \App\Models\SocialWelfareProgram::where('municipality', $agg->municipality)->where('year', $agg->year)->where('program_type', 'AICS')->value('beneficiary_count'),
-                                                'PWD' => \App\Models\SocialWelfareProgram::where('municipality', $agg->municipality)->where('year', $agg->year)->where('program_type', 'PWD_Assistance')->value('beneficiary_count'),
-                                                'Solo' => \App\Models\SocialWelfareProgram::where('municipality', $agg->municipality)->where('year', $agg->year)->where('program_type', 'Solo_Parent')->value('beneficiary_count'),
-                                            ];
-                                        @endphp
-                                        <tr>
-                                            <td style="font-weight:700;">{{ $agg->municipality }}</td>
-                                            <td>{{ $agg->year }}</td>
-                                            <td>
-                                                <strong>{{ number_format($agg->total_aics) }}</strong>
-                                                @if($stored['AICS'] !== null && $stored['AICS'] != $agg->total_aics)
-                                                    <span class="warn-badge">DB: {{ number_format($stored['AICS']) }}</span>
-                                                @elseif($stored['AICS'] == $agg->total_aics)
-                                                    <span class="bgy-badge">? Synced</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <strong>{{ number_format($agg->total_pwd) }}</strong>
-                                                @if($stored['PWD'] !== null && $stored['PWD'] != $agg->total_pwd)
-                                                    <span class="warn-badge">DB: {{ number_format($stored['PWD']) }}</span>
-                                                @elseif($stored['PWD'] == $agg->total_pwd)
-                                                    <span class="bgy-badge">? Synced</span>
-                                                @endif
-                                            </td>
-                                            <td>
-                                                <strong>{{ number_format($agg->total_solo_parent) }}</strong>
-                                                @if($stored['Solo'] !== null && $stored['Solo'] != $agg->total_solo_parent)
-                                                    <span class="warn-badge">DB: {{ number_format($stored['Solo']) }}</span>
-                                                @elseif($stored['Solo'] == $agg->total_solo_parent)
-                                                    <span class="bgy-badge">? Synced</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                @endif
+
 
                 <!-- Action Buttons Row -->
                 <div class="d-flex justify-content-end gap-2 mb-3">
@@ -853,22 +780,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         </td>
                                         <td style="font-weight:700;color:var(--primary-blue);">
                                             {{ number_format($program->beneficiary_count) }}
-                                            @if(in_array($program->program_type, ['AICS', 'PWD_Assistance', 'Solo_Parent']))
-                                                @php $bKey = "{$program->municipality}|{$program->year}"; @endphp
-                                                @if(isset($barangayLookup[$bKey]))
-                                                    @php
-                                                        $bMap = ['AICS' => 'AICS', 'PWD_Assistance' => 'PWD', 'Solo_Parent' => 'Solo_Parent'];
-                                                        $bField = $bMap[$program->program_type];
-                                                        $bTotal = $barangayLookup[$bKey][$bField] ?? null;
-                                                    @endphp
-                                                    @if($bTotal !== null && $bTotal == $program->beneficiary_count)
-                                                        <span class="bgy-badge">?? Barangay</span>
-                                                    @elseif($bTotal !== null && $bTotal != $program->beneficiary_count)
-                                                        <span class="warn-badge" title="Barangay total: {{ number_format($bTotal) }}">?
-                                                            Bgy: {{ number_format($bTotal) }}</span>
-                                                    @endif
-                                                @endif
-                                            @endif
                                         </td>
                                         <td>{{ $program->year }}</td>
                                         <td>
@@ -893,60 +804,19 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                                 <form method="POST"
                                                     action="{{ route('superadmin.data.programs.update', $program->id) }}" id="editForm{{ $program->id }}" onsubmit="handleFormSubmit(event, {{ $program->id }})">
                                                     @csrf
-                                                    <input type="hidden" name="beneficiary_count" id="totalCountHidden{{ $program->id }}" value="{{ $program->beneficiary_count }}">
                                                     <div class="modal-body p-4">
-                                                        @if(isset($barangayBreakdown[$program->id]) && $barangayBreakdown[$program->id]->count() > 0)
-                                                        <!-- Total Display -->
                                                         <div class="mb-3" style="background:var(--primary-gradient);color:white;padding:16px;border-radius:12px;text-align:center;">
-                                                            <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;opacity:0.85;">Total Beneficiaries</div>
-                                                            <div id="totalCountDisplay{{ $program->id }}" style="font-size:2.2rem;font-weight:900;margin-top:4px;">{{ number_format($program->beneficiary_count) }}</div>
-                                                        </div>
-                                                        
-                                                        <!-- Barangay Breakdown -->
-                                                        <div class="mb-3">
-                                                            <label style="font-weight:600;color:var(--primary-blue);font-size:0.88rem;margin-bottom:8px;display:block;">Edit by Barangay</label>
-                                                            <div style="max-height:300px;overflow-y:auto;border:1.5px solid var(--border-light);border-radius:10px;padding:8px;">
-                                                                @foreach($barangayBreakdown[$program->id] as $brgy)
-                                                                <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px;padding:10px;background:#F8FAFC;border-radius:8px;">
-                                                                    <div style="flex:1;font-size:0.9rem;font-weight:600;color:var(--primary-blue);">{{ $brgy['name'] }}</div>
-                                                                    <input type="hidden" name="barangay_data[{{ $loop->index }}][id]" value="{{ $brgy['id'] }}">
-                                                                    <input type="number" 
-                                                                           name="barangay_data[{{ $loop->index }}][count]" 
-                                                                           value="{{ $brgy['count'] }}" 
-                                                                           min="0"
-                                                                           class="inline-input barangay-count-input" 
-                                                                           data-program-id="{{ $program->id }}"
-                                                                           style="width:120px;padding:8px 12px;font-size:0.95rem;font-weight:600;text-align:center;border:1.5px solid var(--border-light);border-radius:8px;">
-                                                                </div>
-                                                                @endforeach
-                                                            </div>
-                                                            <div style="font-size:0.75rem;color:#64748b;margin-top:8px;font-style:italic;">
-                                                                💡 Total will auto-calculate as you edit the counts above.
-                                                            </div>
-                                                        </div>
-                                                        @else
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Municipality</label>
-                                                            <input type="text" class="form-control"
-                                                                value="{{ $program->municipality }}" readonly disabled>
+                                                            <div style="font-size:0.75rem;font-weight:600;text-transform:uppercase;letter-spacing:0.05em;opacity:0.85;">Program</div>
+                                                            <div style="font-size:1.05rem;font-weight:800;margin-top:4px;">{{ str_replace('_', ' ', $program->program_type) }} &mdash; {{ $program->municipality }} ({{ $program->year }})</div>
                                                         </div>
                                                         <div class="mb-3">
-                                                            <label class="form-label">Program Type</label>
-                                                            <input type="text" class="form-control"
-                                                                value="{{ str_replace('_', ' ', $program->program_type) }}"
-                                                                readonly disabled>
-                                                        </div>
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Beneficiary Count</label>
+                                                            <label class="form-label" style="font-weight:700;font-size:0.85rem;">Beneficiary Count</label>
                                                             <input type="number" name="beneficiary_count"
                                                                 class="form-control"
-                                                                value="{{ $program->beneficiary_count }}" required min="0">
+                                                                value="{{ $program->beneficiary_count }}"
+                                                                required min="0"
+                                                                style="font-size:1.4rem;font-weight:800;text-align:center;padding:14px;border-radius:10px;">
                                                         </div>
-                                                        <div class="mb-3">
-                                                            <label class="form-label">Year</label>
-                                                            <input type="text" class="form-control" value="{{ $program->year }}" readonly disabled>
-                                                        </div>
-                                                        @endif
                                                     </div>
                                                     <div class="modal-footer border-0 px-4 pb-4 gap-2">
                                                         <button type="button" class="btn-modal-cancel"
@@ -957,41 +827,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                             </div>
                                         </div>
                                     </div>
-                                    
-                                    <script>
-                                    (function() {
-                                        const modalId = 'editProg{{ $program->id }}';
-                                        const programId = '{{ $program->id }}';
-                                        
-                                        function calculateTotal() {
-                                            const inputs = document.querySelectorAll('.barangay-count-input[data-program-id="' + programId + '"]');
-                                            const totalDisplay = document.getElementById('totalCountDisplay' + programId);
-                                            const totalHidden = document.getElementById('totalCountHidden' + programId);
-                                            
-                                            if (inputs.length > 0 && totalDisplay && totalHidden) {
-                                                let total = 0;
-                                                inputs.forEach(inp => {
-                                                    total += parseInt(inp.value) || 0;
-                                                });
-                                                totalDisplay.textContent = total.toLocaleString();
-                                                totalHidden.value = total;
-                                            }
-                                        }
-                                        
-                                        // Attach event listeners on modal show
-                                        document.getElementById(modalId).addEventListener('shown.bs.modal', function() {
-                                            const inputs = document.querySelectorAll('.barangay-count-input[data-program-id="' + programId + '"]');
-                                            
-                                            // Calculate initial total
-                                            calculateTotal();
-                                            
-                                            // Attach input listeners
-                                            inputs.forEach(input => {
-                                                input.addEventListener('input', calculateTotal);
-                                            });
-                                        });
-                                    })();
-                                    </script>
+
                                 @empty
                                     <tr>
                                         <td colspan="6" style="text-align:center;padding:48px;color:#94a3b8;">No program
@@ -1035,6 +871,69 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 @endif
             </div>
 
+        </div>
+    </div>
+
+    <!-- ========== CREATE PROGRAM MODAL ========== -->
+    <div class="modal fade" id="createModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">+ Add Program Data</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ route('superadmin.data.programs.create') }}">
+                    @csrf
+                    <div class="modal-body p-4">
+                        @if($errors->any())
+                            <div style="background:#fee2e2;border-left:4px solid #C41E24;border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:0.85rem;color:#7f1d1d;">
+                                {{ $errors->first() }}
+                            </div>
+                        @endif
+
+                        <div class="mb-3">
+                            <label class="form-label" style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.05em;">Municipality</label>
+                            <select name="municipality" id="createMunicipality" class="form-select" required onchange="updateProgramOptions()">
+                                <option value="">Select Municipality</option>
+                                @foreach($municipalities as $muni)
+                                    <option value="{{ $muni }}" {{ old('municipality') == $muni ? 'selected' : '' }}>{{ $muni }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.05em;">Year</label>
+                            <select name="year" id="createYear" class="form-select" required onchange="updateProgramOptions()">
+                                <option value="">Select Year</option>
+                                @foreach($years as $year)
+                                    <option value="{{ $year }}" {{ old('year') == $year ? 'selected' : '' }}>{{ $year }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.05em;">Program Type</label>
+                            <select name="program_type" id="createProgramType" class="form-select" required>
+                                <option value="">Select Program</option>
+                                @foreach($programTypes as $value => $label)
+                                    <option value="{{ $value }}">{{ $label }}</option>
+                                @endforeach
+                            </select>
+                            <div id="createDuplicateWarning" style="display:none;margin-top:8px;font-size:0.8rem;color:#92400e;background:#fef3c7;border-radius:8px;padding:8px 12px;">
+                                ⚠️ Some options are already recorded for this municipality &amp; year. They are disabled below.
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" style="font-weight:700;font-size:0.82rem;text-transform:uppercase;letter-spacing:0.05em;">Beneficiary Count</label>
+                            <input type="number" name="beneficiary_count" class="form-control" required min="0"
+                                value="{{ old('beneficiary_count') }}"
+                                style="font-size:1.3rem;font-weight:800;text-align:center;padding:12px;border-radius:10px;">
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0 px-4 pb-4 gap-2">
+                        <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" id="createSubmitBtn" class="btn-modal-submit">Add Program</button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -1097,6 +996,42 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 sessionStorage.removeItem('programsScrollY');
             }
         })();
+
+        // Duplicate prevention for Add Program modal
+        const existingCombos = @json($existingCombos);
+        function updateProgramOptions() {
+            const muni = document.getElementById('createMunicipality').value;
+            const year = document.getElementById('createYear').value;
+            const select = document.getElementById('createProgramType');
+            const warning = document.getElementById('createDuplicateWarning');
+            let anyDisabled = false;
+
+            Array.from(select.options).forEach(opt => {
+                if (!opt.value) return;
+                const key = `${muni}|${year}|${opt.value}`;
+                const isDupe = muni && year && existingCombos.includes(key);
+                opt.disabled = isDupe;
+                opt.textContent = isDupe
+                    ? opt.value.replace(/_/g, ' ') + ' — Already Added'
+                    : opt.getAttribute('data-label') || opt.value.replace(/_/g, ' ');
+                if (isDupe) anyDisabled = true;
+                // If currently selected option becomes disabled, reset
+                if (isDupe && opt.selected) select.value = '';
+            });
+            warning.style.display = anyDisabled ? 'block' : 'none';
+        }
+
+        // Store original labels on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const select = document.getElementById('createProgramType');
+            Array.from(select.options).forEach(opt => {
+                if (opt.value) opt.setAttribute('data-label', opt.textContent);
+            });
+            // Auto-open modal if there were validation errors
+            @if($errors->any() && old('municipality'))
+                new bootstrap.Modal(document.getElementById('createModal')).show();
+            @endif
+        });
 
         function switchTab(name, btn) {
             document.querySelectorAll('.section-tab').forEach(el => el.classList.remove('active'));

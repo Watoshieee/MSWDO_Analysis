@@ -210,7 +210,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/analysis">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:32px;height:32px;object-fit:contain;" onerror="this.style.display='none'"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:32px;height:32px;object-fit:contain;" onerror="this.style.display='none'"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -416,7 +416,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 </div>
                 <div class="row g-3" id="programsContainer">
                     @php
-                        $defaultPrograms = $programsByYear[$defaultProgramYear] ?? [];
+                        $defaultPrograms = $programsByYear[(int) $defaultProgramYear] ?? [];
                     @endphp
                     @forelse($defaultPrograms as $type => $count)
                     <div class="col-md-4 col-sm-6">

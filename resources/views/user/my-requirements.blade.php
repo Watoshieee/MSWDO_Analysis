@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>My Requirements – MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
 html, body { overscroll-behavior: none; margin: 0; padding: 0; }
@@ -141,10 +142,43 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .file-name { font-weight: 700; color: var(--primary-blue); word-break: break-all; }
         .modal-footer { background: var(--bg-light); border: none; padding: 16px 24px; }
 
-        /* Alerts */
-        .alert { border-radius: 12px; border: none; font-size: 0.9rem; }
-        .alert-success-c { background: #d4edda; border-left: 5px solid #28a745; color: #155724; }
-        .alert-warning-c { background: var(--secondary-yellow-light); border-left: 5px solid var(--secondary-yellow); color: #856404; }
+        /* Alerts - Fixed Toast Notification */
+        .toast-notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            z-index: 9999;
+            min-width: 350px;
+            max-width: 500px;
+            border-radius: 12px;
+            border: none;
+            font-size: 0.9rem;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+            animation: slideDown 0.4s ease forwards;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 16px 20px;
+        }
+        .toast-notification.success { background: #d4edda; border-left: 5px solid #28a745; color: #155724; }
+        .toast-notification.error { background: #f8d7da; border-left: 5px solid #dc3545; color: #721c24; }
+        .toast-notification.hiding { animation: slideUp 0.4s ease forwards; }
+        
+        @keyframes slideDown {
+            from { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(0); opacity: 1; }
+            to { transform: translateX(-50%) translateY(-100px); opacity: 0; }
+        }
+        
+        .toast-content { flex: 1; display: flex; align-items: center; gap: 12px; font-weight: 600; }
+        .toast-icon { font-size: 1.3rem; }
+        .toast-close { background: transparent; border: none; color: inherit; font-size: 1.2rem; cursor: pointer; opacity: 0.7; padding: 0 5px; transition: opacity 0.2s; }
+        .toast-close:hover { opacity: 1; }
+        .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: currentColor; opacity: 0.3; transition: width linear; }
 
         /* Empty state */
         .empty-state { text-align:center; padding: 50px 0; }
@@ -156,6 +190,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         /* Footer */
         .footer-strip { background: var(--primary-gradient); color: white; text-align: center; padding: 18px; font-size: 0.85rem; margin-top: 40px; }
+        
+        /* Scroll highlight animation */
+        @keyframes highlightPulse {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(253, 185, 19, 0); }
+            50% { box-shadow: 0 0 0 8px rgba(253, 185, 19, 0.4); }
+        }
+        
+        .scroll-highlight {
+            animation: highlightPulse 1.5s ease-in-out 2;
+            border: 2px solid var(--secondary-yellow) !important;
+            background: var(--secondary-yellow-light) !important;
+        }
     </style>
 </head>
 <body>
@@ -164,7 +210,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/user/dashboard">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -174,10 +220,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link" href="/user/dashboard">Dashboard</a></li>
                     <li class="nav-item"><a class="nav-link" href="/user/programs">Programs</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/user/announcements">Announcements</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
-                <div class="d-flex">
+                <div class="d-flex align-items-center gap-3">
+                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal" style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;" title="Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($notificationCount) && $notificationCount > 0)
+                        <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $notificationCount > 9 ? '9+' : $notificationCount }}</span>
+                        @endif
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -206,13 +258,23 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="container mt-4">
 
         @if(session('success'))
-            <div class="alert alert-success-c alert-dismissible fade show mb-3">
-                {{ session('success') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="toast-notification success" id="toastNotification">
+                <div class="toast-content">
+                    <span class="toast-icon">✅</span>
+                    <span>{{ session('success') }}</span>
+                </div>
+                <button type="button" class="toast-close" onclick="closeToast()">&times;</button>
+                <div class="toast-progress" id="toastProgress"></div>
             </div>
         @endif
         @if(session('error'))
-            <div class="alert alert-danger alert-dismissible fade show mb-3">
-                {{ session('error') }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            <div class="toast-notification error" id="toastNotification">
+                <div class="toast-content">
+                    <span class="toast-icon">❌</span>
+                    <span>{{ session('error') }}</span>
+                </div>
+                <button type="button" class="toast-close" onclick="closeToast()">&times;</button>
+                <div class="toast-progress" id="toastProgress"></div>
             </div>
         @endif
 
@@ -230,16 +292,26 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     $percentComplete = $totalReq > 0 ? ($approved / $totalReq) * 100 : 0;
                 @endphp
 
-                <div class="application-card">
+                <div class="application-card" id="app-{{ $app->id }}" data-scroll-target>
                     <!-- Card header -->
                     <div class="app-card-header">
                         <div class="d-flex align-items-center gap-3">
                             <span class="app-type-tag">{{ str_replace('_', ' ', $app->program_type) }}</span>
                             <span class="app-date">Applied: {{ $app->application_date->format('M d, Y') }}</span>
                         </div>
-                        <span class="status-badge status-{{ $overallStatus }}">
-                            {{ ucfirst(str_replace('_', ' ', $overallStatus)) }}
-                        </span>
+                        <div class="d-flex align-items-center gap-2">
+                            <span class="status-badge status-{{ $overallStatus }}">
+                                {{ ucfirst(str_replace('_', ' ', $overallStatus)) }}
+                            </span>
+                            @if($overallStatus === 'rejected' && $app->admin_remarks)
+                                <button type="button" class="btn btn-sm" 
+                                    style="background:#dc3545;color:white;border:none;border-radius:8px;padding:5px 14px;font-size:0.8rem;font-weight:600;"
+                                    onclick="showRemarksModal('{{ addslashes($app->admin_remarks) }}', '{{ str_replace('_', ' ', $app->program_type) }}')"
+                                    title="View rejection reason">
+                                    <span style="font-size:0.9rem;">💬</span> View Remarks
+                                </button>
+                            @endif
+                        </div>
                     </div>
 
                     <div class="app-card-body">
@@ -261,56 +333,76 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                         <h6 style="font-weight:700;color:var(--primary-blue);margin-bottom:14px;font-size:0.88rem;text-transform:uppercase;letter-spacing:0.06em;">Submitted Documents</h6>
 
+                        <div class="row g-3">
                         @foreach($data['fileUploads'] as $file)
                             @php $status = $file->status; $hasFile = $file->file_path; @endphp
-                            <div class="req-item {{ $status }}">
-                                <div class="row align-items-center g-2">
-                                    <div class="col-md-5">
-                                        <div class="req-name">{{ $file->requirement_name }}</div>
-                                    </div>
-                                    <div class="col-md-3">
-                                        <span class="status-badge status-{{ $status }}">{{ ucfirst($status) }}</span>
-                                    </div>
-                                    <div class="col-md-4 text-end">
-                                        @if($hasFile)
-                                            @php $ext = pathinfo($file->file_path, PATHINFO_EXTENSION); @endphp
-                                            @if(in_array($ext, ['jpg','jpeg','png']))
-                                                <img src="{{ asset('storage/' . $file->file_path) }}" class="file-preview" onclick="openFileModal('{{ asset('storage/' . $file->file_path) }}', '{{ $file->requirement_name }}', '{{ $ext }}')">
-                                            @else
-                                                <span style="font-size:1.6rem;color:#dc3545;cursor:pointer;" onclick="openFileModal('{{ asset('storage/' . $file->file_path) }}', '{{ $file->requirement_name }}', '{{ $ext }}')">📄 PDF</span>
-                                            @endif
-                                            <button onclick="openFileModal('{{ asset('storage/' . $file->file_path) }}', '{{ $file->requirement_name }}', '{{ $ext }}')" class="btn-view ms-2">View</button>
-                                        @else
-                                            <span style="font-size:0.82rem;color:#94a3b8;">Not uploaded</span>
-                                        @endif
-                                    </div>
-                                </div>
-
-                                @if($file->admin_remarks)
-                                    <div class="admin-remark">
-                                        <strong>Remark:</strong> {{ $file->admin_remarks }}
-                                    </div>
-                                @endif
-
-                                @if($status == 'rejected')
-                                    <div class="reupload-form">
-                                        <p style="font-size:0.83rem;font-weight:600;margin-bottom:10px;color:#856404;">Re-upload Document</p>
-                                        <form action="{{ route('user.resubmit-requirement', $file->id) }}" method="POST" enctype="multipart/form-data">
-                                            @csrf @method('PUT')
-                                            <div class="row g-2 align-items-center">
-                                                <div class="col-md-8">
-                                                    <input type="file" name="file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf" required>
-                                                    <small class="text-muted">Max 5MB. JPG, PNG, PDF</small>
-                                                </div>
-                                                <div class="col-md-4">
-                                                    <button type="submit" class="btn btn-sm btn-warning w-100" style="font-weight:600;">Re-upload</button>
-                                                </div>
+                            <div class="col-md-6">
+                                <div class="req-item {{ $status }}" id="file-{{ $file->id }}" data-scroll-target>
+                                    <div class="row align-items-center g-2">
+                                        <div class="col-12">
+                                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
+                                                <div class="req-name" style="flex:1;">{{ $file->requirement_name }}</div>
+                                                <span class="status-badge status-{{ $status }}">{{ ucfirst($status) }}</span>
                                             </div>
-                                        </form>
+                                        </div>
+                                        <div class="col-12">
+                                            <div class="d-flex justify-content-end align-items-center gap-2">
+                                                @if($hasFile)
+                                                    @php 
+                                                        $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION));
+                                                        $fileUrl = asset('storage/' . $file->file_path);
+                                                    @endphp
+                                                    @if(in_array($ext, ['jpg','jpeg','png','gif','webp']))
+                                                        <img src="{{ $fileUrl }}" 
+                                                             class="file-preview" 
+                                                             onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}')"
+                                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
+                                                        <span style="font-size:1.6rem;color:#2C3E8F;cursor:pointer;display:none;" 
+                                                              onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}')">🖼️</span>
+                                                    @elseif($ext === 'pdf')
+                                                        <span style="font-size:1.8rem;color:#dc3545;cursor:pointer;" 
+                                                              onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}')" 
+                                                              title="PDF Document">📄</span>
+                                                    @else
+                                                        <span style="font-size:1.6rem;color:#6c757d;cursor:pointer;" 
+                                                              onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}')">📎</span>
+                                                    @endif
+                                                    <button onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}')" 
+                                                            class="btn-view">👁 View</button>
+                                                @else
+                                                    <span style="font-size:0.82rem;color:#94a3b8;">Not uploaded</span>
+                                                @endif
+                                            </div>
+                                        </div>
                                     </div>
-                                @endif
+
+                                    @if($file->admin_remarks)
+                                        <div class="admin-remark">
+                                            <strong>Remark:</strong> {{ $file->admin_remarks }}
+                                        </div>
+                                    @endif
+
+                                    @if($status == 'rejected')
+                                        <div class="reupload-form">
+                                            <p style="font-size:0.83rem;font-weight:600;margin-bottom:10px;color:#856404;">Re-upload Document</p>
+                                            <form action="{{ route('user.resubmit-requirement', $file->id) }}" method="POST" enctype="multipart/form-data">
+                                                @csrf
+                                                <div class="row g-2 align-items-center">
+                                                    <div class="col-8">
+                                                        <input type="file" name="file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf" required>
+                                                        <small class="text-muted">Images: 5MB, PDF: 25MB</small>
+                                                    </div>
+                                                    <div class="col-4">
+                                                        <button type="submit" class="btn btn-sm btn-warning w-100" style="font-weight:600;">Re-upload</button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    @endif
+                                </div>
                             </div>
                         @endforeach
+                        </div>
                     </div>
                 </div>
             @endforeach
@@ -322,6 +414,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <a href="{{ route('user.programs') }}" style="background:var(--primary-gradient);color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:600;font-size:0.9rem;">Browse Programs &rarr;</a>
             </div>
         @endif
+        @include('components.user-notification-modal')
 
     </div>
     </div>
@@ -351,19 +444,96 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
+    <!-- ===== MODAL FOR REJECTION REMARKS ===== -->
+    <div class="modal fade" id="remarksModal" tabindex="-1" aria-labelledby="remarksModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header" style="background:linear-gradient(135deg,#dc3545,#a71d2a);color:white;border:none;">
+                    <h5 class="modal-title" id="remarksModalLabel" style="font-weight:800;">
+                        <span style="font-size:1.2rem;">❌</span> Application Rejected
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding:24px;">
+                    <div style="background:#fff5f5;border-left:4px solid #dc3545;border-radius:10px;padding:16px 18px;margin-bottom:16px;">
+                        <div style="font-weight:700;color:#721c24;font-size:0.9rem;margin-bottom:8px;">
+                            <span style="font-size:1rem;">📝</span> Program: <span id="remarksProgram"></span>
+                        </div>
+                    </div>
+                    <div style="background:#f8f9fa;border-radius:10px;padding:16px 18px;">
+                        <div style="font-weight:700;color:#495057;font-size:0.85rem;margin-bottom:10px;text-transform:uppercase;letter-spacing:0.05em;">
+                            Reason for Rejection:
+                        </div>
+                        <div id="remarksContent" style="color:#212529;font-size:0.95rem;line-height:1.7;white-space:pre-wrap;">
+                            <!-- Remarks will be loaded here -->
+                        </div>
+                    </div>
+                    <div style="background:#fff3cd;border-left:4px solid #ffc107;border-radius:10px;padding:14px 16px;margin-top:16px;">
+                        <div style="font-size:0.85rem;color:#856404;line-height:1.6;">
+                            <strong>💡 What to do next:</strong><br>
+                            Please review the rejection reason above and re-upload the required documents with the necessary corrections.
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer" style="background:#f8f9fa;border:none;padding:16px 24px;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius:8px;font-weight:600;">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="footer-strip">
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
     
+    @include('components.chat-modal')
+    @include('components.chatbot-widget')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Global variable for modal instance
+        // Global variable for modal instances
         let fileViewerModal;
+        let remarksModal;
+        let toastTimeout;
         
-        // Initialize modal when document is ready
+        // Initialize modals when document is ready
         document.addEventListener('DOMContentLoaded', function() {
             fileViewerModal = new bootstrap.Modal(document.getElementById('fileViewerModal'));
+            remarksModal = new bootstrap.Modal(document.getElementById('remarksModal'));
+            
+            // Auto-dismiss toast notification after 5 seconds
+            const toast = document.getElementById('toastNotification');
+            if (toast) {
+                const progress = document.getElementById('toastProgress');
+                if (progress) {
+                    progress.style.width = '100%';
+                    progress.style.transition = 'width 5s linear';
+                    setTimeout(() => { progress.style.width = '0%'; }, 10);
+                }
+                
+                toastTimeout = setTimeout(() => {
+                    closeToast();
+                }, 5000);
+            }
         });
+        
+        // Function to close toast notification
+        function closeToast() {
+            const toast = document.getElementById('toastNotification');
+            if (toast) {
+                clearTimeout(toastTimeout);
+                toast.classList.add('hiding');
+                setTimeout(() => {
+                    toast.remove();
+                }, 400);
+            }
+        }
+        
+        // Function to show rejection remarks modal
+        function showRemarksModal(remarks, programType) {
+            document.getElementById('remarksProgram').textContent = programType;
+            document.getElementById('remarksContent').textContent = remarks;
+            remarksModal.show();
+        }
         
         // Function to open modal and display file
         function openFileModal(fileUrl, fileName, fileExt) {
@@ -438,6 +608,54 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             div.textContent = text;
             return div.innerHTML;
         }
+
+        // Mark notifications as viewed when modal is opened
+        document.getElementById('announcementsModal').addEventListener('show.bs.modal', function () {
+            fetch('{{ route('user.mark-notifications-viewed') }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            }).then(response => response.json())
+              .then(data => {
+                  if (data.success) {
+                      const badge = document.querySelector('.btn[data-bs-target="#announcementsModal"] span');
+                      if (badge) {
+                          badge.style.display = 'none';
+                      }
+                  }
+              });
+        });
+        
+        // Smooth scroll to target element on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            const hash = window.location.hash;
+            if (hash) {
+                const targetElement = document.querySelector(hash);
+                if (targetElement) {
+                    // Wait for page to fully load
+                    setTimeout(() => {
+                        // Scroll to element with offset for navbar
+                        const elementPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
+                        const offsetPosition = elementPosition - 100; // 100px offset for navbar
+                        
+                        window.scrollTo({
+                            top: offsetPosition,
+                            behavior: 'smooth'
+                        });
+                        
+                        // Add highlight animation
+                        targetElement.classList.add('scroll-highlight');
+                        
+                        // Remove highlight after animation
+                        setTimeout(() => {
+                            targetElement.classList.remove('scroll-highlight');
+                        }, 3000);
+                    }, 300);
+                }
+            }
+        });
     </script>
 </body>
 </html>

@@ -45,28 +45,16 @@ class DataManagementController extends Controller
         // Total population from current year summary
         $totalPopulation = $currentSummary->total_population ?? 0;
 
-        // Count unique barangay names (not per year)
-        $barangays = Barangay::where('municipality', $user->municipality)
-            ->distinct('name')
-            ->count('name');
-        
         // Programs count (all years)
         $programs = SocialWelfareProgram::where('municipality', $user->municipality)->count();
-        
-        // Beneficiaries from current year only (strictly from Barangay columns)
-        $muniBarangays = Barangay::where('municipality', $user->municipality)
+
+        // Beneficiaries: sum beneficiary_count from programs for current year
+        $beneficiaries = SocialWelfareProgram::where('municipality', $user->municipality)
             ->where('year', $currentYear)
-            ->get();
-            
-        $beneficiaries = $muniBarangays->sum('pwd_count') +
-                         $muniBarangays->sum('aics_count') +
-                         $muniBarangays->sum('single_parent_count') +
-                         $muniBarangays->sum('four_ps_count') +
-                         $muniBarangays->sum('senior_count');
+            ->sum('beneficiary_count');
 
         return view('admin.data.dashboard', compact(
             'municipality',
-            'barangays',
             'programs',
             'beneficiaries',
             'totalPopulation',
@@ -126,10 +114,15 @@ class DataManagementController extends Controller
         if ($adminData) {
             $currentTotalPopulation = $adminData->total_population;
             $currentTotalHouseholds = $adminData->total_households;
+        } elseif ($currentSummary) {
+            // Prefer the saved yearly summary value over the barangay auto-sum
+            // (barangay data may be incomplete/partial)
+            $currentTotalPopulation = $currentSummary->total_population;
+            $currentTotalHouseholds = $currentSummary->total_households;
         } else {
-            // Use auto-calculated values if available, otherwise use summary values
-            $currentTotalPopulation = $autoTotalPopulation > 0 ? $autoTotalPopulation : ($currentSummary->total_population ?? 0);
-            $currentTotalHouseholds = $autoTotalHouseholds > 0 ? $autoTotalHouseholds : ($currentSummary->total_households ?? 0);
+            // No summary yet — fall back to barangay auto-sum
+            $currentTotalPopulation = $autoTotalPopulation;
+            $currentTotalHouseholds = $autoTotalHouseholds;
         }
 
         // Update municipality year if changed via request
@@ -162,6 +155,7 @@ class DataManagementController extends Controller
             'municipality',
             'currentTotalPopulation',
             'currentTotalHouseholds',
+            'currentSummary',
             'years',
             'allSummaries',
             'yearlyData',
@@ -178,6 +172,11 @@ class DataManagementController extends Controller
             'total_population'    => 'required|integer|min:0',
             'total_households'    => 'required|integer|min:0',
             'year'                => 'required|integer|min:2000|max:' . (date('Y') + 1),
+            'male_population'     => 'nullable|integer|min:0',
+            'female_population'   => 'nullable|integer|min:0',
+            'population_0_19'     => 'nullable|integer|min:0',
+            'population_20_59'    => 'nullable|integer|min:0',
+            'population_60_100'   => 'nullable|integer|min:0',
         ]);
 
         if ($validator->fails()) {
@@ -189,30 +188,29 @@ class DataManagementController extends Controller
         $totalPopulation = (int) $request->total_population;
         $totalHouseholds = (int) $request->total_households;
 
-        // Validation against barangay totals
-        $barangayPopSum = Barangay::where('municipality', $user->municipality)->where('year', $request->year)->sum('total_population');
-        $barangayHouseholdSum = Barangay::where('municipality', $user->municipality)->where('year', $request->year)->sum('total_households');
 
-        if ($totalPopulation < $barangayPopSum) {
-            return redirect()->back()->withErrors(['error' => "Population cannot be less than the sum of all barangays for {$request->year} (Currently: {$barangayPopSum})."])->withInput();
-        }
-        
-        if ($totalHouseholds < $barangayHouseholdSum) {
-            return redirect()->back()->withErrors(['error' => "Households cannot be less than the sum of all barangays for {$request->year} (Currently: {$barangayHouseholdSum})."])->withInput();
-        }
-
-        // Update the municipalities table (current live record)
+        // Update the municipalities table
         $municipality->update([
             'total_households'    => $request->total_households,
             'year'                => $request->year,
+            'male_population'     => $request->male_population   ?? 0,
+            'female_population'   => $request->female_population ?? 0,
+            'population_0_19'     => $request->population_0_19   ?? 0,
+            'population_20_59'    => $request->population_20_59  ?? 0,
+            'population_60_100'   => $request->population_60_100 ?? 0,
         ]);
 
-        // Mirror into the yearly summary
+        // Mirror into the yearly summary (preserves existing program totals)
         MunicipalityYearlySummary::updateOrCreate(
             ['municipality' => $municipality->name, 'year' => $request->year],
             [
                 'total_population'  => $totalPopulation,
                 'total_households'  => $request->total_households,
+                'male_population'   => $request->male_population   ?? 0,
+                'female_population' => $request->female_population ?? 0,
+                'population_0_19'   => $request->population_0_19   ?? 0,
+                'population_20_59'  => $request->population_20_59  ?? 0,
+                'population_60_100' => $request->population_60_100 ?? 0,
                 'created_at'        => now(),
             ]
         );
@@ -661,41 +659,21 @@ class DataManagementController extends Controller
         }
         
         $programs = $query->orderBy('year', 'desc')->orderBy('month', 'desc')->paginate(20);
-        
-        // Get barangay breakdown for each program
-        $fieldMapping = [
-            'PWD_Assistance' => 'pwd_count',
-            'AICS' => 'aics_count',
-            '4Ps' => 'four_ps_count',
-            'Senior_Citizen_Pension' => 'senior_count',
-            'Solo_Parent' => 'single_parent_count',
-        ];
-        
-        $barangayBreakdown = [];
-        foreach ($programs as $program) {
-            $field = $fieldMapping[$program->program_type] ?? null;
-            if ($field) {
-                $barangays = Barangay::where('municipality', $user->municipality)
-                    ->where('year', $program->year)
-                    ->where($field, '>', 0)  // Only get barangays with count > 0
-                    ->get();
-                
-                $barangayBreakdown[$program->id] = $barangays->map(function($b) use ($field) {
-                    return [
-                        'id' => $b->id,
-                        'name' => $b->name,
-                        'count' => $b->$field ?? 0,
-                    ];
-                });
-            }
-        }
-        
+
+        // Build existing combos for duplicate prevention (year|program_type, no month)
+        $existingCombos = SocialWelfareProgram::where('municipality', $user->municipality)
+            ->whereNull('month')
+            ->select('year', 'program_type')
+            ->get()
+            ->map(fn($r) => "{$r->year}|{$r->program_type}")
+            ->toArray();
+
         $months = [
             1 => 'January', 2 => 'February', 3 => 'March', 4 => 'April', 5 => 'May', 6 => 'June',
             7 => 'July', 8 => 'August', 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
         ];
-        
-        return view('admin.data.programs', compact('programs', 'programTypes', 'years', 'months', 'municipality', 'barangayBreakdown'));
+
+        return view('admin.data.programs', compact('programs', 'programTypes', 'years', 'months', 'municipality', 'existingCombos'));
     }
 
     public function updateProgram(Request $request, $id)
@@ -707,11 +685,8 @@ class DataManagementController extends Controller
 
         $validator = Validator::make($request->all(), [
             'beneficiary_count' => 'required|integer|min:0',
-            'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
-            'month' => 'nullable|integer|min:1|max:12',
-            'barangay_data' => 'nullable|array',
-            'barangay_data.*.id' => 'required|integer',
-            'barangay_data.*.count' => 'required|integer|min:0',
+            'year'              => 'required|integer|min:2000|max:' . (date('Y') + 1),
+            'month'             => 'nullable|integer|min:1|max:12',
         ]);
 
         if ($validator->fails()) {
@@ -720,38 +695,11 @@ class DataManagementController extends Controller
                 ->withInput();
         }
 
-        // Update program record
         $program->update([
             'beneficiary_count' => $request->beneficiary_count,
-            'year' => $request->year,
-            'month' => $request->month,
+            'year'              => $request->year,
+            'month'             => $request->month,
         ]);
-        
-        // Update barangay data if provided
-        if ($request->has('barangay_data')) {
-            $fieldMapping = [
-                'PWD_Assistance' => 'pwd_count',
-                'AICS' => 'aics_count',
-                '4Ps' => 'four_ps_count',
-                'Senior_Citizen_Pension' => 'senior_count',
-                'Solo_Parent' => 'single_parent_count',
-            ];
-            
-            $field = $fieldMapping[$program->program_type] ?? null;
-            if ($field) {
-                foreach ($request->barangay_data as $data) {
-                    $barangay = Barangay::find($data['id']);
-                    if ($barangay && $barangay->municipality === $user->municipality) {
-                        $barangay->update([
-                            $field => $data['count']
-                        ]);
-                    }
-                }
-                
-                // Re-sync to SocialWelfareProgram
-                $this->syncBarangayYearToPrograms($user->municipality, $request->year);
-            }
-        }
 
         return redirect()->back()->with('success', 'Program data updated successfully!');
     }

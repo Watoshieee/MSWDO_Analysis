@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Barangay Data – {{ $municipality->name }} – MSWDO</title>
+    <title>Barangay Data � {{ $municipality->name }} � MSWDO</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @include('components.admin-colors')
@@ -85,7 +85,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/admin/dashboard">
-                <img src="/images/mswd-logo.png" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -97,6 +97,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
+                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
                 </ul>
                 <div class="d-flex">
                     @auth
@@ -140,8 +141,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="panel-card mb-4">
             <div class="panel-header">
                 <div>
-                    <h5>Barangay Records — {{ $municipality->name }}</h5>
-                    <p>{{ $uniqueBarangayCount }} barangays · {{ $barangays->count() }} records
+                    <h5>Barangay Records � {{ $municipality->name }}</h5>
+                    <p>{{ $uniqueBarangayCount }} barangays � {{ $barangays->count() }} records
                         @if($selectedYear)
                             in {{ $selectedYear }}
                         @else
@@ -153,7 +154,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <!-- Search Feature -->
                     <div class="position-relative">
                         <input type="text" id="brgySearchInput" list="brgyDatalist" class="form-control fw-bold" style="min-width:180px; font-size:.85rem; border-radius:8px; padding-left:32px; border:none; box-shadow:0 2px 5px rgba(0,0,0,0.1);" autocomplete="off" placeholder="Quick Search Brgy..." onchange="openBrgyModal(this.value)">
-                        <span style="position:absolute; left:10px; top:6px; font-size:.9rem; opacity:0.6;">🔍</span>
+                        <span style="position:absolute; left:10px; top:6px; font-size:.9rem; opacity:0.6;">??</span>
                     </div>
                     <datalist id="brgyDatalist">
                         @foreach($barangays as $b)
@@ -161,8 +162,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         @endforeach
                     </datalist>
 
-                    <button class="btn-clear-data" onclick="zeroOutInputs()">⊘ Clear data</button>
-                    <button class="btn-update-all" id="updateAllBtn" onclick="updateAll()">⬆ Update All</button>
+                    <button class="btn-clear-data" onclick="zeroOutInputs()">? Clear data</button>
+                    <button class="btn-update-all" id="updateAllBtn" onclick="updateAll()">? Update All</button>
                     <form method="GET" action="{{ route('admin.data.barangays') }}" class="d-flex align-items-center gap-2">
                         <label for="yearFilter" class="form-label mb-0" style="color: rgba(255,255,255,.9); font-size: .82rem; font-weight: 600; white-space: nowrap;">Filter by Year:</label>
                         <select name="year" id="yearFilter" class="form-select" style="min-width:110px; font-size:.85rem;" onchange="this.form.submit()">
@@ -240,13 +241,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 {{ ($barangay->pwd_count ?? 0) + ($barangay->aics_count ?? 0) + ($barangay->single_parent_count ?? 0) + ($barangay->four_ps_count ?? 0) + ($barangay->senior_count ?? 0) }}
                             </td>
                             <td style="text-align:center; position:sticky; right:0; background:white; border-left:1px solid var(--border-light); z-index:2; box-shadow:-4px 0 10px rgba(0,0,0,0.02);">
-                                <button class="btn-save-row" onclick="saveRow(this)">💾 Save</button>
+                                <button class="btn-save-row" onclick="saveRow(this)">?? Save</button>
                             </td>
                         </tr>
                         @empty
                         <tr>
                             <td colspan="10" class="text-center py-5">
-                                <div style="font-size:2.8rem;opacity:.25;">📭</div>
+                                <div style="font-size:2.8rem;opacity:.25;">??</div>
                                 @if(request('year'))
                                     <p class="mt-2 mb-1 fw-bold" style="color:#334155;">No records for {{ $municipality->name }} in {{ request('year') }}</p>
                                     <p class="text-muted" style="font-size:.85rem;">Data for this year has not been added yet.</p>
@@ -289,7 +290,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="mb-3">
                         <label class="form-label">Barangay Name</label>
                         <select class="form-select" id="addBarangay">
-                            <option value="">— Select —</option>
+                            <option value="">� Select �</option>
                         </select>
                     </div>
                 </div>
@@ -352,7 +353,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 </div>
                 <div class="modal-footer border-0 p-3 bg-white d-flex justify-content-between">
                     <button type="button" class="btn btn-light rounded-pill px-4" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-warning rounded-pill px-4 fw-bolder shadow-sm" onclick="saveQuickEdit()">💾 Confirm & Update</button>
+                    <button type="button" class="btn btn-warning rounded-pill px-4 fw-bolder shadow-sm" onclick="saveQuickEdit()">?? Confirm & Update</button>
                 </div>
             </div>
         </div>
@@ -370,7 +371,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         // Barangay master lists per municipality
         const barangayLists = {
             'Magdalena': [
-                'Alipit','Balayhangin','Bañadero','Botocan','Cagsiay','Coralao','Ibabang Atingay',
+                'Alipit','Balayhangin','Ba�adero','Botocan','Cagsiay','Coralao','Ibabang Atingay',
                 'Ibabang Butnong','Ilayang Atingay','Ilayang Butnong','Ilog','Kanlurang Talaonin',
                 'Liyang','Maravilla','Pansol','Patimbao','Poblacion','Silangan Talaonin','Sildora'
             ],
@@ -383,7 +384,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             ],
             'Majayjay': [
                 'Aldavoc','Alumbrado','Ambit','Angustia','Anos','Aso','Bakia','Balayong','Balian',
-                'Baong','Batang','Bukal','Bunga','Buñga','Burgos','Halayhayin','Ibabang Kinalaglagan',
+                'Baong','Batang','Bukal','Bunga','Bu�ga','Burgos','Halayhayin','Ibabang Kinalaglagan',
                 'Ibabang Lalo','Ibabang Palina','Ilayang Kinalaglagan','Ilayang Lalo','Ilayang Palina',
                 'Isabang','Malinao','Mataas Na Lupa','Munting Kawayan','Olla','Paciano Rizal',
                 'Panalaban','Pangil','Panglan','Parang','Pook','Rizal','Saimba','San Diego',
@@ -392,15 +393,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             ]
         };
 
-        // ── Populate the Barangay dropdown when Add modal is shown ──────────
+        // -- Populate the Barangay dropdown when Add modal is shown ----------
         function loadBarangayOptions() {
             const sel  = document.getElementById('addBarangay');
             const list = barangayLists[MUN] || [];
-            sel.innerHTML = '<option value="">— Select —</option>';
+            sel.innerHTML = '<option value="">� Select �</option>';
             if (list.length) {
                 const allOpt = document.createElement('option');
                 allOpt.value = '__all__';
-                allOpt.textContent = `✅ All Barangays (${list.length})`;
+                allOpt.textContent = `? All Barangays (${list.length})`;
                 sel.appendChild(allOpt);
                 list.forEach(b => {
                     const o = document.createElement('option');
@@ -412,7 +413,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         document.getElementById('addModal').addEventListener('show.bs.modal', loadBarangayOptions);
 
-        // ── Submit Add (single or all) ──────────────────────────────────────
+        // -- Submit Add (single or all) --------------------------------------
         function submitAdd() {
             const year = document.getElementById('addYear').value;
             const sel  = document.getElementById('addBarangay');
@@ -422,7 +423,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             if (val === '__all__') {
                 const btn = document.getElementById('addBtnSubmit');
                 btn.disabled = true;
-                btn.textContent = 'Adding…';
+                btn.textContent = 'Adding�';
                 const barangays = barangayLists[MUN] || [];
 
                 fetch(BULK_STORE_URL, {
@@ -469,7 +470,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
         }
 
-        // ── Mark row dirty on input change and recalculate total ────────────
+        // -- Mark row dirty on input change and recalculate total ------------
         function calculateGrandTotalBeneficiaries() {
             let grandTotal = 0;
             document.querySelectorAll('.row-total-beneficiaries').forEach(el => {
@@ -495,7 +496,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         // Calculate initially
         document.addEventListener('DOMContentLoaded', calculateGrandTotalBeneficiaries);
 
-        // ── Get row data ────────────────────────────────────────────────────
+        // -- Get row data ----------------------------------------------------
         function getRowData(tr) {
             return {
                 id: parseInt(tr.dataset.id),
@@ -510,7 +511,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             };
         }
 
-        // ── Save single row ─────────────────────────────────────────────────
+        // -- Save single row -------------------------------------------------
         function saveRow(btn) {
             const tr = btn.closest('tr');
             const d  = getRowData(tr);
@@ -522,7 +523,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 return showToast("Validation Error: Program count cannot exceed Total Population.", "danger");
             }
 
-            btn.textContent = '⏳';
+            btn.textContent = '?';
             btn.disabled = true;
 
             fetch(`/admin/data/barangays/${d.id}/update`, {
@@ -532,7 +533,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             })
             .then(r => r.json())
             .then(res => {
-                btn.textContent = '💾 Save';
+                btn.textContent = '?? Save';
                 btn.disabled = false;
                 if (res.success) {
                     tr.classList.remove('dirty');
@@ -544,10 +545,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     showToast(res.message || 'Error saving row.', 'danger');
                 }
             })
-            .catch(() => { btn.textContent = '💾 Save'; btn.disabled = false; showToast('Network error.', 'danger'); });
+            .catch(() => { btn.textContent = '?? Save'; btn.disabled = false; showToast('Network error.', 'danger'); });
         }
 
-        // ── Zero Out Data ───────────────────────────────────────────────────
+        // -- Zero Out Data ---------------------------------------------------
         function zeroOutInputs() {
             if(!confirm("Are you sure you want to zero out ALL inputs shown on this page? You must click Update All to save these changes.")) return;
             document.querySelectorAll('.bgy-row').forEach(tr => {
@@ -564,7 +565,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             showToast('All inputs temporarily set to 0. Click Update All to save.', 'warning');
         }
 
-        // ── Update All dirty rows ───────────────────────────────────────────
+        // -- Update All dirty rows -------------------------------------------
         function updateAll() {
             const dirtyRows = [...document.querySelectorAll('.bgy-row.dirty')];
             if (!dirtyRows.length) { showToast('No changes to save.', 'warning'); return; }
@@ -584,7 +585,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             console.log('Updating rows:', rows);
             
             const btn  = document.getElementById('updateAllBtn');
-            btn.disabled = true; btn.textContent = '⏳ Saving…';
+            btn.disabled = true; btn.textContent = '? Saving�';
 
             fetch(BULK_UPDATE_URL, {
                 method: 'POST',
@@ -594,7 +595,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             .then(r => r.json())
             .then(d => {
                 console.log('Update response:', d);
-                btn.disabled = false; btn.textContent = '⬆ Update All';
+                btn.disabled = false; btn.textContent = '? Update All';
                 if (d.success) {
                     dirtyRows.forEach(tr => tr.classList.remove('dirty'));
                     showToast(d.message, 'success');
@@ -609,10 +610,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     showToast(d.message || 'Error updating records.', 'danger');
                 }
             })
-            .catch(() => { btn.disabled = false; btn.textContent = '⬆ Update All'; showToast('Network error.', 'danger'); });
+            .catch(() => { btn.disabled = false; btn.textContent = '? Update All'; showToast('Network error.', 'danger'); });
         }
 
-        // ── Toast helper ────────────────────────────────────────────────────
+        // -- Toast helper ----------------------------------------------------
         function showToast(message, type = 'success') {
             const colors = { success: '#2C3E8F', danger: '#C41E24', warning: '#E5A500' };
             const t = document.createElement('div');
@@ -622,7 +623,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             setTimeout(() => t.remove(), 3500);
         }
 
-        // ── Quick Edit Modal Logic ─────────────────────────────────────────
+        // -- Quick Edit Modal Logic -----------------------------------------
         let currentEditRow = null;
 
         function openBrgyModal(name) {

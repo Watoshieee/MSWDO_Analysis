@@ -33,7 +33,8 @@ class MunicipalityManagementController extends Controller
      */
     public function create()
     {
-        return view('superadmin.municipalities.create');
+        $existingNames = Municipality::pluck('name')->toArray();
+        return view('superadmin.municipalities.create', compact('existingNames'));
     }
 
     /**
@@ -50,7 +51,7 @@ class MunicipalityManagementController extends Controller
             'population_0_19' => 'required|integer|min:0',
             'population_20_59' => 'required|integer|min:0',
             'population_60_100' => 'required|integer|min:0',
-            'single_parent_count' => 'required|integer|min:0',
+            'single_parent_count' => 'nullable|integer|min:0',
             'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
         ]);
 
@@ -60,48 +61,50 @@ class MunicipalityManagementController extends Controller
                 ->withInput();
         }
 
+        // total_population lives in municipality_yearly_summary, not municipalities table
+        $totalPop = $request->total_population ?? ($request->male_population + $request->female_population);
+
         // Create municipality
         $municipality = Municipality::create([
-            'name' => $request->name,
-            'total_households' => $request->total_households,
-            'total_population' => $request->total_population ?? ($request->male_population + $request->female_population),
-            'male_population' => $request->male_population,
-            'female_population' => $request->female_population,
-            'population_0_19' => $request->population_0_19,
-            'population_20_59' => $request->population_20_59,
-            'population_60_100' => $request->population_60_100,
-            'single_parent_count' => $request->single_parent_count,
-            'year' => $request->year,
-            'created_at' => now(),
+            'name'                => $request->name,
+            'total_households'    => $request->total_households,
+            'male_population'     => $request->male_population,
+            'female_population'   => $request->female_population,
+            'population_0_19'     => $request->population_0_19,
+            'population_20_59'    => $request->population_20_59,
+            'population_60_100'   => $request->population_60_100,
+            'single_parent_count' => $request->single_parent_count ?? 0,
+            'year'                => $request->year,
+            'created_at'          => now(),
         ]);
 
-        // Automatically add default barangays
-        $defaultBarangays = $this->getDefaultBarangays($request->name);
-        
-        if (!empty($defaultBarangays)) {
-            foreach ($defaultBarangays as $barangayName) {
-                Barangay::create([
-                    'municipality' => $municipality->name,
-                    'name' => $barangayName,
-                    'male_population' => 0,
-                    'female_population' => 0,
-                    'population_0_19' => 0,
-                    'population_20_59' => 0,
-                    'population_60_100' => 0,
-                    'single_parent_count' => 0,
-                    'total_households' => 0,
-                    'total_approved_applications' => 0,
-                    'year' => $request->year,
-                ]);
-            }
-            
-            $message = 'Municipality created successfully with ' . count($defaultBarangays) . ' barangays!';
-        } else {
-            $message = 'Municipality created successfully! You can now add barangays.';
-        }
+        // Auto-create a yearly summary record so data appears in /superadmin/data/municipalities
+        MunicipalityYearlySummary::updateOrCreate(
+            [
+                'municipality' => $municipality->name,
+                'year'         => $municipality->year,
+            ],
+            [
+                'total_population'  => $totalPop,
+                'male_population'   => $municipality->male_population,
+                'female_population' => $municipality->female_population,
+                'population_0_19'   => $municipality->population_0_19,
+                'population_20_59'  => $municipality->population_20_59,
+                'population_60_100' => $municipality->population_60_100,
+                'total_households'  => $municipality->total_households,
+                'total_4ps'         => 0,
+                'total_pwd'         => 0,
+                'total_senior'      => 0,
+                'total_aics'        => 0,
+                'total_esa'         => 0,
+                'total_slp'         => 0,
+                'total_solo_parent' => 0,
+                'created_at'        => now(),
+            ]
+        );
 
         return redirect()->route('superadmin.municipalities.index')
-            ->with('success', $message);
+            ->with('success', 'Municipality "' . $municipality->name . '" created and a yearly record for ' . $municipality->year . ' was added.');
     }
 
     /**
@@ -443,18 +446,33 @@ class MunicipalityManagementController extends Controller
                 ->withInput();
         }
 
+        $totalPop = $request->total_population ?? ($request->male_population + $request->female_population);
+
         $municipality->update([
-            'name' => $request->name,
-            'total_households' => $request->total_households,
-            'total_population' => $request->total_population ?? ($request->male_population + $request->female_population),
-            'male_population' => $request->male_population,
-            'female_population' => $request->female_population,
-            'population_0_19' => $request->population_0_19,
-            'population_20_59' => $request->population_20_59,
-            'population_60_100' => $request->population_60_100,
+            'name'                => $request->name,
+            'total_households'    => $request->total_households,
+            'male_population'     => $request->male_population,
+            'female_population'   => $request->female_population,
+            'population_0_19'     => $request->population_0_19,
+            'population_20_59'    => $request->population_20_59,
+            'population_60_100'   => $request->population_60_100,
             'single_parent_count' => $request->single_parent_count,
-            'year' => $request->year,
+            'year'                => $request->year,
         ]);
+
+        // Sync to municipality_yearly_summary so admin yearly data stays in sync
+        MunicipalityYearlySummary::updateOrCreate(
+            ['municipality' => $request->name, 'year' => $request->year],
+            [
+                'total_population'  => $totalPop,
+                'male_population'   => $request->male_population,
+                'female_population' => $request->female_population,
+                'population_0_19'   => $request->population_0_19,
+                'population_20_59'  => $request->population_20_59,
+                'population_60_100' => $request->population_60_100,
+                'total_households'  => $request->total_households,
+            ]
+        );
 
         return redirect()->route('superadmin.municipalities.index')
             ->with('success', 'Municipality updated successfully!');
@@ -466,15 +484,7 @@ class MunicipalityManagementController extends Controller
     public function destroy($id)
     {
         $municipality = Municipality::findOrFail($id);
-
-        // Protect core municipalities from deletion
-        $coreMunicipalities = ['Liliw', 'Magdalena', 'Majayjay'];
-        if (in_array($municipality->name, $coreMunicipalities)) {
-            return redirect()->route('superadmin.municipalities.index')
-                ->with('error', 'Cannot archive "' . $municipality->name . '" — it is a core municipality required by the system.');
-        }
-
-        $municipality->delete(); // soft delete
+        $municipality->delete(); // soft delete — can be restored from archive
 
         return redirect()->route('superadmin.municipalities.index')
             ->with('success', 'Municipality "' . $municipality->name . '" archived successfully. You can restore it from the archive.');

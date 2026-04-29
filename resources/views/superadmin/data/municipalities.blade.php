@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Municipality Data � MSWDO Super Admin</title>
+    <title>Municipality Data &mdash; MSWDO Super Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -586,7 +586,7 @@
         <div class="container py-5">
 
             @if(session('success'))
-                <div class="alert-success-custom">? {{ session('success') }}</div>
+                <div class="alert-success-custom">&#10003; {{ session('success') }}</div>
             @endif
             @if($errors->any())
                 <div class="alert-danger-custom">
@@ -596,8 +596,8 @@
 
             <!-- Tab Pills -->
             <div class="tab-pills">
-                <button class="tab-pill active" onclick="switchTab('records')">?? Records</button>
-                <button class="tab-pill" onclick="switchTab('analysis')">?? Analysis</button>
+                <button class="tab-pill active" onclick="switchTab('records')">&#128202; Records</button>
+                <button class="tab-pill" onclick="switchTab('analysis')">&#128200; Analysis</button>
             </div>
 
             <!-- ===================== RECORDS TAB ===================== -->
@@ -607,7 +607,7 @@
                     <h6 class="mb-0 fw-bold" style="color:var(--primary-blue);">Yearly Municipality Summary Records</h6>
                     <div class="d-flex gap-2 align-items-center">
                         <button class="btn-archive-view" data-bs-toggle="modal" data-bs-target="#archivedSummaryModal">
-                            ?? Archived (<span id="archivedSummaryCount">...</span>)
+                            &#128193; Archived (<span id="archivedSummaryCount">...</span>)
                         </button>
                         <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Year
                             Data</button>
@@ -634,8 +634,8 @@
                                             <th>Population</th>
                                             <th>Male</th>
                                             <th>Female</th>
-                                            <th style="text-align:center;">Age 0�19</th>
-                                            <th style="text-align:center;">Age 20�59</th>
+                                            <th style="text-align:center;">Age 0&ndash;19</th>
+                                            <th style="text-align:center;">Age 20&ndash;59</th>
                                             <th style="text-align:center;">Age 60+</th>
                                             <th>Households</th>
                                             <th>Actions</th>
@@ -673,7 +673,7 @@
                                                 <div class="modal-dialog modal-lg modal-dialog-centered">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title">Edit {{ $muniName }} � {{ $row->year }}</h5>
+                                                            <h5 class="modal-title">Edit {{ $muniName }} &mdash; {{ $row->year }}</h5>
                                                             <button type="button" class="btn-close"
                                                                 data-bs-dismiss="modal"></button>
                                                         </div>
@@ -710,13 +710,13 @@
                                                                             value="{{ $row->total_households }}" required min="0">
                                                                     </div>
                                                                     <div class="col-md-4">
-                                                                        <label class="form-label">Population Age 0�19</label>
+                                                                        <label class="form-label">Population Age 0&ndash;19</label>
                                                                         <input type="number" name="population_0_19"
                                                                             class="form-control"
                                                                             value="{{ $row->population_0_19 ?? 0 }}" min="0">
                                                                     </div>
                                                                     <div class="col-md-4">
-                                                                        <label class="form-label">Population Age 20�59</label>
+                                                                        <label class="form-label">Population Age 20&ndash;59</label>
                                                                         <input type="number" name="population_20_59"
                                                                             class="form-control"
                                                                             value="{{ $row->population_20_59 ?? 0 }}" min="0">
@@ -762,7 +762,7 @@
                     @php $cd = $chartData[$muniName]; @endphp
                     @if(!empty($cd['years']))
                         <div class="chart-card">
-                            <div class="chart-title">{{ $muniName }} � Population & Households per Year</div>
+                            <div class="chart-title">{{ $muniName }} &mdash; Population &amp; Households per Year</div>
                             <canvas id="chart-{{ $muniName }}" height="80"></canvas>
                         </div>
                     @endif
@@ -770,7 +770,7 @@
 
                 <!-- Combined comparison chart -->
                 <div class="chart-card">
-                    <div class="chart-title">All Municipalities � Population Comparison</div>
+                    <div class="chart-title">All Municipalities &mdash; Population Comparison</div>
                     <canvas id="chart-comparison" height="90"></canvas>
                 </div>
             </div>
@@ -825,12 +825,12 @@
                                     placeholder="0">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Population Age 0�19</label>
+                                <label class="form-label">Population Age 0&ndash;19</label>
                                 <input type="number" name="population_0_19" class="form-control" min="0" placeholder="0"
                                     value="0">
                             </div>
                             <div class="col-md-4">
-                                <label class="form-label">Population Age 20�59</label>
+                                <label class="form-label">Population Age 20&ndash;59</label>
                                 <input type="number" name="population_20_59" class="form-control" min="0"
                                     placeholder="0" value="0">
                             </div>
@@ -845,7 +845,7 @@
                             <input type="hidden" name="total_esa" value="0">
                             <input type="hidden" name="total_slp" value="0">
                         </div>
-                        <small class="text-muted mt-2 d-block">?? If a record for this municipality + year already
+                        <small class="text-muted mt-2 d-block">&#9432; If a record for this municipality + year already
                             exists, it will be updated automatically.</small>
                     </div>
                     <div class="modal-footer border-0 px-4 pb-4 gap-2">
@@ -862,7 +862,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">?? Archived Yearly Records</h5>
+                    <h5 class="modal-title">&#128193; Archived Yearly Records</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -926,7 +926,7 @@
                 .then(data => {
                     document.getElementById('archivedSummaryCount').textContent = data.length;
                     if (!data.length) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><div style="font-size:2rem;opacity:.3;">??</div><p class="mt-2 mb-0">No archived records.</p></td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><div style="font-size:2rem;opacity:.3;">&#128193;</div><p class="mt-2 mb-0">No archived records.</p></td></tr>';
                         return;
                     }
                     tbody.innerHTML = data.map(r => {
@@ -958,7 +958,7 @@
         }
 
         function permDeleteSummary(id) {
-            if (!confirm('?? PERMANENTLY DELETE this record?\n\nThis CANNOT be undone!')) return;
+            if (!confirm('⚠️ PERMANENTLY DELETE this record?\n\nThis CANNOT be undone!')) return;
             fetch('/superadmin/data/municipalities/summary/' + id + '/force-delete', {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
@@ -1066,23 +1066,9 @@
             document.body.appendChild(form); form.submit();
         }
 
-        // --- MONTHLY DATA ---------------------------------------------------
-                }
-            });
-        }
+        // --- END SCRIPT ---
+    </script>
 
-        // Open Edit Monthly modal
-
-        // Save edit via AJAX
-
-        // Archive monthly record
-
-        // Load archived monthly records modal
-
-
-
-        // Auto-load archived monthly count on modal open
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>
-
 </html>
