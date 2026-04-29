@@ -11,13 +11,12 @@ use App\Models\User; // <-- ADD THIS
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Database\Eloquent\SoftDeletes; // <-- ADD THIS (optional, for type hinting)
+use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 use App\Mail\NewApplicationNotification;
 use App\Mail\AppointmentStatusMail;
 use App\Models\Appointment;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Support\Facades\Log;
-use Carbon\Carbon;
 
 class UserController extends Controller
 {
@@ -424,10 +423,10 @@ class UserController extends Controller
             // Validate file size based on type
             $file = $request->file('file');
             $isImage = in_array($file->getMimeType(), ['image/jpeg', 'image/jpg', 'image/png']);
-            $maxSize = $isImage ? 5 * 1024 * 1024 : 25 * 1024 * 1024; // 5MB for images, 25MB for PDF
+            $maxSize = $isImage ? 25 * 1024 * 1024 : 5 * 1024 * 1024; // 25MB for images, 5MB for PDF
 
             if ($file->getSize() > $maxSize) {
-                $maxSizeLabel = $isImage ? '5MB' : '25MB';
+                $maxSizeLabel = $isImage ? '25MB' : '5MB';
                 return redirect()->back()->with('error', "File size must be less than {$maxSizeLabel} for " . ($isImage ? 'images' : 'PDF files') . '.');
             }
 
@@ -949,7 +948,7 @@ class UserController extends Controller
 
         $fileMonitoring = FileMonitoring::firstOrCreate(
             ['application_id' => $application->id],
-            ['overall_status' => 'pending', 'municipality' => $user->municipality ?? '']
+            ['overall_status' => 'pending', 'municipality' => $user->municipality ?? '', 'user_id' => $user->id]
         );
 
         // Notify admin only on first application creation

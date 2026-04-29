@@ -672,7 +672,8 @@ class AdminController extends Controller
             'new_status' => $request->status,
             'remarks' => $request->admin_remarks,
             'requirement_name' => $fileUpload->requirement_name,
-            'created_at' => now()
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         // ── Email user when requirements are reviewed (all program types) ────────
@@ -801,7 +802,7 @@ class AdminController extends Controller
     private function buildProgramOverview(string $municipality)
     {
         $programs = SocialWelfareProgram::where('municipality', $municipality)
-            ->where('year', 2024)
+            ->where('year', now()->year)
             ->get();
 
         $overview = [];
