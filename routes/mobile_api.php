@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\MobileApiController;
 use App\Http\Controllers\Api\SoloParentApiController;
 use App\Http\Controllers\Api\AicsApiController;
+use App\Http\Controllers\Api\PwdApiController;
 
 // ============================================
 // PUBLIC ENDPOINTS
@@ -35,10 +36,16 @@ Route::post('/chatbot/message', [\App\Http\Controllers\ChatbotController::class,
 Route::middleware('auth:sanctum')->group(function () {
     // User profile
     Route::get('/user', [MobileApiController::class, 'user']);
+    Route::put('/user', [MobileApiController::class, 'updateUserProfile']);
+
+    // Change password (first-login forced reset)
+    Route::post('/change-password', [MobileApiController::class, 'changePassword']);
 
     // Dashboard & announcements
     Route::get('/dashboard', [MobileApiController::class, 'dashboard']);
     Route::get('/announcements', [MobileApiController::class, 'announcements']);
+    Route::get('/notifications', [MobileApiController::class, 'notifications']);
+    Route::post('/notifications/read', [MobileApiController::class, 'markNotificationsRead']);
 
     // Applications CRUD
     Route::get('/applications', [MobileApiController::class, 'applications']);
@@ -79,6 +86,13 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::get('/appointment', [AicsApiController::class, 'getBurialAppointment']);
             Route::delete('/appointments/{id}', [AicsApiController::class, 'cancelBurialAppointment']);
         });
+    });
+
+    // PWD Application
+    Route::prefix('pwd')->group(function () {
+        Route::get('/application', [PwdApiController::class, 'getApplication']);
+        Route::post('/requirements/upload', [PwdApiController::class, 'uploadRequirement']);
+        Route::post('/requirements/{fileId}/reupload', [PwdApiController::class, 'reuploadRequirement']);
     });
 
     // Device Token Management

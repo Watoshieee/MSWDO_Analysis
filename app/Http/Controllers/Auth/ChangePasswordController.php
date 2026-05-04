@@ -42,6 +42,7 @@ class ChangePasswordController extends Controller
         }
 
         $user->password = Hash::make($request->password);
+        $user->must_change_password = false;
         $user->save();
 
         session()->forget(['must_change_password', 'change_password_user_id', 'temp_password']);

@@ -302,12 +302,35 @@ class SoloParentApiController extends Controller
     public function getNotifications()
     {
         $user = Auth::user();
+        $lastViewedAt = \DB::table('notification_views')
+            ->where('user_id', $user->id)
+            ->value('last_viewed_at');
+
         $notifications = \DB::table('notifications')
             ->where('user_id', $user->id)
             ->where('type', 'solo_parent')
             ->orderBy('created_at', 'desc')
             ->limit(50)
-            ->get();
+            ->get()
+            ->map(function ($notification) use ($lastViewedAt) {
+                $createdAt = $notification->created_at ? \Carbon\Carbon::parse($notification->created_at) : null;
+                $isNew = $lastViewedAt && $createdAt
+                    ? $createdAt->gt(\Carbon\Carbon::parse($lastViewedAt))
+                    : false;
+
+                return [
+                    'id'         => $notification->id,
+                    'type'       => $notification->type,
+                    'title'      => $notification->title,
+                    'body'       => $notification->body,
+                    'data'       => $notification->data ? json_decode($notification->data, true) : null,
+                    'is_read'    => (bool) $notification->is_read,
+                    'is_new'     => $isNew,
+                    'read_at'    => $notification->read_at,
+                    'created_at' => $notification->created_at,
+                ];
+            })
+            ->values();
 
         return response()->json(['notifications' => $notifications]);
     }
@@ -322,7 +345,16 @@ class SoloParentApiController extends Controller
         \DB::table('notifications')
             ->where('id', $id)
             ->where('user_id', $user->id)
-            ->update(['is_read' => true, 'read_at' => now()]);
+            ->update(['is_read' => true, 'read_at' => now(), 'updated_at' => now()]);
+
+        \DB::table('notification_views')->updateOrInsert(
+            ['user_id' => $user->id],
+            [
+                'last_viewed_at' => now(),
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
 
         return response()->json(['message' => 'Notification marked as read']);
     }
