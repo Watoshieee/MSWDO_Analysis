@@ -124,6 +124,7 @@ class RegisterController extends Controller
                     'age'           => $age,
                     'municipality'  => $validated['municipality'],
                     'barangay'      => trim($validated['barangay']),
+                    'must_change_password' => true,
                 ],
                 'pending_otp'            => (string) $otp,
                 'pending_otp_expires_at' => $otpExpiresAt,
