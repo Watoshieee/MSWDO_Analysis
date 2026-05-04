@@ -406,6 +406,24 @@ class AdminController extends Controller
         $application->refresh();
 
         $user = \App\Models\User::find($application->user_id);
+
+        // ── Create in-app notification for user ─────────────────────────
+        $label = $isPwd ? 'PWD ID' : ($isAics ? 'AICS grant' : 'Solo Parent ID');
+        $programLabel = $isPwd ? 'pwd' : ($isAics ? 'aics' : 'solo_parent');
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $application->user_id,
+                'type'       => $programLabel,
+                'title'      => $label . ' Ready for Pickup',
+                'body'       => 'Your ' . $label . ' is now ready for pickup at the MSWDO office. Please bring a valid ID when claiming.',
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('markIdReady notification insert failed: ' . $e->getMessage());
+        }
+
         if ($user && $user->email) {
             try {
                 if ($isSoloParent) {
@@ -420,7 +438,6 @@ class AdminController extends Controller
             }
         }
 
-        $label = $isPwd ? 'PWD ID' : ($isAics ? 'AICS grant' : 'Solo Parent ID');
         $msg = $label . ' marked as ready. Email sent to ' . ($user?->email ?? 'user') . '.';
 
         if (request()->expectsJson() || request()->ajax()) {
@@ -454,6 +471,21 @@ class AdminController extends Controller
             'id_status' => 'processing',
             'completed_at' => now(),
         ]);
+
+        // ── Create in-app notification ───────────────────────────────────
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $application->user_id,
+                'type'       => 'pwd',
+                'title'      => 'PWD Application Validated',
+                'body'       => 'Your PWD application requirements have been validated. Your PWD ID is now being processed.',
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PWD validate notification insert failed: ' . $e->getMessage());
+        }
 
         $user = \App\Models\User::find($application->user_id);
         if ($user && $user->email) {
@@ -675,15 +707,55 @@ class AdminController extends Controller
             'created_at' => now()
         ]);
 
+        // ── Create in-app notification for the user ──────────────────────
+        if ($fileMonitoring->application && in_array($request->status, ['approved', 'rejected'], true)) {
+            $programType = $fileMonitoring->application->program_type ?? 'application';
+            $notifType = match (true) {
+                str_contains($programType, 'PWD')         => 'pwd',
+                str_contains($programType, 'Solo_Parent') => 'solo_parent',
+                str_contains($programType, 'AICS')        => 'aics',
+                default                                   => 'application',
+            };
+            $programLabel = str_replace('_', ' ', $programType);
+            $docName = $fileUpload->requirement_name ?? 'document';
+
+            if ($request->status === 'approved') {
+                $notifTitle = 'Document Approved';
+                $notifBody  = 'Your "' . $docName . '" for ' . $programLabel . ' has been approved.';
+            } else {
+                $notifTitle = 'Document Rejected';
+                $remarks    = $request->admin_remarks ? ' Reason: ' . $request->admin_remarks : '';
+                $notifBody  = 'Your "' . $docName . '" for ' . $programLabel . ' was rejected.' . $remarks;
+            }
+
+            // Add overall status context
+            $newOverall = $fileMonitoring->overall_status;
+            if ($newOverall === 'approved') {
+                $notifBody .= ' All requirements are now approved!';
+            } elseif ($newOverall === 'rejected') {
+                $notifBody .= ' Please re-upload the rejected document(s).';
+            }
+
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $fileMonitoring->application->user_id,
+                    'type'       => $notifType,
+                    'title'      => $notifTitle,
+                    'body'       => $notifBody,
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('File status notification insert failed: ' . $e->getMessage());
+            }
+        }
+
         // ── Email user when requirements are reviewed (all program types) ────────
         if ($fileMonitoring->application && $fileMonitoring->application->user) {
             $fileMonitoring->load('fileUploads', 'application.user');
             $newOverall = $fileMonitoring->overall_status;
 
-            // Notify user on every approve/reject action.
-            // - If all files are approved => send "approved"
-            // - If any file is rejected   => send "rejected"
-            // - Otherwise                 => send generic "in_review" update
             if (in_array($request->status, ['approved', 'rejected'], true)) {
                 try {
                     $mailStatus = match ($newOverall) {
@@ -699,7 +771,6 @@ class AdminController extends Controller
                 }
             }
         }
-
 
         return redirect()->back()->with('success', 'File status updated successfully!');
     }
@@ -1010,6 +1081,41 @@ class AdminController extends Controller
             if ($barangay && $barangay->total_approved_applications > 0) {
                 $barangay->total_approved_applications -= 1;
                 $barangay->save();
+            }
+        }
+
+        // ── Create in-app notification for the user ──────────────────────
+        if ($oldStatus !== $request->status && in_array($request->status, ['approved', 'rejected'], true)) {
+            $programType = $application->program_type ?? 'application';
+            $notifType = match (true) {
+                str_contains($programType, 'PWD')         => 'pwd',
+                str_contains($programType, 'Solo_Parent') => 'solo_parent',
+                str_contains($programType, 'AICS')        => 'aics',
+                default                                   => 'application',
+            };
+            $programLabel = str_replace('_', ' ', $programType);
+
+            if ($request->status === 'approved') {
+                $notifTitle = 'Application Approved';
+                $notifBody  = 'Your ' . $programLabel . ' application has been approved! Your ID/grant is now being processed.';
+            } else {
+                $remarks    = $request->admin_remarks ? ' Reason: ' . $request->admin_remarks : '';
+                $notifTitle = 'Application Rejected';
+                $notifBody  = 'Your ' . $programLabel . ' application was rejected.' . $remarks;
+            }
+
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $application->user_id,
+                    'type'       => $notifType,
+                    'title'      => $notifTitle,
+                    'body'       => $notifBody,
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Application status notification insert failed: ' . $e->getMessage());
             }
         }
 

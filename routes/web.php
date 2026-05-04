@@ -350,3 +350,18 @@ Route::prefix('barangay-analysis')->name('barangay-analysis.')->group(function (
 Route::middleware(['auth'])->prefix('api')->name('api.')->group(function () {
     Route::get('/barangays/{municipality}/{year}', [BarangayDataController::class, 'getByYear']);
 });
+
+// ============================================
+// TEMPORARY FIX ROUTE FOR HOSTINGER
+// ============================================
+Route::get('/fix-database', function () {
+    try {
+        \Illuminate\Support\Facades\Artisan::call('config:clear');
+        \Illuminate\Support\Facades\Artisan::call('cache:clear');
+        \Illuminate\Support\Facades\Artisan::call('migrate:fresh', ['--force' => true]);
+        
+        return "Database successfully rebuilt, cache cleared, and personal_access_tokens table created! You can now register a new account and log into the app.";
+    } catch (\Exception $e) {
+        return "Error fixing database: " . $e->getMessage();
+    }
+});

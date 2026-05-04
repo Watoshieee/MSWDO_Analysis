@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
 use App\Models\Application;
+use App\Models\Announcement;
 use App\Models\FileUpload;
 use App\Models\User;
 use App\Services\ApplicationService;
@@ -13,6 +14,7 @@ use App\Services\OtpService;
 use App\Services\RegistrationValidationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
@@ -183,6 +185,7 @@ class MobileApiController extends Controller
             $user->password = Hash::make($request->password);
             $user->otp_code = null;
             $user->otp_expires_at = null;
+            $user->must_change_password = false;
             if (is_null($user->email_verified_at)) {
                 $user->email_verified_at = now();
             }
@@ -219,6 +222,7 @@ class MobileApiController extends Controller
             'success' => true,
             'message' => 'Login successful',
             'token'   => $token,
+            'must_change_password' => (bool) $user->must_change_password,
             'user'    => [
                 'id'           => $user->id,
                 'full_name'    => $user->full_name,
@@ -231,6 +235,36 @@ class MobileApiController extends Controller
         ]);
     }
 
+    // ── POST /change-password (authenticated — first-login forced reset) ───
+    public function changePassword(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validator = Validator::make($request->all(), [
+            'password' => 'required|string|min:8|confirmed',
+        ], [
+            'password.min' => 'Password must be at least 8 characters.',
+            'password.confirmed' => 'Password confirmation does not match.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->must_change_password = false;
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password changed successfully! You can now use the app.',
+        ]);
+    }
+
     // ── PROTECTED ENDPOINTS ────────────────────────────────────────────────
 
     public function dashboard(Request $request): JsonResponse
@@ -239,11 +273,30 @@ class MobileApiController extends Controller
         $stats = $this->dashboardService->getMobileStats($user);
         $recentApps = $this->dashboardService->getRecentApplications($user);
         $announcements = $this->dashboardService->getAnnouncements($user);
+        $lastViewedAt = DB::table('notification_views')
+            ->where('user_id', $user->id)
+            ->value('last_viewed_at');
+
+        $unreadDbNotifications = DB::table('notifications')
+            ->where('user_id', $user->id)
+            ->where('is_read', false)
+            ->count();
+
+        $newAnnouncementsCount = Announcement::where('is_active', true)
+            ->where(function ($q) use ($user) {
+                $q->whereNull('municipality')
+                    ->orWhere('municipality', 'all')
+                    ->orWhere('municipality', '')
+                    ->orWhere('municipality', $user->municipality);
+            })
+            ->when($lastViewedAt, fn ($q) => $q->where('created_at', '>', $lastViewedAt))
+            ->count();
 
         return response()->json([
             'success' => true,
             'data' => [
                 'stats' => $stats,
+                'unread_notifications_count' => (int) $unreadDbNotifications + (int) $newAnnouncementsCount,
                 'recent_applications' => $recentApps->map(fn ($app) => [
                     'id'           => $app->id,
                     'program_type' => $app->program_type,
@@ -261,6 +314,369 @@ class MobileApiController extends Controller
     {
         $announcements = $this->dashboardService->getAllAnnouncements($request->user());
         return response()->json(['success' => true, 'data' => $announcements]);
+    }
+
+    public function notifications(Request $request): JsonResponse
+    {
+        $user = $request->user();
+        $userId = $user->id;
+        $lastViewedAt = DB::table('notification_views')
+            ->where('user_id', $userId)
+            ->value('last_viewed_at');
+
+        $items = collect();
+        $idCounter = 100000; // synthetic IDs for dynamic notifications
+
+        // ── 1. Document-level notifications (approved / rejected files) ──────
+        $documentNotifications = FileUpload::where(function ($q) use ($user) {
+                $q->whereHas('fileMonitoring', fn($q) => $q->where('user_id', $user->id))
+                  ->orWhereHas('fileMonitoring.application', fn($q) => $q->where('user_id', $user->id));
+            })
+            ->whereIn('status', ['approved', 'rejected'])
+            ->with(['fileMonitoring.application'])
+            ->orderBy('verified_at', 'desc')
+            ->limit(50)
+            ->get();
+
+        foreach ($documentNotifications as $doc) {
+            $ts = $doc->verified_at ?? $doc->uploaded_at;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : !$lastViewedAt;
+            $program = $doc->fileMonitoring->application->program_type ?? 'application';
+            $programLabel = str_replace('_', ' ', $program);
+            $type = match (true) {
+                str_contains($program, 'PWD')         => 'pwd',
+                str_contains($program, 'Solo_Parent') => 'solo_parent',
+                str_contains($program, 'AICS')        => 'aics',
+                default                               => 'application',
+            };
+
+            $items->push([
+                'id'         => $idCounter++,
+                'type'       => $type,
+                'title'      => $doc->status === 'approved' ? 'Document Approved' : 'Document Rejected',
+                'body'       => ($doc->status === 'approved'
+                    ? 'Your "' . $doc->requirement_name . '" for ' . $programLabel . ' has been approved.'
+                    : 'Your "' . $doc->requirement_name . '" for ' . $programLabel . ' was rejected.'
+                      . ($doc->admin_remarks ? ' Reason: ' . $doc->admin_remarks : '')),
+                'data'       => null,
+                'is_read'    => !$isNew,
+                'is_new'     => $isNew,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // ── 2. Solo Parent ID ready for pickup ──────────────────────────────
+        $idReadyApp = Application::where('user_id', $userId)
+            ->where('program_type', 'Solo_Parent')
+            ->where('id_status', 'ready_for_pickup')
+            ->latest('id_ready_at')
+            ->first();
+
+        if ($idReadyApp) {
+            $ts = $idReadyApp->id_ready_at ?? $idReadyApp->updated_at;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : !$lastViewedAt;
+            $items->push([
+                'id'         => $idCounter++,
+                'type'       => 'solo_parent',
+                'title'      => 'Your Solo Parent ID is Ready',
+                'body'       => 'Please pick up your Solo Parent ID at the ' . ($idReadyApp->municipality ?? 'MSWDO') . ' MSWDO Office.',
+                'data'       => null,
+                'is_read'    => !$isNew,
+                'is_new'     => $isNew,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // ── 3. Solo Parent requirements validated (approved + processing) ───
+        $spValidated = Application::where('user_id', $userId)
+            ->where('program_type', 'Solo_Parent')
+            ->where('status', 'approved')
+            ->where('id_status', 'processing')
+            ->latest('completed_at')
+            ->first();
+
+        if ($spValidated) {
+            $ts = $spValidated->completed_at ?? $spValidated->application_date;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : !$lastViewedAt;
+            $items->push([
+                'id'         => $idCounter++,
+                'type'       => 'solo_parent',
+                'title'      => 'Solo Parent Requirements Validated',
+                'body'       => 'Your Solo Parent requirements are fully validated. Please wait for the ID ready notice.',
+                'data'       => null,
+                'is_read'    => !$isNew,
+                'is_new'     => $isNew,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // ── 4. Solo Parent appointment confirmed ────────────────────────────
+        $spApproved = \App\Models\Appointment::where('user_id', $userId)
+            ->where('program_type', 'Solo_Parent')
+            ->where('status', 'confirmed')
+            ->latest('updated_at')
+            ->first();
+
+        if ($spApproved) {
+            $ts = $spApproved->updated_at ?? $spApproved->appointment_date;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : !$lastViewedAt;
+            $items->push([
+                'id'         => $idCounter++,
+                'type'       => 'solo_parent',
+                'title'      => 'Solo Parent Appointment Approved',
+                'body'       => 'Your Solo Parent appointment has been approved. Please wait for your eligibility result from MSWDO.',
+                'data'       => null,
+                'is_read'    => !$isNew,
+                'is_new'     => $isNew,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // ── 5. Solo Parent eligibility validated ────────────────────────────
+        $spEligible = \App\Models\Appointment::where('user_id', $userId)
+            ->where('program_type', 'Solo_Parent')
+            ->where('status', 'validated')
+            ->latest('validated_at')
+            ->first();
+
+        if ($spEligible) {
+            $ts = $spEligible->validated_at ?? $spEligible->updated_at;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : !$lastViewedAt;
+            $items->push([
+                'id'         => $idCounter++,
+                'type'       => 'solo_parent',
+                'title'      => 'Eligible for Solo Parent ID',
+                'body'       => 'Congratulations! You passed the eligibility assessment. Please submit your documents to complete your application.',
+                'data'       => null,
+                'is_read'    => !$isNew,
+                'is_new'     => $isNew,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // ── 6. PWD requirements validated ───────────────────────────────────
+        $pwdValidated = Application::where('user_id', $userId)
+            ->whereIn('program_type', ['PWD_Assistance', 'PWD_New', 'PWD_Renewal'])
+            ->where('id_status', 'processing')
+            ->latest('completed_at')
+            ->first();
+
+        if ($pwdValidated) {
+            $ts = $pwdValidated->completed_at ?? $pwdValidated->application_date;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : !$lastViewedAt;
+            $items->push([
+                'id'         => $idCounter++,
+                'type'       => 'pwd',
+                'title'      => 'PWD Requirements Validated',
+                'body'       => 'Your PWD requirements are validated. Please wait for a follow-up notice when your ID is ready.',
+                'data'       => null,
+                'is_read'    => !$isNew,
+                'is_new'     => $isNew,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // ── 7. PWD ID ready ─────────────────────────────────────────────────
+        $pwdReady = Application::where('user_id', $userId)
+            ->whereIn('program_type', ['PWD_Assistance', 'PWD_New', 'PWD_Renewal'])
+            ->where('id_status', 'ready_for_pickup')
+            ->latest('id_ready_at')
+            ->first();
+
+        if ($pwdReady) {
+            $ts = $pwdReady->id_ready_at ?? $pwdReady->updated_at;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : !$lastViewedAt;
+            $items->push([
+                'id'         => $idCounter++,
+                'type'       => 'pwd',
+                'title'      => 'Your PWD ID is Ready',
+                'body'       => 'Your PWD ID is ready for pick-up at the ' . ($pwdReady->municipality ?? 'MSWDO') . ' MSWDO Office.',
+                'data'       => null,
+                'is_read'    => !$isNew,
+                'is_new'     => $isNew,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // ── 8. AICS appointment confirmed ───────────────────────────────────
+        $aicsConfirmed = \App\Models\Appointment::where('user_id', $userId)
+            ->whereIn('program_type', ['AICS_Medical', 'AICS_Burial'])
+            ->where('status', 'confirmed')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        foreach ($aicsConfirmed as $appt) {
+            $ts = $appt->updated_at ?? $appt->appointment_date;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : !$lastViewedAt;
+            $label = match($appt->program_type) {
+                'AICS_Medical' => 'AICS Medical Assistance',
+                'AICS_Burial'  => 'AICS Burial Assistance',
+                default        => str_replace('_', ' ', $appt->program_type),
+            };
+            $items->push([
+                'id'         => $idCounter++,
+                'type'       => 'aics',
+                'title'      => 'Appointment Confirmed',
+                'body'       => 'Your ' . $label . ' appointment has been confirmed.',
+                'data'       => null,
+                'is_read'    => !$isNew,
+                'is_new'     => $isNew,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // ── 9. AICS requirements validated ──────────────────────────────────
+        $aicsValidated = Application::where('user_id', $userId)
+            ->whereIn('program_type', ['AICS_Medical', 'AICS_Burial'])
+            ->where('status', 'approved')
+            ->where('id_status', 'processing')
+            ->orderBy('completed_at', 'desc')
+            ->get();
+
+        foreach ($aicsValidated as $app) {
+            $ts = $app->completed_at ?? $app->application_date;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : !$lastViewedAt;
+            $label = match($app->program_type) {
+                'AICS_Medical' => 'AICS Medical Assistance',
+                'AICS_Burial'  => 'AICS Burial Assistance',
+                default        => str_replace('_', ' ', $app->program_type),
+            };
+            $items->push([
+                'id'         => $idCounter++,
+                'type'       => 'aics',
+                'title'      => 'AICS Requirements Validated',
+                'body'       => 'Your ' . $label . ' requirements are validated. Please wait for grant release notice.',
+                'data'       => null,
+                'is_read'    => !$isNew,
+                'is_new'     => $isNew,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // ── 10. AICS grant ready for pickup ─────────────────────────────────
+        $aicsReady = Application::where('user_id', $userId)
+            ->whereIn('program_type', ['AICS_Medical', 'AICS_Burial'])
+            ->where('id_status', 'ready_for_pickup')
+            ->orderBy('id_ready_at', 'desc')
+            ->get();
+
+        foreach ($aicsReady as $app) {
+            $ts = $app->id_ready_at ?? $app->application_date;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : !$lastViewedAt;
+            $label = match($app->program_type) {
+                'AICS_Medical' => 'AICS Medical Assistance',
+                'AICS_Burial'  => 'AICS Burial Assistance',
+                default        => str_replace('_', ' ', $app->program_type),
+            };
+            $items->push([
+                'id'         => $idCounter++,
+                'type'       => 'aics',
+                'title'      => 'AICS Grant Ready for Pickup',
+                'body'       => 'Your ' . $label . ' grant is ready for pickup at MSWDO.',
+                'data'       => null,
+                'is_read'    => !$isNew,
+                'is_new'     => $isNew,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // ── 11. Announcements ───────────────────────────────────────────────
+        $announcements = Announcement::where('is_active', true)
+            ->where(function ($q) use ($user) {
+                $q->whereNull('municipality')
+                    ->orWhere('municipality', 'all')
+                    ->orWhere('municipality', '')
+                    ->orWhere('municipality', $user->municipality);
+            })
+            ->orderByDesc('created_at')
+            ->limit(50)
+            ->get();
+
+        foreach ($announcements as $ann) {
+            $ts = $ann->created_at;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : true;
+            $items->push([
+                'id'         => 'ann_' . $ann->id,
+                'type'       => 'announcement',
+                'title'      => $ann->title,
+                'body'       => $ann->content,
+                'data'       => null,
+                'is_read'    => !$isNew,
+                'is_new'     => $isNew,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // Sort all items by created_at descending
+        $sorted = $items->sortByDesc(function ($item) {
+            return $item['created_at'] ?? now();
+        })->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $sorted,
+        ]);
+    }
+
+    public function markNotificationsRead(Request $request): JsonResponse
+    {
+        $userId = $request->user()->id;
+
+        DB::table('notifications')
+            ->where('user_id', $userId)
+            ->where('is_read', false)
+            ->update([
+                'is_read' => true,
+                'read_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        DB::table('notification_views')->updateOrInsert(
+            ['user_id' => $userId],
+            [
+                'last_viewed_at' => now(),
+                'updated_at' => now(),
+                'created_at' => now(),
+            ]
+        );
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Notifications marked as read.',
+        ]);
     }
 
     public function applications(Request $request): JsonResponse
@@ -427,16 +843,81 @@ class MobileApiController extends Controller
             'success' => true,
             'message' => 'User profile retrieved.',
             'data' => [
-                'id'            => $user->id,
-                'full_name'     => $user->full_name,
-                'email'         => $user->email,
-                'username'      => $user->username,
-                'role'          => $user->role,
-                'municipality'  => $user->municipality,
-                'barangay'      => $user->barangay,
+                'id'                => $user->id,
+                'full_name'         => $user->full_name,
+                'first_name'        => $user->first_name,
+                'middle_name'       => $user->middle_name,
+                'last_name'         => $user->last_name,
+                'email'             => $user->email,
+                'username'          => $user->username,
+                'role'              => $user->role,
+                'gender'            => $user->gender,
+                'municipality'      => $user->municipality,
+                'barangay'          => $user->barangay,
+                'mobile_number'     => $user->mobile_number,
+                'phone_number'      => $user->phone_number,
+                'birthdate'         => $user->birthdate,
+                'date_of_birth'     => $user->date_of_birth,
+                'age'               => $user->age,
+                'status'            => $user->status ?? 'active',
+                'email_verified_at' => $user->email_verified_at,
+                'created_at'        => $user->created_at,
+            ],
+        ]);
+    }
+
+    public function updateUserProfile(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $validated = $request->validate([
+            'first_name' => 'required|string|max:100',
+            'middle_name' => 'nullable|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'phone_number' => 'required|string|max:20',
+            'date_of_birth' => 'required|date',
+        ]);
+
+        $fullName = trim(
+            $validated['first_name'] .
+            (!empty($validated['middle_name']) ? ' ' . trim($validated['middle_name']) : '') .
+            ' ' . $validated['last_name']
+        );
+
+        $birthdate = \Carbon\Carbon::parse($validated['date_of_birth']);
+        $age = now()->diffInYears($birthdate);
+
+        $user->update([
+            'first_name' => trim($validated['first_name']),
+            'middle_name' => isset($validated['middle_name']) ? trim((string) $validated['middle_name']) : null,
+            'last_name' => trim($validated['last_name']),
+            'full_name' => $fullName,
+            'phone_number' => trim($validated['phone_number']),
+            'mobile_number' => trim($validated['phone_number']),
+            'date_of_birth' => $validated['date_of_birth'],
+            'birthdate' => $validated['date_of_birth'],
+            'age' => $age,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Profile updated successfully.',
+            'data' => [
+                'id' => $user->id,
+                'full_name' => $user->full_name,
+                'first_name' => $user->first_name,
+                'middle_name' => $user->middle_name,
+                'last_name' => $user->last_name,
+                'email' => $user->email,
+                'username' => $user->username,
+                'role' => $user->role,
+                'municipality' => $user->municipality,
+                'barangay' => $user->barangay,
                 'mobile_number' => $user->mobile_number,
-                'birthdate'     => $user->birthdate,
-                'age'           => $user->age,
+                'phone_number' => $user->phone_number,
+                'birthdate' => $user->birthdate,
+                'date_of_birth' => $user->date_of_birth,
+                'age' => $user->age,
             ],
         ]);
     }

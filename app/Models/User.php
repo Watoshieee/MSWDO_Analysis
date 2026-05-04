@@ -39,6 +39,7 @@ class User extends Authenticatable
         'phone_number',
         'address',
         'status',
+        'must_change_password',
         'email_verified_at',
         'otp_code',
         'otp_expires_at',
@@ -59,6 +60,7 @@ class User extends Authenticatable
         'otp_expires_at' => 'datetime',
         'reset_token_expires_at' => 'datetime',
         'password' => 'hashed',
+        'must_change_password' => 'boolean',
     ];
 
     // Role constants
