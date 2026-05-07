@@ -192,6 +192,7 @@
             padding: 13px 15px;
             text-transform: uppercase;
             letter-spacing: 0.05em;
+            white-space: nowrap;
         }
 
         .table tbody td {
@@ -846,7 +847,7 @@
         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
         <div
             style="background:white;border-radius:16px;padding:28px;max-width:440px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.2);">
-            <h5 style="font-weight:800;margin-bottom:14px;color:#1e293b;">❌ Reject Appointment</h5>
+            <h5 style="font-weight:800;margin-bottom:14px;color:#1e293b;"> Reject Appointment</h5>
             <p style="font-size:.85rem;color:#64748b;margin-bottom:14px;">Provide a reason for rejection. This will be
                 sent to the user via email.</p>
             <textarea id="rejectNotes" rows="3" class="form-control" placeholder="Reason for rejection…"
@@ -923,36 +924,82 @@
 
                 let actions = '';
                 const isSoloParent = a.program_type === 'Solo_Parent';
+                const hasPendingReschedule = a.reschedule_status === 'pending';
+                const hasPendingCancellation = a.cancellation_status === 'pending';
 
-                if (a.status === 'pending') {
+                // If there's a pending cancellation request, show cancellation approve/reject buttons
+                if (hasPendingCancellation) {
                     actions = `
-                            <button onclick="confirmAppt(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">✅ Approve</button>
-                            <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">❌ Reject</button>
-                        `;
-                } else if (a.status === 'confirmed') {
-                    if (isSoloParent) {
-                        actions = `
-                                <button onclick="validateAppt(${a.id})" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">🏆 Eligible</button>
-                                <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">❌ Reject</button>
-                            `;
-                    } else {
-                        actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">✅ Approved</span>`;
-                    }
-                } else if (a.status === 'validated') {
-                    if (a.id_status === 'ready_for_pickup') {
-                        actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">🎫 ID Ready</span>`;
-                    } else if (a.id_status === 'processing') {
-                        actions = `<button onclick="markIdReady(${a.solo_parent_app_id},'${encodeURIComponent(a.user_name)}')" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">🎫 ID Ready</button>`;
-                    } else {
-                        actions = `<span style="background:#fff7ed;color:#9a3412;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">⏳ Waiting Requirements Validation</span>`;
-                    }
-                } else {
-                    actions = '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
+                        <button onclick="approveCancellation(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">Approve Cancellation</button>
+                        <button onclick="rejectCancellation(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Reject Cancellation</button>`;
                 }
-                const noteText = (a.user_notes || '').trim();
-                const notesCell = noteText
-                    ? `<div style="max-width:230px;white-space:normal;line-height:1.35;background:#eef3ff;border:1px solid #c7d6f5;color:#1e3a8a;border-radius:10px;padding:6px 9px;font-size:.76rem;font-weight:600;" title="${noteText}">${noteText}</div>`
-                    : '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
+                // If there's a pending reschedule request, only show reschedule approve/reject buttons
+                else if (hasPendingReschedule) {
+                    actions = `
+                        <button onclick="approveReschedule(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">Approve Reschedule</button>
+                        <button onclick="rejectReschedule(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Reject Reschedule</button>`;
+                } else {
+                    // Normal appointment status buttons
+                    if (a.status === 'pending') {
+                        actions = `
+                                <button onclick="confirmAppt(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">Approve</button>
+                                <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Reject</button>
+                            `;
+                    } else if (a.status === 'confirmed' || a.status === 'approved') {
+                        if (isSoloParent && a.status === 'confirmed') {
+                            actions = `
+                                    <button onclick="validateAppt(${a.id})" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">Eligible</button>
+                                    <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Reject</button>
+                                `;
+                        }
+                    } else if (a.status === 'validated') {
+                        if (a.id_status === 'ready_for_pickup') {
+                            actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">ID Ready</span>`;
+                        } else if (a.id_status === 'processing') {
+                            actions = `<button onclick="markIdReady(${a.solo_parent_app_id},'${encodeURIComponent(a.user_name)}')" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">ID Ready</button>`;
+                        } else {
+                            actions = `<span style="background:#fff7ed;color:#9a3412;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">Waiting Requirements Validation</span>`;
+                        }
+                    } else {
+                        actions = '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
+                    }
+                }
+
+                // Build notes/reason display - show only ONE note based on priority
+                let notesDisplay = '';
+                
+                // Priority 1: Show cancellation reason if pending cancellation
+                if (a.cancellation_status === 'pending' && a.cancel_reason) {
+                    notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.35;background:#fff3cd;border:1px solid #ffc107;color:#856404;border-radius:10px;padding:8px 10px;font-size:.76rem;font-weight:600;">${a.cancel_reason}</div>`;
+                }
+                // Priority 2: Show reschedule info if pending reschedule
+                else if (a.reschedule_status === 'pending' && a.reschedule_request_reason) {
+                    notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.4;font-size:.78rem;font-weight:600;color:#0c4a6e;">`;
+                    notesDisplay += `${a.reschedule_request_date || ''} ${a.reschedule_request_time || ''}`;
+                    if (a.reschedule_request_reason) {
+                        notesDisplay += `<br><span style="margin-top:4px;display:inline-block;">${a.reschedule_request_reason}</span>`;
+                    }
+                    if (a.reschedule_admin_notes) {
+                        notesDisplay += `<br><span style="margin-top:4px;display:inline-block;font-size:.72rem;">Admin: ${a.reschedule_admin_notes}</span>`;
+                    }
+                    notesDisplay += `</div>`;
+                }
+                // Priority 3: Show cancel reason if cancelled
+                else if (a.status === 'cancelled' && a.cancel_reason) {
+                    notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.35;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:8px 10px;font-size:.76rem;font-weight:600;"><strong>Cancelled:</strong><br>${a.cancel_reason}</div>`;
+                }
+                // Priority 4: Show user notes (default)
+                else {
+                    const noteText = (a.user_notes || '').trim();
+                    if (noteText) {
+                        notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.35;background:#eef3ff;border:1px solid #c7d6f5;color:#1e3a8a;border-radius:10px;padding:6px 9px;font-size:.76rem;font-weight:600;" title="${noteText}">${noteText}</div>`;
+                    }
+                }
+                
+                const notesCell = notesDisplay || '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
+
+                // Always show admin reschedule button
+                actions += `<button onclick="showAdminRescheduleModal(${a.id}, '${encodeURIComponent(a.user_name)}')" style="background:#e0e7ff;color:#3730a3;border:1px solid #a5b4fc;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-left:6px;">Reschedule</button>`;
 
                 return `<tr>
                         <td style="font-weight:700;">${a.user_name}<br><small style="color:#94a3b8;font-size:.72rem;">${a.user_email}</small></td>
@@ -962,7 +1009,7 @@
                         <td>${a.interview_type}</td>
                         <td>${a.status_badge}</td>
                         <td>${notesCell}</td>
-                        <td><div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">${actions}<button onclick="archiveAppt(${a.id},'${encodeURIComponent(a.user_name)}')" style="background:#f8faff;color:#64748b;border:1.5px solid #e2e8f0;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">&#128193; Archive</button></div></td>
+                        <td><div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">${actions}<button onclick="archiveAppt(${a.id},'${encodeURIComponent(a.user_name)}')" style="background:#f8faff;color:#64748b;border:1.5px solid #e2e8f0;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">Archive</button></div></td>
                     </tr>`;
             }).join('');
 
@@ -1044,6 +1091,92 @@
                 loadAppointments();
             }).catch(() => alert('Error rejecting appointment.'))
                 .finally(() => hideLoading());
+        }
+
+        function approveReschedule(id) {
+            showLoading('Approving Reschedule', 'Updating appointment details...');
+            fetch(`/admin/appointments/${id}/reschedule/approve`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ admin_notes: '' })
+            }).then(r => r.json()).then(d => {
+                uiToast(d.message || 'Reschedule approved.');
+                loadAppointments();
+            }).catch(() => uiToast('Error approving reschedule.', 'Error'))
+                .finally(() => hideLoading());
+        }
+
+        function rejectReschedule(id) {
+            uiConfirm(
+                'Reject Reschedule Request',
+                'Are you sure you want to reject this reschedule request? Please provide a reason for the rejection.',
+                { okText: 'Continue', cancelText: 'Cancel' }
+            ).then(ok => {
+                if (!ok) return;
+                
+                // Show professional input modal
+                const reason = prompt('Reason for rejection:');
+                if (!reason || !reason.trim()) {
+                    return;
+                }
+                
+                showLoading('Rejecting Reschedule', 'Updating request status...');
+                fetch(`/admin/appointments/${id}/reschedule/reject`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ admin_notes: reason.trim() })
+                }).then(r => r.json()).then(d => {
+                    uiToast(d.message || 'Reschedule rejected.');
+                    loadAppointments();
+                }).catch(() => uiToast('Error rejecting reschedule.', 'Error'))
+                    .finally(() => hideLoading());
+            });
+        }
+
+        function approveCancellation(id) {
+            uiConfirm(
+                'Approve Cancellation?',
+                'Approve this cancellation request? The appointment will be cancelled.',
+                { okText: 'Approve', cancelText: 'Cancel' }
+            ).then(ok => {
+                if (!ok) return;
+                showLoading('Approving Cancellation', 'Cancelling appointment...');
+                fetch(`/admin/appointments/${id}/cancellation/approve`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({})
+                }).then(r => r.json()).then(d => {
+                    uiToast(d.message || 'Cancellation approved.');
+                    loadAppointments();
+                }).catch(() => uiToast('Error approving cancellation.', 'Error'))
+                    .finally(() => hideLoading());
+            });
+        }
+
+        function rejectCancellation(id) {
+            uiConfirm(
+                'Reject Cancellation Request',
+                'Reject this cancellation request? Please provide a reason.',
+                { okText: 'Continue', cancelText: 'Cancel' }
+            ).then(ok => {
+                if (!ok) return;
+                
+                const reason = prompt('Reason for rejection:');
+                if (!reason || !reason.trim()) {
+                    return;
+                }
+                
+                showLoading('Rejecting Cancellation', 'Updating request status...');
+                fetch(`/admin/appointments/${id}/cancellation/reject`, {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                    body: JSON.stringify({ admin_notes: reason.trim() })
+                }).then(r => r.json()).then(d => {
+                    uiToast(d.message || 'Cancellation rejected.');
+                    loadAppointments();
+                }).catch(() => uiToast('Error rejecting cancellation.', 'Error'))
+                    .finally(() => hideLoading());
+            });
         }
 
         // Load on page ready
@@ -1644,7 +1777,152 @@
                 if (backdrop && backdrop.style.display === 'flex') uiConfirmClose(false);
             }
         });
+
+        // Admin direct reschedule
+        function showAdminRescheduleModal(apptId, encodedName) {
+            document.getElementById('adminRescheduleApptId').value = apptId;
+            document.getElementById('adminRescheduleUserName').textContent = decodeURIComponent(encodedName);
+            document.getElementById('adminRescheduleDate').value = '';
+            document.getElementById('adminRescheduleTime').innerHTML = '<option value="">Select date first</option>';
+            document.getElementById('adminRescheduleTime').disabled = true;
+            document.getElementById('adminRescheduleNotes').value = '';
+            document.getElementById('adminRescheduleModal').style.display = 'flex';
+        }
+
+        function hideAdminRescheduleModal() {
+            document.getElementById('adminRescheduleModal').style.display = 'none';
+        }
+
+        function submitAdminReschedule() {
+            const apptId = document.getElementById('adminRescheduleApptId').value;
+            const date = document.getElementById('adminRescheduleDate').value;
+            const time = document.getElementById('adminRescheduleTime').value;
+            const notes = document.getElementById('adminRescheduleNotes').value;
+
+            if (!date || !time) {
+                alert('Please select both date and time.');
+                return;
+            }
+
+            showLoading('Rescheduling Appointment', 'Updating appointment details...');
+            fetch(`/admin/appointments/${apptId}/admin-reschedule`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ new_date: date, new_time: time, admin_notes: notes })
+            }).then(r => r.json()).then(d => {
+                if (d.success) {
+                    uiToast(d.message || 'Appointment rescheduled.');
+                    hideAdminRescheduleModal();
+                    loadAppointments();
+                } else {
+                    uiToast(d.message || 'Error rescheduling.', 'Error');
+                }
+            }).catch(() => uiToast('Error rescheduling appointment.', 'Error'))
+                .finally(() => hideLoading());
+        }
+
+        // Load slots for admin reschedule
+        document.addEventListener('DOMContentLoaded', function() {
+            const adminRescheduleDate = document.getElementById('adminRescheduleDate');
+            const adminRescheduleTime = document.getElementById('adminRescheduleTime');
+            
+            if (adminRescheduleDate) {
+                adminRescheduleDate.addEventListener('change', function() {
+                    const date = this.value;
+                    console.log('Admin reschedule date changed:', date);
+                    if (!date) return;
+
+                    const d = new Date(date);
+                    console.log('Day of week:', d.getDay());
+                    if (d.getDay() === 0 || d.getDay() === 6) {
+                        adminRescheduleTime.innerHTML = '<option value="">Weekdays only</option>';
+                        adminRescheduleTime.disabled = true;
+                        return;
+                    }
+
+                    adminRescheduleTime.disabled = true;
+                    adminRescheduleTime.innerHTML = '<option value="">Loading slots…</option>';
+
+                    const url = '/admin/appointments/slots?date=' + date;
+                    console.log('Fetching slots from:', url);
+
+                    fetch(url, {
+                        method: 'GET',
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        credentials: 'same-origin'
+                    })
+                    .then(response => {
+                        console.log('Response status:', response.status);
+                        console.log('Response ok:', response.ok);
+                        if (!response.ok) {
+                            return response.text().then(text => {
+                                console.error('Error response:', text);
+                                throw new Error('Network response was not ok: ' + response.status);
+                            });
+                        }
+                        return response.json();
+                    })
+                    .then(slots => {
+                        console.log('Slots received:', slots);
+                        if (!Array.isArray(slots)) {
+                            console.error('Invalid response format:', slots);
+                            throw new Error('Invalid response format');
+                        }
+                        adminRescheduleTime.innerHTML = '<option value="">Choose a time</option>';
+                        slots.forEach(s => {
+                            const opt = document.createElement('option');
+                            opt.value = s.time;
+                            if (s.full) {
+                                opt.textContent = s.label + '  — FULL';
+                                opt.disabled = true;
+                            } else {
+                                opt.textContent = s.label + '  (' + s.remaining + ' slot' + (s.remaining !== 1 ? 's' : '') + ' left)';
+                            }
+                            adminRescheduleTime.appendChild(opt);
+                        });
+                        adminRescheduleTime.disabled = false;
+                        console.log('Slots loaded successfully');
+                    })
+                    .catch(err => {
+                        console.error('Error loading slots:', err);
+                        adminRescheduleTime.innerHTML = '<option value="">Error loading slots</option>';
+                        adminRescheduleTime.disabled = true;
+                    });
+                });
+            }
+        });
     </script>
+
+    {{-- Admin Reschedule Modal --}}
+    <div id="adminRescheduleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;overflow-y:auto;">
+        <div style="background:white;border-radius:16px;max-width:600px;width:90%;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,.3);margin:20px;">
+            <h4 style="font-weight:800;color:#1e293b;margin-bottom:16px;"> Reschedule Appointment</h4>
+            <p style="font-size:.9rem;color:#64748b;margin-bottom:20px;">Reschedule appointment for <strong id="adminRescheduleUserName"></strong></p>
+            <input type="hidden" id="adminRescheduleApptId">
+            <div style="margin-bottom:16px;">
+                <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;"> New Date <span style="color:red">*</span></label>
+                <input type="date" id="adminRescheduleDate" required style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:10px;font-size:.88rem;">
+            </div>
+            <div style="margin-bottom:16px;">
+                <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;"> New Time <span style="color:red">*</span></label>
+                <select id="adminRescheduleTime" required disabled style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:10px;font-size:.88rem;">
+                    <option value="">Select date first</option>
+                </select>
+            </div>
+            <div style="margin-bottom:20px;">
+                <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;"> Admin Notes </label>
+                <textarea id="adminRescheduleNotes" rows="2" style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:12px;font-size:.88rem;font-family:inherit;" placeholder="Reason for rescheduling..."></textarea>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" onclick="hideAdminRescheduleModal()" style="background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">Cancel</button>
+                <button type="button" onclick="submitAdminReschedule()" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">Reschedule</button>
+            </div>
+        </div>
+    </div>
 
 </body>
 

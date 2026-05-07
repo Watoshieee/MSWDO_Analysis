@@ -228,6 +228,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <span class="menu-arrow">&rsaquo;</span>
                 </a>
             </div>
+            <div class="col-md-4">
+                <a href="{{ route('admin.csv.index') }}" class="menu-card">
+                    <div class="menu-text">
+                        <span class="menu-num">04 &mdash; CSV Data</span>
+                        <span class="menu-title">CSV Import/Export</span>
+                        <span class="menu-desc">Upload or export PSA statistical data for {{ $municipality->name }} via CSV files.</span>
+                    </div>
+                    <span class="menu-arrow">&rsaquo;</span>
+                </a>
+            </div>
         </div>
 
     </div>

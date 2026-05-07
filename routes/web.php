@@ -99,6 +99,7 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::get('/user/appointments/slots', [\App\Http\Controllers\AppointmentController::class, 'getAvailableSlots'])->name('user.appointments.slots');
     Route::post('/user/appointments', [\App\Http\Controllers\AppointmentController::class, 'store'])->name('user.appointments.store');
     Route::post('/user/appointments/{id}/cancel', [\App\Http\Controllers\AppointmentController::class, 'cancel'])->name('user.appointments.cancel');
+    Route::post('/user/appointments/{id}/reschedule', [\App\Http\Controllers\AppointmentController::class, 'requestReschedule'])->name('user.appointments.reschedule');
 
     // Chat routes
     Route::get('/chat/admins', [App\Http\Controllers\ChatController::class, 'getAdmins'])->name('chat.admins');
@@ -260,9 +261,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Admin Appointment routes (Solo Parent)
     Route::get('/appointments', [App\Http\Controllers\Admin\AppointmentController::class, 'index'])->name('admin.appointments.index');
+    Route::get('/appointments/slots', [\App\Http\Controllers\AppointmentController::class, 'getAvailableSlots'])->name('admin.appointments.slots');
     Route::post('/appointments/{id}/confirm', [App\Http\Controllers\Admin\AppointmentController::class, 'confirm'])->name('admin.appointments.confirm');
     Route::post('/appointments/{id}/validate', [App\Http\Controllers\Admin\AppointmentController::class, 'validate'])->name('admin.appointments.validate');
     Route::post('/appointments/{id}/reject', [App\Http\Controllers\Admin\AppointmentController::class, 'reject'])->name('admin.appointments.reject');
+    // Reschedule routes
+    Route::post('/appointments/{id}/reschedule/approve', [App\Http\Controllers\Admin\AppointmentController::class, 'approveReschedule'])->name('admin.appointments.reschedule.approve');
+    Route::post('/appointments/{id}/reschedule/reject', [App\Http\Controllers\Admin\AppointmentController::class, 'rejectReschedule'])->name('admin.appointments.reschedule.reject');
+    Route::post('/appointments/{id}/admin-reschedule', [App\Http\Controllers\Admin\AppointmentController::class, 'adminReschedule'])->name('admin.appointments.admin-reschedule');
+    // Cancellation routes
+    Route::post('/appointments/{id}/cancellation/approve', [App\Http\Controllers\Admin\AppointmentController::class, 'approveCancellation'])->name('admin.appointments.cancellation.approve');
+    Route::post('/appointments/{id}/cancellation/reject', [App\Http\Controllers\Admin\AppointmentController::class, 'rejectCancellation'])->name('admin.appointments.cancellation.reject');
     // Appointment archive
     Route::delete('/appointments/{id}/archive', [App\Http\Controllers\Admin\AppointmentController::class, 'archive'])->name('admin.appointments.archive');
     Route::patch('/appointments/{id}/restore', [App\Http\Controllers\Admin\AppointmentController::class, 'restore'])->name('admin.appointments.restore');
@@ -306,6 +315,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::delete('/yearly/{id}/force-delete', [App\Http\Controllers\Admin\DataManagementController::class, 'forceDeleteYearlySummary'])->name('yearly.forceDelete');
         }
     );
+
+    // CSV Import/Export Routes
+    Route::prefix('csv')->name('csv.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\CsvImportExportController::class, 'index'])->name('index');
+        Route::post('/import', [App\Http\Controllers\Admin\CsvImportExportController::class, 'import'])->name('import');
+        Route::post('/export', [App\Http\Controllers\Admin\CsvImportExportController::class, 'export'])->name('export');
+        Route::get('/template/{type}', [App\Http\Controllers\Admin\CsvImportExportController::class, 'downloadTemplate'])->name('template');
+        Route::get('/log/{id}', [App\Http\Controllers\Admin\CsvImportExportController::class, 'getImportLog'])->name('log');
+    });
 
     // Announcement Management Routes
     Route::prefix('announcements')->name('announcements.')->group(function () {
