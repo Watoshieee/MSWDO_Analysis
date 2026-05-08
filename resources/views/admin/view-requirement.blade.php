@@ -38,11 +38,190 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .info-card { background:white; border-radius:16px; border:1px solid var(--border-light); padding:24px 28px; box-shadow:0 2px 12px rgba(0,0,0,.04); margin-bottom:22px; }
         .info-card h5 { font-size:.8rem; font-weight:800; color:#94a3b8; text-transform:uppercase; letter-spacing:.08em; margin-bottom:14px; }
 
-        /* DOCUMENT CARDS */
-        .doc-card { background:white; border-radius:14px; border:1px solid var(--border-light); padding:20px 22px; margin-bottom:16px; box-shadow:0 2px 10px rgba(0,0,0,.04); border-left:4px solid #cbd5e1; transition:border-color .2s; }
-        .doc-card.approved { border-left-color:#28a745; background:#f6fff6; }
-        .doc-card.rejected { border-left-color:#dc3545; background:#fff6f6; }
-        .doc-card.pending  { border-left-color:#fdb913; }
+        /* REQUIREMENT REVIEW CARDS - Box Layout */
+        .req-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+            margin-top: 20px;
+        }
+        
+        .req-card {
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+            transition: all 0.2s ease;
+            border: 1px solid #e2e8f0;
+            padding: 14px;
+            display: flex;
+            gap: 14px;
+            align-items: flex-start;
+        }
+        
+        .req-card:hover {
+            box-shadow: 0 3px 10px rgba(44, 62, 143, 0.1);
+        }
+        
+        .req-card.pending { border-left: 4px solid #fdb913; }
+        .req-card.approved { border-left: 4px solid #28a745; }
+        .req-card.rejected { border-left: 4px solid #dc3545; }
+        
+        .req-card-image {
+            width: 110px;
+            min-width: 110px;
+            height: 110px;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 1px solid #e2e8f0;
+        }
+        
+        .req-card-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.3s ease;
+        }
+        
+        .req-card:hover .req-card-image img {
+            transform: scale(1.05);
+        }
+        
+        .req-file-icon {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            color: #94a3b8;
+        }
+        
+        .req-file-ext {
+            font-size: 0.65rem;
+            font-weight: 700;
+            color: #64748b;
+            background: white;
+            padding: 3px 8px;
+            border-radius: 10px;
+            box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+        }
+        
+        .req-card-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .req-title {
+            font-size: 0.95rem;
+            font-weight: 800;
+            color: #1e293b;
+            line-height: 1.3;
+            margin-bottom: 2px;
+        }
+        
+        .req-date {
+            font-size: 0.75rem;
+            color: #64748b;
+            font-weight: 500;
+        }
+        
+        .req-status-badge {
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.72rem;
+            font-weight: 700;
+            display: inline-block;
+            width: fit-content;
+            margin-top: 2px;
+        }
+        
+        .req-remarks {
+            background: #fff3cd;
+            border-left: 3px solid #fdb913;
+            padding: 8px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            color: #856404;
+            line-height: 1.4;
+        }
+        
+        .req-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 4px;
+        }
+        
+        .req-btn {
+            border: none;
+            border-radius: 8px;
+            padding: 8px 16px;
+            font-weight: 700;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+        
+        .req-btn-approve {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .req-btn-approve:hover {
+            background: #28a745;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(40, 167, 69, 0.3);
+        }
+        
+        .req-btn-decline {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .req-btn-decline:hover {
+            background: #dc3545;
+            color: white;
+            transform: translateY(-1px);
+            box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+        }
+        
+        .req-status-text {
+            font-size: 0.8rem;
+            font-weight: 700;
+            padding: 8px 16px;
+            border-radius: 6px;
+        }
+        
+        .req-text-approved {
+            color: #28a745;
+            background: #f6fff6;
+            border: 1px solid #d4edda;
+        }
+        
+        .req-text-rejected {
+            color: #856404;
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+        }
+        
+        @media (max-width: 768px) {
+            .req-card {
+                flex-direction: column;
+            }
+            .req-card-image {
+                width: 100%;
+                height: 150px;
+            }
+        }
 
         /* STATUS BADGES */
         .s-badge { padding:4px 13px; border-radius:20px; font-size:.74rem; font-weight:700; display:inline-block; }
@@ -301,114 +480,105 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
         @endif
 
-        {{-- Documents --}}
+        {{-- Documents - Card Grid Layout --}}
         @if($fileMonitoring)
         <div style="font-size:1rem;font-weight:800;color:var(--primary-blue);margin-bottom:14px;">
-             Submitted Documents ({{ $fileMonitoring->fileUploads->count() }})
+            📄 Submitted Documents ({{ $fileMonitoring->fileUploads->count() }})
         </div>
 
-        @forelse($fileMonitoring->fileUploads as $file)
-        @php $status = $file->status ?? 'pending'; @endphp
-        <div class="doc-card {{ $status }}">
-            <div class="row align-items-center g-3">
+        <div class="req-grid">
+            @forelse($fileMonitoring->fileUploads as $file)
+            @php 
+                $status = $file->status ?? 'pending';
+                $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION));
+                $fileUrl = route('admin.serve-file', $file->id);
+                $isImage = in_array($ext, ['jpg','jpeg','png','webp','gif']);
+            @endphp
+            
+            <div class="req-card {{ $status }}">
+                {{-- Image Preview --}}
+                <div class="req-card-image" onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')" style="cursor:pointer;">
+                    @if($isImage)
+                        <img src="{{ $fileUrl }}" 
+                             alt="{{ $file->requirement_name }}"
+                             onerror="this.parentElement.innerHTML='<div class=\"req-file-icon\"><svg width=\"48\" height=\"48\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z\"></path><polyline points=\"13 2 13 9 20 9\"></polyline></svg><div class=\"req-file-ext\">{{ strtoupper($ext) }}</div></div>';">
+                    @else
+                        <div class="req-file-icon">
+                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
+                                <polyline points="13 2 13 9 20 9"></polyline>
+                            </svg>
+                            <div class="req-file-ext">{{ strtoupper($ext) }}</div>
+                        </div>
+                    @endif
+                </div>
 
-                {{-- Document Name + Status --}}
-                <div class="col-md-4">
-                    <div style="font-weight:700;color:#1e293b;margin-bottom:6px;">{{ $file->requirement_name }}</div>
-                    <span class="s-badge s-{{ $status }}">
-                        {{ $status === 'approved' ? '✔ Approved' : ($status === 'rejected' ? '✖ Rejected' : ($status === 'in_review' ? '🔍 In Review' : '⏳ Pending')) }}
-                    </span>
+                {{-- Card Content --}}
+                <div class="req-card-content">
+                    {{-- Requirement Title --}}
+                    <div class="req-title">{{ $file->requirement_name }}</div>
+
+                    {{-- Date Submitted --}}
+                    <div class="req-date">
+                        📅 {{ $file->uploaded_at ? \Carbon\Carbon::parse($file->uploaded_at)->format('M d, Y h:i A') : 'N/A' }}
+                    </div>
+
+                    {{-- Status Badge --}}
+                    <div class="req-status-badge s-{{ $status }}">
+                        @if($status === 'approved')
+                            ✅ Approved
+                        @elseif($status === 'rejected')
+                            ❌ Rejected
+                        @else
+                            🟡 Pending
+                        @endif
+                    </div>
+
+                    {{-- Admin Remarks --}}
                     @if($file->admin_remarks)
-                        <div style="margin-top:8px;padding:8px 12px;background:#fff3cd;border-radius:8px;font-size:.78rem;color:#856404;border-left:3px solid #fdb913;">
+                        <div class="req-remarks">
                             <strong>Admin Note:</strong> {{ $file->admin_remarks }}
                         </div>
                     @endif
-                    @if($file->uploaded_at)
-                        <div style="font-size:.7rem;color:#94a3b8;margin-top:6px;">Uploaded {{ \Carbon\Carbon::parse($file->uploaded_at)->format('M d, Y h:i A') }}</div>
-                    @endif
-                </div>
 
-                {{-- File Preview --}}
-                <div class="col-md-4 text-center">
-                    @if($file->file_path)
-                        @php 
-                            $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION));
-                            // Use secure serve-file route to avoid 403 on Hostinger (symlink not needed)
-                            $fileUrl = route('admin.serve-file', $file->id);
-                        @endphp
-                        @if(in_array($ext, ['jpg','jpeg','png','webp','gif']))
-                            <img src="{{ $fileUrl }}"
-                                 class="file-thumb"
-                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')"
-                                 onerror="this.style.display='none'; this.nextElementSibling.style.display='block';"
-                                 title="Click to view full size">
-                            <div style="font-size:.82rem;line-height:1.2;margin-bottom:6px;display:none;cursor:pointer;color:#475569;font-weight:700;" 
-                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">Preview</div>
-                        @elseif($ext === 'pdf')
-                            <div style="font-size:.82rem;line-height:1.2;margin-bottom:6px;cursor:pointer;color:#475569;font-weight:700;" 
-                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">Preview PDF</div>
-                        @else
-                            <div style="font-size:.82rem;line-height:1.2;margin-bottom:6px;cursor:pointer;color:#475569;font-weight:700;" 
-                                 onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')">Preview File</div>
-                        @endif
-                        <div class="mt-2">
-                            <button onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')"
-                                    class="btn-view">
-                                View Document
-                            </button>
-                        </div>
-                    @else
-                        <div style="color:#94a3b8;font-size:.85rem;"> No file uploaded</div>
-                    @endif
-                </div>
+                    {{-- Action Buttons --}}
+                    <div class="req-actions">
+                        @if($status === 'pending')
+                            {{-- Approve Button --}}
+                            <form action="{{ route('admin.update-file-status', $file->id) }}" method="POST" style="flex:1;" class="js-loading-submit" data-loading-title="Approving Requirement" data-loading-sub="Updating document status and notifying the applicant...">
+                                @csrf
+                                <input type="hidden" name="status" value="approved">
+                                <button type="submit" class="req-btn req-btn-approve">
+                                    ✅ Approve
+                                </button>
+                            </form>
 
-                {{-- Actions (disabled when no docs) --}}
-                <div class="col-md-4 text-end">
-                    @if($file->file_path)
-                        @if($status === 'approved')
-                            <div style="color:#28a745;font-weight:700;font-size:.88rem;">
-                                Already Approved
-                            </div>
-                        @elseif($status === 'rejected')
-                            <div style="background:#fff5f5;border:1px solid #f8d7da;border-radius:10px;padding:12px 16px;">
-                                <div style="color:#dc3545;font-weight:700;font-size:.88rem;margin-bottom:6px;">
-                                    Document Rejected
-                                </div>
-                                <div style="font-size:.75rem;color:#721c24;line-height:1.5;">
-                                    Waiting for user to re-upload a corrected document.
-                                </div>
-                            </div>
-                        @else
-                            <div class="action-gap" style="justify-content:flex-end;">
-                                {{-- Approve form --}}
-                                <form action="{{ route('admin.update-file-status', $file->id) }}" method="POST" class="d-inline js-loading-submit" data-loading-title="Approving Requirement" data-loading-sub="Updating document status and notifying the applicant...">
-                                    @csrf
-                                    <input type="hidden" name="status" value="approved">
-                                    <input type="hidden" name="admin_remarks" value="">
-                                    <button type="submit" class="btn-action btn-approve">Approve</button>
-                                </form>
-
-                                {{-- Decline triggers modal --}}
-                                <button type="button" class="btn-action btn-decline"
+                            {{-- Decline Button --}}
+                            <button type="button" 
+                                    class="req-btn req-btn-decline"
                                     data-bs-toggle="modal"
                                     data-bs-target="#declineModal"
                                     data-file-id="{{ $file->id }}"
                                     data-file-name="{{ $file->requirement_name }}">
-                                    Decline
-                                </button>
-                            </div>
+                                ❌ Decline
+                            </button>
+                        @elseif($status === 'approved')
+                            <div class="req-status-text req-text-approved">✔ Already Approved</div>
+                        @elseif($status === 'rejected')
+                            <div class="req-status-text req-text-rejected">⏳ Waiting for Re-upload</div>
                         @endif
-                    @else
-                        <span style="font-size:.8rem;color:#94a3b8;">No file to review</span>
-                    @endif
+                    </div>
                 </div>
             </div>
+            @empty
+            @endforelse
         </div>
-        @empty
+        
+        @if($fileMonitoring->fileUploads->count() === 0)
             <div style="text-align:center;padding:40px;color:#94a3b8;">
                 <p style="font-size:.9rem;">No documents submitted yet for this application.</p>
             </div>
-        @endforelse
+        @endif
         @else
             <div style="text-align:center;padding:60px;color:#94a3b8;">
                 <p style="font-size:.9rem;">No documents have been uploaded yet for this application.</p>

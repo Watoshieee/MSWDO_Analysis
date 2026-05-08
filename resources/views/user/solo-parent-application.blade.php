@@ -192,12 +192,22 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     ⏰ <strong>Reminder:</strong> Your appointment is TOMORROW! Please be ready.
                 </div>
                 @endif
-                <form method="POST" action="{{ route('user.appointments.cancel', $appointment->id) }}" onsubmit="return confirm('Cancel this appointment?')">
+                <form method="POST" action="{{ route('user.appointments.cancel', $appointment->id) }}" id="cancelForm" style="display:inline-block;margin-right:10px;">
                     @csrf
-                    <button type="submit" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;cursor:pointer;">
-                        🚫 Cancel Appointment
+                    <input type="hidden" name="cancel_reason" id="cancelReasonInput">
+                    <button type="button" onclick="showCancelModal()" style="background:#fee2e2;color:#991b1b;border:1px solid:#fca5a5;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;cursor:pointer;">
+                        Cancel Appointment
                     </button>
                 </form>
+                @if($appointment->reschedule_status === 'pending')
+                    <span style="background:#e0f2fe;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;">
+                        Waiting for Approval
+                    </span>
+                @else
+                    <button type="button" onclick="showRescheduleModal()" style="background:#e0e7ff;color:#3730a3;border:1px solid #a5b4fc;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;cursor:pointer;">
+                        Request Reschedule
+                    </button>
+                @endif
             </div>
         </div>
         @else
@@ -726,6 +736,130 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="footer-strip">
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
+
+    {{-- Cancel Modal --}}
+    <div id="cancelModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
+        <div style="background:white;border-radius:16px;max-width:500px;width:90%;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,.3);">
+            <h4 style="font-weight:800;color:#1e293b;margin-bottom:16px;">🚫 Cancel Appointment</h4>
+            <p style="font-size:.9rem;color:#64748b;margin-bottom:20px;">Please provide a reason for cancelling your appointment:</p>
+            <textarea id="cancelReasonText" rows="4" style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px;font-size:.88rem;font-family:inherit;" placeholder="e.g., May emergency po sa family" required></textarea>
+            <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
+                <button onclick="hideCancelModal()" style="background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">
+Cancel</button>
+                <button onclick="submitCancel()" style="background:#dc3545;color:white;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">🚫 Confirm Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    {{-- Reschedule Modal --}}
+    <div id="rescheduleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;overflow-y:auto;">
+        <div style="background:white;border-radius:16px;max-width:600px;width:90%;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,.3);margin:20px;">
+            <h4 style="font-weight:800;color:#1e293b;margin-bottom:16px;">🔄 Request Reschedule</h4>
+            <form method="POST" action="{{ route('user.appointments.reschedule', $appointment->id ?? 0) }}" id="rescheduleForm">
+                @csrf
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📆 New Date <span style="color:red">*</span></label>
+                    <input type="date" name="reschedule_date" id="rescheduleDate" min="{{ $minDate ?? '' }}" max="{{ $maxDate ?? '' }}" required style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:10px;font-size:.88rem;">
+                </div>
+                <div style="margin-bottom:16px;">
+                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">⏰ New Time <span style="color:red">*</span></label>
+                    <select name="reschedule_time" id="rescheduleTime" required disabled style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:10px;font-size:.88rem;">
+                        <option value="">Select date first</option>
+                    </select>
+                    <div id="rescheduleSlotMsg" style="font-size:.75rem;color:#94a3b8;margin-top:4px;"></div>
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📝 Reason for Reschedule <span style="color:red">*</span></label>
+                    <textarea name="reschedule_reason" rows="3" required style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:12px;font-size:.88rem;font-family:inherit;" placeholder="e.g., May conflict sa schedule"></textarea>
+                </div>
+                <div style="display:flex;gap:10px;justify-content:flex-end;">
+                    <button type="button" onclick="hideRescheduleModal()" style="background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">Cancel</button>
+                    <button type="submit" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">🔄 Submit Request</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+    function showCancelModal() {
+        document.getElementById('cancelModal').style.display = 'flex';
+    }
+    function hideCancelModal() {
+        document.getElementById('cancelModal').style.display = 'none';
+    }
+    function submitCancel() {
+        const reason = document.getElementById('cancelReasonText').value.trim();
+        if (!reason) {
+            alert('Please provide a reason for cancellation.');
+            return;
+        }
+        document.getElementById('cancelReasonInput').value = reason;
+        document.getElementById('cancelForm').submit();
+    }
+
+    function showRescheduleModal() {
+        document.getElementById('rescheduleModal').style.display = 'flex';
+    }
+    function hideRescheduleModal() {
+        document.getElementById('rescheduleModal').style.display = 'none';
+    }
+
+    // Load slots for reschedule
+    const rescheduleDate = document.getElementById('rescheduleDate');
+    const rescheduleTime = document.getElementById('rescheduleTime');
+    const rescheduleSlotMsg = document.getElementById('rescheduleSlotMsg');
+    
+    if (rescheduleDate) {
+        rescheduleDate.addEventListener('change', function() {
+            const date = this.value;
+            if (!date) return;
+
+            const d = new Date(date + 'T00:00:00');
+            if (d.getDay() === 0 || d.getDay() === 6) {
+                rescheduleTime.innerHTML = '<option value="">Weekdays only</option>';
+                rescheduleTime.disabled = true;
+                rescheduleSlotMsg.textContent = '⚠️ Please select a weekday (Mon–Fri).';
+                rescheduleSlotMsg.style.color = '#dc3545';
+                return;
+            }
+
+            rescheduleTime.disabled = true;
+            rescheduleTime.innerHTML = '<option value="">Loading slots…</option>';
+            rescheduleSlotMsg.textContent = '';
+
+            fetch(`/user/appointments/slots?date=${date}`, {
+                headers: { 'X-Requested-With': 'XMLHttpRequest' }
+            })
+            .then(r => r.json())
+            .then(slots => {
+                rescheduleTime.innerHTML = '<option value="">Choose a time</option>';
+                let available = 0;
+                slots.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.time;
+                    if (s.full) {
+                        opt.textContent = `${s.label}  — FULL`;
+                        opt.disabled = true;
+                        opt.style.color = '#9ca3af';
+                    } else {
+                        opt.textContent = `${s.label}  (${s.remaining} slot${s.remaining !== 1 ? 's' : ''} left)`;
+                        available++;
+                    }
+                    rescheduleTime.appendChild(opt);
+                });
+                rescheduleTime.disabled = false;
+                rescheduleSlotMsg.textContent = available > 0
+                    ? `✅ ${available} time slot${available > 1 ? 's' : ''} available`
+                    : '⚠️ No slots available on this date. Please pick another day.';
+                rescheduleSlotMsg.style.color = available > 0 ? '#16a34a' : '#dc3545';
+            })
+            .catch(() => {
+                rescheduleTime.innerHTML = '<option value="">Error loading slots</option>';
+                rescheduleSlotMsg.textContent = 'Failed to load slots. Please try again.';
+            });
+        });
+    }
+    </script>
 
     @include('components.chat-modal')
     @include('components.chatbot-widget')
