@@ -611,10 +611,11 @@ public function myRequirements()
         $user = Auth::user();
         $isSoloParentBeneficiary = $this->hasSoloParentBeneficiaryStatus($user);
 
-        // Load user's active/recent appointment
+        // Load user's active/recent appointment (exclude cancelled and rejected)
         $appointment = Appointment::where('user_id', $user->id)
             ->where('program_type', 'Solo_Parent')
-            ->orderByRaw("FIELD(status,'pending','confirmed','rejected','cancelled')")
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->orderByRaw("FIELD(status,'pending','confirmed','validated')")
             ->orderBy('appointment_date', 'desc')
             ->first();
 
@@ -817,10 +818,11 @@ public function myRequirements()
                 $uploadedFiles = FileUpload::where('file_monitoring_id', $fm->id)->get();
         }
 
-        // Load AICS Medical appointment
+        // Load AICS Medical appointment (exclude cancelled and rejected)
         $appointment = Appointment::where('user_id', $user->id)
             ->where('program_type', 'AICS_Medical')
-            ->orderByRaw("FIELD(status,'pending','confirmed','rejected','cancelled')")
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->orderByRaw("FIELD(status,'pending','confirmed')")
             ->orderBy('appointment_date', 'desc')
             ->first();
         $minDate = Carbon::tomorrow()->format('Y-m-d');
@@ -856,10 +858,11 @@ public function myRequirements()
                 $uploadedFiles = FileUpload::where('file_monitoring_id', $fm->id)->get();
         }
 
-        // Load AICS Burial appointment
+        // Load AICS Burial appointment (exclude cancelled and rejected)
         $appointment = Appointment::where('user_id', $user->id)
             ->where('program_type', 'AICS_Burial')
-            ->orderByRaw("FIELD(status,'pending','confirmed','rejected','cancelled')")
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->orderByRaw("FIELD(status,'pending','confirmed')")
             ->orderBy('appointment_date', 'desc')
             ->first();
         $minDate = Carbon::tomorrow()->format('Y-m-d');
