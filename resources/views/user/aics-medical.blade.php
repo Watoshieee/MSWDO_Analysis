@@ -133,12 +133,29 @@
                 <strong>Admin Note:</strong> {{ $appointment->admin_notes }}
             </div>
             @endif
-            <form method="POST" action="{{ route('user.appointments.cancel', $appointment->id) }}" onsubmit="return confirm('Cancel this appointment?')">
+            @if($appointment->cancellation_status === 'pending')
+                <div style="background:#fff3cd;border-left:3px solid #ffc107;border-radius:8px;padding:10px 14px;font-size:.84rem;color:#856404;margin-bottom:14px;">
+                    <strong>⏳ Cancellation Pending:</strong> Your cancellation request is waiting for admin approval.
+                </div>
+            @endif
+            <form method="POST" action="{{ route('user.appointments.cancel', $appointment->id) }}" id="cancelForm" style="display:inline-block;margin-right:10px;">
                 @csrf
-                <button type="submit" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;cursor:pointer;">
-                    🚫 Cancel Appointment
-                </button>
+                <input type="hidden" name="cancel_reason" id="cancelReasonInput">
+                @if($appointment->cancellation_status !== 'pending')
+                    <button type="button" onclick="showCancelModal()" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;cursor:pointer;">
+                        🚫 Cancel Appointment
+                    </button>
+                @endif
             </form>
+            @if($appointment->reschedule_status === 'pending')
+                <span style="background:#e0f2fe;color:#0c4a6e;border:1px solid #7dd3fc;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;">
+                    🔄 Reschedule Pending Approval
+                </span>
+            @else
+                <button type="button" onclick="showRescheduleModal()" style="background:#e0e7ff;color:#3730a3;border:1px solid #a5b4fc;border-radius:8px;padding:8px 18px;font-size:.8rem;font-weight:700;cursor:pointer;">
+                    🔄 Request Reschedule
+                </button>
+            @endif
         </div>
     </div>
     @else
@@ -209,8 +226,8 @@
     </div>
     @endif
 
-    {{-- ═══ REQUIREMENTS — visible only once appointment is CONFIRMED ═══ --}}
-    @if(isset($appointment) && $appointment && $appointment->status === 'confirmed')
+    {{-- ═══ REQUIREMENTS — visible only once appointment is VALIDATED (Eligibility Assessment passed) ═══ --}}
+    @if(isset($appointment) && $appointment && $appointment->status === 'validated')
 
     <div class="note">
         &#128204; <strong>Note:</strong> Prepare <strong>2 copies</strong> of every requirement.
@@ -350,6 +367,8 @@
                 📅
             @elseif($appointment->status === 'pending')
                 ⏳
+            @elseif($appointment->status === 'confirmed')
+                🔍
             @else
                 ❌
             @endif
@@ -362,7 +381,13 @@
         @elseif($appointment->status === 'pending')
             <div style="font-weight:800;font-size:1.05rem;color:#1e293b;margin-bottom:8px;">Waiting for Appointment Confirmation</div>
             <div style="color:#64748b;font-size:.88rem;max-width:460px;margin:0 auto;">
-                Your appointment on <strong>{{ $appointment->formatted_date }}</strong> at <strong>{{ $appointment->formatted_time }}</strong> is pending admin confirmation. Requirements will be unlocked once confirmed.
+                Your appointment on <strong>{{ $appointment->formatted_date }}</strong> at <strong>{{ $appointment->formatted_time }}</strong> is pending admin confirmation.
+            </div>
+        @elseif($appointment->status === 'confirmed')
+            <div style="font-weight:800;font-size:1.05rem;color:#1e293b;margin-bottom:8px;">🔍 Appointment Confirmed — Awaiting Eligibility Assessment</div>
+            <div style="color:#64748b;font-size:.88rem;max-width:460px;margin:0 auto;">
+                Your appointment on <strong>{{ $appointment->formatted_date }}</strong> at <strong>{{ $appointment->formatted_time }}</strong> has been confirmed.
+                The MSWDO will conduct your eligibility assessment. Requirements will be unlocked once you pass.
             </div>
         @elseif($appointment->status === 'rejected')
             <div style="font-weight:800;font-size:1.05rem;color:#991b1b;margin-bottom:8px;">Appointment Rejected</div>

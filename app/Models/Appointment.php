@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
 
+/**
+ * @property Carbon $appointment_date
+ */
 class Appointment extends Model
 {
     use SoftDeletes;
@@ -86,7 +89,7 @@ class Appointment extends Model
     // ── Helpers ────────────────────────────────────────────────────────────────
     public function getFormattedDateAttribute(): string
     {
-        return $this->appointment_date->format('F d, Y (l)');
+        return Carbon::parse($this->appointment_date)->format('F d, Y (l)');
     }
 
     public function getFormattedTimeAttribute(): string

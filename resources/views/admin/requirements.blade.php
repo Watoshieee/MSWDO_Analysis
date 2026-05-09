@@ -738,11 +738,29 @@
                                                     @endif
 
                                                     @if($app->status === 'approved' && in_array($app->program_type, ['AICS_Medical', 'AICS_Burial'], true))
-                                                        @if($app->id_status === 'ready_for_pickup')
+                                                        @if($app->id_status === 'released')
                                                             <span class="btn-action"
-                                                                style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:800;">
+                                                                style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;font-weight:800;">
+                                                                ✅ Released
+                                                            </span>
+                                                        @elseif($app->id_status === 'ready_for_pickup')
+                                                            {{-- Grant ready — admin marks as officially released --}}
+                                                            <span class="btn-action"
+                                                                style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:700;margin-right:4px;">
                                                                 🎁 Claim Ready
                                                             </span>
+                                                            <form method="POST"
+                                                                action="{{ route('admin.applications.mark-released', $app->id) }}"
+                                                                style="display:inline;">
+                                                                @csrf
+                                                                <button type="submit" class="btn-action js-confirm-submit"
+                                                                    style="background:linear-gradient(135deg,#16a34a,#064e3b);color:white;"
+                                                                    data-confirm-title="Mark as Released?"
+                                                                    data-confirm-message="Confirm that the AICS grant has been physically released to the applicant? This will send a confirmation email."
+                                                                    data-confirm-ok="Mark Released">
+                                                                    ✅ Mark Released
+                                                                </button>
+                                                            </form>
                                                         @elseif($app->id_status === 'processing')
                                                             <form method="POST"
                                                                 action="{{ route('admin.applications.mark-id-ready', $app->id) }}"
@@ -953,7 +971,13 @@
                                 `;
                         }
                     } else if (a.status === 'validated') {
-                        if (a.id_status === 'ready_for_pickup') {
+                        const isAics = ['AICS_Medical','AICS_Burial'].includes(a.program_type);
+                        if (a.id_status === 'released') {
+                            actions = `<span style="background:#d1fae5;color:#065f46;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">✅ Released</span>`;
+                        } else if (a.id_status === 'ready_for_pickup' && isAics) {
+                            actions = `<span style="background:#dcfce7;color:#166534;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;margin-right:4px;">🎁 Claim Ready</span>
+                                       <button onclick="markReleased(${a.aics_app_id},'${encodeURIComponent(a.user_name)}')" style="background:linear-gradient(135deg,#16a34a,#064e3b);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">✅ Mark Released</button>`;
+                        } else if (a.id_status === 'ready_for_pickup') {
                             actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">ID Ready</span>`;
                         } else if (a.id_status === 'processing') {
                             actions = `<button onclick="markIdReady(${a.solo_parent_app_id},'${encodeURIComponent(a.user_name)}')" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">ID Ready</button>`;
@@ -1495,6 +1519,31 @@
                     _markReadyInFlight[appId] = false;
                     hideLoading();
                 }).catch(() => uiToast('Failed to mark ID as ready.', 'Error'));
+            });
+        }
+
+        const _markReleasedInFlight = {};
+        function markReleased(appId, encodedName) {
+            if (_markReleasedInFlight[appId]) return;
+            const name = decodeURIComponent(encodedName);
+            uiConfirm(
+                'Mark as Released?',
+                'Confirm that the AICS grant for \"' + name + '\" has been physically released to the applicant?\n\nThis will send a confirmation email to the user.',
+                { okText: 'Mark Released', cancelText: 'Cancel' }
+            ).then(ok => {
+                if (!ok) return;
+                _markReleasedInFlight[appId] = true;
+                showLoading('Marking as Released', 'Finalizing grant release and notifying user...');
+                fetch('/admin/applications/' + appId + '/mark-released', {
+                    method: 'POST',
+                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                }).then(r => r.json()).then(d => {
+                    uiToast(d.message || 'Grant marked as released.');
+                    loadAppointments();
+                }).finally(() => {
+                    _markReleasedInFlight[appId] = false;
+                    hideLoading();
+                }).catch(() => uiToast('Failed to mark as released.', 'Error'));
             });
         }
 

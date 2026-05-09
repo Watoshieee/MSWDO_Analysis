@@ -32,7 +32,7 @@ class AppointmentStatusMail extends Mailable
         };
 
         $subject = match($this->newStatus) {
-            'confirmed' => "[MSWDO] {$programLabel} appointment confirmed – " . $this->appointment->appointment_date->format('F d, Y'),
+            'confirmed' => "[MSWDO] {$programLabel} appointment confirmed – " . \Carbon\Carbon::parse($this->appointment->appointment_date)->format('F d, Y'),
             'rejected'  => "[MSWDO] {$programLabel} appointment rejected",
             'reminder'  => "[MSWDO] Reminder: {$programLabel} appointment tomorrow",
             default     => "[MSWDO] {$programLabel} appointment update",

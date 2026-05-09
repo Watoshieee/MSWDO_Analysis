@@ -258,6 +258,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/applications/{id}/validate-pwd', [App\Http\Controllers\AdminController::class, 'validatePwdApplication'])->name('applications.validate-pwd');
     Route::post('/applications/{id}/validate-aics', [App\Http\Controllers\AdminController::class, 'validateAicsApplication'])->name('applications.validate-aics');
     Route::post('/applications/{id}/mark-id-ready', [App\Http\Controllers\AdminController::class, 'markIdReady'])->name('applications.mark-id-ready');
+    Route::post('/applications/{id}/mark-claimed', [App\Http\Controllers\AdminController::class, 'markClaimed'])->name('applications.mark-claimed');
+    Route::post('/applications/{id}/mark-released', [App\Http\Controllers\AdminController::class, 'markReleased'])->name('applications.mark-released');
 
     // Admin Appointment routes (Solo Parent)
     Route::get('/appointments', [App\Http\Controllers\Admin\AppointmentController::class, 'index'])->name('admin.appointments.index');

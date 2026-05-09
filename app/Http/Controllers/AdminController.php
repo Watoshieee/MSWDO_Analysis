@@ -13,6 +13,8 @@ use App\Models\MunicipalityVision;
 use App\Mail\RequirementsReviewedMail;
 use App\Mail\SoloParentFilesUploadedMail;
 use App\Mail\SoloParentIdReadyMail;
+use App\Mail\SoloParentClaimedMail;
+use App\Mail\AicsGrantReleasedMail;
 use App\Mail\PwdValidatedMail;
 use App\Mail\PwdIdReadyMail;
 use App\Mail\AicsStatusMail;
@@ -79,6 +81,17 @@ class AdminController extends Controller
             : $adminNewUploads->count();
 
         $adminNotifCount = $newApplicationsCount + $newAppointmentsCount + $newUploadsCount;
+
+        // ── Unread admin-targeted notifications (reschedule/cancel requests etc) ──
+        try {
+            $adminUnreadCount = \DB::table('notifications')
+                ->where('user_id', $user->id)
+                ->where('is_read', false)
+                ->count();
+            $adminNotifCount += $adminUnreadCount;
+        } catch (\Exception $e) {
+            // If notifications table doesn't exist yet, ignore
+        }
 
         return compact('adminNewApplications', 'adminNewAppointments', 'adminNewUploads', 'adminNotifCount');
     }
@@ -445,6 +458,150 @@ class AdminController extends Controller
                 'success' => true,
                 'message' => $msg,
             ]);
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
+
+    // ── Mark Solo Parent ID as claimed ───────────────────────────────────────
+    public function markClaimed($id)
+    {
+        $admin = Auth::user();
+        $application = Application::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->where('program_type', 'Solo_Parent')
+            ->firstOrFail();
+
+        if ($application->id_status !== 'ready_for_pickup') {
+            $msg = 'Application must be in \'Ready for Pickup\' status before marking as claimed.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
+        // Atomic transition — prevent duplicate operations
+        $updated = Application::where('id', $application->id)
+            ->where('municipality', $admin->municipality)
+            ->where('id_status', 'ready_for_pickup')
+            ->update([
+                'id_status'    => 'claimed',
+                'completed_at' => now(),
+            ]);
+
+        if ($updated === 0) {
+            $msg = 'Already marked as claimed.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => true, 'message' => $msg]);
+            }
+            return redirect()->back()->with('success', $msg);
+        }
+
+        $application->refresh();
+        $user = \App\Models\User::find($application->user_id);
+
+        // ── Bell notification ────────────────────────────────────────────────
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $application->user_id,
+                'type'       => 'solo_parent',
+                'title'      => '✅ Solo Parent ID Claimed',
+                'body'       => 'Your Solo Parent ID has been successfully claimed and recorded. Congratulations!',
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('markClaimed notification insert failed: ' . $e->getMessage());
+        }
+
+        // ── Email user ───────────────────────────────────────────────────────
+        if ($user && $user->email) {
+            try {
+                Mail::to($user->email)->send(new SoloParentClaimedMail($application, $user));
+            } catch (\Exception $e) {
+                Log::error('SoloParentClaimedMail failed: ' . $e->getMessage());
+            }
+        }
+
+        $msg = 'Solo Parent ID marked as claimed. Confirmation email sent to ' . ($user?->email ?? 'user') . '.';
+
+        if (request()->expectsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => $msg]);
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
+
+    // ── Mark AICS grant as released (final step) ──────────────────────────────
+    public function markReleased($id)
+    {
+        $admin = Auth::user();
+        $application = Application::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->whereIn('program_type', ['AICS_Medical', 'AICS_Burial'])
+            ->firstOrFail();
+
+        if ($application->id_status !== 'ready_for_pickup') {
+            $msg = 'Application must be in \'Ready for Pickup\' status before marking as released.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
+        // Atomic transition
+        $updated = Application::where('id', $application->id)
+            ->where('municipality', $admin->municipality)
+            ->where('id_status', 'ready_for_pickup')
+            ->update([
+                'id_status'    => 'released',
+                'completed_at' => now(),
+            ]);
+
+        if ($updated === 0) {
+            $msg = 'Already marked as released.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => true, 'message' => $msg]);
+            }
+            return redirect()->back()->with('success', $msg);
+        }
+
+        $application->refresh();
+        $user = \App\Models\User::find($application->user_id);
+
+        $programLabel = $application->program_type === 'AICS_Burial'
+            ? 'AICS Burial Assistance'
+            : 'AICS Medical Assistance';
+
+        // ── Bell notification ──────────────────────────────────────────────────
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $application->user_id,
+                'type'       => 'aics',
+                'title'      => '✅ ' . $programLabel . ' Grant Released',
+                'body'       => 'Your ' . $programLabel . ' grant has been successfully released. Thank you for availing MSWDO assistance.',
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('markReleased notification insert failed: ' . $e->getMessage());
+        }
+
+        // ── Email user ─────────────────────────────────────────────────────────
+        if ($user && $user->email) {
+            try {
+                Mail::to($user->email)->send(new AicsGrantReleasedMail($application, $user));
+            } catch (\Exception $e) {
+                Log::error('AicsGrantReleasedMail failed: ' . $e->getMessage());
+            }
+        }
+
+        $msg = $programLabel . ' grant marked as released. Confirmation email sent to ' . ($user?->email ?? 'user') . '.';
+
+        if (request()->expectsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => $msg]);
         }
 
         return redirect()->back()->with('success', $msg);
