@@ -113,16 +113,31 @@ class AppointmentController extends Controller
             'user_notes'       => $request->user_notes,
         ]);
 
-        // ── Notify all admins of this municipality by email ──────────────────
+        // ── Notify all admins of this municipality by email + bell ──────────────
         $admins = User::where('role', 'admin')
             ->where('municipality', $user->municipality)
             ->get();
 
         foreach ($admins as $admin) {
+            // Email
             try {
                 Mail::to($admin->email)->send(new NewAppointmentAdminMail($appt, $user));
             } catch (\Exception $e) {
                 Log::error('Admin appointment notification email failed: ' . $e->getMessage());
+            }
+            // Bell
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $admin->id,
+                    'type'       => 'solo_parent',
+                    'title'      => '📅 New Appointment Booked',
+                    'body'       => $user->full_name . ' has booked a ' . str_replace('_', ' ', $appt->program_type) . ' appointment on ' . Carbon::parse($appt->appointment_date)->format('F d, Y') . '.',
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Admin appointment bell notification failed: ' . $e->getMessage());
             }
         }
 
@@ -151,13 +166,28 @@ class AppointmentController extends Controller
             'cancellation_requested_at'  => now(),
         ]);
 
-        // Notify admins
+        // Notify admins (email + bell)
         $admins = User::where('role', 'admin')->where('municipality', $user->municipality)->get();
         foreach ($admins as $admin) {
+            // Email
             try {
                 Mail::to($admin->email)->send(new \App\Mail\AppointmentCancelledMail($appt, $user, $request->cancel_reason));
             } catch (\Exception $e) {
                 Log::error('Appointment cancellation request email failed: ' . $e->getMessage());
+            }
+            // Bell
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $admin->id,
+                    'type'       => 'solo_parent',
+                    'title'      => '🚫 Cancellation Request Received',
+                    'body'       => $user->full_name . ' has requested to cancel their ' . str_replace('_', ' ', $appt->program_type) . ' appointment.',
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Admin cancellation bell notification failed: ' . $e->getMessage());
             }
         }
 
@@ -199,13 +229,28 @@ class AppointmentController extends Controller
             'reschedule_requested_at' => now(),
         ]);
 
-        // Notify admins
+        // Notify admins (email + bell)
         $admins = User::where('role', 'admin')->where('municipality', $user->municipality)->get();
         foreach ($admins as $admin) {
+            // Email
             try {
                 Mail::to($admin->email)->send(new \App\Mail\RescheduleRequestMail($appt, $user));
             } catch (\Exception $e) {
                 Log::error('Reschedule request email failed: ' . $e->getMessage());
+            }
+            // Bell
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $admin->id,
+                    'type'       => 'solo_parent',
+                    'title'      => '🔄 Reschedule Request Received',
+                    'body'       => $user->full_name . ' has requested to reschedule their ' . str_replace('_', ' ', $appt->program_type) . ' appointment to ' . Carbon::parse($request->reschedule_date)->format('F d, Y') . '.',
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Admin reschedule bell notification failed: ' . $e->getMessage());
             }
         }
 

@@ -226,8 +226,8 @@
     </div>
     @endif
 
-    {{-- ═══ REQUIREMENTS — visible only once appointment is CONFIRMED ═══ --}}
-    @if(isset($appointment) && $appointment && $appointment->status === 'confirmed')
+    {{-- ═══ REQUIREMENTS — visible only once appointment is VALIDATED (Eligibility Assessment passed) ═══ --}}
+    @if(isset($appointment) && $appointment && $appointment->status === 'validated')
 
     <div class="note">
         &#128204; <strong>Note:</strong> Prepare <strong>2 copies</strong> of every requirement.
@@ -367,6 +367,8 @@
                 📅
             @elseif($appointment->status === 'pending')
                 ⏳
+            @elseif($appointment->status === 'confirmed')
+                🔍
             @else
                 ❌
             @endif
@@ -379,7 +381,13 @@
         @elseif($appointment->status === 'pending')
             <div style="font-weight:800;font-size:1.05rem;color:#1e293b;margin-bottom:8px;">Waiting for Appointment Confirmation</div>
             <div style="color:#64748b;font-size:.88rem;max-width:460px;margin:0 auto;">
-                Your appointment on <strong>{{ $appointment->formatted_date }}</strong> at <strong>{{ $appointment->formatted_time }}</strong> is pending admin confirmation. Requirements will be unlocked once confirmed.
+                Your appointment on <strong>{{ $appointment->formatted_date }}</strong> at <strong>{{ $appointment->formatted_time }}</strong> is pending admin confirmation.
+            </div>
+        @elseif($appointment->status === 'confirmed')
+            <div style="font-weight:800;font-size:1.05rem;color:#1e293b;margin-bottom:8px;">🔍 Appointment Confirmed — Awaiting Eligibility Assessment</div>
+            <div style="color:#64748b;font-size:.88rem;max-width:460px;margin:0 auto;">
+                Your appointment on <strong>{{ $appointment->formatted_date }}</strong> at <strong>{{ $appointment->formatted_time }}</strong> has been confirmed.
+                The MSWDO will conduct your eligibility assessment. Requirements will be unlocked once you pass.
             </div>
         @elseif($appointment->status === 'rejected')
             <div style="font-weight:800;font-size:1.05rem;color:#991b1b;margin-bottom:8px;">Appointment Rejected</div>

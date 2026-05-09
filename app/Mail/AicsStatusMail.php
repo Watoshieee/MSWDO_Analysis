@@ -31,11 +31,13 @@ class AicsStatusMail extends Mailable
             default        => 'AICS Assistance',
         };
 
-        $subject = $this->stage === 'ready_for_pickup'
-            ? "🎁 {$programLabel} grant is ready for claiming"
-            : "✅ {$programLabel} requirements validated";
+        $subject = match ($this->stage) {
+            'ready_for_pickup' => "🎁 {$programLabel} grant is ready for claiming",
+            'validated'        => "🏆 You are Eligible for {$programLabel}",
+            default            => "✅ {$programLabel} status update",
+        };
 
         return $this->subject($subject)
-            ->view('emails.aics-status');
+                    ->view('emails.aics-status');
     }
 }

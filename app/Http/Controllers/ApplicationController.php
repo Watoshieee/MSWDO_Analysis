@@ -720,14 +720,14 @@ public function uploadBatch(Request $request)
             // Notify admin about new uploads
             try {
                 $fileMonitoring->load('application.user', 'fileUploads');
-                $admins = \App\Models\User::where('municipality', $fileMonitoring->municipality)
+                $admins = User::where('municipality', $fileMonitoring->municipality)
                     ->where('role', 'admin')->get();
                 foreach ($admins as $adminUser) {
-                    \Illuminate\Support\Facades\Mail::to($adminUser->email)
+                    Mail::to($adminUser->email)
                         ->send(new \App\Mail\SoloParentFilesUploadedMail($fileMonitoring));
                 }
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::error('Admin upload notification failed: ' . $e->getMessage());
+                Log::error('Admin upload notification failed: ' . $e->getMessage());
             }
 
             return redirect()->back()->with('success', "✅ {$uploadedCount} file(s) uploaded successfully.");
@@ -775,14 +775,14 @@ public function uploadBatch(Request $request)
         // Notify admin about new upload
         try {
             $fileMonitoring->load('application.user', 'fileUploads');
-            $admins = \App\Models\User::where('municipality', $fileMonitoring->municipality)
+            $admins = User::where('municipality', $fileMonitoring->municipality)
                 ->where('role', 'admin')->get();
             foreach ($admins as $adminUser) {
-                \Illuminate\Support\Facades\Mail::to($adminUser->email)
+                Mail::to($adminUser->email)
                     ->send(new \App\Mail\SoloParentFilesUploadedMail($fileMonitoring));
             }
         } catch (\Exception $e) {
-            \Illuminate\Support\Facades\Log::error('Admin upload notification failed: ' . $e->getMessage());
+            Log::error('Admin upload notification failed: ' . $e->getMessage());
         }
 
         return redirect()->back()->with('success', '✅ File uploaded successfully.');

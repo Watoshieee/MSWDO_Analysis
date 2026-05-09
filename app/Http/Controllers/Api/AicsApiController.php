@@ -21,7 +21,7 @@ class AicsApiController extends Controller
      * GET available time slots for a specific date (scoped by municipality).
      * GET /mobile-api/aics/{type}/slots?date=YYYY-MM-DD
      */
-    public function getAvailableSlots(Request $request): \Illuminate\Http\JsonResponse
+    public function getAvailableSlots(Request $request): JsonResponse
     {
         $request->validate(['date' => 'required|date']);
 
@@ -50,7 +50,7 @@ class AicsApiController extends Controller
     /**
      * Booking helper (mirrors existing web appointment booking validation).
      */
-    private function bookAppointment(Request $request, string $programType): \Illuminate\Http\JsonResponse
+    private function bookAppointment(Request $request, string $programType): JsonResponse
     {
         $user = Auth::user();
 
@@ -140,12 +140,12 @@ class AicsApiController extends Controller
         ], 201);
     }
 
-    public function bookMedicalAppointment(Request $request): \Illuminate\Http\JsonResponse
+    public function bookMedicalAppointment(Request $request): JsonResponse
     {
         return $this->bookAppointment($request, 'AICS_Medical');
     }
 
-    public function bookBurialAppointment(Request $request): \Illuminate\Http\JsonResponse
+    public function bookBurialAppointment(Request $request): JsonResponse
     {
         return $this->bookAppointment($request, 'AICS_Burial');
     }
@@ -154,7 +154,7 @@ class AicsApiController extends Controller
      * GET the user's most relevant appointment (mirrors web ordering).
      * GET /mobile-api/aics/{type}/appointment
      */
-    private function getAppointment(string $programType): \Illuminate\Http\JsonResponse
+    private function getAppointment(string $programType): JsonResponse
     {
         $user = Auth::user();
 
@@ -169,12 +169,12 @@ class AicsApiController extends Controller
         ]);
     }
 
-    public function getMedicalAppointment(): \Illuminate\Http\JsonResponse
+    public function getMedicalAppointment(): JsonResponse
     {
         return $this->getAppointment('AICS_Medical');
     }
 
-    public function getBurialAppointment(): \Illuminate\Http\JsonResponse
+    public function getBurialAppointment(): JsonResponse
     {
         return $this->getAppointment('AICS_Burial');
     }
@@ -208,7 +208,7 @@ class AicsApiController extends Controller
      * Cancel appointment (pending/confirmed only).
      * DELETE /mobile-api/aics/{type}/appointments/{id}
      */
-    private function cancelAppointment(string $programType, int $id): \Illuminate\Http\JsonResponse
+    private function cancelAppointment(string $programType, int $id): JsonResponse
     {
         $user = Auth::user();
         $appt = Appointment::where('id', $id)
@@ -229,12 +229,12 @@ class AicsApiController extends Controller
         return response()->json(['message' => 'Appointment cancelled successfully.'], 200);
     }
 
-    public function cancelMedicalAppointment(int $id): \Illuminate\Http\JsonResponse
+    public function cancelMedicalAppointment(int $id): JsonResponse
     {
         return $this->cancelAppointment('AICS_Medical', $id);
     }
 
-    public function cancelBurialAppointment(int $id): \Illuminate\Http\JsonResponse
+    public function cancelBurialAppointment(int $id): JsonResponse
     {
         return $this->cancelAppointment('AICS_Burial', $id);
     }
