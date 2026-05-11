@@ -65,6 +65,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/appointments', [SoloParentApiController::class, 'bookAppointment']);
         Route::get('/appointments', [SoloParentApiController::class, 'getAppointments']);
         Route::delete('/appointments/{id}', [SoloParentApiController::class, 'cancelAppointment']);
+        // New: cancel with reason (leaves request for admin review)
+        Route::post('/appointments/{id}/cancel', [SoloParentApiController::class, 'requestCancellation']);
+        // New: reschedule request
+        Route::post('/appointments/{id}/reschedule', [SoloParentApiController::class, 'requestReschedule']);
         Route::get('/application', [SoloParentApiController::class, 'getApplication']);
         Route::post('/requirements/upload', [SoloParentApiController::class, 'uploadRequirement']);
         Route::get('/notifications', [SoloParentApiController::class, 'getNotifications']);

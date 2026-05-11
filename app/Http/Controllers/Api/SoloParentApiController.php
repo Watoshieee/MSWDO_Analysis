@@ -443,4 +443,178 @@ class SoloParentApiController extends Controller
             Log::error('Push notification failed: ' . $e->getMessage());
         }
     }
+
+    // ── Request cancellation with reason ────────────────────────────────────
+    /**
+     * POST /mobile-api/solo-parent/appointments/{id}/cancel
+     * Body: { "cancel_reason": "string" }
+     */
+    public function requestCancellation(Request $request, $id)
+    {
+        $user = $request->user();
+        $appt = Appointment::where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$appt) {
+            return response()->json(['success' => false, 'message' => 'Appointment not found.'], 404);
+        }
+
+        if (!in_array($appt->status, ['pending', 'confirmed'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This appointment cannot be cancelled.',
+            ], 422);
+        }
+
+        $request->validate(['cancel_reason' => 'required|string|max:500']);
+
+        $appt->update([
+            'cancel_reason'             => $request->cancel_reason,
+            'cancellation_status'       => 'pending',
+            'cancellation_requested_at' => now(),
+        ]);
+
+        // Notify admins via notifications table (picked up by push_dispatcher cron)
+        $admins = User::where('role', 'admin')
+            ->where('municipality', $user->municipality)
+            ->get();
+
+        foreach ($admins as $admin) {
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $admin->id,
+                    'type'       => 'solo_parent',
+                    'title'      => '🚫 Cancellation Request',
+                    'body'       => $user->full_name . ' has requested to cancel their ' .
+                                   str_replace('_', ' ', $appt->program_type) . ' appointment.',
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Admin cancellation notification failed: ' . $e->getMessage());
+            }
+        }
+
+        // Also notify the user that their cancellation request was received
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $user->id,
+                'type'       => 'solo_parent',
+                'title'      => 'Cancellation Request Submitted',
+                'body'       => 'Your cancellation request for your ' .
+                               str_replace('_', ' ', $appt->program_type) .
+                               ' appointment has been submitted. Awaiting admin approval.',
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('User cancellation notification failed: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cancellation request submitted. Awaiting admin approval.',
+        ]);
+    }
+
+    // ── Request reschedule ──────────────────────────────────────────────────
+    /**
+     * POST /mobile-api/solo-parent/appointments/{id}/reschedule
+     * Body: { "reschedule_date": "YYYY-MM-DD", "reschedule_time": "HH:MM", "reschedule_reason": "string" }
+     */
+    public function requestReschedule(Request $request, $id)
+    {
+        $user = $request->user();
+        $appt = Appointment::where('id', $id)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$appt) {
+            return response()->json(['success' => false, 'message' => 'Appointment not found.'], 404);
+        }
+
+        if (!in_array($appt->status, ['pending', 'confirmed'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This appointment cannot be rescheduled.',
+            ], 422);
+        }
+
+        $request->validate([
+            'reschedule_date'   => 'required|date|after:today',
+            'reschedule_time'   => 'required|in:' . implode(',', Appointment::availableSlots()),
+            'reschedule_reason' => 'required|string|max:500',
+        ]);
+
+        $date = $request->reschedule_date;
+        if (Carbon::parse($date)->isWeekend()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Reschedule date must be a weekday (Mon–Fri).',
+            ], 422);
+        }
+
+        if (Appointment::slotCount($date, $request->reschedule_time, $user->municipality) >= Appointment::maxPerSlot()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'That time slot is already full. Please choose another.',
+            ], 422);
+        }
+
+        $appt->update([
+            'reschedule_date'         => $date,
+            'reschedule_time'         => $request->reschedule_time,
+            'reschedule_reason'       => $request->reschedule_reason,
+            'reschedule_status'       => 'pending',
+            'reschedule_requested_at' => now(),
+        ]);
+
+        // Notify admins
+        $admins = User::where('role', 'admin')
+            ->where('municipality', $user->municipality)
+            ->get();
+
+        foreach ($admins as $admin) {
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $admin->id,
+                    'type'       => 'solo_parent',
+                    'title'      => '🔄 Reschedule Request',
+                    'body'       => $user->full_name . ' wants to reschedule their ' .
+                                   str_replace('_', ' ', $appt->program_type) . ' appointment to ' .
+                                   Carbon::parse($date)->format('F d, Y') . '.',
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Admin reschedule notification failed: ' . $e->getMessage());
+            }
+        }
+
+        // Notify the user
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $user->id,
+                'type'       => 'solo_parent',
+                'title'      => 'Reschedule Request Submitted',
+                'body'       => 'Your reschedule request to ' . Carbon::parse($date)->format('F d, Y') .
+                               ' has been submitted. Awaiting admin approval.',
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('User reschedule notification failed: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Reschedule request submitted. Awaiting admin approval.',
+        ]);
+    }
 }
+
