@@ -1074,7 +1074,26 @@ public function myRequirements()
     public function profile()
     {
         $user = Auth::user();
-        return view('user.profile', compact('user'));
+        extract($this->notificationData($user));
+
+        return view('user.profile', compact(
+            'user',
+            'documentNotifications',
+            'rejectedApplications',
+            'newAnnouncements',
+            'notificationCount',
+            'validatedAppointment',
+            'idReadyApplication',
+            'confirmedAicsAppointments',
+            'newAicsConfirmedCount',
+            'newAnnouncementCount',
+            'pwdValidatedApplication',
+            'pwdIdReadyApplication',
+            'approvedSoloParentAppointment',
+            'soloParentRequirementsValidated',
+            'aicsValidatedApplications',
+            'aicsReadyApplications'
+        ));
     }
 
     /**

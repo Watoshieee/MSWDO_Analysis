@@ -716,8 +716,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
             <!-- Tab Pills -->
             <div class="tab-pills">
-                <button class="tab-pill active" onclick="switchTab('records', this)">?? Records</button>
-                <button class="tab-pill" onclick="switchTab('analysis', this)">?? Analysis</button>
+                <button class="tab-pill active" onclick="switchTab('records', this)"> Records</button>
+                <button class="tab-pill" onclick="switchTab('analysis', this)">Analysis</button>
             </div>
 
             <!-- ===================== RECORDS TAB ===================== -->
@@ -727,7 +727,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <!-- Action Buttons Row -->
                 <div class="d-flex justify-content-end gap-2 mb-3">
                     <button class="btn-archive-view" data-bs-toggle="modal" data-bs-target="#archivedProgModal">
-                        📂 Archived (<span id="archivedProgCount">...</span>)
+                         Archived (<span id="archivedProgCount">...</span>)
                     </button>
                     <a href="#" class="btn-add" data-bs-toggle="modal" data-bs-target="#createModal">+ Add Data</a>
                 </div>
@@ -767,7 +767,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <table class="premium-table">
                             <thead>
                                 <tr>
-                                    <th>ID</th>
                                     <th>Municipality</th>
                                     <th>Program</th>
                                     <th>Beneficiaries</th>
@@ -778,7 +777,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <tbody>
                                 @forelse($programs as $program)
                                     <tr>
-                                        <td style="color:#94a3b8;font-size:.8rem;">#{{ $program->id }}</td>
                                         <td style="font-weight:600;">{{ $program->municipality }}</td>
                                         <td><span
                                                 class="program-pill">{{ str_replace('_', ' ', $program->program_type) }}</span>
@@ -923,7 +921,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 @endforeach
                             </select>
                             <div id="createDuplicateWarning" style="display:none;margin-top:8px;font-size:0.8rem;color:#92400e;background:#fef3c7;border-radius:8px;padding:8px 12px;">
-                                ⚠️ Some options are already recorded for this municipality &amp; year. They are disabled below.
+                                 Some options are already recorded for this municipality &amp; year. They are disabled below.
                             </div>
                         </div>
                         <div class="mb-3">
@@ -947,7 +945,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">?? Archived Program Records</h5>
+                    <h5 class="modal-title">Archived Program Records</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -1048,14 +1046,22 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         // Archive program (AJAX)
         function archiveProgram(id, type, muni) {
-            if (!confirm(`Archive "${type}" record for ${muni}?\n\nThis can be restored later from the archive.`)) return;
-            fetch('/superadmin/data/programs/' + id + '/archive', {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
-            })
-                .then(r => r.json())
-                .then(d => { if (d.success) location.reload(); else alert(d.message || 'Error.'); })
-                .catch(() => alert('Network error. Please try again.'));
+            showConfirmDialog({
+                title: 'Archive Program Record',
+                message: `<strong>${type}</strong> for <strong>${muni}</strong>`,
+                description: 'This record will be moved to the archive. You can restore it later if needed.',
+                confirmText: 'Archive',
+                confirmColor: 'warning',
+                onConfirm: () => {
+                    fetch('/superadmin/data/programs/' + id + '/archive', {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
+                    })
+                        .then(r => r.json())
+                        .then(d => { if (d.success) location.reload(); else showNotification(d.message || 'Error.', 'error'); })
+                        .catch(() => showNotification('Network error. Please try again.', 'error'));
+                }
+            });
         }
 
         // Load archived programs
@@ -1090,25 +1096,42 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         }
 
         function restoreProgram(id) {
-            if (!confirm('Restore this program record? It will appear in the active list again.')) return;
-            fetch('/superadmin/data/programs/' + id + '/restore', {
-                method: 'POST',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
-            })
-                .then(r => r.json())
-                .then(d => { if (d.success) { loadArchivedPrograms(); location.reload(); } else alert(d.message); })
-                .catch(() => alert('Network error.'));
+            showConfirmDialog({
+                title: 'Restore Program Record',
+                message: 'Restore this program record?',
+                description: 'It will appear in the active list again.',
+                confirmText: 'Restore',
+                confirmColor: 'success',
+                onConfirm: () => {
+                    fetch('/superadmin/data/programs/' + id + '/restore', {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
+                    })
+                        .then(r => r.json())
+                        .then(d => { if (d.success) { loadArchivedPrograms(); location.reload(); } else showNotification(d.message, 'error'); })
+                        .catch(() => showNotification('Network error.', 'error'));
+                }
+            });
         }
 
         function permDeleteProgram(id) {
-            if (!confirm('?? PERMANENTLY DELETE this program record?\n\nThis CANNOT be undone!')) return;
-            fetch('/superadmin/data/programs/' + id + '/force-delete', {
-                method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
-            })
-                .then(r => r.json())
-                .then(d => { if (d.success) loadArchivedPrograms(); else alert(d.message); })
-                .catch(() => alert('Network error.'));
+            showConfirmDialog({
+                title: 'Permanently Delete Record',
+                message: 'Delete this program record permanently?',
+                description: 'This action cannot be undone. The record will be deleted forever.',
+                confirmText: 'Delete Forever',
+                confirmColor: 'danger',
+                isDangerous: true,
+                onConfirm: () => {
+                    fetch('/superadmin/data/programs/' + id + '/force-delete', {
+                        method: 'DELETE',
+                        headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
+                    })
+                        .then(r => r.json())
+                        .then(d => { if (d.success) loadArchivedPrograms(); else showNotification(d.message, 'error'); })
+                        .catch(() => showNotification('Network error.', 'error'));
+                }
+            });
         }
 
         // Load archived count on page load
@@ -1253,16 +1276,95 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         }
 
         function deleteProgram(id) {
-            if (!confirm('Delete this program record?')) return;
-            const form = document.createElement('form');
-            form.method = 'POST';
-            form.action = '/superadmin/data/programs/' + id;
-            const csrf = document.createElement('input'); csrf.name = '_token'; csrf.value = '{{ csrf_token() }}';
-            const method = document.createElement('input'); method.name = '_method'; method.value = 'DELETE';
-            form.appendChild(csrf); form.appendChild(method);
-            document.body.appendChild(form); form.submit();
+            showConfirmDialog({
+                title: 'Delete Program Record',
+                message: 'Delete this program record?',
+                description: 'The record will be moved to the archive and can be restored.',
+                confirmText: 'Delete',
+                confirmColor: 'danger',
+                onConfirm: () => {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = '/superadmin/data/programs/' + id;
+                    const csrf = document.createElement('input'); csrf.name = '_token'; csrf.value = '{{ csrf_token() }}';
+                    const method = document.createElement('input'); method.name = '_method'; method.value = 'DELETE';
+                    form.appendChild(csrf); form.appendChild(method);
+                    document.body.appendChild(form); form.submit();
+                }
+            });
+        }
+
+        // Professional Confirmation Dialog
+        function showConfirmDialog(options) {
+            const modal = document.getElementById('confirmModal');
+            const title = document.getElementById('confirmTitle');
+            const message = document.getElementById('confirmMessage');
+            const description = document.getElementById('confirmDescription');
+            const confirmBtn = document.getElementById('confirmBtn');
+            
+            title.textContent = options.title || 'Confirm';
+            message.innerHTML = options.message || '';
+            description.innerHTML = options.description || '';
+            
+            confirmBtn.textContent = options.confirmText || 'Confirm';
+            confirmBtn.className = 'btn btn-lg';
+            
+            const colorClasses = {
+                'success': 'btn-success',
+                'warning': 'btn-warning text-dark',
+                'danger': 'btn-danger',
+                'primary': 'btn-primary'
+            };
+            confirmBtn.className = 'btn btn-lg ' + (colorClasses[options.confirmColor] || 'btn-primary');
+            
+            confirmBtn.onclick = () => {
+                bootstrap.Modal.getInstance(modal).hide();
+                if (options.onConfirm) options.onConfirm();
+            };
+            
+            new bootstrap.Modal(modal).show();
+        }
+
+        // Simple Notification
+        function showNotification(message, type = 'info') {
+            const alertHTML = `
+                <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:${type === 'error' ? 'linear-gradient(135deg,#C41E24,#8B0000)' : 'linear-gradient(135deg,#2C3E8F,#1A2A5C)'};color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:16px 20px;box-shadow:0 10px 28px rgba(0,0,0,.35);font-size:.85rem;font-weight:600;animation:slideIn 0.3s ease-out;cursor:pointer;" onclick="this.remove()">
+                    ${message}
+                </div>
+            `;
+            const div = document.createElement('div');
+            div.innerHTML = alertHTML;
+            document.body.appendChild(div.firstElementChild);
+            setTimeout(() => { div.firstElementChild?.remove(); }, 4000);
         }
     </script>
+
+    <!-- Confirmation Modal -->
+    <div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
+                <div class="modal-header" style="background: var(--primary-gradient); color: white; padding: 28px 32px; border: none;">
+                    <h5 class="modal-title" id="confirmTitle" style="font-weight: 700; font-size: 1.3rem; margin: 0;">Confirm Action</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding: 32px;">
+                    <div id="confirmMessage" style="font-size: 1.1rem; font-weight: 600; color: #1e293b; margin-bottom: 12px;"></div>
+                    <div id="confirmDescription" style="font-size: 0.95rem; color: #64748b; line-height: 1.6;"></div>
+                </div>
+                <div class="modal-footer" style="padding: 20px 32px; background: #f8fafc; border-top: 1px solid #e2e8f0; gap: 12px;">
+                    <button type="button" class="btn btn-lg btn-light" data-bs-dismiss="modal" style="border-radius: 8px; font-weight: 600; padding: 10px 28px;">Cancel</button>
+                    <button type="button" id="confirmBtn" class="btn btn-lg btn-primary" style="border-radius: 8px; font-weight: 600; padding: 10px 28px;">Confirm</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        @keyframes slideIn {
+            from { transform: translateX(450px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+    </style>
 </body>
 
 </html>

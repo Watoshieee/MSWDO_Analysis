@@ -115,9 +115,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
                         <button class="lang-btn" data-lang="tl" onclick="setLang('tl')">TL</button>
                     </div>
-                    <a href="{{ route('user.dashboard') }}" class="back-btn">
-                        ? <span data-en="Back to Dashboard" data-tl="Bumalik sa Dashboard">Back to Dashboard</span>
-                    </a>
+                    <a href="{{ route('user.dashboard') }}" class="back-btn">&#8592; Back to Programs</a>
                 </div>
             </div>
         </div>
@@ -153,7 +151,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     {{-- APPLICATION GUIDE --}}
                     <div class="section-card">
                             <div class="section-header">
-                            <div class="sec-icon">ID</div>
+                           
                             <div>
                                 <h4 data-en="How to Avail a PWD ID" data-tl="Paano Makuha ang PWD ID">How to Avail a PWD ID</h4>
                                 <p data-en="Follow these 5 steps to complete your application" data-tl="Sundin ang 5 hakbang na ito para makumpleto ang iyong aplikasyon">Follow these 5 steps to complete your application</p>
@@ -227,7 +225,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     {{-- VERIFICATION GUIDE --}}
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">OK</div>
+                        
                             <div>
                                 <h4 data-en="How to Verify PWD Membership" data-tl="Paano Mag-verify ng PWD Membership">How to Verify PWD Membership</h4>
                                 <p data-en="Check your PWD registration status in 3 simple steps" data-tl="Suriin ang iyong katayuan ng PWD registration sa 3 simpleng hakbang">Check your PWD registration status in 3 simple steps</p>
@@ -374,9 +372,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <h4>Submit Your PWD Requirements Online</h4>
                             <p style="margin:0;opacity:.85;font-size:.85rem;">Upload digital copies of your documents. The admin will review each one.</p>
                         </div>
-                        @if(isset($application) && $application)
-                        <span style="background:rgba(255,255,255,.15);color:white;border-radius:20px;padding:3px 14px;font-size:.78rem;font-weight:700;">App #{{ $application->id }}</span>
-                        @endif
                     </div>
                     @if(isset($application) && $application)
                     @php
@@ -408,10 +403,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             default     => '',
                         };
                         $badge = match($fStatus) {
-                            'approved'  => '<span style="background:#d4edda;color:#155724;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">? Approved</span>',
-                            'rejected'  => '<span style="background:#f8d7da;color:#721c24;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">? Rejected</span>',
+                            'approved'  => '<span style="background:#d4edda;color:#155724;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">Approved</span>',
+                            'rejected'  => '<span style="background:#f8d7da;color:#721c24;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">Rejected</span>',
                             'in_review' => '<span style="background:#d1ecf1;color:#0c5460;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">In Review</span>',
-                            'pending'   => '<span style="background:#FFF3D6;color:#856404;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">? Pending</span>',
+                            'pending'   => '<span style="background:#FFF3D6;color:#856404;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">Pending</span>',
                             default     => '<span style="background:#e9ecef;color:#6c757d;border-radius:20px;padding:2px 9px;font-size:.72rem;font-weight:700;">Not uploaded</span>',
                         };
                     @endphp
@@ -430,10 +425,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     @php $ext = strtolower(pathinfo($uf->file_path, PATHINFO_EXTENSION)); @endphp
                                     @if(in_array($ext,['jpg','jpeg','png','webp']))
                                     <img src="{{ asset('storage/'.$uf->file_path) }}"
-                                         onclick="window.open('{{ asset('storage/'.$uf->file_path) }}')"
+                                         onclick="openFileModal('{{ asset('storage/'.$uf->file_path) }}', '{{ addslashes($reqName) }}', '{{ $ext }}')"
                                          class="pwd-thumb">
                                     @endif
-                                    <a href="{{ asset('storage/'.$uf->file_path) }}" target="_blank" class="pwd-view">View</a>
+                                    <button onclick="openFileModal('{{ asset('storage/'.$uf->file_path) }}', '{{ addslashes($reqName) }}', '{{ $ext }}')" class="pwd-view">View</button>
                                     @endif
                                 </div>
                             </div>
@@ -491,7 +486,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             {{-- PWD VERIFIER fullwidth CTA --}}
             <div class="section-card">
                 <div class="section-header">
-                    <div class="sec-icon">VER</div>
+                   
                     <div>
                         <h4 data-en="PWD Membership Verifier" data-tl="PWD Membership Verifier">PWD Membership Verifier</h4>
                         <p data-en="Open the official DOH verification portal to check any PWD registration status" data-tl="Buksan ang opisyal na DOH verification portal para suriin ang anumang katayuan ng PWD registration">Open the official DOH verification portal to check any PWD registration status</p>
@@ -554,7 +549,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             {{-- Bottom back to dashboard --}}
             <div class="text-center py-3">
                 <a href="{{ route('user.dashboard') }}" class="back-btn d-inline-flex" style="font-size:.92rem;padding:12px 28px;">
-                    ? <span data-en="Return to Dashboard" data-tl="Bumalik sa Dashboard">Return to Dashboard</span>
+                    <span data-en="Return to Dashboard" data-tl="Bumalik sa Dashboard">Return to Dashboard</span>
                 </a>
             </div>
 
@@ -565,10 +560,79 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
+    <!-- FILE VIEWER MODAL -->
+    <div class="modal fade" id="fileViewerModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="border-radius:20px;overflow:hidden;border:none;">
+                <div class="modal-header" style="background:var(--primary-gradient);color:white;border:none;padding:20px 24px;">
+                    <h5 class="modal-title" id="fileViewerModalLabel" style="font-weight:800;font-size:1.2rem;">Document Viewer</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding:24px;">
+                    <div id="fileViewerContainer" style="text-align:center;background:var(--bg-light);border-radius:12px;padding:24px;min-height:400px;display:flex;align-items:center;justify-content:center;">
+                        <div class="text-muted">Loading document...</div>
+                    </div>
+                    <div id="fileInfo" style="margin-top:20px;padding-top:16px;border-top:1px solid var(--border-light);">
+                        <!-- File info will be loaded here -->
+                    </div>
+                </div>
+                <div class="modal-footer" style="background:var(--bg-light);border:none;padding:16px 24px;">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal" style="border-radius:8px;font-weight:600;">Close</button>
+                    <a href="#" id="downloadFileBtn" class="btn btn-primary" download style="background:var(--primary-blue);border:none;border-radius:8px;font-weight:600;">Download File</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
     @include('components.chat-modal')
     @include('components.chatbot-widget')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        /* -- MODAL VIEWER -- */
+        let fileViewerModal;
+        document.addEventListener('DOMContentLoaded', function() {
+            fileViewerModal = new bootstrap.Modal(document.getElementById('fileViewerModal'));
+        });
+
+        function openFileModal(fileUrl, fileName, fileExt) {
+            const container = document.getElementById('fileViewerContainer');
+            const fileInfo = document.getElementById('fileInfo');
+            const downloadBtn = document.getElementById('downloadFileBtn');
+            
+            downloadBtn.href = fileUrl;
+            downloadBtn.setAttribute('download', fileName + '.' + fileExt);
+            
+            const ext = fileExt.toLowerCase();
+            
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) {
+                container.innerHTML = `<img src="${fileUrl}" alt="${fileName}" style="max-width:100%;max-height:60vh;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,0.1);">`;
+            } else if (ext === 'pdf') {
+                container.innerHTML = `<iframe src="${fileUrl}" title="${fileName}" style="width:100%;height:60vh;border:none;border-radius:8px;"></iframe>`;
+            } else {
+                container.innerHTML = `
+                    <div class="text-center">
+                        <div style="font-size:4rem;margin-bottom:20px;">📄</div>
+                        <h6>File cannot be previewed</h6>
+                        <p class="text-muted">This file type (${ext.toUpperCase()}) cannot be displayed in the browser.</p>
+                        <a href="${fileUrl}" class="btn btn-primary" download>Download File</a>
+                    </div>
+                `;
+            }
+            
+            fileInfo.innerHTML = `
+                <p><strong>Document Name:</strong> <span style="font-weight:700;color:var(--primary-blue);word-break:break-all;">${escapeHtml(fileName)}</span></p>
+                <p><strong>File Type:</strong> ${ext.toUpperCase()}</p>
+            `;
+            
+            fileViewerModal.show();
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
         /* -- FILE SIZE VALIDATION -- */
         function validateFileSize(input) {
             const file = input.files[0];

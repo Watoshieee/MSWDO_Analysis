@@ -55,16 +55,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         /* -- STAT CARDS -- */
         .stat-card { background: var(--bg-white); border-radius: 18px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); height: 100%; position: relative; overflow: hidden; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary-gradient); }
-        .stat-card.yellow::before { background: var(--secondary-gradient); }
-        .stat-card.green::before  { background: linear-gradient(135deg,#28a745,#1e7e34); }
-        .stat-card.red::before    { background: linear-gradient(135deg,#C41E24,#8B0000); }
         .stat-card .inner { padding: 24px 26px; }
         .stat-pill  { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 20px; padding: 3px 10px; display: inline-block; margin-bottom: 8px; background: #E5EEFF; color: var(--primary-blue); }
-        .stat-pill.y { background: #FFF3D6; color: #856404; }
-        .stat-pill.g { background: #d4edda; color: #155724; }
-        .stat-pill.r { background: #fce8e8; color: #C41E24; }
         .stat-label { font-size: 0.78rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-        .stat-value { font-size: 2.6rem; font-weight: 900; line-height: 1; }
+        .stat-value { font-size: 2.6rem; font-weight: 900; line-height: 1; color: var(--primary-blue); }
         .stat-sub   { font-size: 0.75rem; color: #94a3b8; margin-top: 6px; font-weight: 500; }
 
         /* -- PANEL CARDS -- */
@@ -144,8 +138,17 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
                 </ul>
-                <div class="d-flex">
+                <div class="d-flex align-items-center gap-3">
                     @auth
+                    <button type="button" class="btn" onclick="openAdminNotifModal()"
+                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
+                        title="Application Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($adminNotifCount) && $adminNotifCount > 0)
+                            <span class="admin-bell-badge"
+                                style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $adminNotifCount > 9 ? '9+' : $adminNotifCount }}</span>
+                        @endif
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -191,37 +194,37 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="inner">
                         <span class="stat-pill">Total</span>
                         <div class="stat-label">Applications</div>
-                        <div class="stat-value" style="color:var(--primary-blue);">{{ number_format($totalApplications) }}</div>
+                        <div class="stat-value">{{ number_format($totalApplications) }}</div>
                         <div class="stat-sub">All time in {{ $municipality->name }}</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card yellow">
+                <div class="stat-card">
                     <div class="inner">
-                        <span class="stat-pill y">Pending</span>
+                        <span class="stat-pill">Pending</span>
                         <div class="stat-label">For Review</div>
-                        <div class="stat-value" style="color:#856404;">{{ number_format($pendingApplications) }}</div>
+                        <div class="stat-value">{{ number_format($pendingApplications) }}</div>
                         <div class="stat-sub">Awaiting action</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card green">
+                <div class="stat-card">
                     <div class="inner">
-                        <span class="stat-pill g">Approved</span>
+                        <span class="stat-pill">Approved</span>
                         <div class="stat-label">Completed</div>
-                        <div class="stat-value" style="color:#155724;">{{ number_format($approvedApplications) }}</div>
+                        <div class="stat-value">{{ number_format($approvedApplications) }}</div>
                         <div class="stat-sub">Successfully processed</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card red">
+                <div class="stat-card">
                     <div class="inner">
-                        <span class="stat-pill r">Rejected</span>
+                        <span class="stat-pill">Rejected</span>
                         <div class="stat-label">Declined</div>
-                        <div class="stat-value" style="color:#C41E24;">{{ number_format($rejectedApplications) }}</div>
+                        <div class="stat-value">{{ number_format($rejectedApplications) }}</div>
                         <div class="stat-sub">Did not qualify</div>
                     </div>
                 </div>
@@ -405,9 +408,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
+    @include('components.admin-notification-modal')
     @include('components.admin-settings-modal')
     @include('components.admin-chat-modal')
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // -- SHARED DEFAULTS --

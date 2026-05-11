@@ -105,12 +105,7 @@
     <div style="flex:1;">
         <div class="container mt-4">
 
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show mb-3" style="border-radius:12px;border:none;background:#d4edda;color:#155724;">
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            @endif
+            @include('components.admin-notification')
 
             {{-- PAGE HERO --}}
             <div class="page-hero mb-4">

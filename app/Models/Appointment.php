@@ -106,21 +106,21 @@ class Appointment extends Model
     {
         // If cancellation is pending, show "Cancellation Pending" badge
         if ($this->cancellation_status === 'pending') {
-            return '<span style="background:#fff3cd;color:#856404;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">⚠️ Cancellation Pending</span>';
+            return '<span style="background:#fff3cd;color:#856404;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Cancellation Pending</span>';
         }
         
         // If admin rescheduled (admin_notes present and status is confirmed/approved), show "Rescheduled by Admin"
         if (in_array($this->status, ['confirmed', 'approved']) && !empty($this->admin_notes)) {
-            return '<span style="background:#e0f2fe;color:#0c4a6e;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">🔄 Rescheduled by Admin</span>';
+            return '<span style="background:#e0f2fe;color:#0c4a6e;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Rescheduled by Admin</span>';
         }
         
         return match($this->status) {
-            'confirmed'  => '<span style="background:#d4edda;color:#155724;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">✅ Confirmed</span>',
-            'approved'   => '<span style="background:#d4edda;color:#155724;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">✅ Confirmed</span>',
-            'validated'  => '<span style="background:#cce5ff;color:#004085;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">🏆 Validated</span>',
-            'rejected'   => '<span style="background:#f8d7da;color:#721c24;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">❌ Rejected</span>',
-            'cancelled'  => '<span style="background:#e9ecef;color:#6c757d;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">🚫 Cancelled</span>',
-            default      => '<span style="background:#FFF3D6;color:#856404;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">⏳ Pending</span>',
+            'confirmed'  => '<span style="background:#d4edda;color:#155724;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Confirmed</span>',
+            'approved'   => '<span style="background:#d4edda;color:#155724;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Confirmed</span>',
+            'validated'  => '<span style="background:#cce5ff;color:#004085;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Validated</span>',
+            'rejected'   => '<span style="background:#f8d7da;color:#721c24;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Rejected</span>',
+            'cancelled'  => '<span style="background:#e9ecef;color:#6c757d;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Cancelled</span>',
+            default      => '<span style="background:#FFF3D6;color:#856404;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Pending</span>',
         };
     }
 }

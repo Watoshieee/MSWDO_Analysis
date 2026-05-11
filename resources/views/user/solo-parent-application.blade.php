@@ -101,9 +101,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
                         <button class="lang-btn"        data-lang="tl" onclick="setLang('tl')">TL</button>
                     </div>
-                    <a href="{{ route('user.dashboard') }}" class="back-btn">
-                         <span data-en="Back to Dashboard" data-tl="Bumalik sa Dashboard">Back to Dashboard</span>
-                    </a>
+                    <a href="{{ route('user.dashboard') }}" class="back-btn">&#8592; Back to Programs</a>
                 </div>
             </div>
         </div>
@@ -135,22 +133,102 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             $topNotice = session('appt_success') ?: session('appt_error');
         @endphp
         @if($topNotice)
-        <div style="position:fixed;top:{{ !empty($isSoloParentBeneficiary) ? '150px' : '84px' }};right:18px;z-index:1081;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
-            {{ $topNotice }}
+        <div id="flashNotification" style="position:fixed;top:{{ !empty($isSoloParentBeneficiary) ? '150px' : '84px' }};right:18px;z-index:1081;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;animation:slideInRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55);overflow:hidden;">
+            <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <span>{{ $topNotice }}</span>
+                <button onclick="closeFlashNotification()" style="background:transparent;border:none;color:rgba(255,255,255,.7);font-size:1.2rem;cursor:pointer;padding:0;line-height:1;transition:color .2s;" title="Close">&times;</button>
+            </div>
+            <div id="flashTimer" style="position:absolute;bottom:0;left:0;height:3px;background:rgba(253,185,19,.9);width:100%;"></div>
         </div>
+        <style>
+            @keyframes slideInRight {
+                from { transform: translateX(400px); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOutRight {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(400px); opacity: 0; }
+            }
+            @keyframes flashTimerShrink {
+                from { width: 100%; }
+                to { width: 0%; }
+            }
+            @keyframes timerShrink {
+                from { width: 100%; }
+                to { width: 0%; }
+            }
+        </style>
+        <script>
+            setTimeout(function() {
+                const timer = document.getElementById('flashTimer');
+                if (timer) {
+                    timer.style.animation = 'flashTimerShrink 5s linear forwards';
+                }
+            }, 100);
+            
+            setTimeout(function() {
+                const notif = document.getElementById('flashNotification');
+                if (notif) {
+                    notif.style.animation = 'slideOutRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55) forwards';
+                    setTimeout(() => notif.remove(), 400);
+                }
+            }, 5000);
+            
+            function closeFlashNotification() {
+                const notif = document.getElementById('flashNotification');
+                if (notif) {
+                    notif.style.animation = 'slideOutRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55) forwards';
+                    setTimeout(() => notif.remove(), 400);
+                }
+            }
+        </script>
         @endif
 
         @if(!empty($isSoloParentBeneficiary))
-        <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
-            Solo Parent beneficiary na ang account na ito. Re-application is disabled.
+        <div id="beneficiaryNotification" style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;animation:slideInRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55);overflow:hidden;">
+            <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                <span>Solo Parent beneficiary na ang account na ito. Re-application is disabled.</span>
+                <button onclick="closeBeneficiaryNotification()" style="background:transparent;border:none;color:rgba(255,255,255,.7);font-size:1.2rem;cursor:pointer;padding:0;line-height:1;transition:color .2s;" title="Close">&times;</button>
+            </div>
+            <div id="beneficiaryTimer" style="position:absolute;bottom:0;left:0;height:3px;background:rgba(253,185,19,.9);width:100%;"></div>
         </div>
+        <style>
+            @keyframes beneficiaryTimerShrink {
+                from { width: 100%; }
+                to { width: 0%; }
+            }
+        </style>
+        <script>
+            setTimeout(function() {
+                const timer = document.getElementById('beneficiaryTimer');
+                if (timer) {
+                    timer.style.animation = 'beneficiaryTimerShrink 5s linear forwards';
+                }
+            }, 100);
+            
+            setTimeout(function() {
+                const notif = document.getElementById('beneficiaryNotification');
+                if (notif) {
+                    notif.style.animation = 'slideOutRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55) forwards';
+                    setTimeout(() => notif.remove(), 400);
+                }
+            }, 5000);
+            
+            function closeBeneficiaryNotification() {
+                const notif = document.getElementById('beneficiaryNotification');
+                if (notif) {
+                    notif.style.animation = 'slideOutRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55) forwards';
+                    setTimeout(() => notif.remove(), 400);
+                }
+            }
+        </script>
         @endif
 
         {{-- ── ACTIVE APPOINTMENT CARD ── --}}
         @if(!empty($isSoloParentBeneficiary))
         <div style="background:white;border-radius:20px;border:1px solid #c7d6f5;box-shadow:0 4px 20px rgba(44,62,143,.12);overflow:hidden;margin-bottom:24px;">
             <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:18px 26px;display:flex;align-items:center;gap:14px;">
-                <div style="width:42px;height:42px;background:rgba(255,255,255,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">🪪</div>
+
                 <div style="font-weight:800;font-size:1rem;">Solo Parent Beneficiary</div>
             </div>
             <div style="padding:20px 26px;color:#1e293b;font-size:.9rem;line-height:1.7;">
@@ -160,7 +238,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         @elseif($appointment && in_array($appointment->status, ['pending','confirmed']))
         <div style="background:white;border-radius:20px;border:1px solid #c7d2fe;box-shadow:0 4px 20px rgba(44,62,143,.08);overflow:hidden;margin-bottom:24px;">
             <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:18px 26px;display:flex;align-items:center;gap:14px;">
-                <div style="width:42px;height:42px;background:rgba(253,185,19,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📅</div>
                 <div style="flex:1;">
                     <div style="font-weight:800;font-size:1rem;">Your Appointment</div>
                     <div style="opacity:.8;font-size:.8rem;margin-top:2px;">Solo Parent ID Application</div>
@@ -189,7 +266,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 @endif
                 @if($appointment->appointment_date->isTomorrow())
                 <div style="background:linear-gradient(135deg,#fff3cd,#ffeeba);border:2px solid #FDB913;border-radius:10px;padding:12px 16px;font-size:.86rem;color:#856404;font-weight:700;margin-bottom:14px;">
-                    ⏰ <strong>Reminder:</strong> Your appointment is TOMORROW! Please be ready.
+                    <strong>Reminder:</strong> Your appointment is TOMORROW! Please be ready.
                 </div>
                 @endif
                 <form method="POST" action="{{ route('user.appointments.cancel', $appointment->id) }}" id="cancelForm" style="display:inline-block;margin-right:10px;">
@@ -223,7 +300,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             </div>
             <div style="padding:24px 26px;">
                 <div style="background:#eef2ff;border-radius:10px;padding:12px 16px;font-size:.83rem;color:#4338ca;font-weight:600;margin-bottom:20px;">
-                    ℹ️ Office hours: <strong>Monday – Friday, 8:00 AM – 5:00 PM</strong> (lunch 12:00–1:00 PM excluded) &bull; Max 5 appointments per time slot.
+                    Office hours: <strong>Monday – Friday, 8:00 AM – 5:00 PM</strong> (lunch 12:00–1:00 PM excluded) &bull; Max 5 appointments per time slot.
                 </div>
 
                 <form id="apptForm" method="POST" action="{{ route('user.appointments.store') }}">
@@ -231,7 +308,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="row g-3">
                         {{-- Date picker --}}
                         <div class="col-md-4">
-                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📆 Select Date <span style="color:red">*</span></label>
+                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Select Date <span style="color:red">*</span></label>
                             <input type="date" id="apptDate" name="appointment_date"
                                    min="{{ $minDate }}" max="{{ $maxDate }}"
                                    class="form-control"
@@ -242,7 +319,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                         {{-- Time slot --}}
                         <div class="col-md-4">
-                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">⏰ Select Time Slot <span style="color:red">*</span></label>
+                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Select Time Slot <span style="color:red">*</span></label>
                             <select id="apptTime" name="appointment_time" class="form-control"
                                     style="border-radius:10px;border:1.5px solid #c7d2fe;font-weight:600;font-size:.88rem;" required disabled>
                                 <option value="">Select date first</option>
@@ -252,17 +329,17 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                         {{-- Interview type --}}
                         <div class="col-md-4">
-                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">💬 Interview Type <span style="color:red">*</span></label>
+                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Interview Type <span style="color:red">*</span></label>
                             <select name="interview_type" class="form-control"
                                     style="border-radius:10px;border:1.5px solid #c7d2fe;font-weight:600;font-size:.88rem;" required>
-                                <option value="face_to_face">🏢 Face-to-Face</option>
-                                <option value="online">📱 Online (via phone call)</option>
+                                <option value="face_to_face">Face-to-Face</option>
+                                <option value="online">Online (via phone call)</option>
                             </select>
                         </div>
 
                         {{-- Notes --}}
                         <div class="col-12">
-                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📝 Additional Notes (optional)</label>
+                            <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Additional Notes (optional)</label>
                             <textarea name="user_notes" rows="2" class="form-control"
                                       placeholder="Any concerns or special requests…"
                                       style="border-radius:10px;border:1.5px solid #c7d2fe;font-size:.85rem;"
@@ -273,7 +350,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="col-12">
                             <button type="submit" id="apptSubmitBtn"
                                     style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:12px;padding:12px 32px;font-weight:800;font-size:.92rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:opacity .2s;">
-                                📅 Book Appointment
+                                Book Appointment
                             </button>
                         </div>
                     </div>
@@ -283,7 +360,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         @if($appointment && $appointment->status === 'rejected')
         <div style="background:#fee2e2;border-left:4px solid #dc3545;border-radius:12px;padding:14px 18px;font-size:.85rem;color:#991b1b;font-weight:600;margin-bottom:16px;">
-            ❌ Your previous appointment was <strong>rejected</strong>. You may book a new slot above.
+            Your previous appointment was <strong>rejected</strong>. You may book a new slot above.
             @if($appointment->admin_notes)<br>Admin reason: {{ $appointment->admin_notes }}@endif
         </div>
         @endif
@@ -339,8 +416,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 });
                 timeSelect.disabled = false;
                 slotMsg.textContent = available > 0
-                    ? `✅ ${available} time slot${available > 1 ? 's' : ''} available`
-                    : '⚠️ No slots available on this date. Please pick another day.';
+                    ? `${available} time slot${available > 1 ? 's' : ''} available`
+                    : 'No slots available on this date. Please pick another day.';
                 slotMsg.style.color = available > 0 ? '#16a34a' : '#dc3545';
             })
             .catch(() => {
@@ -484,7 +561,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                             {{-- Eligibility Banner --}}
                             <div style="background:linear-gradient(135deg,#e0e7ff,#c7d2fe);border-radius:14px;border:1.5px solid #a5b4fc;padding:18px 22px;margin-bottom:22px;display:flex;align-items:center;gap:14px;">
-                                <span style="font-size:1.8rem;">🎉</span>
                                 <div>
                                     <div style="font-weight:800;color:#1e3a8a;font-size:1rem;">Congratulations! You passed the eligibility assessment.</div>
                                     <div style="font-size:.85rem;color:#3730a3;margin-top:2px;">Please upload all required documents below to complete your Solo Parent ID application.</div>
@@ -499,15 +575,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             @endphp
                             @if($overallStatus === 'approved')
                             <div style="background:#dbeafe;border-left:4px solid #2C3E8F;border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:.87rem;color:#1e3a8a;font-weight:700;">
-                                ✅ All your documents have been approved! Your Solo Parent ID is being processed.
+                                All your documents have been approved! Your Solo Parent ID is being processed.
                             </div>
                             @elseif($overallStatus === 'rejected')
                             <div style="background:#f8d7da;border-left:4px solid #dc3545;border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:.87rem;color:#721c24;font-weight:700;">
-                                ❌ Some documents need attention. Please resubmit the declined documents below.
+                                Some documents need attention. Please resubmit the declined documents below.
                             </div>
                             @elseif($overallStatus === 'in_review')
                             <div style="background:#e8f4fd;border-left:4px solid #2196F3;border-radius:8px;padding:12px 16px;margin-bottom:18px;font-size:.87rem;color:#0d47a1;font-weight:700;">
-                                🔍 Your documents are currently under review. We will notify you of the results.
+                                Your documents are currently under review. We will notify you of the results.
                             </div>
                             @endif
 
@@ -531,15 +607,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 @endphp
                                 <div class="solo-req-row" style="background:white;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;">
                                     <div style="display:flex;align-items:center;gap:10px;flex:1;">
-                                        @if($uploaded && $uploaded->status === 'approved')
-                                            <span style="color:#28a745;font-size:1.1rem;">✅</span>
-                                        @elseif($uploaded && $uploaded->status === 'rejected')
-                                            <span style="color:#dc3545;font-size:1.1rem;">❌</span>
-                                        @elseif($uploaded)
-                                            <span style="color:#ffc107;font-size:1.1rem;">⏳</span>
-                                        @else
-                                            <span style="color:#ced4da;font-size:1.1rem;">📄</span>
-                                        @endif
+
                                         <div>
                                             <div style="font-weight:700;font-size:.88rem;color:#1e293b;">{{ $req }}</div>
                                             @if($uploaded && $uploaded->admin_remarks)
@@ -555,7 +623,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                             @csrf
                                             <input type="hidden" name="requirement_name" value="{{ $req }}">
                                             <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size:.78rem;max-width:180px;">
-                                            <button type="submit" style="background:#2C3E8F;color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">🔄 Resubmit</button>
+                                            <button type="submit" style="background:#2C3E8F;color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Resubmit</button>
                                         </form>
                                     @else
                                         {{-- Upload form --}}
@@ -563,7 +631,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                             @csrf
                                             <input type="hidden" name="requirement_name" value="{{ $req }}">
                                             <input type="file" name="file" accept=".pdf,.jpg,.jpeg,.png" required style="font-size:.78rem;max-width:180px;">
-                                            <button type="submit" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">📤 Upload</button>
+                                            <button type="submit" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Upload</button>
                                         </form>
                                     @endif
                                 </div>
@@ -573,19 +641,74 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             {{-- Upload All Button --}}
                             <div id="uploadAllBar" style="background:#f0f4ff;border:1.5px solid #c7d2fe;border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
                                 <div>
-                                    <div style="font-weight:700;color:#1e3a8a;font-size:.9rem;">📦 Upload All Selected Files</div>
+                                    <div style="font-weight:700;color:#1e3a8a;font-size:.9rem;">Upload All Selected Files</div>
                                     <div id="uploadAllStatus" style="font-size:.8rem;color:#64748b;margin-top:2px;">Select files in the rows above, then click Upload All to submit them all at once.</div>
                                 </div>
                                 <button type="button" id="uploadAllBtn" onclick="uploadAllFiles()"
                                     style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:10px;padding:10px 24px;font-size:.88rem;font-weight:700;cursor:pointer;white-space:nowrap;">
-                                    📤 Upload All
+                                    Upload All
                                 </button>
                             </div>
 
                             <script>
+                            // Add global style for timer animation if not exists
+                            if (!document.getElementById('uploadNotifStyles')) {
+                                const style = document.createElement('style');
+                                style.id = 'uploadNotifStyles';
+                                style.textContent = `
+                                    @keyframes uploadTimerShrink {
+                                        from { width: 100%; }
+                                        to { width: 0%; }
+                                    }
+                                `;
+                                document.head.appendChild(style);
+                            }
+
+                            function showUploadNotification(message) {
+                                const existing = document.getElementById('uploadNotification');
+                                if (existing) existing.remove();
+
+                                const notif = document.createElement('div');
+                                notif.id = 'uploadNotification';
+                                notif.style.cssText = 'position:fixed;top:84px;right:18px;z-index:1082;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;animation:slideInRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55);overflow:hidden;';
+                                
+                                const timerDiv = document.createElement('div');
+                                timerDiv.id = 'uploadTimer';
+                                timerDiv.style.cssText = 'position:absolute;bottom:0;left:0;height:3px;background:rgba(253,185,19,.9);width:100%;';
+                                
+                                notif.innerHTML = `
+                                    <div style="padding:12px 16px;display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                                        <span>${message}</span>
+                                        <button onclick="this.closest('#uploadNotification').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);font-size:1.2rem;cursor:pointer;padding:0;line-height:1;transition:color .2s;" title="Close">&times;</button>
+                                    </div>
+                                `;
+                                notif.appendChild(timerDiv);
+                                document.body.appendChild(notif);
+
+                                setTimeout(() => {
+                                    timerDiv.style.animation = 'uploadTimerShrink 5s linear forwards';
+                                }, 50);
+
+                                setTimeout(() => {
+                                    notif.style.animation = 'slideOutRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55) forwards';
+                                    setTimeout(() => notif.remove(), 400);
+                                }, 5000);
+                            }
+
                             function uploadAllFiles() {
-                                // Collect all file inputs inside individual upload forms (not resubmit forms)
+                                // Check if all requirements are already uploaded
                                 const rows = document.querySelectorAll('.solo-req-row');
+                                const allUploaded = Array.from(rows).every(row => {
+                                    const uploadedBadge = row.querySelector('span[style*="Uploaded"]');
+                                    return uploadedBadge !== null;
+                                });
+
+                                if (allUploaded) {
+                                    showUploadNotification('All requirements have already been uploaded.');
+                                    return;
+                                }
+
+                                // Collect all file inputs inside individual upload forms (not resubmit forms)
                                 const toUpload = [];
                                 rows.forEach(row => {
                                     const input = row.querySelector('input[type="file"][name="file"]');
@@ -597,14 +720,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 });
 
                                 if (toUpload.length === 0) {
-                                    alert('⚠️ Please select at least one file in the rows below before clicking Upload All.');
+                                    showUploadNotification('Please select at least one file in the rows below before clicking Upload All.');
                                     return;
                                 }
 
                                 const btn = document.getElementById('uploadAllBtn');
                                 const status = document.getElementById('uploadAllStatus');
                                 btn.disabled = true;
-                                btn.textContent = '⏳ Uploading...';
+                                btn.textContent = 'Uploading...';
 
                                 const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
                                 let done = 0, failed = 0;
@@ -612,18 +735,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 const uploadNext = (index) => {
                                     if (index >= toUpload.length) {
                                         btn.disabled = false;
-                                        btn.textContent = '📤 Upload All';
+                                        btn.textContent = 'Upload All';
                                         if (failed === 0) {
-                                            status.textContent = '✅ ' + done + ' file(s) uploaded successfully! Refreshing...';
+                                            status.textContent = done + ' file(s) uploaded successfully! Refreshing...';
                                             setTimeout(() => location.reload(), 1200);
                                         } else {
-                                            status.textContent = '✅ ' + done + ' uploaded, ❌ ' + failed + ' failed. Check individual rows.';
+                                            status.textContent = done + ' uploaded, ' + failed + ' failed. Check individual rows.';
                                         }
                                         return;
                                     }
 
                                     const { file, reqName, action } = toUpload[index];
-                                    status.textContent = '⏳ Uploading ' + (index + 1) + ' of ' + toUpload.length + ': ' + file.name;
+                                    status.textContent = 'Uploading ' + (index + 1) + ' of ' + toUpload.length + ': ' + file.name;
 
                                     const fd = new FormData();
                                     fd.append('_token', csrfToken);
@@ -638,10 +761,28 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                                 uploadNext(0);
                             }
+
+                            // Disable Upload All button on page load if all requirements are uploaded
+                            document.addEventListener('DOMContentLoaded', function() {
+                                const rows = document.querySelectorAll('.solo-req-row');
+                                const allUploaded = Array.from(rows).every(row => {
+                                    const uploadedBadge = row.querySelector('span[style*="Uploaded"]');
+                                    return uploadedBadge !== null;
+                                });
+
+                                if (allUploaded) {
+                                    const btn = document.getElementById('uploadAllBtn');
+                                    if (btn) {
+                                        btn.disabled = true;
+                                        btn.style.opacity = '0.5';
+                                        btn.style.cursor = 'not-allowed';
+                                    }
+                                }
+                            });
                             </script>
 
                             <div style="background:#fff8e1;border-left:4px solid #FDB913;border-radius:8px;padding:12px 16px;font-size:.83rem;color:#856404;line-height:1.6;">
-                                ⚠️ <strong>Tip:</strong> Upload clear, readable scanned copies or photos. Accepted formats: PDF, JPG, PNG. Max size: 5MB per file.
+                                <strong>Tip:</strong> Upload clear, readable scanned copies or photos. Accepted formats: PDF, JPG, PNG. Max size: 5MB per file.
                             </div>
                         </div>
                     </div>
@@ -650,7 +791,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     {{-- ⏳ CONFIRMED but not yet validated --}}
                     <div class="section-card">
                         <div class="section-header">
-                            <div class="sec-icon">⏳</div>
                             <div>
                                 <h4>Required Documents</h4>
                                 <p>Your appointment has been confirmed. Waiting for eligibility assessment.</p>
@@ -658,7 +798,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </div>
                         <div class="section-body">
                             <div style="text-align:center;padding:32px 20px;">
-                                <div style="font-size:2.5rem;margin-bottom:12px;">🔍</div>
                                 <div style="font-weight:700;color:#1e293b;margin-bottom:8px;">Eligibility Review In Progress</div>
                                 <div style="font-size:.87rem;color:#64748b;line-height:1.7;">Your appointment has been confirmed. The MSWDO officer will review your eligibility during your interview. Once validated, the requirements list will appear here and you will be notified by email.</div>
                             </div>
@@ -740,13 +879,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     {{-- Cancel Modal --}}
     <div id="cancelModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
         <div style="background:white;border-radius:16px;max-width:500px;width:90%;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,.3);">
-            <h4 style="font-weight:800;color:#1e293b;margin-bottom:16px;">🚫 Cancel Appointment</h4>
+            <h4 style="font-weight:800;color:#1e293b;margin-bottom:16px;">Cancel Appointment</h4>
             <p style="font-size:.9rem;color:#64748b;margin-bottom:20px;">Please provide a reason for cancelling your appointment:</p>
             <textarea id="cancelReasonText" rows="4" style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px;font-size:.88rem;font-family:inherit;" placeholder="e.g., May emergency po sa family" required></textarea>
             <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
                 <button onclick="hideCancelModal()" style="background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">
 Cancel</button>
-                <button onclick="submitCancel()" style="background:#dc3545;color:white;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">🚫 Confirm Cancel</button>
+                <button onclick="submitCancel()" style="background:#dc3545;color:white;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">Confirm Cancel</button>
             </div>
         </div>
     </div>
@@ -754,27 +893,27 @@ Cancel</button>
     {{-- Reschedule Modal --}}
     <div id="rescheduleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;overflow-y:auto;">
         <div style="background:white;border-radius:16px;max-width:600px;width:90%;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,.3);margin:20px;">
-            <h4 style="font-weight:800;color:#1e293b;margin-bottom:16px;">🔄 Request Reschedule</h4>
+            <h4 style="font-weight:800;color:#1e293b;margin-bottom:16px;">Request Reschedule</h4>
             <form method="POST" action="{{ route('user.appointments.reschedule', $appointment->id ?? 0) }}" id="rescheduleForm">
                 @csrf
                 <div style="margin-bottom:16px;">
-                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📆 New Date <span style="color:red">*</span></label>
+                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">New Date <span style="color:red">*</span></label>
                     <input type="date" name="reschedule_date" id="rescheduleDate" min="{{ $minDate ?? '' }}" max="{{ $maxDate ?? '' }}" required style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:10px;font-size:.88rem;">
                 </div>
                 <div style="margin-bottom:16px;">
-                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">⏰ New Time <span style="color:red">*</span></label>
+                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">New Time <span style="color:red">*</span></label>
                     <select name="reschedule_time" id="rescheduleTime" required disabled style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:10px;font-size:.88rem;">
                         <option value="">Select date first</option>
                     </select>
                     <div id="rescheduleSlotMsg" style="font-size:.75rem;color:#94a3b8;margin-top:4px;"></div>
                 </div>
                 <div style="margin-bottom:20px;">
-                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📝 Reason for Reschedule <span style="color:red">*</span></label>
+                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">Reason for Reschedule <span style="color:red">*</span></label>
                     <textarea name="reschedule_reason" rows="3" required style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:12px;font-size:.88rem;font-family:inherit;" placeholder="e.g., May conflict sa schedule"></textarea>
                 </div>
                 <div style="display:flex;gap:10px;justify-content:flex-end;">
                     <button type="button" onclick="hideRescheduleModal()" style="background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">Cancel</button>
-                    <button type="submit" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">🔄 Submit Request</button>
+                    <button type="submit" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">Submit Request</button>
                 </div>
             </form>
         </div>
@@ -849,8 +988,8 @@ Cancel</button>
                 });
                 rescheduleTime.disabled = false;
                 rescheduleSlotMsg.textContent = available > 0
-                    ? `✅ ${available} time slot${available > 1 ? 's' : ''} available`
-                    : '⚠️ No slots available on this date. Please pick another day.';
+                    ? `${available} time slot${available > 1 ? 's' : ''} available`
+                    : 'No slots available on this date. Please pick another day.';
                 rescheduleSlotMsg.style.color = available > 0 ? '#16a34a' : '#dc3545';
             })
             .catch(() => {

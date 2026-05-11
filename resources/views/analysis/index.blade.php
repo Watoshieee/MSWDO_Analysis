@@ -576,14 +576,14 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card-base y text-center">
+                    <div class="card-base text-center">
                         <div class="stat-num">{{ number_format($totalHH) }}</div>
                         <div class="stat-lbl">Total Households</div>
                         <div style="font-size:.78rem;color:#22c55e;margin-top:4px;">Highest: {{ $highHH }}</div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card-base g text-center">
+                    <div class="card-base text-center">
                         <div class="stat-num">{{ number_format($totalBenef) }}</div>
                         <div class="stat-lbl">Total Beneficiaries</div>
                         <div style="font-size:.78rem;color:#22c55e;margin-top:4px;">Highest: {{ $highBen }}</div>
