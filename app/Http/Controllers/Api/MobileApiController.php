@@ -610,7 +610,34 @@ class MobileApiController extends Controller
             ]);
         }
 
-        // ── 11. Announcements ───────────────────────────────────────────────
+        // ── 11. DB notifications table (real-time admin actions) ─────────────
+        // Covers: validate, confirm, reschedule response, cancellation response,
+        // and any other admin-triggered bell notifications.
+        $dbNotifs = DB::table('notifications')
+            ->where('user_id', $userId)
+            ->orderBy('created_at', 'desc')
+            ->limit(50)
+            ->get();
+
+        foreach ($dbNotifs as $dbN) {
+            $ts = $dbN->created_at;
+            $isNew = $lastViewedAt && $ts
+                ? \Carbon\Carbon::parse($ts)->gt(\Carbon\Carbon::parse($lastViewedAt))
+                : !$lastViewedAt;
+            $items->push([
+                'id'         => 'db_' . $dbN->id,
+                'type'       => $dbN->type ?? 'general',
+                'title'      => $dbN->title,
+                'body'       => $dbN->body,
+                'data'       => null,
+                'is_read'    => (bool) $dbN->is_read,
+                'is_new'     => $isNew && !(bool) $dbN->is_read,
+                'read_at'    => null,
+                'created_at' => $ts,
+            ]);
+        }
+
+        // ── 12. Announcements ────────────────────────────────────────────────
         $announcements = Announcement::where('is_active', true)
             ->where(function ($q) use ($user) {
                 $q->whereNull('municipality')
