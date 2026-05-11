@@ -9,6 +9,13 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
     @include('components.admin-colors')
     <style>
+        html,
+        body {
+            overscroll-behavior: none;
+            margin: 0;
+            padding: 0;
+        }
+
         :root {
             --primary-blue: {{ $adminPrimaryColor ?? '#2C3E8F' }};
             --secondary-yellow: {{ $adminSecondaryColor ?? '#FDB913' }};
@@ -19,12 +26,24 @@
             --text-dark: #1E293B;
         }
 
-        body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); min-height: 100vh; margin: 0; }
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); min-height: 100vh; display: flex; flex-direction: column; }
         a { text-decoration: none; }
 
         /* NAVBAR */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
         .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display:flex; align-items:center; gap:12px; }
+        .navbar-toggler { order: -1; }
+        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
+        @media (min-width: 992px) {
+            .navbar-toggler { order: 0; }
+            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+        }
         .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.85rem; white-space: nowrap; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
@@ -33,11 +52,10 @@
         .logout-btn:hover { background:var(--secondary-yellow); color:var(--primary-blue); border-color:var(--secondary-yellow); }
 
         /* HERO */
-        .hero-banner { background: var(--primary-gradient); color: white; padding: 40px 0 32px; position: relative; overflow: hidden; }
-        .hero-banner::before { content:''; position:absolute; top:-80px; right:-80px; width:300px; height:300px; border-radius:50%; background:rgba(253,185,19,0.09); }
-        .hero-badge { display:inline-block; background:rgba(253,185,19,0.18); color:var(--secondary-yellow); border:1px solid rgba(253,185,19,0.35); border-radius:30px; padding:4px 16px; font-size:0.72rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:10px; }
-        .hero-banner h1 { font-size:1.85rem; font-weight:900; margin-bottom:4px; }
-        .hero-divider { width:40px; height:4px; background:var(--secondary-yellow); border-radius:2px; margin:10px 0 8px; }
+        .page-hero { background: var(--primary-gradient); border-radius:20px; padding:32px 36px; margin-bottom:28px; color:white; position:relative; overflow:hidden; }
+        .page-hero h1 { font-size:1.75rem; font-weight:800; margin-bottom:4px; }
+        .page-hero p { opacity:0.82; margin:0; font-size:0.92rem; }
+        .muni-badge { background:rgba(253,185,19,0.18); border:1px solid rgba(253,185,19,0.35); color:#FDB913; border-radius:30px; padding:7px 20px; font-size:0.85rem; font-weight:700; display:inline-block; }
 
         /* STAT CARDS */
         .stat-card { background: white; border-radius: 16px; border: 1px solid var(--border-light); padding: 22px 24px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); position: relative; overflow: hidden; }
@@ -86,8 +104,7 @@
         .empty-state h5 { font-weight: 800; color: #475569; font-size: 1rem; margin-bottom: 6px; }
 
         /* FOOTER */
-        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.75); text-align: center; padding: 20px 0; font-size: 0.85rem; margin-top: 48px; }
-        .footer-strip strong { color: white; }
+        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.9); text-align: center; padding: 20px; font-size: 0.85rem; margin-top: 40px; }
     </style>
 </head>
 <body>
@@ -113,7 +130,7 @@
                 </ul>
                 <div class="d-flex align-items-center gap-3">
                     @auth
-                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#adminNotifModal"
+                    <button type="button" class="btn" onclick="openAdminNotifModal()"
                         style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;position:relative;"
                         title="Notifications">
                         <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg>
@@ -135,35 +152,22 @@
     </nav>
 
     <!-- HERO -->
-    <section class="hero-banner">
-        <div class="container" style="position:relative;z-index:1;">
-            <div class="row align-items-center">
-                <div class="col-md-8">
-                    <div class="hero-badge">User Management</div>
-                    <h1>{{ $municipality->name }} — Registered Users</h1>
-                    <div class="hero-divider"></div>
-                    <p style="opacity:.82;font-size: .85rem;margin:0;">View all residents registered in the {{ $municipality->name }} MSWDO portal.</p>
-                </div>
-                <div class="col-md-4 d-none d-md-flex justify-content-end">
-                    <div style="background:rgba(253,185,19,0.18);border:1px solid rgba(253,185,19,0.35);color:var(--secondary-yellow);border-radius:12px;padding:14px 24px;text-align:center;">
-                        <span style="font-size:2rem;font-weight:900;display:block;">{{ $users->count() }}</span>
-                        <span style="font-size:.72rem;opacity:.75;font-weight:600;text-transform:uppercase;letter-spacing:.08em;">Registered Users</span>
+    <div style="flex:1;">
+        <div class="container mt-4">
+
+            @include('components.admin-notification')
+
+            <div class="page-hero mb-4">
+                <div class="row align-items-center">
+                    <div class="col-md-8">
+                        <h1>Users Management</h1>
+                        <p>View all residents registered in the {{ $municipality->name }} MSWDO portal.</p>
+                    </div>
+                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
+                        <span class="muni-badge">{{ $municipality->name }}</span>
                     </div>
                 </div>
             </div>
-        </div>
-    </section>
-
-    <div class="container mt-4">
-
-        @php
-            $topNotice = session('success') ?: session('error');
-        @endphp
-        @if($topNotice)
-            <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
-                {{ $topNotice }}
-            </div>
-        @endif
 
         <!-- STAT CARDS -->
         <div class="row g-3 mb-4">
@@ -184,14 +188,14 @@
             <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <div class="stat-label">Pending Reviews</div>
-                    <div class="stat-value" style="color:#856404;">{{ $users->sum('pending_apps') }}</div>
+                    <div class="stat-value">{{ $users->sum('pending_apps') }}</div>
                     <div class="stat-sub">Across all users</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
                     <div class="stat-label">Total Approved</div>
-                    <div class="stat-value" style="color:#15803d;">{{ $users->sum('approved_apps') }}</div>
+                    <div class="stat-value">{{ $users->sum('approved_apps') }}</div>
                     <div class="stat-sub">Successfully processed</div>
                 </div>
             </div>
@@ -316,19 +320,20 @@
             </div>
         </div>
 
-        <!-- No results message (hidden by default) -->
-        <div id="noResults" class="empty-state" style="display:none;">
-            <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="1.5">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0015.803 15.803z"/>
-            </svg>
-            <h5>No users found</h5>
-            <p style="font-size:.85rem;margin:0;">Try a different search term or filter.</p>
-        </div>
+            <!-- No results message (hidden by default) -->
+            <div id="noResults" class="empty-state" style="display:none;">
+                <svg xmlns="http://www.w3.org/2000/svg" width="48" height="48" fill="none" viewBox="0 0 24 24" stroke="#94a3b8" stroke-width="1.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-5.197-5.197m0 0A7.5 7.5 0 105.196 15.803 7.5 7.5 0 0015.803 15.803z"/>
+                </svg>
+                <h5>No users found</h5>
+                <p style="font-size:.85rem;margin:0;">Try a different search term or filter.</p>
+            </div>
 
+        </div>
     </div>
 
     <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
+        MSWDO &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
     @include('components.admin-notification-modal')

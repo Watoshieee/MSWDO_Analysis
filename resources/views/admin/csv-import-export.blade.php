@@ -44,8 +44,26 @@
         .page-header {
             background: var(--primary-gradient);
             color: white;
-            padding: 2rem 0;
+            padding: 36px 0 30px;
             margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .page-header::before {
+            content: '';
+            position: absolute;
+            top: -60px;
+            right: -60px;
+            width: 260px;
+            height: 260px;
+            border-radius: 50%;
+            background: rgba(253,185,19,0.09);
+        }
+        
+        .back-link:hover {
+            color: white !important;
+            background: rgba(255,255,255,0.15) !important;
         }
         
         .card {
@@ -162,6 +180,11 @@
                 </ul>
                 <div class="d-flex">
                     @auth
+                    <button type="button" class="btn" onclick="openSettings()"
+                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;margin-right:12px;"
+                        title="Settings">
+                        <i class="bi bi-gear-fill"></i>
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -177,27 +200,19 @@
 
     <!-- Page Header -->
     <div class="page-header">
-        <div class="container">
-            <h1 class="mb-2"><i class="bi bi-file-earmark-spreadsheet me-2"></i>CSV Import/Export</h1>
-            <p class="mb-0 opacity-75">Upload or export PSA statistical data for {{ $adminMunicipality }}</p>
+        <div class="container" style="position:relative;z-index:2;">
+            <a href="{{ route('admin.data.dashboard') }}#return" class="back-link" style="display:inline-flex;align-items:center;gap:8px;color:rgba(255,255,255,0.75);font-size:0.82rem;font-weight:600;border:1px solid rgba(255,255,255,0.25);border-radius:20px;padding:5px 14px;transition:all 0.25s;margin-bottom:12px;text-decoration:none;">
+                &#8592; Data Management
+            </a>
+            <div style="display:inline-block;background:rgba(253,185,19,0.18);color:var(--secondary-yellow);border:1px solid rgba(253,185,19,0.35);border-radius:30px;padding:4px 16px;font-size:0.72rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:8px;">CSV Data</div>
+            <h1 class="mb-2" style="font-size:1.75rem;font-weight:900;margin-bottom:4px;"></i>CSV Import/Export</h1>
+            <div style="width:40px;height:4px;background:var(--secondary-yellow);border-radius:2px;margin:8px 0 6px;"></div>
+            <p class="mb-0" style="opacity:0.82;font-size:0.9rem;">Upload or export PSA statistical data for {{ $adminMunicipality }}</p>
         </div>
     </div>
 
     <div class="container">
-        <!-- Alerts -->
-        @if(session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle me-2"></i>{{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        @endif
-
-        @if(session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle me-2"></i>{{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-        @endif
+        @include('components.admin-notification')
 
         <div class="row">
             <!-- Import Section -->
@@ -414,6 +429,12 @@
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        // Settings modal
+        function openSettings() {
+            const modal = new bootstrap.Modal(document.getElementById('adminSettingsModal'));
+            modal.show();
+        }
+        
         // File upload handling
         const uploadArea = document.getElementById('uploadArea');
         const csvFile = document.getElementById('csvFile');
@@ -499,5 +520,7 @@
             importBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Importing...';
         });
     </script>
+    @include('components.admin-settings-modal')
+    @include('components.admin-chat-modal')
 </body>
 </html>

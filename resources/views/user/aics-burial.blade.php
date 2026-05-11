@@ -65,27 +65,14 @@
         <a class="brand" href="{{ route('user.dashboard') }}">
             <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD"> MSWDO
         </a>
-        <div style="display:flex;align-items:center;gap:12px;">
-            {{-- Notification Bell --}}
-            <button type="button" data-bs-toggle="modal" data-bs-target="#announcementsModal"
-                style="background:rgba(255,255,255,0.12);color:white;border:2px solid rgba(255,255,255,0.3);border-radius:50%;width:40px;height:40px;font-size:1.05rem;display:flex;align-items:center;justify-content:center;padding:0;cursor:pointer;transition:all 0.3s;position:relative;"
-                title="Notifications">
-                <i class="bi bi-bell-fill"></i>
-                @if(isset($notificationCount) && $notificationCount > 0)
-                <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">
-                    {{ $notificationCount > 9 ? '9+' : $notificationCount }}
-                </span>
-                @endif
-            </button>
-            <a href="{{ route('user.aics-category') }}" class="back-btn">&#8592; Back to AICS Categories</a>
-        </div>
+        <a href="{{ route('user.aics-category') }}" class="back-btn">&#8592; Back to AICS Categories</a>
     </div>
 </div>
 
 <div class="hero">
     <div class="container hero-inner">
         <div class="hero-badge">AICS - Burial Assistance</div>
-        <h1>&#128196; Submit Your Burial Assistance Requirements</h1>
+        <h1> Submit Your Burial Assistance Requirements</h1>
         <div class="divider"></div>
         <p>Upload digital copies of your documents below. The admin will review each one individually.</p>
     </div>
@@ -93,21 +80,13 @@
 
 <div class="container py-4" style="flex:1;">
 
-    @php
-        $topNotice = session('upload_success') ?: session('appt_success') ?: session('error') ?: session('appt_error');
-    @endphp
-    @if($topNotice)
-    <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
-        {{ $topNotice }}
-    </div>
-    @endif
+
 
     {{-- ── ACTIVE APPOINTMENT CARD ── --}}
     @if(isset($appointment) && $appointment && in_array($appointment->status, ['pending','confirmed']))
     <div style="background:white;border-radius:20px;border:1px solid #c7d2fe;box-shadow:0 4px 20px rgba(44,62,143,.08);overflow:hidden;margin-bottom:24px;">
-        <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:18px 26px;display:flex;align-items:center;gap:14px;">
-            <div style="width:42px;height:42px;background:rgba(253,185,19,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📅</div>
-            <div style="flex:1;">
+        <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:18px 26px;display:flex;align-items:center;justify-content:space-between;gap:14px;">
+            <div>
                 <div style="font-weight:800;font-size:1rem;">Your Appointment</div>
                 <div style="opacity:.8;font-size:.8rem;margin-top:2px;">AICS Burial Assistance</div>
             </div>
@@ -135,7 +114,7 @@
             @endif
             @if($appointment->cancellation_status === 'pending')
                 <div style="background:#fff3cd;border-left:3px solid #ffc107;border-radius:8px;padding:10px 14px;font-size:.84rem;color:#856404;margin-bottom:14px;">
-                    <strong>⏳ Cancellation Pending:</strong> Your cancellation request is waiting for admin approval.
+                    <strong> Cancellation Pending:</strong> Your cancellation request is waiting for admin approval.
                 </div>
             @endif
             <form method="POST" action="{{ route('user.appointments.cancel', $appointment->id) }}" id="cancelForm" style="display:inline-block;margin-right:10px;">
@@ -162,20 +141,17 @@
 
     {{-- ── BOOKING FORM ── --}}
     <div style="background:white;border-radius:20px;border:1px solid #c7d2fe;box-shadow:0 4px 20px rgba(44,62,143,.08);overflow:hidden;margin-bottom:24px;">
-        <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:20px 26px;display:flex;align-items:center;gap:14px;">
-            <div style="width:42px;height:42px;background:rgba(253,185,19,.2);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">📅</div>
-            <div>
-                <div style="font-weight:800;font-size:1rem;">Schedule an Appointment</div>
-                <div style="opacity:.8;font-size:.8rem;margin-top:2px;">Book your AICS Burial interview slot with the MSWDO</div>
-            </div>
+        <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:20px 26px;">
+            <div style="font-weight:800;font-size:1rem;">Schedule an Appointment</div>
+            <div style="opacity:.8;font-size:.8rem;margin-top:2px;">Book your AICS Burial interview slot with the MSWDO</div>
         </div>
         <div style="padding:24px 26px;">
             <div style="background:#eef2ff;border-radius:10px;padding:12px 16px;font-size:.83rem;color:#4338ca;font-weight:600;margin-bottom:20px;">
-                ℹ️ Office hours: <strong>Monday – Friday, 8:00 AM – 5:00 PM</strong> (lunch 12:00–1:00 PM excluded) &bull; Max 5 appointments per time slot.
+                 Office hours: <strong>Monday – Friday, 8:00 AM – 5:00 PM</strong> (lunch 12:00–1:00 PM excluded) &bull; Max 5 appointments per time slot.
             </div>
             @if(isset($appointment) && $appointment && $appointment->status === 'rejected')
             <div style="background:#fee2e2;border-left:4px solid #dc3545;border-radius:12px;padding:14px 18px;font-size:.85rem;color:#991b1b;font-weight:600;margin-bottom:16px;">
-                ❌ Your previous appointment was <strong>rejected</strong>. You may book a new slot below.
+                 Your previous appointment was <strong>rejected</strong>. You may book a new slot below.
                 @if($appointment->admin_notes)<br>Admin reason: {{ $appointment->admin_notes }}@endif
             </div>
             @endif
@@ -184,7 +160,7 @@
                 <input type="hidden" name="program_type" value="AICS_Burial">
                 <div class="row g-3">
                     <div class="col-md-4">
-                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📆 Select Date <span style="color:red">*</span></label>
+                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;"> Select Date <span style="color:red">*</span></label>
                         <input type="date" id="aicsBurialDate" name="appointment_date"
                                min="{{ $minDate }}" max="{{ $maxDate }}"
                                class="form-control"
@@ -193,7 +169,7 @@
                         <div style="font-size:.7rem;color:#94a3b8;margin-top:4px;">Weekdays only (Mon–Fri)</div>
                     </div>
                     <div class="col-md-4">
-                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">⏰ Select Time Slot <span style="color:red">*</span></label>
+                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;"> Select Time Slot <span style="color:red">*</span></label>
                         <select id="aicsBurialTime" name="appointment_time" class="form-control"
                                 style="border-radius:10px;border:1.5px solid #c7d2fe;font-weight:600;font-size:.88rem;" required disabled>
                             <option value="">Select date first</option>
@@ -201,15 +177,15 @@
                         <div id="aicsBurialSlotMsg" style="font-size:.7rem;color:#94a3b8;margin-top:4px;"></div>
                     </div>
                     <div class="col-md-4">
-                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">💬 Interview Type <span style="color:red">*</span></label>
+                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;"> Interview Type <span style="color:red">*</span></label>
                         <select name="interview_type" class="form-control"
                                 style="border-radius:10px;border:1.5px solid #c7d2fe;font-weight:600;font-size:.88rem;" required>
-                            <option value="face_to_face">🏢 Face-to-Face</option>
-                            <option value="online">📱 Online (via phone call)</option>
+                            <option value="face_to_face"> Face-to-Face</option>
+                            <option value="online"> Online (via phone call)</option>
                         </select>
                     </div>
                     <div class="col-12">
-                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📝 Additional Notes (optional)</label>
+                        <label style="font-size:.8rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;"> Additional Notes (optional)</label>
                         <textarea name="user_notes" rows="2" class="form-control"
                                   placeholder="Any concerns or special requests…"
                                   style="border-radius:10px;border:1.5px solid #c7d2fe;font-size:.85rem;"
@@ -217,7 +193,7 @@
                     </div>
                     <div class="col-12">
                         <button type="submit" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:12px;padding:12px 32px;font-weight:800;font-size:.92rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
-                            📅 Book Appointment
+                             Book Appointment
                         </button>
                     </div>
                 </div>
@@ -236,7 +212,6 @@
 
     <div class="sec-card">
         <div class="sec-head">
-            <div class="sec-icon">&#128196;</div>
             <div>
                 <h4>Submit Your Requirements</h4>
                 <p>Select files below and click <strong>Upload All</strong>, or upload each document individually.</p>
@@ -362,17 +337,6 @@
     @else
     {{-- ── Waiting / no-appointment notice ─────────────────────────────────── --}}
     <div style="background:white;border-radius:20px;border:1.5px dashed #c7d2fe;padding:40px 32px;text-align:center;margin-bottom:24px;">
-        <div style="font-size:3rem;margin-bottom:14px;">
-            @if(!isset($appointment) || !$appointment)
-                📅
-            @elseif($appointment->status === 'pending')
-                ⏳
-            @elseif($appointment->status === 'confirmed')
-                🔍
-            @else
-                ❌
-            @endif
-        </div>
         @if(!isset($appointment) || !$appointment)
             <div style="font-weight:800;font-size:1.05rem;color:#1e293b;margin-bottom:8px;">Book an Appointment First</div>
             <div style="color:#64748b;font-size:.88rem;max-width:460px;margin:0 auto;">
@@ -384,7 +348,7 @@
                 Your appointment on <strong>{{ $appointment->formatted_date }}</strong> at <strong>{{ $appointment->formatted_time }}</strong> is pending admin confirmation.
             </div>
         @elseif($appointment->status === 'confirmed')
-            <div style="font-weight:800;font-size:1.05rem;color:#1e293b;margin-bottom:8px;">🔍 Appointment Confirmed — Awaiting Eligibility Assessment</div>
+            <div style="font-weight:800;font-size:1.05rem;color:#1e293b;margin-bottom:8px;"> Appointment Confirmed — Awaiting Eligibility Assessment</div>
             <div style="color:#64748b;font-size:.88rem;max-width:460px;margin:0 auto;">
                 Your appointment on <strong>{{ $appointment->formatted_date }}</strong> at <strong>{{ $appointment->formatted_time }}</strong> has been confirmed.
                 The MSWDO will conduct your eligibility assessment. Requirements will be unlocked once you pass.
@@ -418,42 +382,52 @@
 @include('components.chatbot-widget')
 
 {{-- Cancel Modal --}}
-<div id="cancelModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
-    <div style="background:white;border-radius:16px;max-width:500px;width:90%;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,.3);">
-        <h4 style="font-weight:800;color:#1e293b;margin-bottom:16px;">🚫 Cancel Appointment</h4>
-        <p style="font-size:.9rem;color:#64748b;margin-bottom:20px;">Please provide a reason for cancelling your appointment:</p>
-        <textarea id="cancelReasonText" rows="4" style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px;font-size:.88rem;font-family:inherit;" placeholder="e.g., May emergency po sa family" required></textarea>
-        <div style="display:flex;gap:10px;margin-top:20px;justify-content:flex-end;">
-            <button onclick="hideCancelModal()" style="background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">Cancel</button>
-            <button onclick="submitCancel()" style="background:#dc3545;color:white;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">🚫 Confirm Cancel</button>
+<div id="cancelModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;">
+    <div style="background:white;border-radius:20px;max-width:520px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.4);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:24px 28px;">
+            <h4 style="font-weight:800;margin:0;font-size:1.15rem;">Cancel Appointment</h4>
+            <p style="margin:6px 0 0;opacity:.85;font-size:.88rem;">Please provide a reason for cancelling your appointment</p>
+        </div>
+        <div style="padding:28px;">
+            <textarea id="cancelReasonText" rows="4" style="width:100%;border:1.5px solid #e2e8f0;border-radius:12px;padding:14px;font-size:.88rem;font-family:inherit;resize:vertical;" placeholder="e.g., May emergency po sa family"></textarea>
+            <div id="cancelErrorMsg" style="display:none;color:#dc3545;font-size:.82rem;margin-top:8px;font-weight:600;"></div>
+            <div style="display:flex;gap:12px;margin-top:24px;justify-content:flex-end;">
+                <button onclick="hideCancelModal()" style="background:#f1f5f9;color:#64748b;border:none;border-radius:10px;padding:11px 24px;font-weight:700;cursor:pointer;font-size:.88rem;transition:all .2s;">Cancel</button>
+                <button onclick="submitCancel()" style="background:#dc3545;color:white;border:none;border-radius:10px;padding:11px 24px;font-weight:700;cursor:pointer;font-size:.88rem;transition:all .2s;">Confirm Cancel</button>
+            </div>
         </div>
     </div>
 </div>
 
 {{-- Reschedule Modal --}}
-<div id="rescheduleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;overflow-y:auto;">
-    <div style="background:white;border-radius:16px;max-width:600px;width:90%;padding:28px;box-shadow:0 10px 40px rgba(0,0,0,.3);margin:20px;">
-        <h4 style="font-weight:800;color:#1e293b;margin-bottom:16px;">🔄 Request Reschedule</h4>
+<div id="rescheduleModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.6);z-index:9999;align-items:center;justify-content:center;overflow-y:auto;">
+    <div style="background:white;border-radius:20px;max-width:620px;width:90%;box-shadow:0 20px 60px rgba(0,0,0,.4);margin:20px;overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:24px 28px;">
+            <h4 style="font-weight:800;margin:0;font-size:1.15rem;">Request Reschedule</h4>
+            <p style="margin:6px 0 0;opacity:.85;font-size:.88rem;">Choose a new date and time for your appointment</p>
+        </div>
         <form method="POST" action="{{ route('user.appointments.reschedule', $appointment->id ?? 0) }}" id="rescheduleForm">
             @csrf
-            <div style="margin-bottom:16px;">
-                <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📆 New Date <span style="color:red">*</span></label>
-                <input type="date" name="reschedule_date" id="rescheduleDate" min="{{ $minDate ?? '' }}" max="{{ $maxDate ?? '' }}" required style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:10px;font-size:.88rem;">
-            </div>
-            <div style="margin-bottom:16px;">
-                <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">⏰ New Time <span style="color:red">*</span></label>
-                <select name="reschedule_time" id="rescheduleTime" required disabled style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:10px;font-size:.88rem;">
-                    <option value="">Select date first</option>
-                </select>
-                <div id="rescheduleSlotMsg" style="font-size:.75rem;color:#94a3b8;margin-top:4px;"></div>
-            </div>
-            <div style="margin-bottom:20px;">
-                <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:6px;">📝 Reason for Reschedule <span style="color:red">*</span></label>
-                <textarea name="reschedule_reason" rows="3" required style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:12px;font-size:.88rem;font-family:inherit;" placeholder="e.g., May conflict sa schedule"></textarea>
-            </div>
-            <div style="display:flex;gap:10px;justify-content:flex-end;">
-                <button type="button" onclick="hideRescheduleModal()" style="background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">Cancel</button>
-                <button type="submit" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">🔄 Submit Request</button>
+            <div style="padding:28px;">
+                <div style="margin-bottom:20px;">
+                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:8px;">New Date <span style="color:#dc3545">*</span></label>
+                    <input type="date" name="reschedule_date" id="rescheduleDate" min="{{ $minDate ?? '' }}" max="{{ $maxDate ?? '' }}" required style="width:100%;border:1.5px solid #c7d2fe;border-radius:12px;padding:12px 14px;font-size:.88rem;font-weight:600;">
+                </div>
+                <div style="margin-bottom:20px;">
+                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:8px;">New Time <span style="color:#dc3545">*</span></label>
+                    <select name="reschedule_time" id="rescheduleTime" required disabled style="width:100%;border:1.5px solid #c7d2fe;border-radius:12px;padding:12px 14px;font-size:.88rem;font-weight:600;">
+                        <option value="">Select date first</option>
+                    </select>
+                    <div id="rescheduleSlotMsg" style="font-size:.78rem;color:#64748b;margin-top:6px;font-weight:600;"></div>
+                </div>
+                <div style="margin-bottom:24px;">
+                    <label style="font-size:.85rem;font-weight:700;color:#374151;display:block;margin-bottom:8px;">Reason for Reschedule <span style="color:#dc3545">*</span></label>
+                    <textarea name="reschedule_reason" rows="3" required style="width:100%;border:1.5px solid #c7d2fe;border-radius:12px;padding:14px;font-size:.88rem;font-family:inherit;resize:vertical;" placeholder="e.g., May conflict sa schedule"></textarea>
+                </div>
+                <div style="display:flex;gap:12px;justify-content:flex-end;">
+                    <button type="button" onclick="hideRescheduleModal()" style="background:#f1f5f9;color:#64748b;border:none;border-radius:10px;padding:11px 24px;font-weight:700;cursor:pointer;font-size:.88rem;transition:all .2s;">Cancel</button>
+                    <button type="submit" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:10px;padding:11px 24px;font-weight:700;cursor:pointer;font-size:.88rem;transition:all .2s;">Submit Request</button>
+                </div>
             </div>
         </form>
     </div>
@@ -470,7 +444,9 @@ function hideCancelModal() {
 function submitCancel() {
     const reason = document.getElementById('cancelReasonText').value.trim();
     if (!reason) {
-        alert('Please provide a reason for cancellation.');
+        const errorMsg = document.getElementById('cancelErrorMsg');
+        errorMsg.textContent = 'Please provide a reason for cancellation.';
+        errorMsg.style.display = 'block';
         return;
     }
     document.getElementById('cancelReasonInput').value = reason;
@@ -498,7 +474,7 @@ if (rescheduleDate) {
         if (d.getDay() === 0 || d.getDay() === 6) {
             rescheduleTime.innerHTML = '<option value="">Weekdays only</option>';
             rescheduleTime.disabled = true;
-            rescheduleSlotMsg.textContent = '⚠️ Please select a weekday (Mon–Fri).';
+            rescheduleSlotMsg.textContent = ' Please select a weekday (Mon–Fri).';
             rescheduleSlotMsg.style.color = '#dc3545';
             return;
         }
@@ -529,8 +505,8 @@ if (rescheduleDate) {
             });
             rescheduleTime.disabled = false;
             rescheduleSlotMsg.textContent = available > 0
-                ? `✅ ${available} time slot${available > 1 ? 's' : ''} available`
-                : '⚠️ No slots available on this date. Please pick another day.';
+                ? ` ${available} time slot${available > 1 ? 's' : ''} available`
+                : ' No slots available on this date. Please pick another day.';
             rescheduleSlotMsg.style.color = available > 0 ? '#16a34a' : '#dc3545';
         })
         .catch(() => {
@@ -570,7 +546,7 @@ if (aicsBurialDateEl) {
         if (!d) return;
         const day = new Date(d + 'T00:00:00').getDay();
         if (day === 0 || day === 6) {
-            aicsBurialMsgEl.textContent = '⚠️ Weekends are not available.';
+            aicsBurialMsgEl.textContent = ' Weekends are not available.';
             aicsBurialTimeEl.innerHTML = '<option value="">Not available</option>';
             aicsBurialTimeEl.disabled = true;
             return;
@@ -583,13 +559,13 @@ if (aicsBurialDateEl) {
             const available = slots.filter(s => !s.full);
             if (!available.length) {
                 aicsBurialTimeEl.innerHTML = '<option value="">No available slots</option>';
-                aicsBurialMsgEl.textContent = '⚠️ No slots available for this date.';
+                aicsBurialMsgEl.textContent = ' No slots available for this date.';
                 return;
             }
             aicsBurialTimeEl.innerHTML = '<option value="">-- Select time --</option>' +
                 available.map(s => `<option value="${s.time}">${s.label} (${s.remaining} left)</option>`).join('');
             aicsBurialTimeEl.disabled = false;
-            aicsBurialMsgEl.textContent = `✅ ${available.length} slot(s) available`;
+            aicsBurialMsgEl.textContent = ` ${available.length} slot(s) available`;
         })
         .catch(() => { aicsBurialMsgEl.textContent = 'Failed to load slots. Try again.'; });
     });

@@ -122,9 +122,7 @@
             {{ $municipality->name }} Municipality Profile
         </h1>
 
-        @if(session('success'))
-            <div class="alert alert-success">{{ session('success') }}</div>
-        @endif
+        @include('components.admin-notification')
 
         @if($errors->any())
             <div class="alert alert-danger">

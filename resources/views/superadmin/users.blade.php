@@ -529,6 +529,46 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             border-left: 4px solid #C41E24;
             border-radius: 12px;
         }
+
+        /* ── NOTIFICATION ANIMATIONS ── */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes timerBar {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+
+        .notification-toast {
+            animation-fill-mode: both;
+        }
+
+        .notification-toast.fade-out {
+            animation: slideOutRight 0.4s ease-in forwards;
+        }
     </style>
 </head>
 
@@ -567,7 +607,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <!-- HERO -->
     <section class="hero-banner">
         <div class="container" style="position:relative;z-index:2;">
-            <a href="{{ route('superadmin.dashboard') }}" class="back-link">&#8592; Back to Dashboard</a>
             <div class="hero-badge">Super Admin</div>
             <h1>User Management</h1>
             <div class="hero-divider"></div>
@@ -581,9 +620,32 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 $topNotice = session('success') ?: session('error');
             @endphp
             @if($topNotice)
-                <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                <div id="superAdminTopNotice" class="notification-toast" style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:16px 16px 12px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;animation:slideInRight 0.4s ease-out;overflow:hidden;">
                     {{ $topNotice }}
+                    <div id="superAdminTopNoticeTimer" class="progress-bar-timer" style="position:absolute;bottom:0;left:0;height:3px;background:#FDB913;animation:timerBar 5s linear forwards;"></div>
                 </div>
+                <script>
+                    (function () {
+                        const toast = document.getElementById('superAdminTopNotice');
+                        const timer = document.getElementById('superAdminTopNoticeTimer');
+                        if (!toast) return;
+
+                        let dismissed = false;
+                        function dismiss() {
+                            if (dismissed) return;
+                            dismissed = true;
+
+                            toast.style.animation = 'slideOutRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55) forwards';
+                            setTimeout(() => { try { toast.remove(); } catch (e) {} }, 420);
+                        }
+
+                        if (timer) {
+                            timer.addEventListener('animationend', dismiss);
+                        }
+
+                        setTimeout(dismiss, 5200);
+                    })();
+                </script>
             @endif
 
             <div class="d-flex justify-content-between align-items-center mb-4">
@@ -798,31 +860,64 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
-    <!-- ==================== ARCHIVE MODAL ==================== -->
+            <!-- ==================== LARGE NAVY BLUE CONFIRM MODAL ==================== -->
+    <div class="modal fade" id="uiConfirmModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content" style="border-radius:24px; overflow:hidden; box-shadow:0 30px 50px rgba(44,62,143,0.35);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%); color:white; border-bottom: none; padding: 24px 28px 16px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="background:rgba(253,185,19,0.2); width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#FDB913"/>
+                            </svg>
+                        </div>
+                        <h5 class="modal-title" id="uiConfirmTitle" style="font-weight:800; font-size:1.35rem; letter-spacing:-0.3px; margin:0;">Confirm Action</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" id="uiConfirmCloseBtn" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding:32px 28px 24px; background:#FFFFFF; min-height:140px;">
+                    <div id="uiConfirmMessage" style="color:#1E293B; font-weight:500; font-size:1rem; line-height:1.6; text-align:center; white-space:pre-line;">
+                        Are you sure you want to proceed?
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid #E2E8F0; background:#F8FAFC; padding:20px 28px 28px; gap:16px; justify-content:center;">
+                    <button type="button" id="uiConfirmCancelBtn" class="btn-modal-cancel" style="background:white; border:2px solid #CBD5E1; color:#64748B; border-radius:50px; padding:10px 32px; font-weight:700; font-size:0.9rem; transition:all 0.2s; min-width:120px;">Cancel</button>
+                    <button type="button" id="uiConfirmOkBtn" class="btn-modal-submit" style="background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%); color:white; border-radius:50px; padding:10px 32px; font-weight:700; font-size:0.9rem; border:none; transition:all 0.2s; min-width:120px;">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+        <!-- ==================== ARCHIVE MODAL - COMPACT VERSION ==================== -->
     <div class="modal fade" id="archiveModal" tabindex="-1">
-        <div class="modal-dialog modal-dialog-centered modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title"> Archived Users</h5>
+        <div class="modal-dialog modal-dialog-centered modal-xl">
+            <div class="modal-content" style="border-radius:20px; overflow:hidden;">
+                <div class="modal-header" style="background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%); color:white; padding: 16px 24px;">
+                    <h5 class="modal-title" style="font-weight:700; font-size:1.1rem;">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="display:inline-block; margin-right:8px; vertical-align:middle;">
+                            <path d="M19 3h-4.18C14.4 1.84 13.3 1 12 1c-1.3 0-2.4.84-2.82 2H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-7 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm-2 14l-4-4 1.41-1.41L10 14.17l6.59-6.59L18 9l-8 8z" fill="#FDB913"/>
+                        </svg>
+                        Archived Users
+                    </h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
-                    <div class="table-responsive" style="max-height:500px;">
-                        <table class="premium-table" style="margin-bottom:0;">
-                            <thead style="position:sticky;top:0;z-index:1;">
+                    <div class="table-responsive" style="max-height:550px;">
+                        <table class="premium-table" style="margin-bottom:0; font-size:0.8rem;">
+                            <thead style="position:sticky;top:0;z-index:1; background:#F1F5F9;">
                                 <tr>
-                                    <th>Username</th>
-                                    <th>Full Name</th>
-                                    <th>Email</th>
-                                    <th>Role</th>
-                                    <th>Archived Date</th>
-                                    <th>Actions</th>
+                                    <th style="font-size:0.7rem; padding:10px 12px;">USERNAME</th>
+                                    <th style="font-size:0.7rem; padding:10px 12px;">FULL NAME</th>
+                                    <th style="font-size:0.7rem; padding:10px 12px;">EMAIL</th>
+                                    <th style="font-size:0.7rem; padding:10px 12px;">ROLE</th>
+                                    <th style="font-size:0.7rem; padding:10px 12px;">ARCHIVED DATE</th>
+                                    <th style="font-size:0.7rem; padding:10px 12px;">ACTIONS</th>
                                 </tr>
                             </thead>
                             <tbody id="archivedUsersList">
                                 <tr>
                                     <td colspan="6" class="text-center py-4">
-                                        <div class="spinner-border text-primary" role="status">
+                                        <div class="spinner-border text-primary" role="status" style="width:2rem; height:2rem;">
                                             <span class="visually-hidden">Loading...</span>
                                         </div>
                                     </td>
@@ -831,8 +926,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         </table>
                     </div>
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Close</button>
+                <div class="modal-footer" style="padding:12px 20px; background:#F8FAFC; border-top:1px solid #E2E8F0;">
+                    <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal" style="padding:6px 20px; font-size:0.8rem;">Close</button>
                 </div>
             </div>
         </div>
@@ -845,6 +940,140 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             const el = document.getElementById(fieldId);
             if (el) el.style.display = (roleValue === 'admin') ? 'block' : 'none';
         }
+
+      
+                        // -- UI Confirm (lalabas sa harap ng kahit anong modal) ----------------------
+        function uiConfirm(title, message, okText, cancelText) {
+            return new Promise((resolve) => {
+                let modalEl = document.getElementById('uiConfirmModal');
+                
+                // Kung wala pang modal, gawin ito
+                if (!modalEl) {
+                    console.error('Confirm modal not found!');
+                    resolve(false);
+                    return;
+                }
+
+                const titleEl = document.getElementById('uiConfirmTitle');
+                const messageEl = document.getElementById('uiConfirmMessage');
+                let okBtn = document.getElementById('uiConfirmOkBtn');
+                let cancelBtn = document.getElementById('uiConfirmCancelBtn');
+                const closeBtn = document.getElementById('uiConfirmCloseBtn');
+
+                // Set texts
+                if (titleEl) titleEl.textContent = title || 'Confirm Action';
+                if (messageEl) messageEl.textContent = message || 'Are you sure you want to proceed?';
+                if (okBtn) okBtn.textContent = okText || 'OK';
+                if (cancelBtn) cancelBtn.textContent = cancelText || 'Cancel';
+
+                let resolved = false;
+                const done = (val) => {
+                    if (resolved) return;
+                    resolved = true;
+                    resolve(val);
+                };
+
+                // I-close ang modal ng maayos
+                const hideModal = () => {
+                    const bsModal = bootstrap.Modal.getInstance(modalEl);
+                    if (bsModal) {
+                        bsModal.hide();
+                    }
+                };
+
+                // I-remove ang lumang event listeners at maglagay ng bago
+                const newOkBtn = okBtn.cloneNode(true);
+                const newCancelBtn = cancelBtn.cloneNode(true);
+                okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+                cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+                okBtn = newOkBtn;
+                cancelBtn = newCancelBtn;
+
+                okBtn.onclick = () => {
+                    hideModal();
+                    setTimeout(() => done(true), 150);
+                };
+                
+                cancelBtn.onclick = () => {
+                    hideModal();
+                    setTimeout(() => done(false), 150);
+                };
+                
+                if (closeBtn) {
+                    const newCloseBtn = closeBtn.cloneNode(true);
+                    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+                    newCloseBtn.onclick = () => {
+                        hideModal();
+                        setTimeout(() => done(false), 150);
+                    };
+                }
+
+                // Siguraduhing nasa harap ito ng lahat
+                modalEl.style.zIndex = '9999';
+                
+                // I-show ang modal
+                const bsModal = new bootstrap.Modal(modalEl, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                bsModal.show();
+                
+                // Kapag na-hide, i-clean up
+                modalEl.addEventListener('hidden.bs.modal', function onHidden() {
+                    modalEl.removeEventListener('hidden.bs.modal', onHidden);
+                    if (!resolved) {
+                        done(false);
+                    }
+                }, { once: true });
+            });
+        }
+
+        // -- Toast (replace browser alert) -----------------------------
+        function uiToast(message, type) {
+            // type: 'success' | 'error' | 'info'
+            const toast = document.createElement('div');
+            const isError = type === 'error';
+
+            toast.setAttribute('role', 'alert');
+            toast.style.position = 'fixed';
+            toast.style.top = '84px';
+            toast.style.right = '18px';
+            toast.style.zIndex = '1080';
+            toast.style.maxWidth = '420px';
+            toast.style.borderRadius = '12px';
+            toast.style.padding = '14px 16px 12px';
+            toast.style.boxShadow = '0 10px 28px rgba(26,42,92,.35)';
+            toast.style.fontSize = '.84rem';
+            toast.style.fontWeight = '700';
+            toast.style.color = 'white';
+            toast.style.border = '1px solid rgba(255,255,255,.18)';
+
+            if (isError) {
+                toast.style.background = 'linear-gradient(135deg,#C41E24,#8B0000)';
+            } else {
+                toast.style.background = 'linear-gradient(135deg,#2C3E8F,#1A2A5C)';
+            }
+
+            toast.innerHTML = `
+                <div>${escapeHtml(message || '')}</div>
+                <div style="position:absolute;bottom:0;left:0;height:3px;background:#FDB913;animation:timerBar 5s linear forwards;"></div>
+            `;
+
+            toast.className = 'notification-toast';
+            toast.style.animation = 'slideInRight 0.4s ease-out';
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                try {
+                    toast.style.animation = 'slideOutRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55) forwards';
+                    setTimeout(() => {
+                        try { toast.remove(); } catch (e) {}
+                    }, 420);
+                } catch (e) {}
+            }, 5200);
+        }
+
 
         // Initialise create form
         document.addEventListener('DOMContentLoaded', function () {
@@ -908,9 +1137,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             if (statusEl) statusEl.value = user.status || 'active';
         }
 
-        // -- Archive (soft-delete) -------------------------------------
-        function archiveUser(userId, userName) {
-            if (!confirm(`Archive "${userName}"?\nThey can be restored later from the archive.`)) return;
+                // -- Archive (soft-delete) -------------------------------------
+        async function archiveUser(userId, userName) {
+            const ok = await uiConfirm(
+                'Archive User',
+                ` Archive "${userName}"?\n\nThey will be moved to archive and can be restored later.`,
+                'Yes, Archive',
+                'Cancel'
+            );
+            if (!ok) return;
 
             fetch(`/superadmin/users/${userId}/archive`, {
                 method: 'POST',
@@ -922,10 +1157,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             })
                 .then(response => response.text())
                 .then(text => {
-                    // Try to parse as JSON, handling any extra output
                     let data;
                     try {
-                        // Remove any text before the first '{'
                         const jsonStart = text.indexOf('{');
                         if (jsonStart > 0) {
                             text = text.substring(jsonStart);
@@ -937,23 +1170,22 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     }
 
                     if (data.success) {
-                        alert('User archived successfully!');
-                        // Remove the row from the table without page reload
+                        uiToast(' User archived successfully!', 'success');
+
                         const row = document.querySelector(`button[onclick*="archiveUser(${userId}"]`).closest('tr');
                         if (row) {
                             row.style.transition = 'opacity 0.3s';
                             row.style.opacity = '0';
                             setTimeout(() => row.remove(), 300);
                         }
-                        // Update archived count
                         loadArchivedCount();
                     } else {
-                        alert(data.message || 'Error archiving user.');
+                        uiToast((data.message || 'Error archiving user.'), 'error');
                     }
                 })
                 .catch(error => {
                     console.error('Archive error:', error);
-                    alert('Error: ' + error.message);
+                    uiToast(' Error: ' + error.message, 'error');
                 });
         }
 
@@ -1025,9 +1257,28 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 });
         }
 
-        // -- Restore User ----------------------------------------------
-        function restoreUser(userId, userName) {
-            if (!confirm(`Restore "${userName}"? They will become active again.`)) return;
+                        // -- Restore User ----------------------------------------------
+        async function restoreUser(userId, userName) {
+            // Isara muna ang archive modal kung bukas
+            const archiveModal = document.getElementById('archiveModal');
+            if (archiveModal) {
+                const bsArchiveModal = bootstrap.Modal.getInstance(archiveModal);
+                if (bsArchiveModal) {
+                    bsArchiveModal.hide();
+                }
+            }
+            
+            // Maghintay ng konti para magsara ang modal
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            const ok = await uiConfirm(
+                'Restore User',
+                `Restore "${userName}"?\n\nThey will be moved back to the active users list.`,
+                'Yes, Restore',
+                'Cancel'
+            );
+            
+            if (!ok) return;
 
             fetch(`/superadmin/users/${userId}/restore`, {
                 method: 'POST',
@@ -1040,23 +1291,42 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('User restored successfully!');
+                        uiToast('User restored successfully!', 'success');
                         loadArchivedUsers();
                         loadArchivedCount();
-                        setTimeout(() => location.reload(), 500);
+                        setTimeout(() => location.reload(), 800);
                     } else {
-                        alert(data.message || 'Error restoring user.');
+                        uiToast((data.message || 'Error restoring user.'), 'error');
                     }
                 })
                 .catch(error => {
                     console.error('Restore error:', error);
-                    alert('Error restoring user: ' + error.message);
+                    uiToast(' Error restoring user: ' + error.message, 'error');
                 });
         }
 
-        // -- Permanent Delete User -------------------------------------
-        function permanentDeleteUser(userId, userName) {
-            if (!confirm(`?? PERMANENT DELETE\n\n"${userName}" will be deleted forever.\nThis action CANNOT be undone.\n\nAre you absolutely sure?`)) return;
+                        // -- Permanent Delete User -------------------------------------
+        async function permanentDeleteUser(userId, userName) {
+            // Isara muna ang archive modal kung bukas
+            const archiveModal = document.getElementById('archiveModal');
+            if (archiveModal) {
+                const bsArchiveModal = bootstrap.Modal.getInstance(archiveModal);
+                if (bsArchiveModal) {
+                    bsArchiveModal.hide();
+                }
+            }
+            
+            // Maghintay ng konti para magsara ang modal
+            await new Promise(resolve => setTimeout(resolve, 300));
+            
+            const ok = await uiConfirm(
+                ' PERMANENT DELETE',
+                `Delete "${userName}" FOREVER?\n\nThis action CANNOT be undone.\n\nAre you absolutely sure?`,
+                'Yes, Delete Forever',
+                'No, Cancel'
+            );
+            
+            if (!ok) return;
 
             fetch(`/superadmin/users/${userId}/force-delete`, {
                 method: 'DELETE',
@@ -1069,16 +1339,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
-                        alert('User permanently deleted.');
+                        uiToast('User permanently deleted.', 'success');
                         loadArchivedUsers();
                         loadArchivedCount();
                     } else {
-                        alert(data.message || 'Error deleting user.');
+                        uiToast((data.message || 'Error deleting user.'), 'error');
                     }
                 })
                 .catch(error => {
                     console.error('Delete error:', error);
-                    alert('Error deleting user: ' + error.message);
+                    uiToast(' Error deleting user: ' + error.message, 'error');
                 });
         }
 

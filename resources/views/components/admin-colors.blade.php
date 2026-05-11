@@ -112,11 +112,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const chatBtn = document.getElementById('globalChatBtn');
     if (chatBtn) {
         chatBtn.addEventListener('click', function() {
-            const modal = document.getElementById('chatModal');
-            if (modal) {
-                const bsModal = new bootstrap.Modal(modal);
-                bsModal.show();
-                if (typeof loadUsers === 'function') loadUsers();
+            if (typeof openChatModal === 'function') {
+                openChatModal();
             }
         });
     }

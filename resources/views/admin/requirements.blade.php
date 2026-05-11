@@ -452,31 +452,81 @@
             opacity: 0.92;
         }
 
+        /* Client-side toast — matches components/admin-notification (navy + yellow timer + close) */
         .ui-toast {
             position: fixed;
-            top: 16px;
-            right: 16px;
-            z-index: 12000;
+            top: 84px;
+            right: 18px;
+            z-index: 1090;
+            max-width: 420px;
             min-width: 260px;
-            max-width: 360px;
-            padding: 12px 14px;
-            border-radius: 14px;
-            background: #0f172a;
+            padding: 14px 18px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #2C3E8F, #1A2A5C);
             color: #fff;
-            box-shadow: 0 14px 40px rgba(2, 6, 23, 0.35);
-            border: 1px solid rgba(255, 255, 255, 0.12);
+            box-shadow: 0 10px 28px rgba(26, 42, 92, .35);
+            border: 1px solid rgba(255, 255, 255, .18);
             display: none;
+            flex-direction: column;
+            overflow: hidden;
+            font-size: .84rem;
+            font-weight: 700;
         }
 
         .ui-toast.show {
-            display: block;
+            display: flex;
         }
 
-        .ui-toast small {
-            display: block;
-            opacity: 0.75;
-            font-weight: 600;
-            margin-top: 2px;
+        .ui-toast-row {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .ui-toast-text {
+            flex: 1;
+            white-space: pre-line;
+            line-height: 1.45;
+        }
+
+        .ui-toast-close {
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.15);
+            border: none;
+            color: #fff;
+            border-radius: 6px;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 1.1rem;
+            line-height: 1;
+            padding: 0;
+            transition: background .2s;
+        }
+
+        .ui-toast-close:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        .ui-toast-timer {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            height: 3px;
+            width: 100%;
+            background: rgba(253, 185, 19, 0.9);
+            transform-origin: left;
+            animation: uiToastTimerShrink 5s linear forwards;
+        }
+
+        @keyframes uiToastTimerShrink {
+            from { width: 100%; }
+            to { width: 0%; }
         }
 
         /* ── Navy loading overlay for async/admin actions ───────────────────── */
@@ -570,7 +620,7 @@
                 </ul>
                 <div class="d-flex align-items-center gap-3">
                     @auth
-                        <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#adminNotifModal"
+                        <button type="button" class="btn" onclick="openAdminNotifModal()"
                             style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
                             title="Application Notifications">
                             <i class="bi bi-bell-fill"></i>
@@ -595,15 +645,7 @@
     <div style="flex:1;">
         <div class="container mt-4">
 
-            @php
-                $topNotice = session('success') ?: session('error');
-            @endphp
-            @if($topNotice)
-                <div
-                    style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
-                    {{ $topNotice }}
-                </div>
-            @endif
+            @include('components.admin-notification')
 
             <div class="page-hero mb-4">
                 <div class="row align-items-center">
@@ -625,7 +667,7 @@
                             style="background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.3);color:white;border-radius:20px;padding:5px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;"
                             onmouseover="this.style.background='rgba(255,255,255,0.22)'"
                             onmouseout="this.style.background='rgba(255,255,255,0.12)'">
-                            &#128193; Archived ({{ isset($archivedApplications) ? $archivedApplications->count() : 0 }})
+                            Archived ({{ isset($archivedApplications) ? $archivedApplications->count() : 0 }})
                         </button>
                         <span
                             style="font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.15);padding:4px 12px;border-radius:20px;">
@@ -695,11 +737,11 @@
                                             </td>
                                             <td>
                                                 @if($app->status === 'approved')
-                                                    <span class="status-pill status-approved"> Approved</span>
+                                                    <span class="status-pill status-approved">Approved</span>
                                                 @elseif($app->status === 'rejected')
-                                                    <span class="status-pill status-rejected"> Rejected</span>
+                                                    <span class="status-pill status-rejected">Rejected</span>
                                                 @else
-                                                    <span class="status-pill status-pending"> Pending</span>
+                                                    <span class="status-pill status-pending">Pending</span>
                                                 @endif
                                             </td>
                                             <td>
@@ -708,7 +750,7 @@
                                                         @if($app->id_status === 'ready_for_pickup')
                                                             <span class="btn-action"
                                                                 style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:800;">
-                                                                🎫 ID Ready
+                                                                ID Ready
                                                             </span>
                                                         @elseif($app->id_status === 'processing')
                                                             <form method="POST"
@@ -719,7 +761,7 @@
                                                                     data-confirm-title="Mark PWD ID ready?"
                                                                     data-confirm-message="Notify user that PWD ID is ready for pick-up?"
                                                                     data-confirm-ok="ID Ready">
-                                                                    🎫 ID Ready
+                                                                    ID Ready
                                                                 </button>
                                                             </form>
                                                         @else
@@ -731,7 +773,7 @@
                                                                     data-confirm-title="Validate requirements?"
                                                                     data-confirm-message="Mark this approved PWD application as validated and notify the user?"
                                                                     data-confirm-ok="Validate">
-                                                                    🏆 Validate
+                                                                    Validate
                                                                 </button>
                                                             </form>
                                                         @endif
@@ -741,13 +783,13 @@
                                                         @if($app->id_status === 'released')
                                                             <span class="btn-action"
                                                                 style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;font-weight:800;">
-                                                                ✅ Released
+                                                                Released
                                                             </span>
                                                         @elseif($app->id_status === 'ready_for_pickup')
                                                             {{-- Grant ready — admin marks as officially released --}}
                                                             <span class="btn-action"
                                                                 style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:700;margin-right:4px;">
-                                                                🎁 Claim Ready
+                                                                Claim Ready
                                                             </span>
                                                             <form method="POST"
                                                                 action="{{ route('admin.applications.mark-released', $app->id) }}"
@@ -758,7 +800,7 @@
                                                                     data-confirm-title="Mark as Released?"
                                                                     data-confirm-message="Confirm that the AICS grant has been physically released to the applicant? This will send a confirmation email."
                                                                     data-confirm-ok="Mark Released">
-                                                                    ✅ Mark Released
+                                                                    Mark Released
                                                                 </button>
                                                             </form>
                                                         @elseif($app->id_status === 'processing')
@@ -770,7 +812,7 @@
                                                                     data-confirm-title="Mark claim ready?"
                                                                     data-confirm-message="Notify user that AICS grant is ready for pickup?"
                                                                     data-confirm-ok="Ready">
-                                                                    🎁 Claim Ready
+                                                                    Claim Ready
                                                                 </button>
                                                             </form>
                                                         @else
@@ -782,7 +824,7 @@
                                                                     data-confirm-title="Validate AICS requirements?"
                                                                     data-confirm-message="Mark this approved AICS application as validated and notify the user?"
                                                                     data-confirm-ok="Validate">
-                                                                    ✅ Validate
+                                                                    Validate
                                                                 </button>
                                                             </form>
                                                         @endif
@@ -796,7 +838,7 @@
                                                     <button type="button" class="btn-action"
                                                         style="background:#f8faff;color:#64748b;border:1.5px solid #e2e8f0;font-size:.76rem;"
                                                         onclick="archiveApp({{ $app->id }}, '{{ addslashes($app->full_name) }}')">
-                                                        &#128193; Archive
+                                                        Archive
                                                     </button>
                                                 </div>
                                             </td>
@@ -817,13 +859,13 @@
 
             <div class="panel-card" style="margin-top:28px;">
                 <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
-                    <span>&#128197; Appointments</span>
+                    <span>Appointments</span>
                     <div style="display:flex;align-items:center;gap:10px;">
                         <button type="button" onclick="openArchivedAppts()"
                             style="background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.3);color:white;border-radius:20px;padding:5px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;"
                             onmouseover="this.style.background='rgba(255,255,255,0.22)'"
                             onmouseout="this.style.background='rgba(255,255,255,0.12)'">
-                            &#128193; Archived (<span id="archivedApptCount">0</span>)
+                            Archived (<span id="archivedApptCount">0</span>)
                         </button>
                         <span id="apptCount"
                             style="font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.15);padding:4px 12px;border-radius:20px;">Loading&hellip;</span>
@@ -973,10 +1015,10 @@
                     } else if (a.status === 'validated') {
                         const isAics = ['AICS_Medical','AICS_Burial'].includes(a.program_type);
                         if (a.id_status === 'released') {
-                            actions = `<span style="background:#d1fae5;color:#065f46;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">✅ Released</span>`;
+                            actions = `<span style="background:#d1fae5;color:#065f46;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">Released</span>`;
                         } else if (a.id_status === 'ready_for_pickup' && isAics) {
-                            actions = `<span style="background:#dcfce7;color:#166534;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;margin-right:4px;">🎁 Claim Ready</span>
-                                       <button onclick="markReleased(${a.aics_app_id},'${encodeURIComponent(a.user_name)}')" style="background:linear-gradient(135deg,#16a34a,#064e3b);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">✅ Mark Released</button>`;
+                            actions = `<span style="background:#dcfce7;color:#166534;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;margin-right:4px;">Claim Ready</span>
+                                       <button onclick="markReleased(${a.aics_app_id},'${encodeURIComponent(a.user_name)}')" style="background:linear-gradient(135deg,#16a34a,#064e3b);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Mark Released</button>`;
                         } else if (a.id_status === 'ready_for_pickup') {
                             actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">ID Ready</span>`;
                         } else if (a.id_status === 'processing') {
@@ -1398,7 +1440,7 @@
             <div
                 style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);padding:18px 26px;border-radius:18px 18px 0 0;display:flex;align-items:center;justify-content:space-between;">
                 <div>
-                    <div style="color:white;font-weight:800;font-size:1rem;">&#128193; Archived Applications</div>
+                    <div style="color:white;font-weight:800;font-size:1rem;">Archived Applications</div>
                     <div style="color:rgba(255,255,255,.7);font-size:.8rem;margin-top:2px;">
                         {{ isset($archivedApplications) ? $archivedApplications->count() : 0 }} archived record(s)
                         &mdash; restore or permanently delete
@@ -1451,7 +1493,7 @@
                                                     data-confirm-title="Restore application?"
                                                     data-confirm-message="Restore this application?" data-confirm-ok="Restore"
                                                     style="font-size:.76rem;">
-                                                    &#8593; Restore
+                                                    Restore
                                                 </button>
                                             </form>
                                             <form method="POST"
@@ -1462,7 +1504,7 @@
                                                     data-confirm-title="Permanently delete?"
                                                     data-confirm-message="Permanently delete this application? This cannot be undone."
                                                     data-confirm-ok="Delete" style="font-size:.76rem;">
-                                                    &#10006; Delete
+                                                    Delete
                                                 </button>
                                             </form>
                                         </div>
@@ -1473,7 +1515,6 @@
                     </table>
                 @else
                     <div style="text-align:center;padding:50px 24px;">
-                        <div style="font-size:2.5rem;">&#128193;</div>
                         <p style="color:#94a3b8;margin-top:10px;">No archived applications yet.</p>
                     </div>
                 @endif
@@ -1600,8 +1641,8 @@
                 <td style="font-size:.82rem;color:#94a3b8;">${a.archived_at}</td>
                 <td>
                     <div style="display:flex;gap:5px;">
-                        <button onclick="restoreAppt(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">&#8593; Restore</button>
-                        <button onclick="forceDeleteAppt(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">&#10006; Delete</button>
+                        <button onclick="restoreAppt(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">Restore</button>
+                        <button onclick="forceDeleteAppt(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">Delete</button>
                     </div>
                 </td>
             </tr>`;
@@ -1650,7 +1691,7 @@
             <div
                 style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);padding:18px 26px;border-radius:18px 18px 0 0;display:flex;align-items:center;justify-content:space-between;">
                 <div>
-                    <div style="color:white;font-weight:800;font-size:1rem;">&#128193; Archived Appointments</div>
+                    <div style="color:white;font-weight:800;font-size:1rem;">Archived Appointments</div>
                     <div style="color:rgba(255,255,255,.7);font-size:.8rem;margin-top:2px;">Restore or permanently
                         delete archived appointments</div>
                 </div>
@@ -1700,9 +1741,12 @@
             </div>
         </div>
     </div>
-    <div id="uiToast" class="ui-toast" role="status" aria-live="polite">
-        <div id="uiToastTitle" style="font-weight:900;font-size:.88rem;"></div>
-        <small id="uiToastMsg"></small>
+    <div id="uiToast" class="ui-toast" role="status" aria-live="polite" aria-atomic="true">
+        <div class="ui-toast-row">
+            <span id="uiToastText" class="ui-toast-text"></span>
+            <button type="button" class="ui-toast-close" id="uiToastClose" onclick="dismissUiToast()" aria-label="Close">&times;</button>
+        </div>
+        <div id="uiToastTimer" class="ui-toast-timer" aria-hidden="true"></div>
     </div>
 
     <script>
@@ -1742,17 +1786,54 @@
             __uiConfirmResolve = null;
         }
 
-        // Simple toast for success/error messages (replaces alert())
+        // Toast aligned with components/admin-notification (navy, yellow timer, close, 5s)
         let __uiToastTimer = null;
+        function dismissUiToast() {
+            const toast = document.getElementById('uiToast');
+            if (!toast || !toast.classList.contains('show')) return;
+            if (__uiToastTimer) {
+                clearTimeout(__uiToastTimer);
+                __uiToastTimer = null;
+            }
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100px)';
+            setTimeout(() => {
+                toast.classList.remove('show');
+                toast.style.opacity = '';
+                toast.style.transform = '';
+                toast.style.transition = '';
+            }, 400);
+        }
+
         function uiToast(message, title = 'MSWDO Admin') {
             const toast = document.getElementById('uiToast');
-            const t = document.getElementById('uiToastTitle');
-            const m = document.getElementById('uiToastMsg');
-            t.textContent = title;
-            m.textContent = message || '';
-            toast.classList.add('show');
+            const textEl = document.getElementById('uiToastText');
+            const bar = document.getElementById('uiToastTimer');
+            if (!toast || !textEl || !bar) return;
+
+            let body = (message || '').trim();
+            if (title && title !== 'MSWDO Admin' && title !== 'Error') {
+                body = title + (body ? '\n\n' + body : '');
+            }
+
+            textEl.textContent = body;
+
+            bar.style.animation = 'none';
+            void bar.offsetHeight;
+            bar.style.animation = 'uiToastTimerShrink 5s linear forwards';
+
             if (__uiToastTimer) clearTimeout(__uiToastTimer);
-            __uiToastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+
+            toast.style.transition = 'all 0.4s cubic-bezier(0.68,-0.55,0.265,1.55)';
+            toast.classList.add('show');
+            toast.style.opacity = '0';
+            toast.style.transform = 'translateX(100px)';
+            setTimeout(() => {
+                toast.style.opacity = '1';
+                toast.style.transform = 'translateX(0)';
+            }, 100);
+
+            __uiToastTimer = setTimeout(() => dismissUiToast(), 5000);
         }
 
         function showLoading(title = 'Processing Request', subtitle = 'Please wait while we update records.') {

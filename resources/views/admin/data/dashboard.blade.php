@@ -108,8 +108,17 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
                 </ul>
-                <div class="d-flex">
+                <div class="d-flex align-items-center gap-3">
                     @auth
+                    <button type="button" class="btn" onclick="openAdminNotifModal()"
+                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
+                        title="Application Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($adminNotifCount) && $adminNotifCount > 0)
+                            <span class="admin-bell-badge"
+                                style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $adminNotifCount > 9 ? '9+' : $adminNotifCount }}</span>
+                        @endif
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -148,14 +157,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="main-content">
     <div class="container mt-4">
 
-        @php
-            $topNotice = session('success') ?: session('error');
-        @endphp
-        @if($topNotice)
-            <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
-                {{ $topNotice }}
-            </div>
-        @endif
+        @include('components.admin-notification')
 
         <!-- YEAR FILTERS -->
         <div style="margin: 8px 0 24px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:15px;">
@@ -196,10 +198,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
 
         <!-- MENU CARDS -->
-        <p class="section-heading">Manage Your Data</p>
+        <p class="section-heading" id="manage-data-section">Manage Your Data</p>
         <div class="row g-4 mb-4">
-            <div class="col-md-4">
-                <a href="{{ route('admin.data.municipality') }}" class="menu-card">
+            <div class="col-md-4" id="municipality-card">
+                <a href="{{ route('admin.data.municipality') }}#return" class="menu-card">
                     <div class="menu-text">
                         <span class="menu-num">01 &mdash; Municipality</span>
                         <span class="menu-title">Municipality Profile</span>
@@ -208,8 +210,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <span class="menu-arrow">&rsaquo;</span>
                 </a>
             </div>
-            <div class="col-md-4">
-                <a href="{{ route('admin.data.programs') }}" class="menu-card">
+            <div class="col-md-4" id="programs-card">
+                <a href="{{ route('admin.data.programs') }}#return" class="menu-card">
                     <div class="menu-text">
                         <span class="menu-num">02 &mdash; Programs</span>
                         <span class="menu-title">Social Programs</span>
@@ -218,8 +220,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <span class="menu-arrow">&rsaquo;</span>
                 </a>
             </div>
-            <div class="col-md-4">
-                <a href="{{ route('admin.data.yearly') }}" class="menu-card">
+            <div class="col-md-4" id="yearly-card">
+                <a href="{{ route('admin.data.yearly') }}#return" class="menu-card">
                     <div class="menu-text">
                         <span class="menu-num">03 &mdash; Yearly Summary</span>
                         <span class="menu-title">Municipality Yearly Data</span>
@@ -228,8 +230,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <span class="menu-arrow">&rsaquo;</span>
                 </a>
             </div>
-            <div class="col-md-4">
-                <a href="{{ route('admin.csv.index') }}" class="menu-card">
+            <div class="col-md-4" id="csv-card">
+                <a href="{{ route('admin.csv.index') }}#return" class="menu-card">
                     <div class="menu-text">
                         <span class="menu-num">04 &mdash; CSV Data</span>
                         <span class="menu-title">CSV Import/Export</span>
@@ -248,8 +250,23 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-@include('components.admin-settings-modal')
-@include('components.admin-chat-modal')
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <script>
+        // Scroll to the section when returning from subpages
+        window.addEventListener('DOMContentLoaded', function() {
+            if (window.location.hash === '#return') {
+                const section = document.getElementById('manage-data-section');
+                if (section) {
+                    setTimeout(() => {
+                        section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    }, 100);
+                }
+            }
+        });
+    </script>
+    @include('components.admin-notification-modal')
+    @include('components.admin-settings-modal')
+    @include('components.admin-chat-modal')
 </body>
 </html>
 
