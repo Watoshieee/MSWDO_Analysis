@@ -43,8 +43,8 @@ if (isset($_GET['cron_key']) && $_GET['cron_key'] !== 'REPLACE_WITH_SECURE_RANDO
 
 // ── Configuration ────────────────────────────────────────────────────────────
 define('ONESIGNAL_APP_ID',   '3db6828d-49af-4f5a-8d89-ff0b90749aec');
-define('ONESIGNAL_API_KEY',  'REPLACE_WITH_YOUR_ONESIGNAL_REST_API_KEY');  // From OneSignal Dashboard → Settings → Keys
-define('ONESIGNAL_API_URL',  'https://onesignal.com/api/v1/notifications');
+define('ONESIGNAL_API_KEY',  'REPLACE_WITH_YOUR_ONESIGNAL_REST_API_KEY');  // Set directly on Hostinger, never commit real key
+define('ONESIGNAL_API_URL',  'https://api.onesignal.com/notifications');   // v2 key endpoint
 define('BATCH_SIZE', 50); // Max notifications to process per run
 
 // ── Database connection ──────────────────────────────────────────────────────
@@ -173,11 +173,18 @@ function sendOneSignalPush(string $userId, string $title, string $body, string $
         CURLOPT_TIMEOUT        => 15,
     ]);
 
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    $response  = curl_exec($ch);
+    $httpCode  = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
 
-    if ($httpCode !== 200) {
+    if ($curlError) {
+        echo "[PushDispatcher] cURL error: $curlError" . PHP_EOL;
+        return false;
+    }
+
+    if ($httpCode !== 200 && $httpCode !== 201) {
+        echo "[PushDispatcher] OneSignal HTTP {$httpCode}: {$response}" . PHP_EOL;
         error_log("[PushDispatcher] OneSignal HTTP $httpCode: $response");
         return false;
     }
