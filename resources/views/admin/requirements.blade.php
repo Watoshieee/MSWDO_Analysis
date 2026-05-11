@@ -1011,6 +1011,13 @@
                                     <button onclick="validateAppt(${a.id})" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">Eligible</button>
                                     <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Reject</button>
                                 `;
+                        } else if (!isSoloParent && a.status === 'confirmed') {
+                            // AICS Medical / AICS Burial — show Validate (interview done) button
+                            const aicsLabel = a.program_type === 'AICS_Burial' ? 'AICS Burial' : 'AICS Medical';
+                            actions = `
+                                    <button onclick="validateAppt(${a.id})" style="background:linear-gradient(135deg,#0891b2,#0e4f6b);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">Validate</button>
+                                    <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Reject</button>
+                                `;
                         }
                     } else if (a.status === 'validated') {
                         const isAics = ['AICS_Medical','AICS_Burial'].includes(a.program_type);
@@ -1111,13 +1118,22 @@
         }
 
         function validateAppt(id) {
+            // Find the appointment data to get program type
+            const appt = _allAppointments.find(a => a.id === id);
+            const programLabel = appt
+                ? (appt.program_type === 'AICS_Burial' ? 'AICS Burial Assistance'
+                    : appt.program_type === 'AICS_Medical' ? 'AICS Medical Assistance'
+                    : 'Solo Parent ID')
+                : 'program';
+            const isSoloParent = appt && appt.program_type === 'Solo_Parent';
+
             uiConfirm(
-                'Mark as eligible?',
-                'Validate this appointment?\n\nThis will:\n- Mark the applicant as eligible for Solo Parent ID\n- Create their requirements submission form\n- Send them an email notification',
-                { okText: 'Eligible', cancelText: 'Cancel' }
+                'Validate interview?',
+                `Mark this appointment as validated?\n\nThis confirms the interview is done and will:\n- Allow the user to upload their ${programLabel} requirements\n- Send them an email and bell notification`,
+                { okText: 'Validate', cancelText: 'Cancel' }
             ).then(ok => {
                 if (!ok) return;
-                showLoading('Marking Eligible', 'Preparing requirements and sending notification...');
+                showLoading('Validating', 'Preparing requirements form and sending notification...');
                 fetch(`/admin/appointments/${id}/validate`, {
                     method: 'POST',
                     headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
