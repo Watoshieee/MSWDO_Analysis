@@ -320,7 +320,7 @@
             left: 0;
             right: 0;
             height: 4px;
-            background: var(--secondary-gradient);
+            background: var(--primary-gradient);
         }
 
         .menu-card:hover {
@@ -332,7 +332,7 @@
         .menu-card-num {
             font-size: 0.75rem;
             font-weight: 800;
-            color: rgba(253, 185, 19, 0.8);
+            color: rgba(44, 62, 143, 0.8);
             letter-spacing: 0.15em;
             text-transform: uppercase;
             margin-bottom: 10px;
@@ -356,7 +356,7 @@
             bottom: 22px;
             right: 22px;
             font-size: 1.2rem;
-            color: var(--secondary-yellow);
+            color: var(--primary-blue);
             font-weight: 900;
             transition: transform 0.25s ease;
         }
@@ -504,6 +504,46 @@
             border-color: transparent;
             border-left-color: var(--primary-blue);
         }
+
+        /* ── NOTIFICATION ANIMATIONS ── */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes timerBar {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+
+        .notification-toast {
+            animation-fill-mode: both;
+        }
+
+        .notification-toast.fade-out {
+            animation: slideOutRight 0.4s ease-in forwards;
+        }
     </style>
 </head>
 
@@ -567,8 +607,9 @@
                 $topNotice = session('success') ?: session('error');
             @endphp
             @if($topNotice)
-                <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                <div class="notification-toast" style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:16px 16px 12px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;animation:slideInRight 0.4s ease-out;overflow:hidden;">
                     {{ $topNotice }}
+                    <div class="progress-bar-timer" style="position:absolute;bottom:0;left:0;height:3px;background:#FDB913;animation:timerBar 5s linear forwards;"></div>
                 </div>
             @endif
 
@@ -788,12 +829,12 @@
     <div class="modal fade" id="superAdminsModal" tabindex="-1" aria-labelledby="superAdminsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
-                <div class="modal-header" style="background: linear-gradient(135deg, #FDB913 0%, #E5A500 100%); color: #1A2A5C; padding: 24px 32px; border: none;">
+                <div class="modal-header" style="background: var(--primary-gradient); color: white; padding: 24px 32px; border: none;">
                     <div>
                         <h5 class="modal-title" id="superAdminsModalLabel" style="font-weight: 700; font-size: 1.3rem; margin: 0;">Super Admins</h5>
                         <small style="opacity: 0.85; font-size: 0.88rem;">{{ $totalSuperAdmins }} system administrators</small>
                     </div>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body" style="padding: 0; background: #f8fafc;">
                     <div style="overflow-x: auto;">
@@ -834,7 +875,7 @@
     <div class="modal fade" id="adminsModal" tabindex="-1" aria-labelledby="adminsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
-                <div class="modal-header" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: white; padding: 24px 32px; border: none;">
+                <div class="modal-header" style="background: var(--primary-gradient); color: white; padding: 24px 32px; border: none;">
                     <div>
                         <h5 class="modal-title" id="adminsModalLabel" style="font-weight: 700; font-size: 1.3rem; margin: 0;">Municipal Admins</h5>
                         <small style="opacity: 0.9; font-size: 0.88rem;">{{ $totalAdmins }} municipal administrators</small>
@@ -880,7 +921,7 @@
     <div class="modal fade" id="regularUsersModal" tabindex="-1" aria-labelledby="regularUsersModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-scrollable">
             <div class="modal-content" style="border-radius: 16px; overflow: hidden; border: none; box-shadow: 0 10px 40px rgba(0,0,0,0.15);">
-                <div class="modal-header" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); color: white; padding: 24px 32px; border: none;">
+                <div class="modal-header" style="background: var(--primary-gradient); color: white; padding: 24px 32px; border: none;">
                     <div>
                         <h5 class="modal-title" id="regularUsersModalLabel" style="font-weight: 700; font-size: 1.3rem; margin: 0;">Regular Users</h5>
                         <small style="opacity: 0.9; font-size: 0.88rem;">{{ $totalRegularUsers }} registered users</small>

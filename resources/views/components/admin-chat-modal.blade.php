@@ -1,14 +1,18 @@
 <meta name="csrf-token" content="{{ csrf_token() }}">
 
 <!-- Chat Modal -->
-<div class="modal fade" id="chatModal" tabindex="-1">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content chat-modal">
-            <div class="modal-header chat-header">
-                <h5 class="modal-title">User Messages</h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body p-0">
+<div id="chatModal"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;"
+    onclick="if(event.target===this) closeChatModal()">
+    <div style="background:white;width:90%;max-width:600px;border-radius:20px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);animation:fadeInScale .25s ease;">
+        <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:18px 24px;border:none;border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:space-between;">
+            <h5 style="font-weight:800;font-size:1.1rem;margin:0;">User Messages</h5>
+            <button onclick="closeChatModal()"
+                style="background:rgba(255,255,255,.15);border:none;color:white;border-radius:50%;width:34px;height:34px;font-size:1.1rem;cursor:pointer;line-height:1;">
+                &times;
+            </button>
+        </div>
+        <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
                 <!-- User List -->
                 <div id="userSelection" class="p-4">
                     <p class="text-muted mb-3" style="font-size:0.9rem;">Select a user to view conversation:</p>
@@ -234,9 +238,26 @@
     color: #2C3E8F;
     font-size: 0.9rem;
 }
+
+@keyframes fadeInScale {
+    from { transform: scale(.95); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
 </style>
 
 <script>
+function openChatModal() {
+    document.getElementById('chatModal').style.display = 'flex';
+    loadUnreadCount();
+    loadUsers();
+}
+
+function closeChatModal() {
+    if (messageCheckInterval) clearInterval(messageCheckInterval);
+    document.getElementById('chatModal').style.display = 'none';
+    backToUserList();
+}
+
 let currentUserId = null;
 let messageCheckInterval = null;
 
@@ -411,9 +432,4 @@ function escapeHtml(text) {
     div.textContent = text;
     return div.innerHTML;
 }
-
-document.getElementById('chatModal').addEventListener('hidden.bs.modal', function() {
-    if (messageCheckInterval) clearInterval(messageCheckInterval);
-    backToUserList();
-});
 </script>

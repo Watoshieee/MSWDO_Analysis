@@ -788,25 +788,25 @@
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="stat-card accent-yellow">
-                        <div class="stat-icon" style="background:#E5EEFF;color:#1d4ed8;">HOUSEHOLD</div>
-                        <h2 style="color:#2C3E8F;">{{ number_format($totalHouseholds) }}</h2>
+                    <div class="stat-card">
+                        <div class="stat-icon">HOUSEHOLD</div>
+                        <h2>{{ number_format($totalHouseholds) }}</h2>
                         <p class="stat-label">Total Households</p>
                         <p class="stat-sub">{{ $householdsPct }}% of population</p>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="stat-card accent-green">
-                        <div class="stat-icon" style="background:#cce4f0;color:#0369a1;">BENEFICIARIES</div>
-                        <h2 style="color:#2C3E8F;">{{ number_format($totalBeneficiaries) }}</h2>
+                    <div class="stat-card">
+                        <div class="stat-icon">BENEFICIARIES</div>
+                        <h2>{{ number_format($totalBeneficiaries) }}</h2>
                         <p class="stat-label">Total Beneficiaries</p>
                         <p class="stat-sub">{{ $beneficiariesPct }}% of population</p>
                     </div>
                 </div>
                 <div class="col-6 col-md-3">
-                    <div class="stat-card accent-red">
-                        <div class="stat-icon" style="background:#e0e7ff;color:#4f46e5;">60+</div>
-                        <h2 style="color:#2C3E8F;">{{ number_format($totalSenior) }}</h2>
+                    <div class="stat-card">
+                        <div class="stat-icon">60+</div>
+                        <h2>{{ number_format($totalSenior) }}</h2>
                         <p class="stat-label">Senior Citizens</p>
                         <p class="stat-sub">{{ $seniorPct }}% of total</p>
                     </div>
@@ -868,7 +868,7 @@
     {{-- ===== SECTION 3: GENDER DISTRIBUTION ===== --}}
     <section class="section-wrapper" id="gender-distribution" style="scroll-margin-top:110px;">
         <div class="container">
-            <h2 class="section-title">⚤ Gender Distribution</h2>
+            <h2 class="section-title"> Gender Distribution</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Compare male vs. female population
                 and identify any imbalance.</p>
             <div class="row g-4">
@@ -897,7 +897,7 @@
     {{-- ===== SECTION 4: AGE GROUP STACKED BAR ===== --}}
     <section class="section-wrapper alt" style="background:#f0f5ff !important;" id="age-group-structure" style="scroll-margin-top:110px;">
         <div class="container">
-            <h2 class="section-title">👥 Age Group Structure</h2>
+            <h2 class="section-title"> Age Group Structure</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Is the population youthful, mature,
                 or aging? Compare age brackets per municipality.</p>
             <div class="chart-card">
@@ -1003,7 +1003,7 @@
     {{-- ===== SECTION 2: POPULATION TREND ===== --}}
     <section class="section-wrapper alt" style="background:#f0f5ff !important;" id="population-trend" style="scroll-margin-top:110px;">
         <div class="container">
-            <h2 class="section-title">📈 Population Trend (Yearly)</h2>
+            <h2 class="section-title"> Population Trend (Yearly)</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Track population growth or decline
                 over time for each municipality.</p>
             <div class="chart-card">
@@ -1019,7 +1019,7 @@
     {{-- ===== SECTION 5: HOUSEHOLD ANALYSIS ===== --}}
     <section class="section-wrapper" id="household-analysis" style="scroll-margin-top:110px;">
         <div class="container">
-            <h2 class="section-title">🏠 Household Analysis</h2>
+            <h2 class="section-title"> Household Analysis</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Compare total households and estimate
                 average household size across municipalities.</p>
             <div class="row g-4">
@@ -1115,7 +1115,7 @@
     {{-- ===== SECTION 6: BENEFICIARIES DISTRIBUTION ===== --}}
     <section class="section-wrapper alt" style="background:#f0f5ff !important;" id="beneficiaries-distribution" style="scroll-margin-top:110px;">
         <div class="container">
-            <h2 class="section-title">🤝 Beneficiaries Distribution</h2>
+            <h2 class="section-title"> Beneficiaries Distribution</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Breakdown of social welfare program
                 beneficiaries per municipality.</p>
             <div class="row g-4">
@@ -1144,7 +1144,7 @@
     {{-- ===== SECTION 7: BENEFICIARIES TREND ===== --}}
     <section class="section-wrapper" id="beneficiaries-trend" style="scroll-margin-top:110px;">
         <div class="container">
-            <h2 class="section-title">📊 Beneficiaries Trend (Yearly)</h2>
+            <h2 class="section-title"> Beneficiaries Trend (Yearly)</h2>
             <p class="text-muted mb-4" style="margin-top:-18px;font-size:0.93rem;">Analyze increase or decrease in total
                 beneficiaries across all years.</p>
             <div class="chart-card">
@@ -1161,7 +1161,7 @@
     {{-- ===== SECTION 8: KEY INSIGHTS ===== --}}
     <section class="section-wrapper alt" style="background:#1e293b !important;padding:52px 0;" id="key-insights" style="scroll-margin-top:110px;">
         <div class="container">
-            <h2 class="section-title" style="color:#FDB913;">💡 Key Insights</h2>
+            <h2 class="section-title" style="color:#FDB913;"> Key Insights</h2>
             <p style="color:rgba(255,255,255,0.7);margin-top:-18px;margin-bottom:32px;font-size:0.93rem;">Auto-generated
                 insights based on {{ $selectedYear }} demographic data.</p>
             <div class="row g-4">

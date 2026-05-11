@@ -264,12 +264,7 @@
             <div class="bar-label">{{ round($percentComplete) }}% of documents approved</div>
         </div>
 
-        @if(session('success'))
-            <div class="alert-styled alert-success-c mb-3">{{ session('success') }}</div>
-        @endif
-        @if(session('error'))
-            <div class="alert-styled alert-danger-c mb-3">{{ session('error') }}</div>
-        @endif
+        @include('components.admin-notification')
 
         <!-- REQUIREMENT LIST -->
         <div class="section-header-bar">

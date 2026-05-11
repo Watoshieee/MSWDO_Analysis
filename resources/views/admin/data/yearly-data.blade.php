@@ -185,17 +185,21 @@
         .back-link {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             color: rgba(255, 255, 255, .75);
-            font-size: .85rem;
+            font-size: .82rem;
             font-weight: 600;
             text-decoration: none;
             margin-bottom: 14px;
-            transition: color .2s;
+            transition: all .25s;
+            border: 1px solid rgba(255, 255, 255, .25);
+            border-radius: 20px;
+            padding: 5px 14px;
         }
 
         .back-link:hover {
-            color: var(--secondary-yellow);
+            color: white;
+            background: rgba(255, 255, 255, .15);
         }
 
         .main-content {
@@ -515,9 +519,9 @@
     <!-- HERO -->
     <section class="hero-banner">
         <div class="container" style="position:relative;z-index:2;">
-            <a href="{{ route('admin.data.dashboard') }}" class="back-link">&#8592; Back to Data Management</a>
+            <a href="{{ route('admin.data.dashboard') }}#return" class="back-link">&#8592; Data Management</a>
             <div class="hero-badge">Data Management</div>
-            <h1>📊 Municipality Yearly Data</h1>
+            <h1>Municipality Yearly Data</h1>
             <div class="hero-divider"></div>
             <p>Manage population and household summary records per year for <strong>{{ $municipality->name }}</strong>.
             </p>
@@ -527,14 +531,7 @@
     <div class="main-content">
         <div class="container py-5">
 
-            @php
-                $topNotice = session('success') ?: session('error');
-            @endphp
-            @if($topNotice)
-                <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
-                    {{ $topNotice }}
-                </div>
-            @endif
+            @include('components.admin-notification')
             @if($errors->any())
                 <div class="alert-danger-c">
                     <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
