@@ -37,23 +37,26 @@
     };
 @endphp
 
-<div class="modal fade" id="adminNotifModal" tabindex="-1" aria-labelledby="adminNotifModalLabel" aria-hidden="true">
-    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-        <div class="modal-content" style="border-radius:20px;border:none;overflow:hidden;box-shadow:0 10px 40px rgba(0,0,0,0.15);">
+{{-- Admin Notification Modal --}}
+<div id="adminNotifModal"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;"
+    onclick="if(event.target===this) this.style.display='none'">
+    <div style="background:white;width:90%;max-width:900px;border-radius:20px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.15);animation:fadeInScale .25s ease;">
 
-            {{-- Header --}}
-            <div class="modal-header" style="background:var(--primary-gradient,linear-gradient(135deg,#2C3E8F,#1A2A5C));color:white;border:none;padding:22px 28px;">
-                <div>
-                    <h5 class="modal-title" id="adminNotifModalLabel" style="font-weight:800;font-size:1.2rem;margin-bottom:3px;">
-                        🔔 Application Notifications
-                    </h5>
-                    <p style="font-size:0.82rem;opacity:0.82;margin:0;">New applications from residents in your municipality</p>
-                </div>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+        {{-- Header --}}
+        <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;padding:22px 28px;border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:space-between;">
+            <div>
+                <h5 style="font-weight:800;font-size:1.2rem;margin-bottom:3px;margin:0;">Application Notifications</h5>
+                <p style="font-size:0.82rem;opacity:0.82;margin:0;margin-top:3px;">New applications from residents in your municipality</p>
             </div>
+            <button onclick="document.getElementById('adminNotifModal').style.display='none'"
+                style="background:rgba(255,255,255,.15);border:none;color:white;border-radius:50%;width:34px;height:34px;font-size:1.1rem;cursor:pointer;line-height:1;">
+                &times;
+            </button>
+        </div>
 
-            {{-- Body --}}
-            <div class="modal-body" style="padding:22px 28px;max-height:60vh;overflow-y:auto;background:#fafbfc;">
+        {{-- Body --}}
+        <div style="padding:22px 28px;overflow-y:auto;background:#fafbfc;">
                 @if($hasNew)
                     @foreach($adminNewApplications as $app)
                         @php
@@ -62,11 +65,6 @@
                         @endphp
                         <div class="admin-notif-card" style="background:white;border-radius:14px;padding:18px 20px;margin-bottom:12px;border:1px solid #e2e8f0;border-left:4px solid var(--secondary-yellow,#FDB913);box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:all 0.2s;">
                             <div style="display:flex;gap:14px;align-items:flex-start;">
-                                {{-- Icon --}}
-                                <div style="width:46px;height:46px;border-radius:12px;background:#FFF8E1;border:1px solid #FFE082;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">
-                                    📋
-                                </div>
-
                                 {{-- Content --}}
                                 <div style="flex:1;min-width:0;">
                                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
@@ -106,7 +104,6 @@
                 @else
                     @if(!$hasNewAppts && !$hasNewUploads)
                     <div style="text-align:center;padding:60px 20px;">
-                        <div style="font-size:3.5rem;margin-bottom:14px;opacity:0.3;">🔔</div>
                         <h6 style="font-weight:700;color:#64748b;margin-bottom:6px;">No new notifications</h6>
                         <p style="font-size:0.85rem;color:#94a3b8;margin:0;">New applications and appointments will appear here.</p>
                     </div>
@@ -116,14 +113,14 @@
                 {{-- New Solo Parent Appointments Section --}}
                 @if($hasNewAppts)
                     <div style="margin-top:{{ $hasNew ? '16px' : '0' }};padding-top:{{ $hasNew ? '16px' : '0' }};border-top:{{ $hasNew ? '1px solid #e2e8f0' : 'none' }};">
-                        <h6 style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.08em;color:#6366f1;font-weight:700;margin-bottom:12px;">📅 New Solo Parent Appointments</h6>
+                        <h6 style="font-size:0.78rem;text-transform:uppercase;letter-spacing:0.08em;color:#6366f1;font-weight:700;margin-bottom:12px;">New Solo Parent Appointments</h6>
                         @foreach($adminNewAppointments as $appt)
                         <div class="admin-notif-card" style="background:white;border-radius:14px;border:1.5px solid #e0e7ff;padding:16px 20px;margin-bottom:12px;transition:all 0.2s;">
                             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
                                 <div style="flex:1;">
                                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                                         <span style="background:#e0e7ff;color:#3730a3;border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:700;">Solo Parent Appointment</span>
-                                        <span style="background:#fff8e1;color:#856404;border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:700;">⏳ Pending</span>
+                                        <span style="background:#fff8e1;color:#856404;border-radius:20px;padding:3px 10px;font-size:0.72rem;font-weight:700;">Pending</span>
                                     </div>
                                     <p style="margin:0;font-weight:700;color:#1e293b;font-size:0.9rem;">{{ $appt->user?->full_name ?? 'Unknown' }}</p>
                                     <p style="margin:0;font-size:0.8rem;color:#64748b;">{{ $appt->user?->email ?? '' }}</p>
@@ -135,7 +132,7 @@
                                         @if($apptCreated) <span style="color:#cbd5e1;">•</span> {{ $apptCreated->format('M d, Y h:i A') }} @endif
                                     </p>
                                     <p style="margin:2px 0 0;font-size:0.8rem;color:#64748b;">
-                                        📅 {{ \Carbon\Carbon::parse($appt->appointment_date)->setTimezone('Asia/Manila')->format('F d, Y') }} at {{ \Carbon\Carbon::createFromFormat('H:i', $appt->appointment_time)->setTimezone('Asia/Manila')->format('h:i A') }}
+                                        {{ \Carbon\Carbon::parse($appt->appointment_date)->setTimezone('Asia/Manila')->format('F d, Y') }} at {{ \Carbon\Carbon::createFromFormat('H:i', $appt->appointment_time)->setTimezone('Asia/Manila')->format('h:i A') }}
                                         &nbsp;|&nbsp; {{ $appt->interview_type === 'online' ? 'Online' : 'Face-to-Face' }}
                                     </p>
                                 </div>
@@ -152,14 +149,14 @@
                 {{-- New Solo Parent Document Uploads --}}
                 @if($hasNewUploads)
                     <div style="margin-top:16px;padding-top:16px;border-top:1px solid #e2e8f0;">
-                        <h6 style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:#dc2626;font-weight:700;margin-bottom:12px;">&#128203; New Documents Uploaded</h6>
+                        <h6 style="font-size:.78rem;text-transform:uppercase;letter-spacing:.08em;color:#dc2626;font-weight:700;margin-bottom:12px;">New Documents Uploaded</h6>
                         @foreach($adminNewUploads as $fm)
                         <div class="admin-notif-card" style="background:white;border-radius:14px;border:1.5px solid #fecaca;padding:16px 20px;margin-bottom:12px;transition:all 0.2s;">
                             <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">
                                 <div style="flex:1;">
                                     <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
                                         <span style="background:#fee2e2;color:#991b1b;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">Solo Parent Docs</span>
-                                        <span style="background:#fff8e1;color:#856404;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">&#9203; Pending Review</span>
+                                        <span style="background:#fff8e1;color:#856404;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">Pending Review</span>
                                     </div>
                                     <p style="margin:0;font-weight:700;color:#1e293b;font-size:.9rem;">{{ $fm->application?->full_name ?? 'Unknown' }}</p>
                                     <p style="margin:0;font-size:.8rem;color:#64748b;">{{ $fm->application?->user?->email ?? '' }}</p>
@@ -171,7 +168,7 @@
                                         @if($latestUploadAt) <span style="color:#cbd5e1;">•</span> {{ $latestUploadAt->format('M d, Y h:i A') }} @endif
                                     </p>
                                     <p style="margin:2px 0 0;font-size:.8rem;color:#64748b;">
-                                        &#128196; {{ $fm->fileUploads->whereNotNull('file_path')->count() }} file(s) uploaded
+                                        {{ $fm->fileUploads->whereNotNull('file_path')->count() }} file(s) uploaded
                                         &nbsp;|&nbsp; {{ $fm->municipality }}
                                     </p>
                                 </div>
@@ -187,7 +184,7 @@
             </div>
 
             {{-- Footer --}}
-            <div class="modal-footer" style="background:#f8f9fa;border:none;padding:14px 28px;display:flex;justify-content:space-between;align-items:center;">
+            <div style="background:#f8f9fa;border:none;padding:14px 28px;display:flex;justify-content:space-between;align-items:center;border-radius:0 0 20px 20px;">
                 <span style="font-size:0.8rem;color:#64748b;">
                     @if($hasNew) {{ $total }} new application{{ $total != 1 ? 's' : '' }} @endif
                 </span>
@@ -196,8 +193,8 @@
                        style="background:var(--secondary-yellow,#FDB913);color:#1A2A5C;border:none;border-radius:10px;padding:9px 20px;font-weight:700;font-size:0.85rem;text-decoration:none;">
                         View All Applications
                     </a>
-                    <button type="button" class="btn" data-bs-dismiss="modal"
-                        style="background:#2C3E8F;color:white;border:none;border-radius:10px;padding:9px 20px;font-weight:700;font-size:0.85rem;">
+                    <button type="button" onclick="document.getElementById('adminNotifModal').style.display='none'"
+                        style="background:#2C3E8F;color:white;border:none;border-radius:10px;padding:9px 20px;font-weight:700;font-size:0.85rem;cursor:pointer;">
                         Close
                     </button>
                 </div>
@@ -208,10 +205,17 @@
 
 <style>
     .admin-notif-card:hover { box-shadow:0 4px 16px rgba(0,0,0,0.08); transform:translateY(-2px); }
+    
+    @keyframes fadeInScale {
+        from { transform: scale(.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
 </style>
 
 <script>
-document.getElementById('adminNotifModal')?.addEventListener('show.bs.modal', function () {
+function openAdminNotifModal() {
+    document.getElementById('adminNotifModal').style.display = 'flex';
+    
     fetch('{{ route('admin.mark-notifications-viewed') }}', {
         method: 'POST',
         headers: {
@@ -224,5 +228,5 @@ document.getElementById('adminNotifModal')?.addEventListener('show.bs.modal', fu
             if (badge) badge.style.display = 'none';
         }
     }).catch(() => {});
-});
+}
 </script>

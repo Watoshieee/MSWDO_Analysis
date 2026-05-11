@@ -108,10 +108,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             border-radius: 20px;
             border: 1px solid #cbd5e1;
             overflow: hidden;
-            transition: transform .28s, box-shadow .28s, border-color .28s;
             margin-bottom: 16px;
         }
-        .ann-card:hover { transform: translateY(-4px); box-shadow: 0 14px 36px rgba(44,62,143,0.12); border-color: rgba(44,62,143,0.22); }
 
         /* Color accent strip */
         .ann-card .accent { height: 5px; width: 100%; }

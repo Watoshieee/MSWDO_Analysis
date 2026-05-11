@@ -386,15 +386,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
     <div class="container mt-4 pb-5">
 
-        {{-- Alerts --}}
-        @php
-            $topNotice = session('success') ?: session('error');
-        @endphp
-        @if($topNotice)
-            <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
-                {{ $topNotice }}
-            </div>
-        @endif
+        @include('components.admin-notification')
 
         {{-- Hero --}}
         <div class="page-hero">
@@ -438,7 +430,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             {{-- No-Documents Warning Banner --}}
         @if(!$hasDocuments)
         <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:14px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">
-            <div style="font-size:1.6rem;line-height:1;">⚠️</div>
             <div>
                 <div style="font-weight:800;color:#856404;font-size:1rem;margin-bottom:4px;">No Documents Submitted Yet</div>
                 <div style="font-size:.88rem;color:#856404;line-height:1.6;">This applicant has not uploaded any required documents. Approval and ID actions are <strong>disabled</strong> until at least one document is submitted.</div>
@@ -451,7 +442,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="info-card mb-4" style="border-left: 4px solid {{ $allApproved ? '#28a745' : '#fdb913' }};">
             <h5>Solo Parent ID Status</h5>
             @if($application->id_status === 'ready_for_pickup')
-                <div style="color:#28a745;font-weight:700;">✅ ID is marked as Ready for Pickup
+                <div style="color:#28a745;font-weight:700;">ID is marked as Ready for Pickup
                     @if($application->id_ready_at)
                         <span style="font-size:.78rem;color:#6c757d;font-weight:400;"> — {{ \Carbon\Carbon::parse($application->id_ready_at)->format('M d, Y h:i A') }}</span>
                     @endif
@@ -462,19 +453,19 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     @csrf
                     <button type="submit" class="btn btn-success fw-bold" style="border-radius:8px;padding:8px 22px;"
                         onclick="return confirm('Mark this Solo Parent ID as ready for pickup and notify the applicant?')">
-                        🪪 Mark ID as Ready for Pickup
+                        Mark ID as Ready for Pickup
                     </button>
                 </form>
             @else
                 <div style="color:#856404;font-size:.88rem;margin-bottom:10px;">
                     @if(!$hasDocuments)
-                        ⚠️ No documents submitted. ID cannot be marked ready.
+                        No documents submitted. ID cannot be marked ready.
                     @else
-                        ⏳ Not all documents are approved yet. ID can only be marked ready once all documents are approved.
+                        Not all documents are approved yet. ID can only be marked ready once all documents are approved.
                     @endif
                 </div>
                 <button class="btn btn-secondary fw-bold" disabled style="border-radius:8px;padding:8px 22px;opacity:.55;cursor:not-allowed;">
-                    🪪 Mark ID as Ready for Pickup
+                    Mark ID as Ready for Pickup
                 </button>
             @endif
         </div>
@@ -483,7 +474,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         {{-- Documents - Card Grid Layout --}}
         @if($fileMonitoring)
         <div style="font-size:1rem;font-weight:800;color:var(--primary-blue);margin-bottom:14px;">
-            📄 Submitted Documents ({{ $fileMonitoring->fileUploads->count() }})
+            Submitted Documents ({{ $fileMonitoring->fileUploads->count() }})
         </div>
 
         <div class="req-grid">
@@ -520,17 +511,17 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
                     {{-- Date Submitted --}}
                     <div class="req-date">
-                        📅 {{ $file->uploaded_at ? \Carbon\Carbon::parse($file->uploaded_at)->format('M d, Y h:i A') : 'N/A' }}
+                        {{ $file->uploaded_at ? \Carbon\Carbon::parse($file->uploaded_at)->format('M d, Y h:i A') : 'N/A' }}
                     </div>
 
                     {{-- Status Badge --}}
                     <div class="req-status-badge s-{{ $status }}">
                         @if($status === 'approved')
-                            ✅ Approved
+                            Approved
                         @elseif($status === 'rejected')
-                            ❌ Rejected
+                            Rejected
                         @else
-                            🟡 Pending
+                            Pending
                         @endif
                     </div>
 
@@ -549,7 +540,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 @csrf
                                 <input type="hidden" name="status" value="approved">
                                 <button type="submit" class="req-btn req-btn-approve">
-                                    ✅ Approve
+                                    Approve
                                 </button>
                             </form>
 
@@ -560,12 +551,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                     data-bs-target="#declineModal"
                                     data-file-id="{{ $file->id }}"
                                     data-file-name="{{ $file->requirement_name }}">
-                                ❌ Decline
+                                Decline
                             </button>
                         @elseif($status === 'approved')
                             <div class="req-status-text req-text-approved">✔ Already Approved</div>
                         @elseif($status === 'rejected')
-                            <div class="req-status-text req-text-rejected">⏳ Waiting for Re-upload</div>
+                            <div class="req-status-text req-text-rejected">Waiting for Re-upload</div>
                         @endif
                     </div>
                 </div>

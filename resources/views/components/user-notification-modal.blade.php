@@ -144,7 +144,7 @@
             <div class="modal-header" style="background:var(--primary-gradient,linear-gradient(135deg,#2C3E8F,#1A2A5C));color:white;border:none;padding:22px 28px;">
                 <div>
                     <h5 class="modal-title" id="announcementsModalLabel" style="font-weight:800;font-size:1.2rem;margin-bottom:3px;">
-                        🔔 Notifications
+                        Notifications
                     </h5>
                     <p style="font-size:0.82rem;opacity:0.82;margin:0;">Application updates &amp; new announcements</p>
                 </div>
@@ -160,7 +160,7 @@
                     </button>
                     @if($hasAnnounce)
                     <button class="nfb" data-filter="announcement" onclick="filterNotif('announcement')" style="border-color:#2C3E8F;">
-                        📢 Announcements <span class="nfc" style="background:#E5EEFF;color:#2C3E8F;">{{ $annCount }}</span>
+                        Announcements <span class="nfc" style="background:#E5EEFF;color:#2C3E8F;">{{ $annCount }}</span>
                     </button>
                     @endif
                     @if($hasDocNotifs || $hasAppRejects)
@@ -196,42 +196,7 @@
 
                         <div class="notif-card" data-filter="{{ $fClass }}"
                             style="background:white;border-radius:14px;padding:18px 20px;margin-bottom:12px;border:1px solid #e2e8f0;box-shadow:0 2px 8px rgba(0,0,0,0.04);transition:all 0.2s;">
-                            <div style="display:flex;gap:14px;align-items:flex-start;">
-
-                                {{-- Icon --}}
-                                @if($kind === 'solo_parent_id_ready')
-                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#16a34a,#15803d);border:1px solid #86efac;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;color:white;">🎫</div>
-                                @elseif($kind === 'solo_parent_requirements_validated')
-                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">✅</div>
-                                @elseif($kind === 'solo_parent_approved')
-                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">📅</div>
-                                @elseif($kind === 'pwd_id_ready')
-                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#16a34a,#15803d);border:1px solid #86efac;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;color:white;">🎫</div>
-                                @elseif($kind === 'pwd_validated')
-                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">🏆</div>
-                                @elseif($kind === 'solo_parent_eligible')
-                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">🏆</div>
-                                @elseif($kind === 'aics_confirmed')
-                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#28a745,#155724);border:1px solid #86efac;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">✅</div>
-                                @elseif($kind === 'aics_validated')
-                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">📋</div>
-                                @elseif($kind === 'aics_ready')
-                                    <div style="width:46px;height:46px;border-radius:12px;background:linear-gradient(135deg,#16a34a,#15803d);border:1px solid #86efac;display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;color:white;">🎁</div>
-                                @elseif($isAnn)
-                                    @php $typeColors = ['general'=>'#2C3E8F','event'=>'#856404','emergency'=>'#991b1b','program_update'=>'#155724']; $tc = $typeColors[$d->type] ?? '#2C3E8F'; @endphp
-                                    <div style="width:46px;height:46px;border-radius:12px;background:#E5EEFF;border:1px solid #c7d6f5;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">
-                                        📢
-                                    </div>
-                                @elseif($kind === 'app_rejected')
-                                    <div style="width:46px;height:46px;border-radius:12px;background:#fee2e2;border:1px solid #fca5a5;display:flex;align-items:center;justify-content:center;font-size:1.3rem;flex-shrink:0;">⚠️</div>
-                                @elseif($isReject)
-                                    <div style="width:46px;height:46px;border-radius:12px;background:#fee2e2;border:1px solid #fca5a5;display:flex;align-items:center;justify-content:center;color:#dc3545;font-size:1.3rem;font-weight:900;flex-shrink:0;">✕</div>
-                                @else
-                                    <div style="width:46px;height:46px;border-radius:12px;background:#dcfce7;border:1px solid #86efac;display:flex;align-items:center;justify-content:center;color:#16a34a;font-size:1.3rem;font-weight:900;flex-shrink:0;">✓</div>
-                                @endif
-
-                                {{-- Content --}}
-                                <div style="flex:1;min-width:0;">
+                                <div style="min-width:0;">
                                     <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:6px;">
                                         <div>
                                             <h6 style="font-weight:800;font-size:0.92rem;color:#1e293b;margin:0 0 2px;">
@@ -340,7 +305,7 @@
                                         @elseif($isAnn)
                                             <p style="margin:0;">{{ Str::limit($d->content, 120) }}</p>
                                             @if($d->municipality && $d->municipality !== 'all')
-                                                <p style="margin:4px 0 0;font-size:0.76rem;color:#94a3b8;">📍 {{ $d->municipality }}</p>
+                                                <p style="margin:4px 0 0;font-size:0.76rem;color:#94a3b8;">{{ $d->municipality }}</p>
                                             @endif
                                         @elseif($kind === 'app_rejected')
                                             <p style="margin:0 0 4px;"><strong style="color:#1e293b;">Program:</strong> {{ str_replace('_', ' ', $d->program_type) }}</p>
@@ -375,11 +340,11 @@
                                     {{-- Action button --}}
                                     @if($kind === 'solo_parent_approved')
                                         <a href="{{ route('user.solo-parent-application') }}" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:8px 16px;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
-                                            View Appointment →
+                                            View appointment
                                         </a>
                                     @elseif($kind === 'solo_parent_eligible')
                                         <a href="{{ route('user.solo-parent-application') }}" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:8px 16px;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
-                                            📁 Submit Requirements
+                                            Submit requirements
                                         </a>
                                     @elseif($kind === 'aics_confirmed')
                                         @php
@@ -388,7 +353,7 @@
                                                 : route('user.aics-burial');
                                         @endphp
                                         <a href="{{ $aicsRoute }}" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#28a745,#155724);color:white;padding:8px 16px;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
-                                            📁 Submit Requirements
+                                            Submit requirements
                                         </a>
                                     @elseif($kind === 'aics_validated' || $kind === 'aics_ready')
                                         @php
@@ -397,26 +362,24 @@
                                                 : route('user.aics-burial');
                                         @endphp
                                         <a href="{{ $aicsRoute }}" style="display:inline-flex;align-items:center;gap:6px;background:#E5EEFF;color:#2C3E8F;padding:8px 16px;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
-                                            View AICS Status →
+                                            View AICS status
                                         </a>
                                     @elseif($isAnn)
                                         <a href="{{ route('user.announcements') }}" style="display:inline-flex;align-items:center;gap:6px;background:#E5EEFF;color:#2C3E8F;padding:8px 16px;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
-                                            View All Announcements →
+                                            View all announcements
                                         </a>
                                     @elseif($isReject)
                                         @php $targetId = ($kind === 'app_rejected') ? 'app-'.$d->id : 'file-'.$d->id; @endphp
                                         <a href="{{ route('user.my-requirements') }}#{{ $targetId }}" style="display:inline-flex;align-items:center;gap:6px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:8px 16px;border-radius:10px;font-size:0.82rem;font-weight:700;text-decoration:none;transition:all 0.2s;">
-                                            📤 Re-upload Documents
+                                            Re-upload documents
                                         </a>
                                     @endif
                                 </div>
-                            </div>
                         </div>
                     @endforeach
                     </div>
                     @else
                     <div style="text-align:center;padding:60px 20px;">
-                        <div style="font-size:3.5rem;margin-bottom:14px;opacity:0.3;">🔔</div>
                         <h6 style="font-weight:700;color:#64748b;margin-bottom:6px;">No notifications yet</h6>
                         <p style="font-size:0.85rem;color:#94a3b8;margin:0;">Application updates and new announcements will appear here.</p>
                     </div>
