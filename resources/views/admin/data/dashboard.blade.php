@@ -210,10 +210,20 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <span class="menu-arrow">&rsaquo;</span>
                 </a>
             </div>
+            <div class="col-md-4" id="barangay-card">
+                <a href="{{ route('admin.data.barangays') }}#return" class="menu-card">
+                    <div class="menu-text">
+                        <span class="menu-num">02 &mdash; Barangays</span>
+                        <span class="menu-title">Barangay Data</span>
+                        <span class="menu-desc">Manage barangay-level population, households, and program counts for {{ $municipality->name }} (same tools as super admin, scoped to your municipality).</span>
+                    </div>
+                    <span class="menu-arrow">&rsaquo;</span>
+                </a>
+            </div>
             <div class="col-md-4" id="programs-card">
                 <a href="{{ route('admin.data.programs') }}#return" class="menu-card">
                     <div class="menu-text">
-                        <span class="menu-num">02 &mdash; Programs</span>
+                        <span class="menu-num">03 &mdash; Programs</span>
                         <span class="menu-title">Social Programs</span>
                         <span class="menu-desc">Manage social welfare program beneficiaries, enrollment data, and yearly records.</span>
                     </div>
@@ -223,7 +233,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="col-md-4" id="yearly-card">
                 <a href="{{ route('admin.data.yearly') }}#return" class="menu-card">
                     <div class="menu-text">
-                        <span class="menu-num">03 &mdash; Yearly Summary</span>
+                        <span class="menu-num">04 &mdash; Yearly Summary</span>
                         <span class="menu-title">Municipality Yearly Data</span>
                         <span class="menu-desc">Add and manage yearly population, household, PWD, AICS, and Solo Parent summary records for {{ $municipality->name }}.</span>
                     </div>
@@ -233,7 +243,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="col-md-4" id="csv-card">
                 <a href="{{ route('admin.csv.index') }}#return" class="menu-card">
                     <div class="menu-text">
-                        <span class="menu-num">04 &mdash; CSV Data</span>
+                        <span class="menu-num">05 &mdash; CSV Data</span>
                         <span class="menu-title">CSV Import/Export</span>
                         <span class="menu-desc">Upload or export PSA statistical data for {{ $municipality->name }} via CSV files.</span>
                     </div>

@@ -7,6 +7,7 @@ use App\Models\Barangay;
 use App\Models\Application;
 use App\Models\Appointment;
 use App\Models\SocialWelfareProgram;
+use App\Models\MunicipalityYearlySummary;
 use App\Models\FileMonitoring;
 use App\Models\FileUpload;
 use App\Models\MunicipalityVision;
@@ -936,7 +937,7 @@ class AdminController extends Controller
      * Detailed Analysis Page — delegates to focused private helpers
      * to keep the public method small and IDE-friendly.
      */
-    public function detailedAnalysis()
+    public function detailedAnalysis(Request $request)
     {
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
@@ -950,30 +951,102 @@ class AdminController extends Controller
             $applicationsByProgram
         ] = $this->buildApplicationStats($applications);
 
-        $programShareOverview = $this->buildProgramOverview($user->municipality);
+        $muniYear = (int) ($municipality->year ?? date('Y'));
 
-        // Get demographic data for this municipality
-        $totalPop = $municipality->male_population + $municipality->female_population;
-        $totalHouseholds = $municipality->total_households;
+        $yearsFromBarangays = Barangay::where('municipality', $user->municipality)
+            ->whereNotNull('year')
+            ->distinct()
+            ->orderByDesc('year')
+            ->pluck('year')
+            ->map(fn ($y) => (int) $y)
+            ->unique()
+            ->values()
+            ->toArray();
 
-        // Gender distribution
-        $genderData = [
-            'male' => $municipality->male_population,
-            'female' => $municipality->female_population,
-        ];
+        $yearsFromSummary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->whereNotNull('year')
+            ->distinct()
+            ->orderByDesc('year')
+            ->pluck('year')
+            ->map(fn ($y) => (int) $y)
+            ->toArray();
 
-        // Age group distribution
-        $ageGroupData = [
-            '0-19' => $municipality->population_0_19,
-            '20-59' => $municipality->population_20_59,
-            '60+' => $municipality->population_60_100,
-        ];
+        $availableAnalysisYears = array_values(array_unique(array_merge($yearsFromBarangays, $yearsFromSummary)));
+        rsort($availableAnalysisYears, SORT_NUMERIC);
 
-        // Program beneficiaries - use same data as Program Share Overview
+        if ($request->filled('year') && $availableAnalysisYears !== []) {
+            $reqYear = (int) $request->year;
+            if (! in_array($reqYear, $availableAnalysisYears, true)) {
+                return redirect()->route('admin.detailed-analysis', ['year' => $availableAnalysisYears[0]]);
+            }
+            $analysisYear = $reqYear;
+        } elseif ($availableAnalysisYears !== []) {
+            $analysisYear = in_array($muniYear, $availableAnalysisYears, true)
+                ? $muniYear
+                : $availableAnalysisYears[0];
+        } else {
+            $analysisYear = $muniYear;
+        }
+
+        $programShareOverview = $this->buildProgramOverview($user->municipality, $analysisYear);
+
+        $summary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->where('year', $analysisYear)
+            ->first();
+
+        // Prefer yearly summary (kept in sync when barangay data is saved) so Analysis reflects Data Management
+        if ($summary && ($summary->total_population > 0 || $summary->total_households > 0)) {
+            $totalPop = (int) $summary->total_population;
+            $totalHouseholds = (int) $summary->total_households;
+            $genderData = [
+                'male' => (int) $summary->male_population,
+                'female' => (int) $summary->female_population,
+            ];
+            $ageGroupData = [
+                '0-19' => (int) $summary->population_0_19,
+                '20-59' => (int) $summary->population_20_59,
+                '60+' => (int) $summary->population_60_100,
+            ];
+            if (($genderData['male'] + $genderData['female']) === 0 && $totalPop > 0) {
+                $genderData = [
+                    'male' => $municipality->male_population,
+                    'female' => $municipality->female_population,
+                ];
+            }
+            if (($ageGroupData['0-19'] + $ageGroupData['20-59'] + $ageGroupData['60+']) === 0) {
+                $ageGroupData = [
+                    '0-19' => $municipality->population_0_19,
+                    '20-59' => $municipality->population_20_59,
+                    '60+' => $municipality->population_60_100,
+                ];
+            }
+        } else {
+            $totalPop = $municipality->male_population + $municipality->female_population;
+            $totalHouseholds = $municipality->total_households;
+            $genderData = [
+                'male' => $municipality->male_population,
+                'female' => $municipality->female_population,
+            ];
+            $ageGroupData = [
+                '0-19' => $municipality->population_0_19,
+                '20-59' => $municipality->population_20_59,
+                '60+' => $municipality->population_60_100,
+            ];
+        }
+
         $programBeneficiaries = $programShareOverview->toArray();
+
+        $barangayRowsForAnalysis = Barangay::where('municipality', $user->municipality)
+            ->where('year', $analysisYear)
+            ->orderBy('name')
+            ->get();
+
+        extract($this->adminNotifData($user));
 
         return view('admin.detailed-analysis', compact(
             'municipality',
+            'analysisYear',
+            'availableAnalysisYears',
             'applications',
             'totalApplications',
             'pendingApplications',
@@ -985,7 +1058,8 @@ class AdminController extends Controller
             'totalHouseholds',
             'genderData',
             'ageGroupData',
-            'programBeneficiaries'
+            'programBeneficiaries',
+            'barangayRowsForAnalysis'
         ));
     }
 
@@ -1025,11 +1099,16 @@ class AdminController extends Controller
         return [$total, $pending, $approved, $rejected, $byProgram];
     }
 
-    /** Aggregate social welfare program beneficiary counts for the current year. */
-    private function buildProgramOverview(string $municipality)
+    /** Aggregate social welfare program beneficiary counts for the given year (synced from barangay data). */
+    private function buildProgramOverview(string $municipality, ?int $year = null)
     {
+        if ($year === null) {
+            $year = (int) (Municipality::where('name', $municipality)->value('year') ?? date('Y'));
+        }
+
         $programs = SocialWelfareProgram::where('municipality', $municipality)
-            ->where('year', 2024)
+            ->where('year', $year)
+            ->whereNull('month')
             ->get();
 
         $overview = [];
@@ -1095,7 +1174,10 @@ class AdminController extends Controller
             ->distinct('program_type')
             ->pluck('program_type');
 
-        $barangays = Barangay::where('municipality', $user->municipality)->pluck('name');
+        $barangays = Barangay::where('municipality', $user->municipality)
+            ->distinct()
+            ->orderBy('name')
+            ->pluck('name');
 
         return view('admin.applications', compact(
             'applications',
@@ -1299,6 +1381,7 @@ class AdminController extends Controller
         $user = Auth::user();
         $barangay = Barangay::where('municipality', $user->municipality)
             ->where('name', $name)
+            ->orderByDesc('year')
             ->firstOrFail();
 
         $applications = Application::where('municipality', $user->municipality)
