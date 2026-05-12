@@ -102,4 +102,12 @@ Route::middleware('auth:sanctum')->group(function () {
     // Device Token Management
     Route::post('/device-token', [MobileApiController::class, 'registerDeviceToken']);
     Route::delete('/device-token', [MobileApiController::class, 'removeDeviceToken']);
+
+    // ── Chat (reuses existing ChatController) ─────────────────────────────
+    Route::prefix('chat')->group(function () {
+        Route::get('/admins',           [\App\Http\Controllers\ChatController::class, 'getAdmins']);
+        Route::get('/messages/{adminId}',[\App\Http\Controllers\ChatController::class, 'getMessages']);
+        Route::post('/send',            [\App\Http\Controllers\ChatController::class, 'sendMessage']);
+        Route::get('/unread-count',     [\App\Http\Controllers\ChatController::class, 'getUnreadCount']);
+    });
 });
