@@ -184,6 +184,20 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </section>
 
+    @if(!empty($availableAnalysisYears))
+    <div class="container" style="margin-top:14px;">
+        <div class="d-flex flex-wrap align-items-center gap-3 py-3 px-4" style="background:var(--bg-white);border:1px solid var(--border-light);border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,.04);">
+            <span style="font-size:0.88rem;font-weight:800;color:var(--primary-blue);letter-spacing:0.02em;">Data year</span>
+            <span style="font-size:0.78rem;color:#64748b;">Demographics, program totals, and barangay charts</span>
+            <select class="form-select form-select-sm analysis-year-select ms-auto" style="max-width:140px;font-weight:700;border-radius:10px;border:1px solid var(--border-light);">
+                @foreach($availableAnalysisYears as $y)
+                    <option value="{{ $y }}" @selected((int) $analysisYear === (int) $y)>{{ $y }}</option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+    @endif
+
     <div class="main-content">
     <div class="container mt-4">
 
@@ -323,6 +337,57 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             </div>
         </div>
 
+        <!-- Barangay data (analysis year — synced when you save in Data Management) -->
+        <div class="row g-4 mb-0 mt-0">
+            <div class="col-12">
+                <div class="panel-card">
+                    <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
+                        <div>
+                            <div class="panel-header-title">Barangay data</div>
+                            <div class="panel-header-sub">Population and program counts by barangay</div>
+                        </div>
+                        <div class="d-flex align-items-center gap-2 flex-wrap" style="margin-left:auto;">
+                            @if(!empty($availableAnalysisYears))
+                            <label class="d-flex align-items-center gap-2 mb-0 panel-header-badge" style="background:rgba(255,255,255,0.14);padding:6px 12px;border-radius:10px;font-weight:700;">
+                                <span style="font-size:0.7rem;opacity:0.9;text-transform:uppercase;letter-spacing:0.06em;">Year</span>
+                                <select class="form-select form-select-sm analysis-year-select border-0 py-1" style="width:auto;min-width:100px;font-weight:800;background:rgba(255,255,255,0.96);color:var(--primary-blue);border-radius:8px;">
+                                    @foreach($availableAnalysisYears as $y)
+                                        <option value="{{ $y }}" @selected((int) $analysisYear === (int) $y)>{{ $y }}</option>
+                                    @endforeach
+                                </select>
+                            </label>
+                            @else
+                            <span class="panel-header-badge">{{ $analysisYear }}</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="panel-body p-0">
+                        @if($barangayRowsForAnalysis->isEmpty())
+                            <div class="no-data py-4 px-3">No barangay records for {{ $analysisYear }} yet. Add or update figures in <a href="{{ route('admin.data.barangays', ['year' => $analysisYear]) }}#return">Barangay Data</a>. Saving there updates the charts and table here, and rolls up totals for the municipality charts below.</div>
+                        @else
+                            <div class="p-4 pb-0">
+                                <div class="row g-4">
+                                    <div class="col-lg-6">
+                                        <div class="section-title mb-3" style="font-size:0.92rem;">Population by barangay</div>
+                                        <div class="chart-wrap" style="height:{{ max(260, min($barangayRowsForAnalysis->count() * 26 + 72, 720)) }}px;">
+                                            <canvas id="bgyPopulationChart"></canvas>
+                                        </div>
+                                    </div>
+                                    <div class="col-lg-6">
+                                        <div class="section-title mb-3" style="font-size:0.92rem;">Program counts by barangay</div>
+                                        <div class="chart-wrap" style="height:{{ max(260, min($barangayRowsForAnalysis->count() * 26 + 72, 720)) }}px;">
+                                            <canvas id="bgyProgramsByBarangayChart"></canvas>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ROW 3: Population & Households + Male vs Female -->
         <div class="row g-4 mb-0 mt-0">
 
@@ -388,7 +453,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="panel-header">
                         <div>
                             <div class="panel-header-title">Program Beneficiaries Analysis</div>
-                            <div class="panel-header-sub">Beneficiaries by program (2024)</div>
+                            <div class="panel-header-sub">Beneficiaries by program ({{ $analysisYear ?? ($municipality->year ?? date('Y')) }})</div>
                         </div>
                     </div>
                     <div class="panel-body">
@@ -680,6 +745,118 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     }
                 }
             }
+        });
+
+@if($barangayRowsForAnalysis->isNotEmpty())
+        // -- 7 & 8. BARANGAY DATA (population + programs by barangay) --
+        const bgyLabels = {!! json_encode($barangayRowsForAnalysis->pluck('name')->values()->all()) !!};
+        const bgyPopData = {!! json_encode($barangayRowsForAnalysis->pluck('total_population')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+        const bgyPwd = {!! json_encode($barangayRowsForAnalysis->pluck('pwd_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+        const bgyAics = {!! json_encode($barangayRowsForAnalysis->pluck('aics_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+        const bgySolo = {!! json_encode($barangayRowsForAnalysis->pluck('single_parent_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+        const bgy4ps = {!! json_encode($barangayRowsForAnalysis->pluck('four_ps_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+        const bgySenior = {!! json_encode($barangayRowsForAnalysis->pluck('senior_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+
+        new Chart(document.getElementById('bgyPopulationChart'), {
+            type: 'bar',
+            data: {
+                labels: bgyLabels,
+                datasets: [{
+                    label: 'Population',
+                    data: bgyPopData,
+                    backgroundColor: 'rgba(44,62,143,0.85)',
+                    borderRadius: { topRight: 6, bottomRight: 6 },
+                    borderSkipped: false,
+                    maxBarThickness: 22
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1E293B',
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: (ctx) => ` ${ctx.parsed.x.toLocaleString()} residents`
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        ticks: { callback: v => v.toLocaleString(), font: { size: 11 } },
+                        grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
+                    },
+                    y: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10, weight: '600' }, autoSkip: true, maxRotation: 0 }
+                    }
+                }
+            }
+        });
+
+        new Chart(document.getElementById('bgyProgramsByBarangayChart'), {
+            type: 'bar',
+            data: {
+                labels: bgyLabels,
+                datasets: [
+                    { label: 'PWD', data: bgyPwd, backgroundColor: 'rgba(44,62,143,0.88)' },
+                    { label: 'AICS', data: bgyAics, backgroundColor: 'rgba(253,185,19,0.9)' },
+                    { label: 'Solo parent', data: bgySolo, backgroundColor: 'rgba(40,167,69,0.88)' },
+                    { label: '4Ps', data: bgy4ps, backgroundColor: 'rgba(99,102,241,0.85)' },
+                    { label: 'Senior', data: bgySenior, backgroundColor: 'rgba(196,30,36,0.78)' }
+                ]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, pointStyle: 'circle', padding: 14, font: { weight: '600', size: 11 } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1E293B',
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: (ctx) => {
+                                const v = ctx.parsed.x ?? ctx.raw ?? 0;
+                                return ` ${ctx.dataset.label}: ${Number(v).toLocaleString()}`;
+                            },
+                            footer: (items) => {
+                                if (!items.length) return '';
+                                const sum = items.reduce((s, it) => s + Number(it.parsed.x ?? it.raw ?? 0), 0);
+                                return 'Combined: ' + sum.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        stacked: true,
+                        ticks: { callback: v => v.toLocaleString(), font: { size: 11 } },
+                        grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
+                    },
+                    y: {
+                        stacked: true,
+                        grid: { display: false },
+                        ticks: { font: { size: 10, weight: '600' }, autoSkip: true, maxRotation: 0 }
+                    }
+                }
+            }
+        });
+@endif
+        document.querySelectorAll('.analysis-year-select').forEach(function (sel) {
+            sel.addEventListener('change', function () {
+                window.location.href = @json(route('admin.detailed-analysis')) + '?year=' + encodeURIComponent(this.value);
+            });
         });
     </script>
 </body>
