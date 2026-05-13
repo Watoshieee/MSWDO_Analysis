@@ -3,12 +3,37 @@
 namespace App\Http\Controllers\SuperAdmin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Municipality;
 use App\Models\User;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
 
 class UserController extends Controller
 {
+    /**
+     * Municipality names for admin/user assignment (DB first, then static fallback).
+     *
+     * @return array<int, string>
+     */
+    private function municipalityOptions(): array
+    {
+        $fromDb = Municipality::query()
+            ->withoutTrashed()
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(fn ($n) => trim((string) $n))
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($fromDb !== []) {
+            return $fromDb;
+        }
+
+        return array_values(array_unique(array_map('trim', User::getMunicipalities())));
+    }
+
     /**
      * List all active (non-archived) users.
      */
@@ -16,7 +41,7 @@ class UserController extends Controller
     {
         $users = User::withoutTrashed()->orderBy('created_at', 'desc')->get();
         $roles = User::getRoles();
-        $municipalities = User::getMunicipalities();
+        $municipalities = $this->municipalityOptions();
 
         return view('superadmin.users', compact('users', 'roles', 'municipalities'));
     }
@@ -26,23 +51,41 @@ class UserController extends Controller
      */
     public function store(Request $request)
     {
+        $allowedMunis = $this->municipalityOptions();
+
+        $muniRules = ['nullable', 'string', 'max:100'];
+        if (in_array($request->role, ['admin', 'user'], true)) {
+            $muniRules[] = 'required';
+            if ($allowedMunis !== []) {
+                $muniRules[] = Rule::in($allowedMunis);
+            }
+        }
+
         $request->validate([
             'username'     => 'required|string|max:50|unique:users,username',
             'email'        => 'required|string|email|max:100|unique:users,email',
             'password'     => 'required|string|min:8',
             'full_name'    => 'required|string|max:100',
+            'gender'       => 'nullable|string|max:30',
             'role'         => 'required|in:super_admin,admin,user',
-            'municipality' => 'required_if:role,admin|nullable|string',
+            'municipality' => $muniRules,
             'status'       => 'required|in:active,inactive',
         ]);
 
+        $municipality = $request->role === 'super_admin'
+            ? null
+            : trim((string) $request->municipality);
+
+        $gender = $request->filled('gender') ? trim((string) $request->gender) : null;
+
         User::create([
-            'username'          => $request->username,
-            'email'             => $request->email,
-            'password'          => Hash::make($request->password),
-            'full_name'         => $request->full_name,
+            'username'          => trim($request->username),
+            'email'             => trim($request->email),
+            'password'          => $request->password,
+            'full_name'         => trim($request->full_name),
+            'gender'            => $gender !== '' ? $gender : null,
             'role'              => $request->role,
-            'municipality'      => $request->municipality,
+            'municipality'      => $municipality !== '' ? $municipality : null,
             'status'            => $request->status,
             'email_verified_at' => now(),
         ]);
@@ -57,26 +100,46 @@ class UserController extends Controller
     {
         $user = User::findOrFail($id);
 
+        $allowedMunis = $this->municipalityOptions();
+
+        $muniRules = ['nullable', 'string', 'max:100'];
+        if (in_array($request->role, ['admin', 'user'], true)) {
+            $muniRules[] = 'required';
+            if ($allowedMunis !== []) {
+                $muniRules[] = Rule::in($allowedMunis);
+            }
+        }
+
         $request->validate([
             'username'     => 'required|string|max:50|unique:users,username,' . $id,
             'email'        => 'required|string|email|max:100|unique:users,email,' . $id,
             'full_name'    => 'required|string|max:100',
+            'gender'       => 'nullable|string|max:30',
             'role'         => 'required|in:super_admin,admin,user',
-            'municipality' => 'required_if:role,admin|nullable|string',
+            'municipality' => $muniRules,
             'status'       => 'required|in:active,inactive',
         ]);
 
+        $municipality = $request->role === 'super_admin'
+            ? null
+            : trim((string) $request->municipality);
+
         $data = [
-            'username'     => $request->username,
-            'email'        => $request->email,
-            'full_name'    => $request->full_name,
+            'username'     => trim($request->username),
+            'email'        => trim($request->email),
+            'full_name'    => trim($request->full_name),
             'role'         => $request->role,
-            'municipality' => $request->municipality,
+            'municipality' => $municipality !== '' ? $municipality : null,
             'status'       => $request->status,
         ];
 
+        if ($request->has('gender')) {
+            $g = trim((string) $request->gender);
+            $data['gender'] = $g !== '' ? $g : null;
+        }
+
         if ($request->filled('password')) {
-            $data['password'] = Hash::make($request->password);
+            $data['password'] = $request->password;
         }
 
         $user->update($data);

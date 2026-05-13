@@ -735,54 +735,66 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="modal-content">
                 <form method="POST" action="{{ route('superadmin.users.create') }}">
                     @csrf
+                    <input type="hidden" name="_form" value="create">
                     <div class="modal-header">
                         <h5 class="modal-title">Create New User</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-4">
+                        @if($errors->any() && old('_form') === 'create')
+                            <div class="alert alert-danger small mb-3" role="alert">
+                                <strong>Please fix the following:</strong>
+                                <ul class="mb-0 mt-2 ps-3">
+                                    @foreach($errors->all() as $err)
+                                        <li>{{ $err }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
                         <div class="mb-3">
                             <label class="form-label">Username</label>
                             <input type="text" name="username" class="form-control" required
-                                placeholder="e.g. juan_dela_cruz">
+                                placeholder="e.g. juan_dela_cruz" value="{{ old('username') }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Full Name</label>
                             <input type="text" name="full_name" class="form-control" required
-                                placeholder="Juan Dela Cruz">
+                                placeholder="Juan Dela Cruz" value="{{ old('full_name') }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Email</label>
                             <input type="email" name="email" class="form-control" required
-                                placeholder="user@example.com">
+                                placeholder="user@example.com" value="{{ old('email') }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Password</label>
                             <input type="password" name="password" class="form-control" required
-                                placeholder="Minimum 8 characters">
+                                placeholder="Minimum 8 characters" autocomplete="new-password">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Role</label>
                             <select name="role" class="form-select" required id="createRole"
                                 onchange="toggleMunicipalityField('createMunicipalityField', this.value)">
                                 @foreach($roles as $value => $label)
-                                    <option value="{{ $value }}">{{ $label }}</option>
+                                    <option value="{{ $value }}" @selected(old('role', 'super_admin') === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="mb-3" id="createMunicipalityField" style="display:none;">
                             <label class="form-label">Municipality</label>
-                            <select name="municipality" class="form-select">
+                            <select name="municipality" id="createMunicipalitySelect" class="form-select">
                                 <option value="">Select Municipality</option>
                                 @foreach($municipalities as $m)
-                                    <option value="{{ $m }}">{{ $m }}</option>
+                                    <option value="{{ $m }}" @selected(old('municipality') === $m)>{{ $m }}</option>
                                 @endforeach
                             </select>
+                            <p class="text-muted small mt-2 mb-0">Required for Admin and User. Same value is used so residents only see admins from their municipality in Contact Admin.</p>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Status</label>
                             <select name="status" class="form-select" required>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="active" @selected(old('status', 'active') === 'active')>Active</option>
+                                <option value="inactive" @selected(old('status') === 'inactive')>Inactive</option>
                             </select>
                         </div>
                     </div>
@@ -799,25 +811,37 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="modal fade" id="editUserModal" tabindex="-1">
         <div class="modal-dialog modal-dialog-centered">
             <div class="modal-content">
-                <form method="POST" id="editUserForm" action="">
+                <form method="POST" id="editUserForm" action="{{ old('edit_user_id') ? route('superadmin.users.update', old('edit_user_id')) : '#' }}">
                     @csrf
                     @method('PUT')
+                    <input type="hidden" name="_form" value="edit">
+                    <input type="hidden" name="edit_user_id" id="editUserIdField" value="{{ old('edit_user_id') }}">
                     <div class="modal-header">
                         <h5 class="modal-title">Edit User</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-4">
+                        @if($errors->any() && old('_form') === 'edit')
+                            <div class="alert alert-danger small mb-3" role="alert">
+                                <strong>Please fix the following:</strong>
+                                <ul class="mb-0 mt-2 ps-3">
+                                    @foreach($errors->all() as $err)
+                                        <li>{{ $err }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
                         <div class="mb-3">
                             <label class="form-label">Username</label>
-                            <input type="text" name="username" id="editUsername" class="form-control" required>
+                            <input type="text" name="username" id="editUsername" class="form-control" required value="{{ old('_form') === 'edit' ? old('username') : '' }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Full Name</label>
-                            <input type="text" name="full_name" id="editFullName" class="form-control" required>
+                            <input type="text" name="full_name" id="editFullName" class="form-control" required value="{{ old('_form') === 'edit' ? old('full_name') : '' }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Email</label>
-                            <input type="email" name="email" id="editEmail" class="form-control" required>
+                            <input type="email" name="email" id="editEmail" class="form-control" required value="{{ old('_form') === 'edit' ? old('email') : '' }}">
                         </div>
                         <div class="mb-3">
                             <label class="form-label">New Password <small class="text-muted">(leave blank to keep
@@ -830,7 +854,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <select name="role" id="editRole" class="form-select" required
                                 onchange="toggleMunicipalityField('editMunicipalityField', this.value)">
                                 @foreach($roles as $value => $label)
-                                    <option value="{{ $value }}">{{ $label }}</option>
+                                    <option value="{{ $value }}" @selected(old('_form') === 'edit' && old('role') === $value)>{{ $label }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -839,15 +863,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <select name="municipality" id="editMunicipality" class="form-select">
                                 <option value="">Select Municipality</option>
                                 @foreach($municipalities as $m)
-                                    <option value="{{ $m }}">{{ $m }}</option>
+                                    <option value="{{ $m }}" @selected(old('_form') === 'edit' && old('municipality') === $m)>{{ $m }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Status</label>
                             <select name="status" id="editStatus" class="form-select" required>
-                                <option value="active">Active</option>
-                                <option value="inactive">Inactive</option>
+                                <option value="active" @selected(old('_form') === 'edit' && old('status') === 'active')>Active</option>
+                                <option value="inactive" @selected(old('_form') === 'edit' && old('status') === 'inactive')>Inactive</option>
                             </select>
                         </div>
                     </div>
@@ -938,7 +962,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         // -- Field Visibility ------------------------------------------
         function toggleMunicipalityField(fieldId, roleValue) {
             const el = document.getElementById(fieldId);
-            if (el) el.style.display = (roleValue === 'admin') ? 'block' : 'none';
+            if (!el) return;
+            const show = (roleValue === 'admin' || roleValue === 'user');
+            el.style.display = show ? 'block' : 'none';
+            const sel = el.querySelector('select[name="municipality"]');
+            if (sel) {
+                sel.required = show;
+                if (!show) {
+                    sel.value = '';
+                }
+            }
         }
 
       
@@ -1082,7 +1115,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 createRole.dispatchEvent(new Event('change'));
             }
 
-            // Load archived count on page load
+            @if(old('_form') === 'create' && $errors->any())
+            new bootstrap.Modal(document.getElementById('createUserModal')).show();
+            @endif
+            @if(old('_form') === 'edit' && $errors->any())
+            toggleMunicipalityField('editMunicipalityField', document.getElementById('editRole')?.value || 'super_admin');
+            new bootstrap.Modal(document.getElementById('editUserModal')).show();
+            @endif
+
             loadArchivedCount();
         });
 
@@ -1128,6 +1168,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             if (roleEl) {
                 roleEl.value = user.role || 'user';
                 roleEl.dispatchEvent(new Event('change'));
+            }
+
+            const editUserIdField = document.getElementById('editUserIdField');
+            if (editUserIdField) {
+                editUserIdField.value = user.id || '';
             }
 
             const muniEl = document.getElementById('editMunicipality');

@@ -941,15 +941,6 @@ class AdminController extends Controller
     {
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
-        $applications = $this->loadApplications($user->municipality);
-
-        [
-            $totalApplications,
-            $pendingApplications,
-            $approvedApplications,
-            $rejectedApplications,
-            $applicationsByProgram
-        ] = $this->buildApplicationStats($applications);
 
         $muniYear = (int) ($municipality->year ?? date('Y'));
 
@@ -987,6 +978,23 @@ class AdminController extends Controller
         } else {
             $analysisYear = $muniYear;
         }
+
+        $applications = $this->loadApplications($user->municipality);
+        $applications = $applications->filter(function ($app) use ($analysisYear) {
+            if (! $app->application_date) {
+                return false;
+            }
+
+            return (int) $app->application_date->year === (int) $analysisYear;
+        });
+
+        [
+            $totalApplications,
+            $pendingApplications,
+            $approvedApplications,
+            $rejectedApplications,
+            $applicationsByProgram
+        ] = $this->buildApplicationStats($applications);
 
         $programShareOverview = $this->buildProgramOverview($user->municipality, $analysisYear);
 
