@@ -75,7 +75,7 @@ return new class extends Migration
         if (Schema::hasTable('file_uploads')) {
             Schema::table('file_uploads', function (Blueprint $table) {
                 if (!$this->indexExists('file_uploads', 'idx_fu_status')) {
-                    $table->index(['status', 'program_type'], 'idx_fu_status');
+                    $table->index(['status'], 'idx_fu_status');
                 }
             });
         }
