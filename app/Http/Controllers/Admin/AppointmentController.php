@@ -439,14 +439,22 @@ class AppointmentController extends Controller
             ->firstOrFail();
 
         $request->validate([
-            'new_date'   => 'required|date',
-            'new_time'   => 'required|in:' . implode(',', Appointment::availableSlots()),
+            'new_date'    => 'required|date|after:today',
+            'new_time'    => 'required|in:' . implode(',', Appointment::availableSlots()),
             'admin_notes' => 'nullable|string|max:500',
         ]);
 
-        $date = $request->new_date;
-        if (\Carbon\Carbon::parse($date)->isWeekend()) {
-            return response()->json(['success' => false, 'message' => 'Date must be a weekday.'], 422);
+        $date   = $request->new_date;
+        $parsed = \Carbon\Carbon::parse($date);
+
+        // Must be a weekday
+        if ($parsed->isWeekend()) {
+            return response()->json(['success' => false, 'message' => 'Reschedule date must be a weekday (Mon–Fri).'], 422);
+        }
+
+        // Must not be more than 2 months from today
+        if ($parsed->isAfter(now()->addMonths(2))) {
+            return response()->json(['success' => false, 'message' => 'Reschedule date cannot be more than 2 months from today.'], 422);
         }
 
         if (Appointment::slotCount($date, $request->new_time, $admin->municipality) >= Appointment::maxPerSlot()) {

@@ -427,12 +427,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <span class="s-badge s-{{ $st }}">{{ ucfirst($st) }}</span>
                 </div>
             </div>
-            {{-- No-Documents Warning Banner --}}
+        </div>{{-- end Applicant Info info-card --}}
+
+        {{-- No-Documents Warning Banner --}}
         @if(!$hasDocuments)
-        <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:14px;padding:20px 24px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">
+        <div style="background:#fff3cd;border:1px solid #ffc107;border-radius:14px;padding:18px 22px;margin-bottom:20px;display:flex;align-items:flex-start;gap:14px;">
+            <span style="font-size:1.4rem;">⚠️</span>
             <div>
-                <div style="font-weight:800;color:#856404;font-size:1rem;margin-bottom:4px;">No Documents Submitted Yet</div>
-                <div style="font-size:.88rem;color:#856404;line-height:1.6;">This applicant has not uploaded any required documents. Approval and ID actions are <strong>disabled</strong> until at least one document is submitted.</div>
+                <div style="font-weight:800;color:#856404;font-size:.95rem;margin-bottom:4px;">No Documents Submitted Yet</div>
+                <div style="font-size:.85rem;color:#856404;line-height:1.6;">This applicant has not uploaded any required documents. Approval and ID actions are <strong>disabled</strong> until at least one document is submitted.</div>
             </div>
         </div>
         @endif

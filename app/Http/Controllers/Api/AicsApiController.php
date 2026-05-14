@@ -54,25 +54,39 @@ class AicsApiController extends Controller
     {
         $user = Auth::user();
 
-        // Prevent booking another appointment once user has started or completed
-        // an AICS application for the same program type.
-        $hasActiveOrCompletedApp = Application::where('user_id', $user->id)
+        // Block only if user has an active appointment (pending/confirmed/validated)
+        // for this program. A CANCELLED appointment allows rebooking.
+        $hasActiveAppointment = Appointment::where('user_id', $user->id)
             ->where('program_type', $programType)
-            ->whereIn('status', ['pending', 'approved', 'rejected'])
+            ->whereIn('status', ['pending', 'confirmed', 'validated'])
             ->exists();
 
-        if ($hasActiveOrCompletedApp) {
+        if ($hasActiveAppointment) {
             return response()->json([
                 'success' => false,
-                'message' => 'You already have an active AICS application for this assistance type.',
+                'message' => 'You already have an active appointment for this program. Please cancel it before booking a new one.',
+            ], 409);
+        }
+
+        // Also block if user has an approved or processing application
+        // (rejected or pending-only apps that came from a cancelled appointment should NOT block)
+        $hasCompletedApp = Application::where('user_id', $user->id)
+            ->where('program_type', $programType)
+            ->whereIn('status', ['approved'])
+            ->exists();
+
+        if ($hasCompletedApp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You already have an approved AICS application for this assistance type.',
             ], 409);
         }
 
         $request->validate([
             'appointment_date' => 'required|date|after:today',
             'appointment_time' => 'required|in:' . implode(',', Appointment::availableSlots()),
-            'interview_type' => 'required|in:face_to_face,online',
-            'user_notes' => 'nullable|string|max:500',
+            'interview_type'   => 'required|in:face_to_face,online',
+            'user_notes'       => 'nullable|string|max:500',
         ]);
 
         $date = $request->appointment_date;
@@ -83,19 +97,6 @@ class AicsApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Appointments can only be booked on weekdays (Mon–Fri).',
-            ], 422);
-        }
-
-        // Check user doesn't already have an active appointment for this program
-        $existing = Appointment::where('user_id', $user->id)
-            ->whereIn('status', ['pending', 'confirmed'])
-            ->where('program_type', $programType)
-            ->first();
-
-        if ($existing) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You already have an active appointment for this program. Please cancel it before booking a new one.',
             ], 422);
         }
 
