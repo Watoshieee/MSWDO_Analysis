@@ -68,18 +68,26 @@ class SoloParentApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Appointments can only be booked on weekdays (Mon–Fri).'], 422);
         }
 
-        // Block if user already has an approved Solo Parent ID
+        // ── Block if user already has an active/approved Solo Parent ID or is already validated ──
         $hasActiveId = Application::where('user_id', $user->id)
             ->where('program_type', 'Solo_Parent')
             ->where('status', 'approved')
-            ->whereIn('id_status', ['ready_for_pickup', 'delivered'])
+            ->whereIn('id_status', ['processing', 'ready_for_pickup', 'delivered'])
             ->exists();
 
-        if ($hasActiveId) {
+        // Also block if appointment is already validated (eligible)
+        $alreadyValidated = Appointment::where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->where('status', 'validated')
+            ->exists();
+
+        if ($hasActiveId || $alreadyValidated) {
             return response()->json([
                 'success' => false,
-                'message' => 'You already have an active Solo Parent ID and cannot book a new appointment.',
-                'code'    => 'ID_ALREADY_ISSUED',
+                'message' => $alreadyValidated
+                    ? 'You are already eligible for a Solo Parent ID. You cannot book another appointment.'
+                    : 'You already have an active Solo Parent ID and cannot book a new appointment.',
+                'code'    => 'ALREADY_ELIGIBLE',
             ], 409);
         }
 
@@ -363,17 +371,28 @@ class SoloParentApiController extends Controller
     private function formatAppointment($appt)
     {
         return [
-            'id' => $appt->id,
-            'appointment_date' => $appt->appointment_date->format('Y-m-d'),
-            'appointment_time' => $appt->appointment_time,
-            'formatted_date' => $appt->formatted_date,
-            'formatted_time' => $appt->formatted_time,
-            'interview_type' => $appt->interview_type,
-            'interview_label' => $appt->interview_label,
-            'status' => $appt->status,
-            'user_notes' => $appt->user_notes,
-            'admin_notes' => $appt->admin_notes,
-            'created_at' => $appt->created_at?->toIso8601String(),
+            'id'                        => $appt->id,
+            'appointment_date'          => $appt->appointment_date->format('Y-m-d'),
+            'appointment_time'          => $appt->appointment_time,
+            'formatted_date'            => $appt->formatted_date,
+            'formatted_time'            => $appt->formatted_time,
+            'interview_type'            => $appt->interview_type,
+            'interview_label'           => $appt->interview_label,
+            'status'                    => $appt->status,
+            'user_notes'                => $appt->user_notes,
+            'admin_notes'               => $appt->admin_notes,
+            'created_at'                => $appt->created_at?->toIso8601String(),
+            // Reschedule fields
+            'reschedule_date'           => $appt->reschedule_date
+                ? (is_string($appt->reschedule_date) ? $appt->reschedule_date : $appt->reschedule_date->format('Y-m-d'))
+                : null,
+            'reschedule_time'           => $appt->reschedule_time,
+            'reschedule_reason'         => $appt->reschedule_reason,
+            'reschedule_status'         => $appt->reschedule_status,
+            // Cancellation fields
+            'cancel_reason'             => $appt->cancel_reason,
+            'cancellation_status'       => $appt->cancellation_status,
+            'cancellation_admin_notes'  => $appt->cancellation_admin_notes,
         ];
     }
 
@@ -416,31 +435,67 @@ class SoloParentApiController extends Controller
         })->values()->toArray();
     }
 
-    private function sendPushNotification($userId, $title, $body)
+    private function sendPushNotification(int $userId, string $title, string $body, string $type = 'solo_parent'): void
     {
-        $deviceToken = \DB::table('device_tokens')
-            ->where('user_id', $userId)
-            ->where('is_active', true)
-            ->value('token');
-
-        if (!$deviceToken) return;
-
-        // Store notification in database
-        \DB::table('notifications')->insert([
-            'user_id' => $userId,
-            'type' => 'solo_parent',
-            'title' => $title,
-            'body' => $body,
-            'is_read' => false,
-            'created_at' => now(),
-        ]);
-
-        // Send FCM notification (implement based on your FCM setup)
-        // This is a placeholder - implement actual FCM logic
+        // Always store in DB first — in-app notifications always work
         try {
-            // FCM implementation here
+            \DB::table('notifications')->insert([
+                'user_id'    => $userId,
+                'type'       => $type,
+                'title'      => $title,
+                'body'       => $body,
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
         } catch (\Exception $e) {
-            Log::error('Push notification failed: ' . $e->getMessage());
+            Log::error('Failed to insert notification to DB', ['error' => $e->getMessage()]);
+        }
+
+        // Then attempt OneSignal push (non-blocking — failure won't break the response)
+        try {
+            $deviceToken = \DB::table('device_tokens')
+                ->where('user_id', $userId)
+                ->where('is_active', true)
+                ->value('token');
+
+            if (!$deviceToken) return;
+
+            $oneSignalAppId = env('ONESIGNAL_APP_ID', '3db6828d-49af-4f5a-8d89-ff0b90749aec');
+            $oneSignalKey   = env('ONESIGNAL_API_KEY', '');
+
+            if (!$oneSignalKey) return;
+
+            $payload = [
+                'app_id'          => $oneSignalAppId,
+                'target_channel'  => 'push',
+                'include_aliases' => ['external_id' => [(string) $userId]],
+                'headings'        => ['en' => $title],
+                'contents'        => ['en' => $body],
+                'data'            => ['type' => $type],
+                'priority'        => 10,
+            ];
+
+            $ch = curl_init('https://api.onesignal.com/notifications');
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json; charset=utf-8',
+                    'Authorization: Key ' . $oneSignalKey,
+                ],
+                CURLOPT_POSTFIELDS     => json_encode($payload),
+                CURLOPT_TIMEOUT        => 10,
+            ]);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode !== 200 && $httpCode !== 201) {
+                Log::warning('OneSignal push failed', ['http_code' => $httpCode, 'response' => $response]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Push notification exception', ['error' => $e->getMessage()]);
         }
     }
 
