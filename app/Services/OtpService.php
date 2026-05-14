@@ -26,6 +26,7 @@ class OtpService
 
     /**
      * Send an email verification OTP to the user.
+     * Throws on failure so the controller can report the error to the mobile app.
      */
     public function sendVerificationEmail(User $user, int $otp): void
     {
@@ -34,7 +35,7 @@ class OtpService
                 'full_name' => $user->full_name,
                 'otp'       => $otp,
             ], function ($message) use ($user) {
-                $message->from(config('mail.from.address'), 'MSWDO Member Portal')
+                $message->from(config('mail.from.address'), config('mail.from.name', 'MSWDO Member Portal'))
                     ->to($user->email, $user->full_name)
                     ->subject('Email Verification – MSWDO Member Portal');
             });
@@ -44,11 +45,14 @@ class OtpService
                 'email'   => $user->email,
                 'error'   => $e->getMessage(),
             ]);
+            // Re-throw so caller knows the email failed
+            throw new \RuntimeException('Unable to send verification email. Please try again later.');
         }
     }
 
     /**
      * Send a password reset OTP to the user.
+     * Throws on failure so the controller can report the error to the mobile app.
      */
     public function sendPasswordResetEmail(User $user, int $otp): void
     {
@@ -57,7 +61,7 @@ class OtpService
                 'full_name' => $user->full_name,
                 'otp'       => $otp,
             ], function ($message) use ($user) {
-                $message->from(config('mail.from.address'), 'MSWDO Member Portal')
+                $message->from(config('mail.from.address'), config('mail.from.name', 'MSWDO Member Portal'))
                     ->to($user->email, $user->full_name)
                     ->subject('Password Reset – MSWDO Member Portal');
             });
@@ -67,6 +71,8 @@ class OtpService
                 'email'   => $user->email,
                 'error'   => $e->getMessage(),
             ]);
+            // Re-throw so caller knows the email failed
+            throw new \RuntimeException('Unable to send password reset email. Please try again later.');
         }
     }
 }
