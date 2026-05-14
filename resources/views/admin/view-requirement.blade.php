@@ -487,79 +487,85 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION));
                 $fileUrl = route('admin.serve-file', $file->id);
                 $isImage = in_array($ext, ['jpg','jpeg','png','webp','gif']);
+                $extUpper = strtoupper($ext);
             @endphp
             
             <div class="req-card {{ $status }}">
-                {{-- Image Preview --}}
-                <div class="req-card-image" onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')" style="cursor:pointer;">
+                {{-- Thumbnail / File Icon --}}
+                <div class="req-card-image"
+                     onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')"
+                     style="cursor:pointer;">
                     @if($isImage)
-                        <img src="{{ $fileUrl }}" 
+                        {{-- Image with a pre-built fallback div --}}
+                        <img id="img-{{ $file->id }}"
+                             src="{{ $fileUrl }}"
                              alt="{{ $file->requirement_name }}"
-                             onerror="this.parentElement.innerHTML='<div class=\"req-file-icon\"><svg width=\"48\" height=\"48\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><path d=\"M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z\"></path><polyline points=\"13 2 13 9 20 9\"></polyline></svg><div class=\"req-file-ext\">{{ strtoupper($ext) }}</div></div>';">
+                             style="width:100%;height:100%;object-fit:cover;border-radius:8px;transition:transform .3s;"
+                             onerror="document.getElementById('img-{{ $file->id }}').style.display='none';document.getElementById('fb-{{ $file->id }}').style.display='flex';">
+                        <div id="fb-{{ $file->id }}" class="req-file-icon" style="display:none;">
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                                <polyline points="13 2 13 9 20 9"/>
+                            </svg>
+                            <span class="req-file-ext">{{ $extUpper }}</span>
+                        </div>
                     @else
                         <div class="req-file-icon">
-                            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"></path>
-                                <polyline points="13 2 13 9 20 9"></polyline>
+                            <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="1.5">
+                                <path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/>
+                                <polyline points="13 2 13 9 20 9"/>
                             </svg>
-                            <div class="req-file-ext">{{ strtoupper($ext) }}</div>
+                            <span class="req-file-ext">{{ $extUpper }}</span>
                         </div>
                     @endif
                 </div>
 
                 {{-- Card Content --}}
                 <div class="req-card-content">
-                    {{-- Requirement Title --}}
                     <div class="req-title">{{ $file->requirement_name }}</div>
 
-                    {{-- Date Submitted --}}
                     <div class="req-date">
                         {{ $file->uploaded_at ? \Carbon\Carbon::parse($file->uploaded_at)->format('M d, Y h:i A') : 'N/A' }}
                     </div>
 
-                    {{-- Status Badge --}}
                     <div class="req-status-badge s-{{ $status }}">
-                        @if($status === 'approved')
-                            Approved
-                        @elseif($status === 'rejected')
-                            Rejected
-                        @else
-                            Pending
+                        @if($status === 'approved') Approved
+                        @elseif($status === 'rejected') Rejected
+                        @else Pending Review
                         @endif
                     </div>
 
-                    {{-- Admin Remarks --}}
                     @if($file->admin_remarks)
                         <div class="req-remarks">
                             <strong>Admin Note:</strong> {{ $file->admin_remarks }}
                         </div>
                     @endif
 
-                    {{-- Action Buttons --}}
                     <div class="req-actions">
                         @if($status === 'pending')
-                            {{-- Approve Button --}}
-                            <form action="{{ route('admin.update-file-status', $file->id) }}" method="POST" style="flex:1;" class="js-loading-submit" data-loading-title="Approving Requirement" data-loading-sub="Updating document status and notifying the applicant...">
+                            <form action="{{ route('admin.update-file-status', $file->id) }}" method="POST"
+                                  style="display:inline;"
+                                  class="js-loading-submit"
+                                  data-loading-title="Approving Requirement"
+                                  data-loading-sub="Updating document status and notifying the applicant...">
                                 @csrf
                                 <input type="hidden" name="status" value="approved">
                                 <button type="submit" class="req-btn req-btn-approve">
-                                    Approve
+                                    ✓ Approve
                                 </button>
                             </form>
-
-                            {{-- Decline Button --}}
-                            <button type="button" 
+                            <button type="button"
                                     class="req-btn req-btn-decline"
                                     data-bs-toggle="modal"
                                     data-bs-target="#declineModal"
                                     data-file-id="{{ $file->id }}"
                                     data-file-name="{{ $file->requirement_name }}">
-                                Decline
+                                ✗ Decline
                             </button>
                         @elseif($status === 'approved')
                             <div class="req-status-text req-text-approved">✔ Already Approved</div>
                         @elseif($status === 'rejected')
-                            <div class="req-status-text req-text-rejected">Waiting for Re-upload</div>
+                            <div class="req-status-text req-text-rejected">⏳ Waiting for Re-upload</div>
                         @endif
                     </div>
                 </div>
