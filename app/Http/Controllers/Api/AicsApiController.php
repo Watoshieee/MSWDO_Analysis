@@ -140,6 +140,60 @@ class AicsApiController extends Controller
         ], 201);
     }
 
+    // ── Shared push notification helper (DB first, then OneSignal) ───────────
+    private function sendPushNotification(int $userId, string $title, string $body, string $type = 'aics'): void
+    {
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $userId,
+                'type'       => $type,
+                'title'      => $title,
+                'body'       => $body,
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AICS: Failed to insert notification', ['error' => $e->getMessage()]);
+        }
+
+        try {
+            $oneSignalKey = env('ONESIGNAL_API_KEY', '');
+            if (!$oneSignalKey) return;
+
+            $payload = [
+                'app_id'          => env('ONESIGNAL_APP_ID', '3db6828d-49af-4f5a-8d89-ff0b90749aec'),
+                'target_channel'  => 'push',
+                'include_aliases' => ['external_id' => [(string) $userId]],
+                'headings'        => ['en' => $title],
+                'contents'        => ['en' => $body],
+                'data'            => ['type' => $type],
+                'priority'        => 10,
+            ];
+
+            $ch = curl_init('https://api.onesignal.com/notifications');
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json; charset=utf-8',
+                    'Authorization: Key ' . $oneSignalKey,
+                ],
+                CURLOPT_POSTFIELDS     => json_encode($payload),
+                CURLOPT_TIMEOUT        => 10,
+            ]);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode !== 200 && $httpCode !== 201) {
+                Log::warning('AICS: OneSignal push failed', ['http_code' => $httpCode]);
+            }
+        } catch (\Exception $e) {
+            Log::error('AICS: Push notification exception', ['error' => $e->getMessage()]);
+        }
+    }
+
     public function bookMedicalAppointment(Request $request): JsonResponse
     {
         return $this->bookAppointment($request, 'AICS_Medical');
@@ -242,17 +296,28 @@ class AicsApiController extends Controller
     private function formatAppointment($appt): array
     {
         return [
-            'id' => $appt->id,
-            'appointment_date' => $appt->appointment_date->format('Y-m-d'),
-            'appointment_time' => $appt->appointment_time,
-            'formatted_date' => $appt->formatted_date,
-            'formatted_time' => $appt->formatted_time,
-            'interview_type' => $appt->interview_type,
-            'interview_label' => $appt->interview_label,
-            'status' => $appt->status,
-            'user_notes' => $appt->user_notes,
-            'admin_notes' => $appt->admin_notes,
-            'created_at' => $appt->created_at?->toIso8601String(),
+            'id'                       => $appt->id,
+            'appointment_date'         => $appt->appointment_date->format('Y-m-d'),
+            'appointment_time'         => $appt->appointment_time,
+            'formatted_date'           => $appt->formatted_date,
+            'formatted_time'           => $appt->formatted_time,
+            'interview_type'           => $appt->interview_type,
+            'interview_label'          => $appt->interview_label,
+            'status'                   => $appt->status,
+            'user_notes'               => $appt->user_notes,
+            'admin_notes'              => $appt->admin_notes,
+            'created_at'               => $appt->created_at?->toIso8601String(),
+            // Reschedule fields
+            'reschedule_date'          => $appt->reschedule_date
+                ? (is_string($appt->reschedule_date) ? $appt->reschedule_date : $appt->reschedule_date->format('Y-m-d'))
+                : null,
+            'reschedule_time'          => $appt->reschedule_time,
+            'reschedule_reason'        => $appt->reschedule_reason,
+            'reschedule_status'        => $appt->reschedule_status,
+            // Cancellation fields
+            'cancel_reason'            => $appt->cancel_reason,
+            'cancellation_status'      => $appt->cancellation_status,
+            'cancellation_admin_notes' => $appt->cancellation_admin_notes,
         ];
     }
 
