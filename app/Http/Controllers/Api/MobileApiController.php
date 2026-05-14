@@ -141,13 +141,20 @@ class MobileApiController extends Controller
             return response()->json(['success' => false, 'message' => 'User not found.']);
         }
 
-        $otpCode = $this->otp->generate($user);
-        $this->otp->sendVerificationEmail($user, $otpCode);
+        try {
+            $otpCode = $this->otp->generate($user);
+            $this->otp->sendVerificationEmail($user, $otpCode);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'A new OTP has been sent to your email address.',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'A new OTP has been sent to your email address.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send OTP email. Please try again later.',
+            ], 500);
+        }
     }
 
     public function forgotPassword(Request $request): JsonResponse
@@ -159,13 +166,20 @@ class MobileApiController extends Controller
             return response()->json(['success' => false, 'message' => 'User not found.']);
         }
 
-        $otpCode = $this->otp->generate($user);
-        $this->otp->sendPasswordResetEmail($user, $otpCode);
+        try {
+            $otpCode = $this->otp->generate($user);
+            $this->otp->sendPasswordResetEmail($user, $otpCode);
 
-        return response()->json([
-            'success' => true,
-            'message' => 'A password reset OTP has been sent to your email address.',
-        ]);
+            return response()->json([
+                'success' => true,
+                'message' => 'A password reset OTP has been sent to your email address.',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send reset email. Please try again later.',
+            ], 500);
+        }
     }
 
     public function resetPassword(Request $request): JsonResponse
