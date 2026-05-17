@@ -18,9 +18,10 @@ class CsvService
      * 
      * @param \Illuminate\Http\UploadedFile $file
      * @param string $type (municipality_data, barangay_data, program_data)
+     * @param int|null $year Optional year filter for import
      * @return array
      */
-    public function importCsv($file, $type)
+    public function importCsv($file, $type, $year = null)
     {
         $userId = Auth::id();
         $adminMunicipality = Auth::user()->municipality;
@@ -47,23 +48,33 @@ class CsvService
 
             // Process based on type
             $result = match($type) {
-                'municipality_data' => $this->importMunicipalityData($csvData, $adminMunicipality),
-                'barangay_data' => $this->importBarangayData($csvData, $adminMunicipality),
-                'program_data' => $this->importProgramData($csvData, $adminMunicipality),
+                'municipality_data' => $this->importMunicipalityData($csvData, $adminMunicipality, $year),
+                'barangay_data' => $this->importBarangayData($csvData, $adminMunicipality, $year),
+                'program_data' => $this->importProgramData($csvData, $adminMunicipality, $year),
                 default => throw new \Exception('Invalid import type')
             };
 
             // Update import log
             $importLog->update([
                 'successful_rows' => $result['success'],
-                'failed_rows' => $result['failed'],
+                'failed_rows' => $result['failed'] + ($result['skipped'] ?? 0),
                 'error_details' => !empty($result['errors']) ? json_encode($result['errors']) : null,
                 'status' => 'completed'
             ]);
 
+
+
+            $message = "Import completed: {$result['success']} successful";
+            if (isset($result['skipped']) && $result['skipped'] > 0) {
+                $message .= ", {$result['skipped']} skipped (already exists)";
+            }
+            if ($result['failed'] > 0) {
+                $message .= ", {$result['failed']} failed";
+            }
+
             return [
                 'success' => true,
-                'message' => "Import completed: {$result['success']} successful, {$result['failed']} failed",
+                'message' => $message,
                 'data' => $result
             ];
 
@@ -120,72 +131,102 @@ class CsvService
      * Import Municipality Data
      * - Skips rows where a MunicipalityYearlySummary already exists for that year (no overwrites).
      * - Writes to both the `municipalities` table AND `municipality_yearly_summaries`.
+     * - If $filterYear is provided, only imports rows matching that year.
      */
-    private function importMunicipalityData($data, $adminMunicipality)
+    private function importMunicipalityData($data, $adminMunicipality, $filterYear = null)
     {
         $success = 0;
         $failed  = 0;
         $skipped = 0;
         $errors  = [];
 
+        Log::info('Import Municipality Data', [
+            'total_rows' => count($data),
+            'municipality' => $adminMunicipality,
+            'filter_year' => $filterYear
+        ]);
+
         foreach ($data as $index => $row) {
             try {
-                $this->validateColumns($row, ['Year', 'Municipality', 'Population', 'Male', 'Female']);
+                Log::info('Processing row ' . ($index + 2), $row);
+                
+                $this->validateColumns($row, ['Year', 'Municipality', 'Total_Population', 'Total_Households', 'Male', 'Female']);
 
-                if (trim($row['Municipality']) !== $adminMunicipality) {
-                    throw new \Exception("You can only import data for {$adminMunicipality}");
+                $rowMunicipality = trim($row['Municipality']);
+
+                if ($rowMunicipality !== $adminMunicipality) {
+                    $skipped++;
+                    $errors[] = "Row " . ($index + 2) . ": Municipality mismatch (CSV: '{$rowMunicipality}', Expected: '{$adminMunicipality}')";
+                    continue;
                 }
 
                 $year = (int) $row['Year'];
 
-                // ── Duplicate guard ───────────────────────────────────────────
+                if ($filterYear !== null && $filterYear !== '' && $year != $filterYear) {
+                    $skipped++;
+                    continue;
+                }
+
                 $alreadyExists = MunicipalityYearlySummary::where('municipality', $adminMunicipality)
                     ->where('year', $year)
                     ->exists();
 
+                $totalPop  = (int)  $row['Total_Population'];
+                $totalHouseholds = (int) $row['Total_Households'];
+                $malePop   = (int)  $row['Male'];
+                $femalePop = (int)  $row['Female'];
+                $age0_19   = (int)  ($row['Age_0_19'] ?? 0);
+                $age20_59  = (int)  ($row['Age_20_59'] ?? 0);
+                $age60Plus = (int)  ($row['Age_60_Plus'] ?? 0);
+
                 if ($alreadyExists) {
-                    $skipped++;
-                    $errors[] = "Row " . ($index + 2) . ": Year {$year} already exists — skipped (existing data preserved).";
+                    MunicipalityYearlySummary::where('municipality', $adminMunicipality)
+                        ->where('year', $year)
+                        ->update([
+                            'total_population'  => $totalPop,
+                            'total_households'  => $totalHouseholds,
+                            'male_population'   => $malePop,
+                            'female_population' => $femalePop,
+                            'population_0_19'   => $age0_19,
+                            'population_20_59'  => $age20_59,
+                            'population_60_100' => $age60Plus,
+                        ]);
+                    
+                    $success++;
                     continue;
                 }
 
-                $totalPop  = (int)  $row['Population'];
-                $malePop   = (int)  $row['Male'];
-                $femalePop = (int)  $row['Female'];
-                $growthRate = isset($row['GrowthRate']) ? (float) $row['GrowthRate'] : null;
-
-                // ── Save to municipalities table ──────────────────────────────
-                Municipality::updateOrCreate(
-                    ['name' => $adminMunicipality, 'year' => $year],
-                    [
-                        'total_population'  => $totalPop,
-                        'male_population'   => $malePop,
-                        'female_population' => $femalePop,
-                        'growth_rate'       => $growthRate,
-                    ]
-                );
-
-                // ── Sync to MunicipalityYearlySummary (powers /data/yearly) ──
                 MunicipalityYearlySummary::create([
-                    'municipality'     => $adminMunicipality,
-                    'year'             => $year,
-                    'total_population' => $totalPop,
-                    'male_population'  => $malePop,
-                    'female_population'=> $femalePop,
-                    'total_households' => 0,
-                    'created_at'       => now(),
-                    'updated_at'       => now(),
+                    'municipality'      => $adminMunicipality,
+                    'year'              => $year,
+                    'total_population'  => $totalPop,
+                    'total_households'  => $totalHouseholds,
+                    'male_population'   => $malePop,
+                    'female_population' => $femalePop,
+                    'population_0_19'   => $age0_19,
+                    'population_20_59'  => $age20_59,
+                    'population_60_100' => $age60Plus,
+                    'created_at'        => now(),
+                    'updated_at'        => now(),
                 ]);
 
                 $success++;
+                Log::info('Row imported successfully', ['year' => $year]);
             } catch (\Exception $e) {
                 $failed++;
                 $errors[] = "Row " . ($index + 2) . ": " . $e->getMessage();
+                Log::error('Row import failed', ['error' => $e->getMessage(), 'row' => $row]);
             }
         }
 
+        Log::info('Import completed', [
+            'success' => $success,
+            'failed' => $failed,
+            'skipped' => $skipped
+        ]);
+
         $message = "{$success} imported";
-        if ($skipped) $message .= ", {$skipped} skipped (year already exists)";
+        if ($skipped) $message .= ", {$skipped} skipped";
         if ($failed)  $message .= ", {$failed} failed";
 
         return compact('success', 'failed', 'skipped', 'errors');
@@ -194,8 +235,9 @@ class CsvService
     /**
      * Import Barangay Data
      * - Skips rows where barangay + year already exists (no overwrites).
+     * - If $filterYear is provided, only imports rows matching that year.
      */
-    private function importBarangayData($data, $adminMunicipality)
+    private function importBarangayData($data, $adminMunicipality, $filterYear = null)
     {
         $success = 0;
         $failed  = 0;
@@ -204,7 +246,7 @@ class CsvService
 
         foreach ($data as $index => $row) {
             try {
-                $this->validateColumns($row, ['Municipality', 'Barangay', 'Year', 'Population']);
+                $this->validateColumns($row, ['Municipality', 'Barangay', 'Year', 'Total_Population']);
 
                 if (trim($row['Municipality']) !== $adminMunicipality) {
                     throw new \Exception("You can only import data for {$adminMunicipality}");
@@ -212,6 +254,12 @@ class CsvService
 
                 $year     = (int) $row['Year'];
                 $barangay = trim($row['Barangay']);
+
+                // Filter by year if specified (empty string means import all)
+                if ($filterYear !== null && $filterYear !== '' && $year != $filterYear) {
+                    $skipped++;
+                    continue;
+                }
 
                 // ── Duplicate guard ───────────────────────────────────────────
                 $alreadyExists = Barangay::where('municipality', $adminMunicipality)
@@ -226,16 +274,16 @@ class CsvService
                 }
 
                 Barangay::create([
-                    'municipality'      => $adminMunicipality,
-                    'name'              => $barangay,
-                    'year'              => $year,
-                    'total_population'  => (int)($row['Population'] ?? 0),
-                    'male_population'   => (int)($row['Male']       ?? 0),
-                    'female_population' => (int)($row['Female']     ?? 0),
-                    'population_0_19'   => (int)($row['Age_0_19']   ?? 0),
-                    'population_20_59'  => (int)($row['Age_20_59']  ?? 0),
-                    'population_60_100' => (int)($row['Age_60_100'] ?? 0),
-                    'total_households'  => (int)($row['Households'] ?? 0),
+                    'municipality'        => $adminMunicipality,
+                    'name'                => $barangay,
+                    'year'                => $year,
+                    'total_population'    => (int)($row['Total_Population'] ?? 0),
+                    'pwd_count'           => (int)($row['PWD']         ?? 0),
+                    'aics_count'          => (int)($row['AICS']        ?? 0),
+                    'single_parent_count' => (int)($row['Solo_Parent'] ?? 0),
+                    'total_households'    => (int)($row['Households']  ?? 0),
+                    'four_ps_count'       => (int)($row['4Ps']         ?? 0),
+                    'senior_count'        => (int)($row['Senior']      ?? 0),
                 ]);
 
                 $success++;
@@ -252,8 +300,9 @@ class CsvService
      * Import Program Data
      * - Skips rows where municipality + program_type + year (+month) already exists.
      * - After import, refreshes MunicipalityYearlySummary program totals for affected years.
+     * - If $filterYear is provided, only imports rows matching that year.
      */
-    private function importProgramData($data, $adminMunicipality)
+    private function importProgramData($data, $adminMunicipality, $filterYear = null)
     {
         $success      = 0;
         $failed       = 0;
@@ -271,18 +320,24 @@ class CsvService
 
                 $year        = (int)   $row['Year'];
                 $programType = trim($row['Program']);
-                $month       = isset($row['Month']) && $row['Month'] !== '' ? (int)$row['Month'] : null;
+                $month       = null;
+
+                // Filter by year if specified (empty string means import all)
+                if ($filterYear !== null && $filterYear !== '' && $year != $filterYear) {
+                    $skipped++;
+                    continue;
+                }
 
                 // ── Duplicate guard ───────────────────────────────────────────
                 $alreadyExists = SocialWelfareProgram::where('municipality', $adminMunicipality)
                     ->where('program_type', $programType)
                     ->where('year', $year)
-                    ->where('month', $month)
+                    ->whereNull('month')
                     ->exists();
 
                 if ($alreadyExists) {
                     $skipped++;
-                    $errors[] = "Row " . ($index + 2) . ": {$programType} ({$year}" . ($month ? "/month {$month}" : "") . ") already exists — skipped.";
+                    $errors[] = "Row " . ($index + 2) . ": {$programType} ({$year}) already exists — skipped.";
                     continue;
                 }
 
@@ -291,8 +346,8 @@ class CsvService
                     'program_type'     => $programType,
                     'year'             => $year,
                     'beneficiary_count'=> (int) $row['Beneficiaries'],
-                    'barangay'         => isset($row['Barangay']) && $row['Barangay'] !== '' ? $row['Barangay'] : null,
-                    'month'            => $month,
+                    'barangay'         => null,
+                    'month'            => null,
                 ]);
 
                 $affectedYears[$year] = true;

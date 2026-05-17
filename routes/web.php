@@ -320,11 +320,15 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // CSV Import/Export Routes
     Route::prefix('csv')->name('csv.')->group(function () {
-        Route::get('/', [App\Http\Controllers\Admin\CsvImportExportController::class, 'index'])->name('index');
         Route::post('/import', [App\Http\Controllers\Admin\CsvImportExportController::class, 'import'])->name('import');
         Route::post('/export', [App\Http\Controllers\Admin\CsvImportExportController::class, 'export'])->name('export');
         Route::get('/template/{type}', [App\Http\Controllers\Admin\CsvImportExportController::class, 'downloadTemplate'])->name('template');
-        Route::get('/log/{id}', [App\Http\Controllers\Admin\CsvImportExportController::class, 'getImportLog'])->name('log');
+        // Archived route must come BEFORE {id} wildcard
+        Route::get('/import-log/archived', [App\Http\Controllers\Admin\CsvImportExportController::class, 'getArchivedLogs'])->name('import-log.archived');
+        Route::get('/import-log/{id}', [App\Http\Controllers\Admin\CsvImportExportController::class, 'getImportLog'])->name('import-log');
+        Route::post('/import-log/{id}/archive', [App\Http\Controllers\Admin\CsvImportExportController::class, 'archiveLog'])->name('import-log.archive');
+        Route::post('/import-log/{id}/restore', [App\Http\Controllers\Admin\CsvImportExportController::class, 'restoreLog'])->name('import-log.restore');
+        Route::delete('/import-log/{id}/force-delete', [App\Http\Controllers\Admin\CsvImportExportController::class, 'forceDeleteLog'])->name('import-log.force-delete');
     });
 
     // Announcement Management Routes
