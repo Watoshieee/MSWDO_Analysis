@@ -179,17 +179,21 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .back-link {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             color: rgba(255, 255, 255, .75);
-            font-size: .85rem;
+            font-size: .82rem;
             font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, .25);
+            border-radius: 20px;
+            padding: 5px 14px;
+            transition: all .25s;
+            margin-bottom: 12px;
             text-decoration: none;
-            margin-bottom: 14px;
-            transition: color .2s;
         }
 
         .back-link:hover {
-            color: var(--secondary-yellow);
+            color: white;
+            background: rgba(255, 255, 255, .15);
         }
 
         .main-content {
