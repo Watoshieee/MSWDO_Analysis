@@ -249,6 +249,27 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div></div>
     </div>
 
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content">
+            <div class="modal-hdr d-flex align-items-center justify-content-between">
+                <span style="font-weight:800;">Confirm Delete</span>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div style="text-align:center;padding:20px;">
+                    <div style="font-size:3rem;color:#C41E24;margin-bottom:16px;"></div>
+                    <div style="font-size:1.1rem;font-weight:700;color:var(--primary-blue);margin-bottom:8px;">Delete this program record?</div>
+                    <div style="font-size:0.88rem;color:#64748b;">This action cannot be undone.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 gap-2">
+                <button type="button" class="btn-cncl" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" onclick="confirmDelete()" style="background:#C41E24;color:white;border:none;border-radius:10px;padding:11px;font-weight:800;font-size:0.85rem;cursor:pointer;width:100%;">Delete</button>
+            </div>
+        </div></div>
+    </div>
+
     <div class="footer-strip"><strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}</div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -289,10 +310,17 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             });
         @endif
 
+        let deleteId = null;
+
         function deleteProgram(id) {
-            if (confirm('Delete this program record?')) {
+            deleteId = id;
+            new bootstrap.Modal(document.getElementById('deleteModal')).show();
+        }
+
+        function confirmDelete() {
+            if (deleteId) {
                 const form = document.createElement('form');
-                form.method = 'POST'; form.action = '/admin/data/programs/' + id + '/delete';
+                form.method = 'POST'; form.action = '/admin/data/programs/' + deleteId + '/delete';
                 const csrf = document.createElement('input'); csrf.name = '_token'; csrf.value = '{{ csrf_token() }}';
                 const method = document.createElement('input'); method.name = '_method'; method.value = 'DELETE';
                 form.appendChild(csrf); form.appendChild(method); document.body.appendChild(form); form.submit();
