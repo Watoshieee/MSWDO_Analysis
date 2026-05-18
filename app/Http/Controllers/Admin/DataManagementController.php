@@ -68,6 +68,13 @@ class DataManagementController extends Controller
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->firstOrFail();
 
+        // Get import logs
+        $importLogs = \App\Models\CsvImportLog::with('user')
+            ->where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
         // Get available years from yearly summaries + default range
         $savedYears = MunicipalityYearlySummary::where('municipality', $user->municipality)
             ->orderBy('year', 'desc')
@@ -79,21 +86,19 @@ class DataManagementController extends Controller
         rsort($years);
 
         // Get year from request or use municipality's stored year
-        $currentYear = $request->filled('year') ? $request->year : ($municipality->year ?? date('Y'));
+        $currentYear = $request->filled('year') ? (int)$request->year : ($municipality->year ?? date('Y'));
         
         $currentSummary = MunicipalityYearlySummary::where('municipality', $user->municipality)
             ->where('year', $currentYear)
             ->first();
 
-        // If the stored year has no summary, fall back to the most recent available
+        // If no summary for selected year, don't fall back - just show empty
         if (!$currentSummary && !$request->filled('year')) {
             $currentSummary = MunicipalityYearlySummary::where('municipality', $user->municipality)
                 ->orderBy('year', 'desc')
                 ->first();
 
             if ($currentSummary) {
-                $municipality->year = $currentSummary->year;
-                $municipality->saveQuietly();
                 $currentYear = $currentSummary->year;
             }
         }
@@ -127,8 +132,24 @@ class DataManagementController extends Controller
 
         // Update municipality year if changed via request
         if ($request->filled('year') && $municipality->year != $currentYear) {
-            $municipality->year = $currentYear;
-            $municipality->saveQuietly();
+            // Check if a record with this year already exists (including soft deleted)
+            $existingWithYear = Municipality::withTrashed()
+                ->where('name', $user->municipality)
+                ->where('year', $currentYear)
+                ->where('id', '!=', $municipality->id)
+                ->first();
+            
+            if ($existingWithYear) {
+                // If soft deleted, restore and use it
+                if ($existingWithYear->trashed()) {
+                    $existingWithYear->restore();
+                    $municipality = $existingWithYear;
+                }
+                // Don't update year if active record exists
+            } else {
+                $municipality->year = $currentYear;
+                $municipality->saveQuietly();
+            }
         }
 
         // Full summary objects for the Yearly History tab table
@@ -156,10 +177,12 @@ class DataManagementController extends Controller
             'currentTotalPopulation',
             'currentTotalHouseholds',
             'currentSummary',
+            'currentYear',
             'years',
             'allSummaries',
             'yearlyData',
-            'trends'
+            'trends',
+            'importLogs'
         ));
     }
 

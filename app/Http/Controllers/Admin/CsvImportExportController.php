@@ -19,66 +19,23 @@ class CsvImportExportController extends Controller
     }
 
     /**
-     * Show CSV Import/Export page
-     */
-    public function index()
-    {
-        $adminMunicipality = Auth::user()->municipality;
-        
-        $importLogs = CsvImportLog::with('user')
-            ->where('user_id', Auth::id())
-            ->orderBy('created_at', 'desc')
-            ->take(10)
-            ->get();
-
-        // Get all unique years from municipality, barangay, and program tables for this municipality
-        $municipalityYears = Municipality::where('name', $adminMunicipality)
-            ->select('year')
-            ->distinct()
-            ->pluck('year');
-            
-        $barangayYears = \App\Models\Barangay::where('municipality', $adminMunicipality)
-            ->select('year')
-            ->distinct()
-            ->pluck('year');
-            
-        $programYears = \App\Models\SocialWelfareProgram::where('municipality', $adminMunicipality)
-            ->select('year')
-            ->distinct()
-            ->pluck('year');
-        
-        // Merge all years and sort descending
-        $years = $municipalityYears
-            ->merge($barangayYears)
-            ->merge($programYears)
-            ->unique()
-            ->sort()
-            ->values()
-            ->reverse()
-            ->values();
-        
-        // If no years found in database, use default years for comparative analysis
-        if ($years->isEmpty()) {
-            $years = collect([2024, 2020, 2015]);
-        }
-
-        return view('admin.csv-import-export', compact('importLogs', 'years', 'adminMunicipality'));
-    }
-
-    /**
      * Handle CSV Import
      */
     public function import(Request $request)
     {
         $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:10240', // 10MB max
-            'import_type' => 'required|in:municipality_data,barangay_data,program_data'
+            'csv_file' => 'required|file|mimes:csv,txt|max:10240',
+            'import_type' => 'required|in:municipality_data,barangay_data,program_data',
+            'year' => 'nullable|integer|min:2000|max:' . (date('Y') + 2)
         ]);
 
         try {
+            $year = $request->filled('year') ? $request->year : null;
+            
             $result = $this->csvService->importCsv(
                 $request->file('csv_file'),
-                $request->import_type
+                $request->import_type,
+                $year
             );
 
             if ($result['success']) {
@@ -135,33 +92,100 @@ class CsvImportExportController extends Controller
     }
 
     /**
+     * Archive import log
+     */
+    public function archiveLog($id)
+    {
+        $log = CsvImportLog::where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+        
+        $log->delete();
+        
+        return redirect()->back()->with('success', 'Import log archived successfully');
+    }
+
+    /**
+     * Restore archived import log
+     */
+    public function restoreLog($id)
+    {
+        $log = CsvImportLog::onlyTrashed()
+            ->where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+        
+        $log->restore();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Import log restored successfully'
+        ]);
+    }
+
+    /**
+     * Permanently delete archived import log
+     */
+    public function forceDeleteLog($id)
+    {
+        $log = CsvImportLog::onlyTrashed()
+            ->where('id', $id)
+            ->where('user_id', Auth::id())
+            ->firstOrFail();
+        
+        $log->forceDelete();
+        
+        return response()->json([
+            'success' => true,
+            'message' => 'Import log permanently deleted'
+        ]);
+    }
+
+    /**
+     * Get archived import logs
+     */
+    public function getArchivedLogs()
+    {
+        $archivedLogs = CsvImportLog::onlyTrashed()
+            ->where('user_id', Auth::id())
+            ->orderBy('deleted_at', 'desc')
+            ->get();
+        
+        return response()->json([
+            'success' => true,
+            'logs' => $archivedLogs
+        ]);
+    }
+
+    /**
      * Download sample CSV template
      */
     public function downloadTemplate($type)
     {
         $adminMunicipality = Auth::user()->municipality;
+        $currentYear = date('Y');
+        
+        // Get municipality's current year if available
+        $municipality = Municipality::where('name', $adminMunicipality)->first();
+        if ($municipality && $municipality->year) {
+            $currentYear = $municipality->year;
+        }
         
         $templates = [
             'municipality_data' => [
-                ['Year', 'Municipality', 'Population', 'Male', 'Female', 'GrowthRate'],
-                ['2024', $adminMunicipality, '45000', '22000', '23000', '2.3'],
-                ['2020', $adminMunicipality, '42000', '20500', '21500', '2.1'],
-                ['2015', $adminMunicipality, '38000', '19000', '19000', '1.9']
+                ['Year', 'Municipality', 'Total_Population', 'Total_Households', 'Male', 'Female', 'Age_0_19', 'Age_20_59', 'Age_60_Plus'],
+                [$currentYear, $adminMunicipality, '45000', '9000', '22000', '23000', '15000', '25000', '5000'],
             ],
-            'barangay_data' => [
-                ['Municipality', 'Barangay', 'Year', 'Population', 'Male', 'Female', 'Age_0_19', 'Age_20_59', 'Age_60_100', 'Households'],
-                [$adminMunicipality, 'Poblacion', '2024', '2500', '1200', '1300', '800', '1500', '200', '500'],
-                [$adminMunicipality, 'Poblacion', '2020', '2300', '1100', '1200', '750', '1400', '150', '480'],
-                [$adminMunicipality, 'San Isidro', '2024', '2000', '1000', '1000', '600', '1200', '200', '400']
-            ],
+            'barangay_data' => $this->generateBarangayTemplate($adminMunicipality, $currentYear),
             'program_data' => [
-                ['Municipality', 'Program', 'Year', 'Beneficiaries', 'Barangay', 'Month'],
-                [$adminMunicipality, 'PWD_Assistance', '2024', '150', 'Poblacion', '1'],
-                [$adminMunicipality, 'PWD_Assistance', '2020', '120', '', ''],
-                [$adminMunicipality, 'Solo_Parent', '2024', '200', '', ''],
-                [$adminMunicipality, 'Solo_Parent', '2020', '180', '', ''],
-                [$adminMunicipality, '4Ps', '2024', '300', '', ''],
-                [$adminMunicipality, 'AICS', '2024', '250', '', '']
+                ['Municipality', 'Program', 'Year', 'Beneficiaries'],
+                [$adminMunicipality, 'PWD_Assistance', $currentYear, '150'],
+                [$adminMunicipality, 'Solo_Parent', $currentYear, '200'],
+                [$adminMunicipality, '4Ps', $currentYear, '300'],
+                [$adminMunicipality, 'AICS', $currentYear, '250'],
+                [$adminMunicipality, 'Senior_Citizen_Pension', $currentYear, '180'],
+                [$adminMunicipality, 'SLP', $currentYear, '100'],
+                [$adminMunicipality, 'ESA', $currentYear, '120'],
             ]
         ];
 
@@ -184,5 +208,35 @@ class CsvImportExportController extends Controller
         fclose($handle);
 
         return response()->download($filePath, $fileName)->deleteFileAfterSend(true);
+    }
+    
+    /**
+     * Generate barangay template with actual barangays from the municipality
+     */
+    private function generateBarangayTemplate($municipality, $year)
+    {
+        $template = [
+            ['Municipality', 'Barangay', 'Year', 'Total_Population', 'PWD', 'AICS', 'Solo_Parent', 'Households', '4Ps', 'Senior']
+        ];
+        
+        // Get all unique barangay names for this municipality
+        $barangays = \App\Models\Barangay::where('municipality', $municipality)
+            ->select('name')
+            ->distinct()
+            ->orderBy('name')
+            ->pluck('name');
+        
+        // If no barangays found, add sample rows
+        if ($barangays->isEmpty()) {
+            $template[] = [$municipality, 'Poblacion', $year, '2500', '50', '30', '40', '500', '100', '80'];
+            $template[] = [$municipality, 'San Isidro', $year, '2000', '40', '25', '35', '400', '80', '60'];
+        } else {
+            // Add a row for each barangay
+            foreach ($barangays as $barangay) {
+                $template[] = [$municipality, $barangay, $year, '0', '0', '0', '0', '0', '0', '0'];
+            }
+        }
+        
+        return $template;
     }
 }
