@@ -425,15 +425,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div id="importSection" style="display:none;">
                         <form action="{{ route('admin.csv.import') }}" method="POST" enctype="multipart/form-data" id="importForm">
                             @csrf
-                            <div class="mb-3">
-                                <label class="form-label" style="font-weight:700;color:var(--primary-blue);font-size:0.85rem;">Select Data Type</label>
-                                <select name="import_type" class="form-select" required style="border:1.5px solid var(--border-light);border-radius:10px;">
-                                    <option value="">Choose data type...</option>
-                                    <option value="municipality_data">Municipality Data</option>
-                                    <option value="barangay_data">Barangay Data</option>
-                                    <option value="program_data">Program Data</option>
-                                </select>
-                            </div>
+                            <input type="hidden" name="import_type" value="municipality_data">
                             <div class="mb-3">
                                 <label class="form-label" style="font-weight:700;color:var(--primary-blue);font-size:0.85rem;">Year (Optional)</label>
                                 <select name="year" class="form-select" style="border:1.5px solid var(--border-light);border-radius:10px;">
@@ -456,16 +448,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             </div>
                         </form>
                         <div class="mt-4 pt-3" style="border-top:1px solid #e9ecef;">
-                            <h6 style="font-weight:700;font-size:0.85rem;color:var(--primary-blue);"><i class="bi bi-file-earmark-arrow-down"></i> Download Templates</h6>
+                            <h6 style="font-weight:700;font-size:0.85rem;color:var(--primary-blue);"><i class="bi bi-file-earmark-arrow-down"></i> Download Template</h6>
                             <div class="d-flex gap-2 flex-wrap mt-2">
                                 <a href="{{ route('admin.csv.template', 'municipality_data') }}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-download"></i> Municipality
-                                </a>
-                                <a href="{{ route('admin.csv.template', 'barangay_data') }}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-download"></i> Barangay
-                                </a>
-                                <a href="{{ route('admin.csv.template', 'program_data') }}" class="btn btn-sm btn-outline-secondary">
-                                    <i class="bi bi-download"></i> Program
+                                    <i class="bi bi-download"></i> Municipality Template
                                 </a>
                             </div>
                         </div>
@@ -474,15 +460,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div id="exportSection" style="display:none;">
                         <form action="{{ route('admin.csv.export') }}" method="POST" id="exportForm">
                             @csrf
-                            <div class="mb-3">
-                                <label class="form-label" style="font-weight:700;color:var(--primary-blue);font-size:0.85rem;">Select Data Type</label>
-                                <select name="export_type" class="form-select" required style="border:1.5px solid var(--border-light);border-radius:10px;">
-                                    <option value="">Choose data type...</option>
-                                    <option value="municipality_data">Municipality Data</option>
-                                    <option value="barangay_data">Barangay Data</option>
-                                    <option value="program_data">Program Data</option>
-                                </select>
-                            </div>
+                            <input type="hidden" name="export_type" value="municipality_data">
                             <div class="mb-3">
                                 <label class="form-label" style="font-weight:700;color:var(--primary-blue);font-size:0.85rem;">Filter by Year (Optional)</label>
                                 <select name="year" class="form-select" style="border:1.5px solid var(--border-light);border-radius:10px;">
@@ -695,11 +673,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             const exportSection = document.getElementById('exportSection');
             
             if (type === 'import') {
-                title.innerHTML = '<i class="bi bi-upload"></i> Import CSV Data';
+                title.innerHTML = '<i class="bi bi-upload"></i> Import Municipality CSV Data';
                 importSection.style.display = 'block';
                 exportSection.style.display = 'none';
             } else {
-                title.innerHTML = '<i class="bi bi-download"></i> Export CSV Data';
+                title.innerHTML = '<i class="bi bi-download"></i> Export Municipality CSV Data';
                 importSection.style.display = 'none';
                 exportSection.style.display = 'block';
             }
@@ -834,21 +812,22 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('Import log restored successfully', 'success');
                     // Close archived modal and remove all backdrops
                     const archivedModal = bootstrap.Modal.getInstance(document.getElementById('archivedModal'));
                     if (archivedModal) {
                         archivedModal.hide();
                     }
                     // Remove all modal backdrops and restore body
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                    
+                    // Show toast and reload after timer completes
+                    showToast('Import log restored successfully', 'success');
                     setTimeout(() => {
-                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-                        document.body.classList.remove('modal-open');
-                        document.body.style.overflow = '';
-                        document.body.style.paddingRight = '';
-                        // Reload to refresh the list
                         location.reload();
-                    }, 300);
+                    }, 3500);
                 } else {
                     showToast(data.message || 'Failed to restore log', 'error');
                 }
@@ -884,21 +863,22 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             .then(response => response.json())
             .then(data => {
                 if (data.success) {
-                    showToast('Import log permanently deleted', 'success');
                     // Close archived modal and remove all backdrops
                     const archivedModal = bootstrap.Modal.getInstance(document.getElementById('archivedModal'));
                     if (archivedModal) {
                         archivedModal.hide();
                     }
                     // Remove all modal backdrops and restore body
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                    
+                    // Show toast and reload after timer completes
+                    showToast('Import log permanently deleted', 'success');
                     setTimeout(() => {
-                        document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
-                        document.body.classList.remove('modal-open');
-                        document.body.style.overflow = '';
-                        document.body.style.paddingRight = '';
-                        // Reload to refresh the list
                         location.reload();
-                    }, 300);
+                    }, 3500);
                 } else {
                     showToast(data.message || 'Failed to delete log', 'error');
                 }

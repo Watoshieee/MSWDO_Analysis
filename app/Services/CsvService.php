@@ -66,7 +66,7 @@ class CsvService
 
             $message = "Import completed: {$result['success']} successful";
             if (isset($result['skipped']) && $result['skipped'] > 0) {
-                $message .= ", {$result['skipped']} skipped (already exists)";
+                $message .= ", {$result['skipped']} skipped";
             }
             if ($result['failed'] > 0) {
                 $message .= ", {$result['failed']} failed";
@@ -234,7 +234,8 @@ class CsvService
 
     /**
      * Import Barangay Data
-     * - Skips rows where barangay + year already exists (no overwrites).
+     * - Updates existing records if barangay + year already exists
+     * - Creates new record if it doesn't exist
      * - If $filterYear is provided, only imports rows matching that year.
      */
     private function importBarangayData($data, $adminMunicipality, $filterYear = null)
@@ -261,22 +262,8 @@ class CsvService
                     continue;
                 }
 
-                // ── Duplicate guard ───────────────────────────────────────────
-                $alreadyExists = Barangay::where('municipality', $adminMunicipality)
-                    ->where('name', $barangay)
-                    ->where('year', $year)
-                    ->exists();
-
-                if ($alreadyExists) {
-                    $skipped++;
-                    $errors[] = "Row " . ($index + 2) . ": {$barangay} ({$year}) already exists — skipped.";
-                    continue;
-                }
-
-                Barangay::create([
-                    'municipality'        => $adminMunicipality,
-                    'name'                => $barangay,
-                    'year'                => $year,
+                // ── Update or Create ───────────────────────────────────────────
+                $barangayData = [
                     'total_population'    => (int)($row['Total_Population'] ?? 0),
                     'pwd_count'           => (int)($row['PWD']         ?? 0),
                     'aics_count'          => (int)($row['AICS']        ?? 0),
@@ -284,7 +271,16 @@ class CsvService
                     'total_households'    => (int)($row['Households']  ?? 0),
                     'four_ps_count'       => (int)($row['4Ps']         ?? 0),
                     'senior_count'        => (int)($row['Senior']      ?? 0),
-                ]);
+                ];
+
+                Barangay::updateOrCreate(
+                    [
+                        'municipality' => $adminMunicipality,
+                        'name'         => $barangay,
+                        'year'         => $year
+                    ],
+                    $barangayData
+                );
 
                 $success++;
             } catch (\Exception $e) {
@@ -298,7 +294,8 @@ class CsvService
 
     /**
      * Import Program Data
-     * - Skips rows where municipality + program_type + year (+month) already exists.
+     * - Updates existing records if municipality + program_type + year (+month) already exists.
+     * - Creates new record if it doesn't exist.
      * - After import, refreshes MunicipalityYearlySummary program totals for affected years.
      * - If $filterYear is provided, only imports rows matching that year.
      */
@@ -328,27 +325,19 @@ class CsvService
                     continue;
                 }
 
-                // ── Duplicate guard ───────────────────────────────────────────
-                $alreadyExists = SocialWelfareProgram::where('municipality', $adminMunicipality)
-                    ->where('program_type', $programType)
-                    ->where('year', $year)
-                    ->whereNull('month')
-                    ->exists();
-
-                if ($alreadyExists) {
-                    $skipped++;
-                    $errors[] = "Row " . ($index + 2) . ": {$programType} ({$year}) already exists — skipped.";
-                    continue;
-                }
-
-                SocialWelfareProgram::create([
-                    'municipality'     => $adminMunicipality,
-                    'program_type'     => $programType,
-                    'year'             => $year,
-                    'beneficiary_count'=> (int) $row['Beneficiaries'],
-                    'barangay'         => null,
-                    'month'            => null,
-                ]);
+                // ── Update or Create ───────────────────────────────────────────
+                SocialWelfareProgram::updateOrCreate(
+                    [
+                        'municipality'  => $adminMunicipality,
+                        'program_type'  => $programType,
+                        'year'          => $year,
+                        'month'         => null,
+                    ],
+                    [
+                        'beneficiary_count' => (int) $row['Beneficiaries'],
+                        'barangay'          => null,
+                    ]
+                );
 
                 $affectedYears[$year] = true;
                 $success++;
@@ -446,32 +435,36 @@ class CsvService
      */
     private function exportMunicipalityData($filters)
     {
-        $query = Municipality::query();
+        $query = MunicipalityYearlySummary::query();
 
         if (isset($filters['year'])) {
             $query->where('year', $filters['year']);
         }
 
         if (isset($filters['municipality'])) {
-            $query->where('name', $filters['municipality']);
+            $query->where('municipality', $filters['municipality']);
         }
 
-        $municipalities = $query->orderBy('year', 'desc')
-            ->orderBy('name')
+        $summaries = $query->orderBy('year', 'desc')
+            ->orderBy('municipality')
             ->get();
 
+        // Match template format: Year, Municipality, Total_Population, Total_Households, Male, Female, Age_0_19, Age_20_59, Age_60_Plus
         $csvData = [
-            ['Year', 'Municipality', 'Population', 'Male', 'Female', 'GrowthRate']
+            ['Year', 'Municipality', 'Total_Population', 'Total_Households', 'Male', 'Female', 'Age_0_19', 'Age_20_59', 'Age_60_Plus']
         ];
 
-        foreach ($municipalities as $mun) {
+        foreach ($summaries as $summary) {
             $csvData[] = [
-                $mun->year,
-                $mun->name,
-                $mun->total_population,
-                $mun->male_population,
-                $mun->female_population,
-                $mun->growth_rate ?? 0
+                $summary->year,
+                $summary->municipality,
+                $summary->total_population ?? 0,
+                $summary->total_households ?? 0,
+                $summary->male_population ?? 0,
+                $summary->female_population ?? 0,
+                $summary->population_0_19 ?? 0,
+                $summary->population_20_59 ?? 0,
+                $summary->population_60_100 ?? 0
             ];
         }
 
@@ -494,24 +487,27 @@ class CsvService
         }
 
         $barangays = $query->orderBy('municipality')
+            ->orderBy('year', 'desc')
             ->orderBy('name')
             ->get();
 
+        // Match template format: Municipality, Barangay, Year, Total_Population, PWD, AICS, Solo_Parent, Households, 4Ps, Senior
         $csvData = [
-            ['Municipality', 'Barangay', 'Year', 'Male', 'Female', 'Age_0_19', 'Age_20_59', 'Age_60_100', 'Households']
+            ['Municipality', 'Barangay', 'Year', 'Total_Population', 'PWD', 'AICS', 'Solo_Parent', 'Households', '4Ps', 'Senior']
         ];
 
         foreach ($barangays as $brgy) {
             $csvData[] = [
                 $brgy->municipality,
                 $brgy->name,
-                $brgy->year,
-                $brgy->male_population,
-                $brgy->female_population,
-                $brgy->population_0_19,
-                $brgy->population_20_59,
-                $brgy->population_60_100,
-                $brgy->total_households
+                $brgy->year ?? date('Y'),
+                $brgy->total_population ?? 0,
+                $brgy->pwd_count ?? 0,
+                $brgy->aics_count ?? 0,
+                $brgy->single_parent_count ?? 0,
+                $brgy->total_households ?? 0,
+                $brgy->four_ps_count ?? 0,
+                $brgy->senior_count ?? 0
             ];
         }
 
@@ -534,12 +530,13 @@ class CsvService
         }
 
         $programs = $query->orderBy('municipality')
+            ->orderBy('year', 'desc')
             ->orderBy('program_type')
-            ->orderBy('year')
             ->get();
 
+        // Match template format: Municipality, Program, Year, Beneficiaries
         $csvData = [
-            ['Municipality', 'Program', 'Year', 'Beneficiaries', 'Barangay', 'Month']
+            ['Municipality', 'Program', 'Year', 'Beneficiaries']
         ];
 
         foreach ($programs as $prog) {
@@ -547,9 +544,7 @@ class CsvService
                 $prog->municipality,
                 $prog->program_type,
                 $prog->year,
-                $prog->beneficiary_count,
-                $prog->barangay ?? '',
-                $prog->month ?? ''
+                $prog->beneficiary_count ?? 0
             ];
         }
 

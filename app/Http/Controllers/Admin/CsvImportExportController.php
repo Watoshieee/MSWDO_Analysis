@@ -39,7 +39,13 @@ class CsvImportExportController extends Controller
             );
 
             if ($result['success']) {
-                return redirect()->back()->with('success', $result['message']);
+                $redirectUrl = match($request->import_type) {
+                    'municipality_data' => route('admin.data.municipality') . '#return',
+                    'barangay_data' => route('admin.data.barangays') . '#return',
+                    'program_data' => route('admin.data.programs') . '#return',
+                    default => route('admin.data.municipality') . '#return'
+                };
+                return redirect($redirectUrl)->with('success', $result['message']);
             } else {
                 return redirect()->back()->with('error', $result['message']);
             }
@@ -102,7 +108,10 @@ class CsvImportExportController extends Controller
         
         $log->delete();
         
-        return redirect()->back()->with('success', 'Import log archived successfully');
+        return response()->json([
+            'success' => true,
+            'message' => 'Import log archived successfully'
+        ]);
     }
 
     /**
@@ -174,18 +183,18 @@ class CsvImportExportController extends Controller
         $templates = [
             'municipality_data' => [
                 ['Year', 'Municipality', 'Total_Population', 'Total_Households', 'Male', 'Female', 'Age_0_19', 'Age_20_59', 'Age_60_Plus'],
-                [$currentYear, $adminMunicipality, '45000', '9000', '22000', '23000', '15000', '25000', '5000'],
+                [$currentYear, $adminMunicipality, '0', '0', '0', '0', '0', '0', '0'],
             ],
             'barangay_data' => $this->generateBarangayTemplate($adminMunicipality, $currentYear),
             'program_data' => [
                 ['Municipality', 'Program', 'Year', 'Beneficiaries'],
-                [$adminMunicipality, 'PWD_Assistance', $currentYear, '150'],
-                [$adminMunicipality, 'Solo_Parent', $currentYear, '200'],
-                [$adminMunicipality, '4Ps', $currentYear, '300'],
-                [$adminMunicipality, 'AICS', $currentYear, '250'],
-                [$adminMunicipality, 'Senior_Citizen_Pension', $currentYear, '180'],
-                [$adminMunicipality, 'SLP', $currentYear, '100'],
-                [$adminMunicipality, 'ESA', $currentYear, '120'],
+                [$adminMunicipality, 'PWD_Assistance', $currentYear, '0'],
+                [$adminMunicipality, 'Solo_Parent', $currentYear, '0'],
+                [$adminMunicipality, '4Ps', $currentYear, '0'],
+                [$adminMunicipality, 'AICS', $currentYear, '0'],
+                [$adminMunicipality, 'Senior_Citizen_Pension', $currentYear, '0'],
+                [$adminMunicipality, 'SLP', $currentYear, '0'],
+                [$adminMunicipality, 'ESA', $currentYear, '0'],
             ]
         ];
 
