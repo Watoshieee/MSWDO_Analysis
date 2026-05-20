@@ -68,9 +68,10 @@ class DataManagementController extends Controller
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->firstOrFail();
 
-        // Get import logs
+        // Get import logs - filter by municipality_data type only
         $importLogs = \App\Models\CsvImportLog::with('user')
             ->where('user_id', $user->id)
+            ->where('file_type', 'municipality_data')
             ->orderBy('created_at', 'desc')
             ->limit(5)
             ->get();
@@ -317,6 +318,14 @@ class DataManagementController extends Controller
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->firstOrFail();
 
+        // Get import logs - filter by barangay_data type only
+        $importLogs = \App\Models\CsvImportLog::with('user')
+            ->where('user_id', $user->id)
+            ->where('file_type', 'barangay_data')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
         $years = Barangay::where('municipality', $user->municipality)
             ->whereNotNull('year')
             ->distinct()
@@ -351,7 +360,7 @@ class DataManagementController extends Controller
         )));
         rsort($yearsForAddModal, SORT_NUMERIC);
 
-        return view('admin.data.barangays', compact('barangays', 'municipality', 'years', 'yearsForAddModal'));
+        return view('admin.data.barangays', compact('barangays', 'municipality', 'years', 'yearsForAddModal', 'importLogs'));
     }
 
     /**
@@ -787,6 +796,14 @@ class DataManagementController extends Controller
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
         
+        // Get import logs - filter by program_data type only
+        $importLogs = \App\Models\CsvImportLog::with('user')
+            ->where('user_id', $user->id)
+            ->where('file_type', 'program_data')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+        
         $programTypes = [
             '4Ps' => '4Ps',
             'Senior_Citizen_Pension' => 'Senior Citizen Pension',
@@ -822,7 +839,7 @@ class DataManagementController extends Controller
             $query->where('month', $request->month);
         }
         
-        $programs = $query->orderBy('year', 'desc')->orderBy('month', 'desc')->paginate(20);
+        $programs = $query->orderBy('year', 'desc')->orderBy('month', 'desc')->get();
 
         // Build existing combos for duplicate prevention (year|program_type, no month)
         $existingCombos = SocialWelfareProgram::where('municipality', $user->municipality)
@@ -837,7 +854,7 @@ class DataManagementController extends Controller
             7 => 'July', 8 => 'August', 9 => 'September', 10 => 'October', 11 => 'November', 12 => 'December'
         ];
 
-        return view('admin.data.programs', compact('programs', 'programTypes', 'years', 'months', 'municipality', 'existingCombos'));
+        return view('admin.data.programs', compact('programs', 'programTypes', 'years', 'months', 'municipality', 'existingCombos', 'importLogs'));
     }
 
     public function updateProgram(Request $request, $id)
@@ -928,6 +945,14 @@ class DataManagementController extends Controller
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->firstOrFail();
 
+        // Get import logs - filter by municipality_data type only (same as municipality profile)
+        $importLogs = \App\Models\CsvImportLog::with('user')
+            ->where('user_id', $user->id)
+            ->where('file_type', 'municipality_data')
+            ->orderBy('created_at', 'desc')
+            ->limit(5)
+            ->get();
+
         $summaries = MunicipalityYearlySummary::where('municipality', $user->municipality)
             ->orderBy('year', 'desc')
             ->get();
@@ -962,7 +987,7 @@ class DataManagementController extends Controller
             ->orderBy('year', 'desc')
             ->get();
 
-        return view('admin.data.yearly-data', compact('municipality', 'summaries', 'archivedSummaries', 'chartData', 'years', 'adminPrimaryColor', 'adminSecondaryColor', 'adminAccentColor'));
+        return view('admin.data.yearly-data', compact('municipality', 'summaries', 'archivedSummaries', 'chartData', 'years', 'adminPrimaryColor', 'adminSecondaryColor', 'adminAccentColor', 'importLogs'));
     }
 
     public function saveYearlySummary(Request $request)
