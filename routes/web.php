@@ -62,6 +62,9 @@ Route::middleware('guest')->group(function () {
 // LOGOUT
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
 
+// USERNAME AVAILABILITY CHECK (public — used by registration form AJAX)
+Route::post('/check-username', [RegisterController::class, 'checkUsername'])->name('register.check-username');
+
 // SESSION HEARTBEAT — keeps session alive while tab is open
 Route::middleware(['auth'])->get('/session/ping', function () {
     return response()->json(['ok' => true, 'ts' => now()->timestamp]);

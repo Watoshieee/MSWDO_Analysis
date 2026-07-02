@@ -19,7 +19,13 @@ class RegisterController extends Controller
     {
         $allowedMunicipalities = ['Magdalena', 'Liliw', 'Majayjay'];
 
-        $municipalities = Municipality::whereIn('name', $allowedMunicipalities)->get();
+        // Use distinct + orderBy to guard against duplicate DB entries
+        $municipalities = Municipality::whereIn('name', $allowedMunicipalities)
+            ->select('id', 'name')
+            ->distinct('name')
+            ->orderBy('name')
+            ->get()
+            ->unique('name');  // second safety net — deduplicate by name in PHP
 
         // Group barangays by municipality name for JS dropdown
         $barangays = Barangay::whereIn('municipality', $allowedMunicipalities)
@@ -28,7 +34,7 @@ class RegisterController extends Controller
             ->orderBy('name')
             ->get()
             ->groupBy('municipality')
-            ->map(fn($brgy) => $brgy->pluck('name'));
+            ->map(fn($brgy) => $brgy->pluck('name')->values());
 
         return view('auth.register', compact('municipalities', 'barangays'));
     }

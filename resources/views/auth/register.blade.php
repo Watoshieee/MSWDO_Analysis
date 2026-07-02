@@ -752,7 +752,9 @@
         
         // Check username availability via AJAX
         setMsg('msg_username','hint','Checking availability...');
-        fetch('/check-username', {
+        // Mark as neutral while pending so submit is not blocked
+        markInput('username','');
+        fetch('{{ route("register.check-username") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -770,19 +772,20 @@
                 markInput('username','invalid');
             }
         })
-        .catch(error => {
-            console.error('Error checking username:', error);
-            setMsg('msg_username','hint','Could not verify availability. Please try again.');
+        .catch(() => {
+            // Network error — allow server-side validation to catch it
+            setMsg('msg_username','hint','Could not verify — will be checked on submit.');
             markInput('username','');
         });
     }
 
     function validateEmail() {
         const v = document.getElementById('email').value.trim();
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+        // RFC-friendly regex: local@domain.tld — allows gmail, yahoo, etc.
+        const re = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
         if (!v) { setMsg('msg_email','hint','Must be a valid email address.'); markInput('email',''); return; }
-        if (!re.test(v)) { setMsg('msg_email','err','Enter a valid email address.'); markInput('email','invalid'); return; }
-        setMsg('msg_email','ok','✓ Valid email format.'); markInput('email','valid');
+        if (!re.test(v)) { setMsg('msg_email','err','Enter a valid email (e.g. juan@gmail.com).'); markInput('email','invalid'); return; }
+        setMsg('msg_email','ok','✓ Valid email address.'); markInput('email','valid');
     }
 
     function validateMobile() {
@@ -902,10 +905,23 @@
         buildFullName();
         validateFirstName();
         validateLastName();
-        validateUsername();
         validateEmail();
         validateMobile();
 
+        // Run synchronous username format check only (AJAX availability check is non-blocking)
+        const uv = document.getElementById('username').value.trim();
+        let usernameFormatOk = true;
+        if (!uv) {
+            setMsg('msg_username','err','Username is required.'); markInput('username','invalid'); usernameFormatOk = false;
+        } else if (uv.length < 4) {
+            setMsg('msg_username','err','Too short — minimum 4 characters.'); markInput('username','invalid'); usernameFormatOk = false;
+        } else if (uv.length > 20) {
+            setMsg('msg_username','err','Too long — maximum 20 characters.'); markInput('username','invalid'); usernameFormatOk = false;
+        } else if (!/^[a-zA-Z0-9_]+$/.test(uv)) {
+            setMsg('msg_username','err','Only letters, numbers, and underscores — no spaces.'); markInput('username','invalid'); usernameFormatOk = false;
+        }
+
+        // Only block on fields that are explicitly marked invalid (not neutral/pending)
         const hasInvalid = document.querySelectorAll('.form-input.invalid').length > 0;
         const agreeTerms = document.getElementById('agree_terms').checked;
         const msgTerms = document.getElementById('msg_terms');
