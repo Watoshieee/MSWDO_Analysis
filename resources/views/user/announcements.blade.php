@@ -185,7 +185,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('user.announcements') }}">Announcements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
                     <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal"

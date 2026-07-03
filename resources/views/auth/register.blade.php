@@ -402,10 +402,8 @@
                         <div class="field-wrap">
                             <select id="gender" name="gender"
                                     class="form-input @error('gender') invalid @enderror">
-                                <option value="">Select Gender</option>
                                 <option value="Male"   {{ old('gender') == 'Male'   ? 'selected' : '' }}>Male</option>
                                 <option value="Female" {{ old('gender') == 'Female' ? 'selected' : '' }}>Female</option>
-                                <option value="Other"  {{ old('gender') == 'Other'  ? 'selected' : '' }}>Other / Prefer not to say</option>
                             </select>
                         </div>
                         <div id="msg_gender" class="field-msg hint">Select your gender.</div>
