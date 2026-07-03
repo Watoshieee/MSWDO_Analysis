@@ -242,7 +242,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     $isConfirmed = $apptStatus === 'confirmed';
     $isPending = $apptStatus === 'pending';
 
-    $fm = ($application ?? null)?->fileMonitoring;
+    $fm = (isset($application) && $application) ? $application->fileMonitoring : null;
     if (!$fm && isset($application) && $application) {
         $fm = \App\Models\FileMonitoring::where('application_id', $application->id)->first();
     }
