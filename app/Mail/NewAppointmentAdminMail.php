@@ -32,7 +32,7 @@ class NewAppointmentAdminMail extends Mailable
         };
 
         return new Envelope(
-            subject: '[MSWDO] New ' . $programLabel . ' Appointment – ' . $this->appointment->municipality,
+            subject: 'MSWDO: New ' . $programLabel . ' Appointment – ' . $this->appointment->municipality,
         );
     }
 

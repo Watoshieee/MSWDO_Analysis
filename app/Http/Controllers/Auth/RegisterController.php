@@ -10,18 +10,25 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Exception;
 use Carbon\Carbon;
 
 class RegisterController extends Controller
 {
-    public function showRegistrationForm()
+    public function showRegistrationForm(Request $request)
     {
         $allowedMunicipalities = ['Magdalena', 'Liliw', 'Majayjay'];
 
-        $municipalities = Municipality::whereIn('name', $allowedMunicipalities)->get();
 
-        // Group barangays by municipality name for JS dropdown
+    $municipalities = Municipality::whereIn('name', $allowedMunicipalities)
+    ->select('id', 'name')
+    ->distinct('name')
+    ->orderBy('name')
+    ->get()
+    ->unique('name');
+
+
         $barangays = Barangay::whereIn('municipality', $allowedMunicipalities)
             ->select('municipality', 'name')
             ->distinct()
@@ -56,7 +63,6 @@ class RegisterController extends Controller
                     'required', 'string',
                     'regex:/^9\d{9}$/',
                     function ($attribute, $value, $fail) {
-                        // Check for 5 or more consecutive repeated digits
                         if (preg_match('/(\d)\1{4,}/', $value)) {
                             $fail('Mobile number cannot contain 5 or more repeated digits in a row.');
                         }
@@ -79,6 +85,11 @@ class RegisterController extends Controller
                     'required', 'string',
                     'exists:barangays,name',
                 ],
+                'valid_id' => [
+                    'required', 'file',
+                    'mimes:jpeg,jpg,png,pdf',
+                    'max:5120',
+                ],
             ], [
                 'full_name.min'           => 'Full name must be at least 3 characters.',
                 'full_name.regex'         => 'Full name may only contain letters, spaces, hyphens, and apostrophes.',
@@ -95,36 +106,40 @@ class RegisterController extends Controller
                 'birthdate.after'         => 'Birthdate cannot be more than 150 years ago.',
                 'municipality.in'         => 'Please select a valid municipality.',
                 'barangay.exists'         => 'Please select a valid barangay.',
+                'valid_id.required'       => 'Please upload a valid government-issued ID.',
+                'valid_id.mimes'          => 'Valid ID must be a JPG, PNG, or PDF file.',
+                'valid_id.max'            => 'Valid ID file must not exceed 5 MB.',
             ]);
 
-            // Prepend +63 to mobile number for storage
             $validated['mobile_number'] = '+63' . $validated['mobile_number'];
 
-            // Generate random temporary password
-            $tempPassword = bin2hex(random_bytes(6)); // 12 character random password
+            $tempPassword = bin2hex(random_bytes(6));
 
-            // Calculate age
             $birthdate = Carbon::parse($validated['birthdate']);
             $age = $birthdate->age;
 
-            // Generate OTP — no DB involved at this point
+            $validIdFile = $request->file('valid_id');
+            $validIdPath = $validIdFile->store('valid-ids/pending', 'public');
+            $validIdFilename = $validIdFile->getClientOriginalName();
+
             $otp = rand(100000, 999999);
             $otpExpiresAt = now()->addMinutes(10)->toDateTimeString();
 
-            // Store all registration data + OTP + temp password in session (NO DB write yet)
             session([
                 'pending_registration' => [
-                    'username'      => trim($validated['username']),
-                    'email'         => strtolower(trim($validated['email'])),
-                    'mobile_number' => trim($validated['mobile_number']),
-                    'password'      => Hash::make($tempPassword),
-                    'full_name'     => trim($validated['full_name']),
-                    'gender'        => $validated['gender'],
-                    'birthdate'     => $validated['birthdate'],
-                    'age'           => $age,
-                    'municipality'  => $validated['municipality'],
-                    'barangay'      => trim($validated['barangay']),
+                    'username'             => trim($validated['username']),
+                    'email'                => strtolower(trim($validated['email'])),
+                    'mobile_number'        => trim($validated['mobile_number']),
+                    'password'             => Hash::make($tempPassword),
+                    'full_name'            => trim($validated['full_name']),
+                    'gender'               => $validated['gender'],
+                    'birthdate'            => $validated['birthdate'],
+                    'age'                  => $age,
+                    'municipality'         => $validated['municipality'],
+                    'barangay'             => trim($validated['barangay']),
                     'must_change_password' => true,
+                    'valid_id_path'        => $validIdPath,
+                    'valid_id_filename'    => $validIdFilename,
                 ],
                 'pending_otp'            => (string) $otp,
                 'pending_otp_expires_at' => $otpExpiresAt,
@@ -133,7 +148,6 @@ class RegisterController extends Controller
                 'temp_password'          => $tempPassword,
             ]);
 
-            // Send OTP + temp password email
             try {
                 Mail::send('emails.otp', [
                     'full_name'     => trim($validated['full_name']),
@@ -146,14 +160,17 @@ class RegisterController extends Controller
                 });
             } catch (Exception $e) {
                 Log::error('Failed to send OTP email: ' . $e->getMessage());
-                // Still proceed — user can request resend on the OTP page
             }
 
             return redirect()->route('otp.verify.form')
-                ->with('success', 'Please check your email for your OTP verification code.');
+                ->with('success', 'Please check your email for your OTP verification code. After verifying your email, your valid ID will be reviewed by an admin before you can login.');
 
         } catch (Exception $e) {
             Log::error('Registration failed: ' . $e->getMessage());
+
+            if (isset($validIdPath) && Storage::disk('public')->exists($validIdPath)) {
+                Storage::disk('public')->delete($validIdPath);
+            }
 
             return back()
                 ->withInput($request->except('password', 'password_confirmation'))
@@ -164,13 +181,13 @@ class RegisterController extends Controller
     public function checkUsername(Request $request)
     {
         $username = $request->input('username');
-        
+
         if (empty($username)) {
             return response()->json(['available' => true]);
         }
-        
+
         $exists = User::where('username', $username)->exists();
-        
+
         return response()->json(['available' => !$exists]);
     }
 }

@@ -42,9 +42,9 @@ class RequirementsReviewedMail extends Mailable
         };
 
         $subject = match ($this->overallStatus) {
-            'approved'  => "[MSWDO] ✅ {$programLabel} requirements approved",
-            'rejected'  => "[MSWDO] ❌ {$programLabel} requirements need action",
-            default     => "[MSWDO] 📋 {$programLabel} requirements update",
+            'approved'  => "MSWDO: {$programLabel} Requirements Approved",
+            'rejected'  => "MSWDO: {$programLabel} Requirements Need Action",
+            default     => "MSWDO: {$programLabel} Requirements Update",
         };
 
         return new Envelope(subject: $subject);
