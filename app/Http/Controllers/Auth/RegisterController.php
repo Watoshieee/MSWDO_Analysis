@@ -35,7 +35,7 @@ class RegisterController extends Controller
             ->orderBy('name')
             ->get()
             ->groupBy('municipality')
-            ->map(fn($brgy) => $brgy->pluck('name'));
+            ->map(fn($brgy) => $brgy->pluck('name')->values());
 
         return view('auth.register', compact('municipalities', 'barangays'));
     }
