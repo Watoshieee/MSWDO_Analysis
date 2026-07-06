@@ -40,13 +40,6 @@ class LoginController extends Controller
             ])->withInput($request->only('login'));
         }
 
-        // Check if user is active
-        if ($user->status !== 'active') {
-            return back()->withErrors([
-                'login' => 'Your account is inactive. Please contact administrator.',
-            ])->withInput($request->only('login'));
-        }
-
         // CHECK IF EMAIL IS VERIFIED FOR REGULAR USERS
         if ($user->role === 'user' && !$user->hasVerifiedEmail()) {
             // Generate and send new OTP
@@ -64,6 +57,30 @@ class LoginController extends Controller
             session(['otp_user_id' => $user->id]);
             return redirect()->route('otp.verify.form')
                 ->with('success', 'Please verify your email first. A new OTP has been sent.');
+        }
+
+        // Check valid ID verification status for regular users
+        if ($user->role === 'user' && $user->isIdVerificationPending()) {
+            return back()->withErrors([
+                'login' => 'Your valid ID is still under review. Please wait for admin approval before you can login.',
+            ])->withInput($request->only('login'));
+        }
+
+        if ($user->role === 'user' && $user->isIdVerificationRejected()) {
+            $message = 'Your valid ID was declined by the administrator.';
+            if ($user->id_rejection_reason) {
+                $message .= ' Reason: ' . $user->id_rejection_reason;
+            }
+            return back()->withErrors([
+                'login' => $message,
+            ])->withInput($request->only('login'));
+        }
+
+        // Check if user is active
+        if ($user->status !== 'active') {
+            return back()->withErrors([
+                'login' => 'Your account is inactive. Please contact administrator.',
+            ])->withInput($request->only('login'));
         }
 
         // Attempt to log in

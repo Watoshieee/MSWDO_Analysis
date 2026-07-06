@@ -19,10 +19,14 @@ use App\Mail\AicsGrantReleasedMail;
 use App\Mail\PwdValidatedMail;
 use App\Mail\PwdIdReadyMail;
 use App\Mail\AicsStatusMail;
+use App\Mail\UserIdApprovedMail;
+use App\Mail\UserIdDeclinedMail;
+use App\Services\DeviceRegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class AdminController extends Controller
@@ -1478,6 +1482,11 @@ class AdminController extends Controller
             $users = $users->filter(fn($u) => (int) $u->total_apps === 0)->values();
         }
 
+        $idFilter = (string) $request->query('id_filter', '');
+        if ($idFilter === 'pending') {
+            $users = $users->filter(fn($u) => $u->id_verification_status === \App\Models\User::ID_STATUS_PENDING)->values();
+        }
+
         return response()->json([
             'count' => $users->count(),
             'users' => $users->map(function ($u) {
@@ -1491,6 +1500,10 @@ class AdminController extends Controller
                     'date_of_birth' => $u->date_of_birth,
                     'created_at' => optional($u->created_at)->toDateString(),
                     'email_verified_at' => $u->email_verified_at,
+                    'id_verification_status' => $u->id_verification_status,
+                    'valid_id_path' => $u->valid_id_path,
+                    'valid_id_filename' => $u->valid_id_filename,
+                    'id_rejection_reason' => $u->id_rejection_reason,
                     'total_apps' => (int) $u->total_apps,
                     'pending_apps' => (int) $u->pending_apps,
                     'approved_apps' => (int) $u->approved_apps,
@@ -1498,5 +1511,127 @@ class AdminController extends Controller
                 ];
             })->values(),
         ]);
+    }
+
+    public function serveUserValidId($id)
+    {
+        $admin = Auth::user();
+        $user = \App\Models\User::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->where('role', 'user')
+            ->firstOrFail();
+
+        if (!$user->valid_id_path) {
+            abort(404, 'No valid ID uploaded for this user.');
+        }
+
+        $filePath = $user->valid_id_path;
+        $candidates = [
+            \Illuminate\Support\Facades\Storage::disk('public')->path($filePath),
+            base_path('storage/app/public/' . $filePath),
+            public_path('storage/' . $filePath),
+        ];
+
+        $fullPath = null;
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate) && is_file($candidate)) {
+                $fullPath = $candidate;
+                break;
+            }
+        }
+
+        if (!$fullPath) {
+            abort(404, 'Valid ID file not found.');
+        }
+
+        $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
+        $filename = $user->valid_id_filename ?: basename($filePath);
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+        ]);
+    }
+
+    public function approveUserId($id)
+    {
+        $admin = Auth::user();
+        $user = \App\Models\User::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->where('role', 'user')
+            ->where('id_verification_status', \App\Models\User::ID_STATUS_PENDING)
+            ->firstOrFail();
+
+        $user->update([
+            'id_verification_status' => \App\Models\User::ID_STATUS_APPROVED,
+            'id_verified_at' => now(),
+            'id_verified_by' => $admin->id,
+            'id_rejection_reason' => null,
+            'status' => 'active',
+        ]);
+
+        try {
+            Mail::to($user->email)->send(new UserIdApprovedMail($user));
+        } catch (\Exception $e) {
+            Log::error('Failed to send ID approval email to user: ' . $e->getMessage());
+        }
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Valid ID approved. User can now login.',
+            ]);
+        }
+
+        return back()->with('success', 'Valid ID approved for ' . $user->full_name . '. The user can now login.');
+    }
+
+    public function declineUserId(Request $request, $id)
+    {
+        $admin = Auth::user();
+        $user = \App\Models\User::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->where('role', 'user')
+            ->where('id_verification_status', \App\Models\User::ID_STATUS_PENDING)
+            ->firstOrFail();
+
+        $declineReasonKeys = array_keys(\App\Models\User::ID_DECLINE_REASONS);
+
+        $validated = $request->validate([
+            'decline_reason' => 'required|string|in:' . implode(',', $declineReasonKeys),
+        ], [
+            'decline_reason.required' => 'Please select a reason for declining the valid ID.',
+            'decline_reason.in' => 'Please select a valid decline reason.',
+        ]);
+
+        $reasonText = \App\Models\User::ID_DECLINE_REASONS[$validated['decline_reason']];
+        $userEmail = $user->email;
+        $userFullName = $user->full_name;
+        $userMunicipality = $user->municipality;
+        $validIdPath = $user->valid_id_path;
+        $userId = $user->id;
+
+        try {
+            Mail::to($userEmail)->send(new UserIdDeclinedMail($userFullName, $reasonText, $userMunicipality));
+        } catch (\Exception $e) {
+            Log::error('Failed to send ID decline email to user: ' . $e->getMessage());
+        }
+
+        if ($validIdPath && Storage::disk('public')->exists($validIdPath)) {
+            Storage::disk('public')->delete($validIdPath);
+        }
+        Storage::disk('public')->deleteDirectory('valid-ids/' . $userId);
+
+        app(DeviceRegistrationService::class)->detachUser($userId);
+        $user->forceDelete();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Valid ID declined. The user has been notified by email and removed from the system.',
+            ]);
+        }
+
+        return back()->with('success', 'Valid ID declined for ' . $userFullName . '. The user was notified by email.');
     }
 }

@@ -301,13 +301,12 @@
             @if(session('error'))
                 <div class="alert-styled alert-danger-c">{{ session('error') }}</div>
             @endif
-
-            <div class="info-box">
+<div class="info-box">
                 Registration is for <strong>community members</strong> who wish to apply for MSWDO assistance programs.
-                A verification code will be sent to your email after registration.
+                A verification code will be sent to your email after registration. Your uploaded valid ID will also be reviewed by an admin before you can login.
             </div>
 
-            <form method="POST" action="{{ route('register') }}" id="registerForm" novalidate>
+            <form method="POST" action="{{ route('register') }}" id="registerForm" enctype="multipart/form-data" novalidate>
                 @csrf
 
                 <!-- Personal Info -->
@@ -425,7 +424,16 @@
                         <div id="age-display"></div>
                         @error('birthdate')<div class="field-msg err">{{ $message }}</div>@enderror
                     </div>
-                    <div><!-- spacer --></div>
+                    <div>
+                        <label class="field-label" for="valid_id">Valid ID <span class="req">*</span></label>
+                        <div class="field-wrap">
+                            <input type="file" id="valid_id" name="valid_id" accept=".jpg,.jpeg,.png,.pdf"
+                                   class="form-input @error('valid_id') invalid @enderror"
+                                   onchange="validateValidId()">
+                        </div>
+                        <div id="msg_valid_id" class="field-msg hint">Accepted formats: JPG, PNG, PDF. Max size: 5 MB.</div>
+                        @error('valid_id')<div class="field-msg err">{{ $message }}</div>@enderror
+                    </div>
                 </div>
 
                 <div class="field-row" style="margin-top:8px;">
@@ -464,6 +472,12 @@
                 <input type="hidden" id="full_name" name="full_name" value="{{ old('full_name') }}">
 
                 <div class="section-divider"></div>
+                <div class="section-label">Valid ID Verification</div>
+                <div class="info-box">
+                    Upload a clear photo or scan of your valid government-issued ID (e.g., PhilSys, Driver's License, Passport, UMID, Voter's ID, Student ID). This will be reviewed by an MSWDO admin before your account can be activated.
+                </div>
+
+                <div class="section-divider"></div>
                 <div class="section-label">Terms & Conditions and Privacy Policy</div>
                 <div class="info-box" style="margin-bottom: 14px;">
                     By creating an account, you agree to our Terms & Conditions and Privacy Policy.
@@ -490,7 +504,8 @@
                     <strong>Note:</strong> A temporary password will be automatically generated and sent to your email. You will be required to change it after email verification.
                 </div>
 
-                <button type="submit" class="btn-register" id="submitBtn">
+                <button type="submit" class="btn-register" id="submitBtn"
+>
                     Create My Account &#8594;
                 </button>
             </form>
@@ -814,6 +829,29 @@
         markInput('mobile_number','valid');
     }
 
+    function validateValidId() {
+        const input = document.getElementById('valid_id');
+        const file = input.files[0];
+        if (!file) {
+            setMsg('msg_valid_id', 'hint', 'Accepted formats: JPG, PNG, PDF. Max size: 5 MB.');
+            markInput('valid_id', '');
+            return;
+        }
+        const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+        if (!allowed.includes(file.type)) {
+            setMsg('msg_valid_id', 'err', 'Only JPG, PNG, or PDF files are allowed.');
+            markInput('valid_id', 'invalid');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setMsg('msg_valid_id', 'err', 'File must not exceed 5 MB.');
+            markInput('valid_id', 'invalid');
+            return;
+        }
+        setMsg('msg_valid_id', 'ok', '✓ ' + file.name + ' selected');
+        markInput('valid_id', 'valid');
+    }
+
     // ── Age calculator ──
     function calculateAge() {
         const val = document.getElementById('birthdate').value;
@@ -905,6 +943,7 @@
         validateLastName();
         validateEmail();
         validateMobile();
+        validateValidId();
 
         // Run synchronous username format check only (AJAX availability check is non-blocking)
         const uv = document.getElementById('username').value.trim();
@@ -923,6 +962,15 @@
         const hasInvalid = document.querySelectorAll('.form-input.invalid').length > 0;
         const agreeTerms = document.getElementById('agree_terms').checked;
         const msgTerms = document.getElementById('msg_terms');
+        const validIdInput = document.getElementById('valid_id');
+
+        if (!validIdInput.files.length) {
+            setMsg('msg_valid_id', 'err', 'Please upload your valid ID.');
+            markInput('valid_id', 'invalid');
+            e.preventDefault();
+            validIdInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
 
         if (!agreeTerms) {
             msgTerms.textContent = '✗ You must agree to the Terms & Conditions and Privacy Policy.';

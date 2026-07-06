@@ -90,6 +90,128 @@
         .badge-approved { background: #d4edda; color: #155724; }
         .badge-rejected { background: #fce8e8; color: #721c24; }
         .badge-zero { background: #f1f5f9; color: #94a3b8; }
+        .btn-view-id {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+        }
+        .btn-view-id:hover { opacity: 0.92; }
+        .id-modal-backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.65);
+            z-index: 10050;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .id-modal-backdrop.show { display: flex !important; }
+        .id-modal {
+            background: white;
+            border-radius: 18px;
+            width: 100%;
+            max-width: 760px;
+            max-height: 90vh;
+            overflow: hidden;
+            box-shadow: 0 24px 60px rgba(0,0,0,0.25);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            z-index: 10051;
+        }
+        .id-modal-header {
+            background: var(--primary-gradient);
+            color: white;
+            padding: 18px 22px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .id-modal-body { padding: 22px; overflow-y: auto; }
+        .id-preview {
+            width: 100%;
+            max-height: 420px;
+            object-fit: contain;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+        .id-preview-frame {
+            width: 100%;
+            min-height: 420px;
+            border: 1px solid var(--border-light);
+            border-radius: 12px;
+            background: #f8fafc;
+        }
+        .id-modal-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 18px;
+            flex-wrap: wrap;
+        }
+        .btn-approve-id {
+            background: #16a34a;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 18px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-decline-id {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 18px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-modal-cancel {
+            background: #e2e8f0;
+            color: #475569;
+            border: none;
+            border-radius: 10px;
+            padding: 10px 18px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+        .btn-modal-cancel:hover { background: #cbd5e1; }
+        .confirm-modal { max-width: 480px; }
+        .confirm-modal-body { padding: 24px 22px 22px; text-align: center; }
+        .confirm-icon {
+            width: 56px; height: 56px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 14px; font-size: 1.6rem;
+        }
+        .confirm-icon.approve { background: #dcfce7; color: #16a34a; }
+        .confirm-icon.decline { background: #fee2e2; color: #dc3545; }
+        .confirm-icon.success { background: #dcfce7; color: #16a34a; }
+        .confirm-icon.error { background: #fee2e2; color: #dc3545; }
+        .confirm-title { font-size: 1.05rem; font-weight: 800; color: #1e293b; margin-bottom: 8px; }
+        .confirm-message { font-size: 0.88rem; color: #64748b; line-height: 1.65; margin-bottom: 0; }
+        .confirm-modal-actions {
+            display: flex; gap: 10px; justify-content: center;
+            margin-top: 22px; flex-wrap: wrap;
+        }
+        .decline-reason-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+        .decline-reason-option {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 12px;
+            cursor: pointer; font-size: 0.86rem; color: #334155; background: #f8fafc;
+            transition: border-color .2s, background .2s;
+        }
+        .decline-reason-option:hover { border-color: #94a3b8; background: #fff; }
+        .decline-reason-option.selected { border-color: var(--primary-blue); background: #eef2ff; }
+        .decline-reason-option input { margin-top: 2px; accent-color: var(--primary-blue); }
 
         /* MINI STAT PILLS */
         .mini-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
@@ -194,9 +316,9 @@
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
-                    <div class="stat-label">Total Approved</div>
-                    <div class="stat-value">{{ $users->sum('approved_apps') }}</div>
-                    <div class="stat-sub">Successfully processed</div>
+                    <div class="stat-label">Pending ID Review</div>
+                    <div class="stat-value">{{ $users->where('id_verification_status', 'pending')->count() }}</div>
+                    <div class="stat-sub">Awaiting valid ID approval</div>
                 </div>
             </div>
         </div>
@@ -215,6 +337,12 @@
                         <option value="">All users</option>
                         <option value="with">With applications</option>
                         <option value="without">No applications yet</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <select id="idFilter" class="search-input" style="padding-left:14px;cursor:pointer;" onchange="filterUsers()">
+                        <option value="">All ID statuses</option>
+                        <option value="pending">Pending ID review</option>
                     </select>
                 </div>
                 <div class="col-md-3 text-end">
@@ -242,6 +370,8 @@
                             <th>Applications</th>
                             <th>Joined</th>
                             <th>Status</th>
+                            <th>ID Verification</th>
+                            <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody id="usersTableBody">
@@ -304,6 +434,30 @@
                                     <span class="badge-pill badge-pending">Unverified</span>
                                 @endif
                             </td>
+                            <td>
+                                @if($user->id_verification_status === 'pending')
+                                    <span class="badge-pill badge-pending">Pending Review</span>
+                                @elseif($user->id_verification_status === 'approved')
+                                    <span class="badge-pill badge-approved">Approved</span>
+                                @elseif($user->id_verification_status === 'rejected')
+                                    <span class="badge-pill badge-rejected">Declined</span>
+                                @else
+                                    <span class="badge-pill badge-zero">N/A</span>
+                                @endif
+                            </td>
+                            <td>
+                                @if($user->id_verification_status === 'pending' && $user->valid_id_path)
+                                    <button type="button" class="btn-view-id"
+                                        data-user-id="{{ $user->id }}"
+                                        data-full-name="{{ $user->full_name }}"
+                                        data-filename="{{ $user->valid_id_filename ?? '' }}"
+                                        data-file-url="{{ route('admin.users.valid-id', $user->id) }}">
+                                        View ID
+                                    </button>
+                                @else
+                                    <span style="color:#cbd5e1;font-size:.82rem;">—</span>
+                                @endif
+                            </td>
                         </tr>
                         @endforeach
                     </tbody>
@@ -340,9 +494,83 @@
     @include('components.admin-chat-modal')
     @include('components.admin-settings-modal')
 
+    <div id="idModalBackdrop" class="id-modal-backdrop" aria-hidden="true">
+        <div class="id-modal" role="dialog" aria-modal="true" aria-labelledby="idModalTitle">
+            <div class="id-modal-header">
+                <div>
+                    <div id="idModalTitle" style="font-size:1.05rem;font-weight:800;">Valid ID Review</div>
+                    <div id="idModalUserName" style="font-size:.82rem;opacity:.85;margin-top:2px;"></div>
+                </div>
+                <button type="button" id="closeIdModalBtn" style="background:rgba(255,255,255,0.18);border:none;color:white;width:34px;height:34px;border-radius:50%;cursor:pointer;">&times;</button>
+            </div>
+            <div class="id-modal-body">
+                <div id="idModalFilename" style="font-size:.82rem;color:#64748b;margin-bottom:10px;"></div>
+                <div id="idPreviewContainer"></div>
+                <div id="declineReasonWrap" style="display:none;margin-top:16px;">
+                    <label style="font-size:.82rem;font-weight:700;color:#334155;display:block;margin-bottom:6px;">Select reason for declining</label>
+                    <div class="decline-reason-list">
+                        @foreach(\App\Models\User::ID_DECLINE_REASONS as $key => $label)
+                        <label class="decline-reason-option" for="decline_reason_{{ $key }}">
+                            <input type="radio" name="decline_reason" id="decline_reason_{{ $key }}" value="{{ $key }}">
+                            <span>{{ $label }}</span>
+                        </label>
+                        @endforeach
+                    </div>
+                </div>
+                <div class="id-modal-actions">
+                    <button type="button" class="btn-modal-cancel" id="cancelDeclineBtn" style="display:none;">Cancel</button>
+                    <button type="button" class="btn-decline-id" id="declineToggleBtn">Decline</button>
+                    <button type="button" class="btn-decline-id" id="confirmDeclineBtn" style="display:none;">Confirm Decline</button>
+                    <button type="button" class="btn-approve-id" id="approveIdBtn">Approve</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="confirmActionBackdrop" class="id-modal-backdrop" aria-hidden="true" style="z-index:10060;">
+        <div class="id-modal confirm-modal" role="dialog" aria-modal="true">
+            <div class="id-modal-header">
+                <div id="confirmActionTitle" style="font-size:1.05rem;font-weight:800;">Confirm Action</div>
+                <button type="button" id="closeConfirmActionBtn" style="background:rgba(255,255,255,0.18);border:none;color:white;width:34px;height:34px;border-radius:50%;cursor:pointer;">&times;</button>
+            </div>
+            <div class="confirm-modal-body">
+                <div id="confirmActionIcon" class="confirm-icon approve">✓</div>
+                <div id="confirmActionHeading" class="confirm-title">Are you sure?</div>
+                <p id="confirmActionMessage" class="confirm-message"></p>
+                <div class="confirm-modal-actions">
+                    <button type="button" class="btn-modal-cancel" id="cancelConfirmActionBtn">Cancel</button>
+                    <button type="button" class="btn-approve-id" id="proceedConfirmActionBtn" style="display:none;">Approve</button>
+                    <button type="button" class="btn-decline-id" id="proceedDeclineConfirmBtn" style="display:none;">Confirm Decline</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="resultActionBackdrop" class="id-modal-backdrop" aria-hidden="true" style="z-index:10070;">
+        <div class="id-modal confirm-modal" role="dialog" aria-modal="true">
+            <div class="id-modal-header">
+                <div id="resultActionTitle" style="font-size:1.05rem;font-weight:800;">Notification</div>
+                <button type="button" id="closeResultActionBtn" style="background:rgba(255,255,255,0.18);border:none;color:white;width:34px;height:34px;border-radius:50%;cursor:pointer;">&times;</button>
+            </div>
+            <div class="confirm-modal-body">
+                <div id="resultActionIcon" class="confirm-icon success">✓</div>
+                <div id="resultActionHeading" class="confirm-title">Success</div>
+                <p id="resultActionMessage" class="confirm-message"></p>
+                <div class="confirm-modal-actions">
+                    <button type="button" class="btn-approve-id" id="okResultActionBtn">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     let _searchDebounce;
+    let currentIdUserId = null;
+    const approveIdUrlTemplate = @json(route('admin.users.approve-id', ['id' => '__ID__']));
+    const declineIdUrlTemplate = @json(route('admin.users.decline-id', ['id' => '__ID__']));
+    const validIdUrlTemplate = @json(route('admin.users.valid-id', ['id' => '__ID__']));
+    const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
     function buildUserRow(user) {
         const dob = user.date_of_birth ? new Date(user.date_of_birth) : null;
@@ -367,6 +595,21 @@
             ? '<span class="badge-pill badge-active">Verified</span>'
             : '<span class="badge-pill badge-pending">Unverified</span>';
 
+        let idBadge = '<span class="badge-pill badge-zero">N/A</span>';
+        if (user.id_verification_status === 'pending') idBadge = '<span class="badge-pill badge-pending">Pending Review</span>';
+        else if (user.id_verification_status === 'approved') idBadge = '<span class="badge-pill badge-approved">Approved</span>';
+        else if (user.id_verification_status === 'rejected') idBadge = '<span class="badge-pill badge-rejected">Declined</span>';
+
+        let actionCell = '<span style="color:#cbd5e1;font-size:.82rem;">—</span>';
+        if (user.id_verification_status === 'pending' && user.valid_id_path) {
+            const fileUrl = validIdUrlTemplate.replace('__ID__', user.id);
+            actionCell = `<button type="button" class="btn-view-id"
+                data-user-id="${user.id}"
+                data-full-name="${escapeHtml(user.full_name || '')}"
+                data-filename="${escapeHtml(user.valid_id_filename || '')}"
+                data-file-url="${fileUrl}">View ID</button>`;
+        }
+
         const initials = (user.full_name || '').substring(0, 2).toUpperCase();
         const joined = user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {month:'short', day:'2-digit', year:'numeric'}) : '—';
 
@@ -388,9 +631,331 @@
                 <td>${appsPills}</td>
                 <td style="font-size:.82rem;color:#64748b;white-space:nowrap;">${joined}</td>
                 <td>${statusBadge}</td>
+                <td>${idBadge}</td>
+                <td>${actionCell}</td>
             </tr>
         `;
     }
+
+    function escapeHtml(value) {
+        return String(value)
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    }
+
+    function openIdModalFromButton(btn) {
+        const userId = btn.dataset.userId;
+        const fullName = btn.dataset.fullName || 'Registered User';
+        const filename = btn.dataset.filename || '';
+        const fileUrl = btn.dataset.fileUrl || validIdUrlTemplate.replace('__ID__', userId);
+
+        currentIdUserId = userId;
+        document.getElementById('idModalUserName').textContent = fullName;
+        document.getElementById('idModalFilename').textContent = filename ? `File: ${filename}` : '';
+        document.querySelectorAll('input[name="decline_reason"]').forEach(r => { r.checked = false; });
+        document.querySelectorAll('.decline-reason-option').forEach(el => el.classList.remove('selected'));
+        document.getElementById('declineReasonWrap').style.display = 'none';
+        document.getElementById('confirmDeclineBtn').style.display = 'none';
+        document.getElementById('cancelDeclineBtn').style.display = 'none';
+        document.getElementById('declineToggleBtn').style.display = 'inline-block';
+        document.getElementById('approveIdBtn').style.display = 'inline-block';
+
+        const container = document.getElementById('idPreviewContainer');
+        const lowerName = (filename || fileUrl || '').toLowerCase();
+        if (lowerName.endsWith('.pdf')) {
+            container.innerHTML = `<iframe src="${fileUrl}" class="id-preview-frame" title="Valid ID Preview"></iframe>`;
+        } else {
+            container.innerHTML = `<img src="${fileUrl}" alt="Valid ID" class="id-preview">`;
+        }
+
+        const backdrop = document.getElementById('idModalBackdrop');
+        backdrop.classList.add('show');
+        backdrop.setAttribute('aria-hidden', 'false');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeIdModal() {
+        const backdrop = document.getElementById('idModalBackdrop');
+        backdrop.classList.remove('show');
+        backdrop.setAttribute('aria-hidden', 'true');
+        document.body.style.overflow = 'auto';
+        document.getElementById('idPreviewContainer').innerHTML = '';
+        currentIdUserId = null;
+    }
+
+    function toggleDeclineForm() {
+        document.getElementById('declineReasonWrap').style.display = 'block';
+        document.getElementById('confirmDeclineBtn').style.display = 'inline-block';
+        document.getElementById('cancelDeclineBtn').style.display = 'inline-block';
+        document.getElementById('declineToggleBtn').style.display = 'none';
+        document.getElementById('approveIdBtn').style.display = 'none';
+    }
+
+    function cancelDeclineForm() {
+        document.getElementById('declineReasonWrap').style.display = 'none';
+        document.getElementById('confirmDeclineBtn').style.display = 'none';
+        document.getElementById('cancelDeclineBtn').style.display = 'none';
+        document.getElementById('declineToggleBtn').style.display = 'inline-block';
+        document.getElementById('approveIdBtn').style.display = 'inline-block';
+        document.querySelectorAll('input[name="decline_reason"]').forEach(r => { r.checked = false; });
+        document.querySelectorAll('.decline-reason-option').forEach(el => el.classList.remove('selected'));
+    }
+
+    let pendingConfirmAction = null;
+
+    function showConfirmModal({ title, heading, message, type, action }) {
+        pendingConfirmAction = action;
+        document.getElementById('confirmActionTitle').textContent = title;
+        document.getElementById('confirmActionHeading').textContent = heading;
+        document.getElementById('confirmActionMessage').textContent = message;
+
+        const icon = document.getElementById('confirmActionIcon');
+        icon.className = 'confirm-icon ' + (type === 'decline' ? 'decline' : 'approve');
+        icon.textContent = type === 'decline' ? '✕' : '✓';
+
+        document.getElementById('proceedConfirmActionBtn').style.display = type === 'approve' ? 'inline-block' : 'none';
+        document.getElementById('proceedDeclineConfirmBtn').style.display = type === 'decline' ? 'inline-block' : 'none';
+
+        const backdrop = document.getElementById('confirmActionBackdrop');
+        backdrop.classList.add('show');
+        backdrop.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeConfirmModal() {
+        const backdrop = document.getElementById('confirmActionBackdrop');
+        backdrop.classList.remove('show');
+        backdrop.setAttribute('aria-hidden', 'true');
+        pendingConfirmAction = null;
+    }
+
+    function showResultModal({ title, heading, message, type }) {
+        document.getElementById('resultActionTitle').textContent = title;
+        document.getElementById('resultActionHeading').textContent = heading;
+        document.getElementById('resultActionMessage').textContent = message;
+
+        const icon = document.getElementById('resultActionIcon');
+        icon.className = 'confirm-icon ' + (type === 'error' ? 'error' : 'success');
+        icon.textContent = type === 'error' ? '✕' : '✓';
+
+        const okBtn = document.getElementById('okResultActionBtn');
+        okBtn.className = type === 'error' ? 'btn-decline-id' : 'btn-approve-id';
+
+        const backdrop = document.getElementById('resultActionBackdrop');
+        backdrop.classList.add('show');
+        backdrop.setAttribute('aria-hidden', 'false');
+    }
+
+    function closeResultModal() {
+        const backdrop = document.getElementById('resultActionBackdrop');
+        backdrop.classList.remove('show');
+        backdrop.setAttribute('aria-hidden', 'true');
+    }
+
+    function requestApproveId() {
+        if (!currentIdUserId) return;
+        showConfirmModal({
+            title: 'Approve Valid ID',
+            heading: 'Approve this valid ID?',
+            message: 'This will activate the user account and allow them to login to the portal.',
+            type: 'approve',
+            action: 'approve',
+        });
+    }
+
+    function getSelectedDeclineReason() {
+        const selected = document.querySelector('input[name="decline_reason"]:checked');
+        return selected ? selected.value : '';
+    }
+
+    function requestDeclineId() {
+        if (!currentIdUserId) return;
+        const reason = getSelectedDeclineReason();
+        if (!reason) {
+            showResultModal({
+                title: 'Missing Information',
+                heading: 'Reason required',
+                message: 'Please select a reason for declining the valid ID before continuing.',
+                type: 'error',
+            });
+            return;
+        }
+        const reasonLabel = document.querySelector('input[name="decline_reason"]:checked')?.closest('.decline-reason-option')?.querySelector('span')?.textContent || '';
+        showConfirmModal({
+            title: 'Decline Valid ID',
+            heading: 'Decline this valid ID?',
+            message: 'The user will be removed from the system and notified by email. Reason: ' + reasonLabel,
+            type: 'decline',
+            action: 'decline',
+        });
+    }
+
+    async function submitApproveId() {
+        if (!currentIdUserId) return;
+
+        const res = await fetch(approveIdUrlTemplate.replace('__ID__', currentIdUserId), {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+        });
+
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+
+        if (!res.ok) {
+            showResultModal({
+                title: 'Approval Failed',
+                heading: 'Could not approve',
+                message: data.message || 'Failed to approve valid ID. Please try again.',
+                type: 'error',
+            });
+            return;
+        }
+
+        closeIdModal();
+        fetchUsersAjax();
+        showResultModal({
+            title: 'Valid ID Approved',
+            heading: 'Successfully approved',
+            message: data.message || 'The user account has been activated. An approval email was sent to the user.',
+            type: 'success',
+        });
+    }
+
+    async function submitDeclineId() {
+        if (!currentIdUserId) return;
+        const reason = getSelectedDeclineReason();
+        if (!reason) return;
+
+        const res = await fetch(declineIdUrlTemplate.replace('__ID__', currentIdUserId), {
+            method: 'POST',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json',
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            body: JSON.stringify({ decline_reason: reason }),
+        });
+
+        let data = {};
+        try { data = await res.json(); } catch (e) {}
+
+        if (!res.ok) {
+            showResultModal({
+                title: 'Decline Failed',
+                heading: 'Could not decline',
+                message: data.message || 'Failed to decline valid ID. Please try again.',
+                type: 'error',
+            });
+            return;
+        }
+
+        closeIdModal();
+        fetchUsersAjax();
+        showResultModal({
+            title: 'Valid ID Declined',
+            heading: 'Successfully declined',
+            message: data.message || 'The user has been notified by email and removed from the system.',
+            type: 'success',
+        });
+    }
+
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.name === 'decline_reason') {
+            document.querySelectorAll('.decline-reason-option').forEach(el => el.classList.remove('selected'));
+            const option = e.target.closest('.decline-reason-option');
+            if (option) option.classList.add('selected');
+        }
+    });
+
+    document.addEventListener('click', function(e) {
+        const viewBtn = e.target.closest('.btn-view-id');
+        if (viewBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            openIdModalFromButton(viewBtn);
+            return;
+        }
+
+        if (e.target.id === 'closeIdModalBtn') {
+            closeIdModal();
+            return;
+        }
+
+        if (e.target.id === 'declineToggleBtn') {
+            toggleDeclineForm();
+            return;
+        }
+
+        if (e.target.id === 'cancelDeclineBtn') {
+            cancelDeclineForm();
+            return;
+        }
+
+        if (e.target.id === 'confirmDeclineBtn') {
+            requestDeclineId();
+            return;
+        }
+
+        if (e.target.id === 'approveIdBtn') {
+            requestApproveId();
+            return;
+        }
+
+        if (e.target.id === 'closeConfirmActionBtn' || e.target.id === 'cancelConfirmActionBtn') {
+            closeConfirmModal();
+            cancelDeclineForm();
+            return;
+        }
+
+        if (e.target.id === 'proceedConfirmActionBtn') {
+            closeConfirmModal();
+            submitApproveId();
+            return;
+        }
+
+        if (e.target.id === 'proceedDeclineConfirmBtn') {
+            closeConfirmModal();
+            submitDeclineId();
+            return;
+        }
+
+        if (e.target.id === 'closeResultActionBtn' || e.target.id === 'okResultActionBtn') {
+            closeResultModal();
+            return;
+        }
+
+        if (e.target.id === 'confirmActionBackdrop') {
+            closeConfirmModal();
+            return;
+        }
+
+        if (e.target.id === 'resultActionBackdrop') {
+            closeResultModal();
+            return;
+        }
+
+        if (e.target.id === 'idModalBackdrop') {
+            closeIdModal();
+        }
+    });
+
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Escape') return;
+        if (document.getElementById('resultActionBackdrop').classList.contains('show')) {
+            closeResultModal();
+        } else if (document.getElementById('confirmActionBackdrop').classList.contains('show')) {
+            closeConfirmModal();
+        } else if (document.getElementById('idModalBackdrop').classList.contains('show')) {
+            closeIdModal();
+        }
+    });
 
     function filterUsers() {
         clearTimeout(_searchDebounce);
@@ -400,11 +965,13 @@
     async function fetchUsersAjax() {
         const q = document.getElementById('userSearch').value.trim();
         const appFilter = document.getElementById('appFilter').value;
+        const idFilter = document.getElementById('idFilter').value;
         const tbody = document.getElementById('usersTableBody');
 
         const params = new URLSearchParams();
         if (q) params.set('q', q);
         if (appFilter) params.set('app_filter', appFilter);
+        if (idFilter) params.set('id_filter', idFilter);
 
         try {
             const res = await fetch(`{{ route('admin.users.search') }}?${params.toString()}`, {
