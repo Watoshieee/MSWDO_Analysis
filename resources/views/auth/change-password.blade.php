@@ -122,6 +122,7 @@ body {
 
         <div class="info-box">
             <strong>Important:</strong> Your temporary password has been sent to your email. Please create a new secure password below.
+            After changing your password, your uploaded valid ID will still need admin approval before you can login.
         </div>
 
         <form method="POST" action="{{ route('password.change.submit') }}" id="changePasswordForm">
