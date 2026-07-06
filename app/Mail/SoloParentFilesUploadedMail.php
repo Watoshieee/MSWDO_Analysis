@@ -24,7 +24,7 @@ class SoloParentFilesUploadedMail extends Mailable
     {
         $applicant = $this->fileMonitoring->application?->full_name ?? 'Unknown';
         return new Envelope(
-            subject: "[MSWDO] New Solo Parent Documents Uploaded — {$applicant}",
+            subject: "MSWDO: New Solo Parent Documents Uploaded – {$applicant}",
         );
     }
 

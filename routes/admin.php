@@ -93,6 +93,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Admin user management
     Route::get('/users', [App\Http\Controllers\AdminController::class, 'users'])->name('users');
     Route::get('/users/search', [App\Http\Controllers\AdminController::class, 'searchUsers'])->name('users.search');
+    Route::get('/users/{id}/valid-id', [App\Http\Controllers\AdminController::class, 'serveUserValidId'])->name('users.valid-id');
+    Route::post('/users/{id}/approve-id', [App\Http\Controllers\AdminController::class, 'approveUserId'])->name('users.approve-id');
+    Route::post('/users/{id}/decline-id', [App\Http\Controllers\AdminController::class, 'declineUserId'])->name('users.decline-id');
 
     // Yearly Comparison Routes
     Route::prefix('yearly')->name('yearly.')->group(function () {
