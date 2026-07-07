@@ -75,9 +75,13 @@ class User extends Authenticatable
     const ID_STATUS_REJECTED = 'rejected';
 
     const ID_DECLINE_REASONS = [
-        'blurry_id' => 'Malabo ang picture ng valid ID.',
-        'unreadable_id' => 'Hindi mabasa ang valid ID.',
-        'wrong_municipality' => 'Hindi taga sa municipality na ito ang user.',
+        'blurry_image'        => 'Image is blurry or unclear',
+        'incomplete_details'  => 'ID details are incomplete or partially visible',
+        'expired_id'          => 'Submitted ID appears to be expired',
+        'invalid_id_type'     => 'ID type is not accepted or not government-issued',
+        'wrong_municipality'  => 'Applicant does not belong to this municipality',
+        'suspected_fake'      => 'Submitted ID appears to be falsified or tampered',
+        'other'               => 'Other reason (please specify)',
     ];
 
     // Role constants
