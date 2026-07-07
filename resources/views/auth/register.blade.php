@@ -401,6 +401,7 @@
                         <div class="field-wrap">
                             <select id="gender" name="gender"
                                     class="form-input @error('gender') invalid @enderror">
+                                <option value="" disabled {{ old('gender') ? '' : 'selected' }} hidden>Select Gender</option>
                                 <option value="Male"   {{ old('gender') == 'Male'   ? 'selected' : '' }}>Male</option>
                                 <option value="Female" {{ old('gender') == 'Female' ? 'selected' : '' }}>Female</option>
                             </select>
@@ -443,7 +444,7 @@
                             <select id="municipality" name="municipality"
                                     class="form-input @error('municipality') invalid @enderror"
                                     onchange="populateBarangays()">
-                                <option value="">Select Municipality</option>
+                                <option value="" disabled {{ old('municipality') ? '' : 'selected' }} hidden>Select Municipality</option>
                                 @foreach($municipalities as $muni)
                                     <option value="{{ $muni->name }}" {{ old('municipality') == $muni->name ? 'selected' : '' }}>
                                         {{ $muni->name }}
@@ -460,7 +461,7 @@
                             <select id="barangay" name="barangay"
                                     class="form-input @error('barangay') invalid @enderror"
                                     disabled>
-                                <option value="">Select Municipality first</option>
+                                <option value="" disabled selected hidden>Select Barangay</option>
                             </select>
                         </div>
                         <div id="msg_barangay" class="field-msg hint">Select your municipality first.</div>
@@ -676,14 +677,14 @@
         brgySelect.innerHTML = '';
 
         if (!muni || !barangayData[muni]) {
-            brgySelect.innerHTML = '<option value="">Select municipality first</option>';
+            brgySelect.innerHTML = '<option value="" disabled selected hidden>Select Barangay</option>';
             brgySelect.disabled = true;
             msg.textContent = 'Select your municipality first.';
             msg.className = 'field-msg hint';
             return;
         }
 
-        brgySelect.innerHTML = '<option value="">Select Barangay</option>';
+        brgySelect.innerHTML = '<option value="" disabled selected hidden>Select Barangay</option>';
         barangayData[muni].forEach(b => {
             const opt = document.createElement('option');
             opt.value = b;
