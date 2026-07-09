@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Mail\NewUserIdVerificationAdminMail;
 use App\Models\User;
+use App\Services\DeviceRegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -15,6 +16,7 @@ use Exception;
 
 class OtpController extends Controller
 {
+    public function __construct(private DeviceRegistrationService $deviceService) {}
     public function showVerifyForm()
     {
         // Must have pending registration data in session
@@ -53,6 +55,7 @@ class OtpController extends Controller
             }
 
             // OTP is correct — NOW create the user in the database
+            $fingerprint = session('pending_device_fingerprint');
             try {
                 $validIdPath = $registrationData['valid_id_path'] ?? null;
                 $validIdFilename = $registrationData['valid_id_filename'] ?? null;
@@ -79,6 +82,12 @@ class OtpController extends Controller
                 }
 
                 $this->notifyAdminsOfPendingIdVerification($user);
+
+                // Attach device fingerprint and set cookie
+                if ($fingerprint) {
+                    $this->deviceService->attachUser($fingerprint, $user->id);
+                    session()->forget('pending_device_fingerprint');
+                }
             } catch (Exception $e) {
                 Log::error('Failed to create user after OTP: ' . $e->getMessage());
                 return back()->withErrors(['otp' => 'Account creation failed. Please try again.']);
@@ -101,6 +110,7 @@ class OtpController extends Controller
             ]);
 
             return redirect()->route('password.change')
+                ->cookie($this->deviceService->makeCookie($fingerprint ?? ''))
                 ->with('success', 'Email verified successfully! Please set your new password. Your valid ID will be reviewed by an admin before you can login.');
         }
 

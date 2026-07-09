@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Municipality;
 use App\Models\Barangay;
 use App\Models\User;
+use App\Services\DeviceRegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
@@ -16,6 +17,8 @@ use Carbon\Carbon;
 
 class RegisterController extends Controller
 {
+    public function __construct(private DeviceRegistrationService $deviceService) {}
+
     public function showRegistrationForm(Request $request)
     {
         $allowedMunicipalities = ['Magdalena', 'Liliw', 'Majayjay'];
@@ -43,6 +46,17 @@ class RegisterController extends Controller
     public function register(Request $request)
     {
         $allowedMunicipalities = ['Magdalena', 'Liliw', 'Majayjay'];
+
+        // Device fingerprint check
+        $fingerprint = $request->cookie(DeviceRegistrationService::COOKIE_NAME)
+            ?? $this->deviceService->resolveFingerprint($request);
+
+        if (!$this->deviceService->canRegister($fingerprint)) {
+            return back()->withErrors(['error' => 'This device has reached the maximum of ' . DeviceRegistrationService::MAX_ACCOUNTS_PER_DEVICE . ' registered accounts.']);
+        }
+
+        // Store fingerprint in session for OTP controller to use
+        session(['pending_device_fingerprint' => $fingerprint]);
 
         try {
             $validated = $request->validate([
