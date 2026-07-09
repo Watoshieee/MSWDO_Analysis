@@ -202,16 +202,7 @@
             display: flex; gap: 10px; justify-content: center;
             margin-top: 22px; flex-wrap: wrap;
         }
-        .decline-reason-list { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
-        .decline-reason-option {
-            display: flex; align-items: flex-start; gap: 10px;
-            padding: 12px 14px; border: 1.5px solid #e2e8f0; border-radius: 12px;
-            cursor: pointer; font-size: 0.86rem; color: #334155; background: #f8fafc;
-            transition: border-color .2s, background .2s;
-        }
-        .decline-reason-option:hover { border-color: #94a3b8; background: #fff; }
-        .decline-reason-option.selected { border-color: var(--primary-blue); background: #eef2ff; }
-        .decline-reason-option input { margin-top: 2px; accent-color: var(--primary-blue); }
+        .decline-reason-list { display: none; }
 
         /* MINI STAT PILLS */
         .mini-pill { display: inline-flex; align-items: center; gap: 5px; font-size: 0.72rem; font-weight: 700; padding: 3px 9px; border-radius: 20px; }
@@ -507,15 +498,19 @@
                 <div id="idModalFilename" style="font-size:.82rem;color:#64748b;margin-bottom:10px;"></div>
                 <div id="idPreviewContainer"></div>
                 <div id="declineReasonWrap" style="display:none;margin-top:16px;">
-                    <label style="font-size:.82rem;font-weight:700;color:#334155;display:block;margin-bottom:6px;">Select reason for declining</label>
-                    <div class="decline-reason-list">
+                    <label style="font-size:.82rem;font-weight:700;color:#334155;display:block;margin-bottom:6px;">Reason for Declining <span style="color:#dc3545;">*</span></label>
+                    <select id="decline_reason_select" name="decline_reason"
+                        style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 14px;font-size:0.88rem;font-family:'Inter',sans-serif;color:#334155;background:#f8fafc;outline:none;cursor:pointer;transition:border-color .2s;"
+                        onchange="handleDeclineReasonChange()">
+                        <option value="" disabled selected hidden>Select a reason…</option>
                         @foreach(\App\Models\User::ID_DECLINE_REASONS as $key => $label)
-                        <label class="decline-reason-option" for="decline_reason_{{ $key }}">
-                            <input type="radio" name="decline_reason" id="decline_reason_{{ $key }}" value="{{ $key }}">
-                            <span>{{ $label }}</span>
-                        </label>
+                            <option value="{{ $key }}">{{ $label }}</option>
                         @endforeach
-                    </div>
+                    </select>
+                    <textarea id="decline_reason_custom"
+                        placeholder="Please specify the reason…"
+                        style="display:none;width:100%;margin-top:10px;border:1.5px solid #e2e8f0;border-radius:10px;padding:10px 14px;font-size:0.88rem;font-family:'Inter',sans-serif;color:#334155;background:#f8fafc;outline:none;resize:vertical;min-height:80px;transition:border-color .2s;"
+                        oninput="this.style.borderColor=this.value.trim()?'#16a34a':'#e2e8f0';"></textarea>
                 </div>
                 <div class="id-modal-actions">
                     <button type="button" class="btn-modal-cancel" id="cancelDeclineBtn" style="display:none;">Cancel</button>
@@ -655,7 +650,7 @@
         currentIdUserId = userId;
         document.getElementById('idModalUserName').textContent = fullName;
         document.getElementById('idModalFilename').textContent = filename ? `File: ${filename}` : '';
-        document.querySelectorAll('input[name="decline_reason"]').forEach(r => { r.checked = false; });
+    document.querySelectorAll('input[name="decline_reason"]').forEach(r => { r.checked = false; });
         document.querySelectorAll('.decline-reason-option').forEach(el => el.classList.remove('selected'));
         document.getElementById('declineReasonWrap').style.display = 'none';
         document.getElementById('confirmDeclineBtn').style.display = 'none';
@@ -700,8 +695,10 @@
         document.getElementById('cancelDeclineBtn').style.display = 'none';
         document.getElementById('declineToggleBtn').style.display = 'inline-block';
         document.getElementById('approveIdBtn').style.display = 'inline-block';
-        document.querySelectorAll('input[name="decline_reason"]').forEach(r => { r.checked = false; });
-        document.querySelectorAll('.decline-reason-option').forEach(el => el.classList.remove('selected'));
+        document.getElementById('decline_reason_select').value = '';
+        document.getElementById('decline_reason_select').style.borderColor = '#e2e8f0';
+        document.getElementById('decline_reason_custom').style.display = 'none';
+        document.getElementById('decline_reason_custom').value = '';
     }
 
     let pendingConfirmAction = null;
@@ -765,9 +762,32 @@
         });
     }
 
+    function handleDeclineReasonChange() {
+        const sel = document.getElementById('decline_reason_select');
+        const custom = document.getElementById('decline_reason_custom');
+        custom.style.display = sel.value === 'other' ? 'block' : 'none';
+        if (sel.value !== 'other') custom.value = '';
+        sel.style.borderColor = sel.value ? '#16a34a' : '#e2e8f0';
+    }
+
     function getSelectedDeclineReason() {
-        const selected = document.querySelector('input[name="decline_reason"]:checked');
-        return selected ? selected.value : '';
+        const sel = document.getElementById('decline_reason_select');
+        if (!sel.value) return '';
+        if (sel.value === 'other') {
+            const custom = document.getElementById('decline_reason_custom').value.trim();
+            return custom ? 'other:' + custom : '';
+        }
+        return sel.value;
+    }
+
+    function getDeclineReasonLabel() {
+        const sel = document.getElementById('decline_reason_select');
+        if (!sel.value) return '';
+        if (sel.value === 'other') {
+            const custom = document.getElementById('decline_reason_custom').value.trim();
+            return custom || 'Other reason';
+        }
+        return sel.options[sel.selectedIndex].text;
     }
 
     function requestDeclineId() {
@@ -782,7 +802,7 @@
             });
             return;
         }
-        const reasonLabel = document.querySelector('input[name="decline_reason"]:checked')?.closest('.decline-reason-option')?.querySelector('span')?.textContent || '';
+        const reasonLabel = getDeclineReasonLabel();
         showConfirmModal({
             title: 'Decline Valid ID',
             heading: 'Decline this valid ID?',
@@ -840,7 +860,7 @@
                 'Content-Type': 'application/json',
                 'X-Requested-With': 'XMLHttpRequest',
             },
-            body: JSON.stringify({ decline_reason: reason }),
+            body: JSON.stringify({ decline_reason: getSelectedDeclineReason() }),
         });
 
         let data = {};

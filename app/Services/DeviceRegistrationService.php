@@ -7,7 +7,7 @@ use Illuminate\Http\Request;
 
 class DeviceRegistrationService
 {
-    public const MAX_ACCOUNTS_PER_DEVICE = 2;
+    public const MAX_ACCOUNTS_PER_DEVICE = 3;
     public const COOKIE_NAME = 'mswdo_device_fp';
 
     /**
@@ -30,7 +30,14 @@ class DeviceRegistrationService
 
     public function getAccountCount(string $fingerprint): int
     {
-        return RegistrationDevice::where('device_fingerprint', $fingerprint)->count();
+        return RegistrationDevice::where('device_fingerprint', $fingerprint)
+            ->whereExists(function ($query) {
+                $query->selectRaw(1)
+                    ->from('users')
+                    ->whereColumn('users.id', 'registration_devices.user_id')
+                    ->whereNull('users.deleted_at');
+            })
+            ->count();
     }
 
     public function canRegister(string $fingerprint): bool

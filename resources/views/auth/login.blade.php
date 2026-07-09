@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login – MSWDO Analysis</title>
+    <title>Login ï¿½ MSWDO Analysis</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -49,7 +49,7 @@
             position: relative; z-index: 1;
         }
 
-        /* -- LEFT SIDE – Branding Panel -- */
+        /* -- LEFT SIDE ï¿½ Branding Panel -- */
         .brand-panel {
             flex: 1;
             background: linear-gradient(160deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%);
@@ -107,7 +107,7 @@
         }
         .brand-back:hover { color: #FDB913; }
 
-        /* -- RIGHT SIDE – Form Panel -- */
+        /* -- RIGHT SIDE ï¿½ Form Panel -- */
         .form-panel {
             flex: 1;
             background: white;
@@ -143,7 +143,7 @@
         .form-control {
             border-radius: 12px;
             border: 2px solid #E2E8F0;
-            padding: 11px 14px 11px 42px;
+            padding: 11px 44px 11px 16px;
             font-size: 0.92rem; font-family: 'Inter', sans-serif;
             transition: all 0.25s ease;
             background: #F8FAFC;
@@ -155,6 +155,10 @@
             outline: none;
         }
         .form-control::placeholder { color: #CBD5E1; }
+        /* Hide browser built-in password reveal button */
+        input[type="password"]::-ms-reveal,
+        input[type="password"]::-ms-clear { display: none; }
+        input::-webkit-credentials-auto-fill-button { display: none; }
 
         /* Toggle password */
         .toggle-pw {
@@ -163,6 +167,7 @@
             color: #94a3b8; cursor: pointer; font-size: 1rem;
             background: none; border: none; padding: 0;
             transition: color 0.2s;
+            display: flex; align-items: center;
         }
         .toggle-pw:hover { color: #2C3E8F; }
 
@@ -237,7 +242,7 @@
         <div class="brand-divider"></div>
         <p>
             Access population data, demographic insights, and program reports for
-            Magdalena, Liliw, and Majayjay — all in one place.
+            Magdalena, Liliw, and Majayjay ï¿½ all in one place.
         </p>
 
 
@@ -276,7 +281,6 @@
             <div class="mb-4">
                 <label class="form-label">Username or Email</label>
                 <div class="input-wrapper">
-                    <i class="bi bi-person icon"></i>
                     <input
                         type="text"
                         name="login"
@@ -291,7 +295,6 @@
             <div class="mb-3">
                 <label class="form-label">Password</label>
                 <div class="input-wrapper">
-                    <i class="bi bi-lock icon"></i>
                     <input
                         type="password"
                         name="password"
@@ -301,7 +304,10 @@
                         required
                         autocomplete="current-password">
                     <button type="button" class="toggle-pw" onclick="togglePassword()" id="toggleIcon">
-                        <i class="bi bi-eye" id="eyeIcon"></i>
+                        <svg id="eyeIcon" xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/>
+                            <path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>
+                        </svg>
                     </button>
                 </div>
             </div>
@@ -336,10 +342,10 @@ function togglePassword() {
     const icon  = document.getElementById('eyeIcon');
     if (input.type === 'password') {
         input.type = 'text';
-        icon.className = 'bi bi-eye-slash';
+        icon.innerHTML = '<path d="M13.359 11.238C15.06 9.72 16 8 16 8s-3-5.5-8-5.5a7.028 7.028 0 0 0-2.79.588l.77.771A5.944 5.944 0 0 1 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.134 13.134 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755-.165.165-.337.328-.517.486l.708.709z"/><path d="M11.297 9.176a3.5 3.5 0 0 0-4.474-4.474l.823.823a2.5 2.5 0 0 1 2.829 2.829l.822.822zm-2.943 1.299.822.822a3.5 3.5 0 0 1-4.474-4.474l.823.823a2.5 2.5 0 0 0 2.829 2.829z"/><path d="M3.35 5.47c-.18.16-.353.322-.518.487A13.134 13.134 0 0 0 1.172 8l.195.288c.335.48.83 1.12 1.465 1.755C4.121 11.332 5.881 12.5 8 12.5c.716 0 1.39-.133 2.02-.36l.77.772A7.029 7.029 0 0 1 8 13.5C3 13.5 0 8 0 8s.939-1.721 2.641-3.238l.708.709z"/><path fill-rule="evenodd" d="M13.646 14.354l-12-12 .708-.708 12 12-.708.708z"/>';
     } else {
         input.type = 'password';
-        icon.className = 'bi bi-eye';
+        icon.innerHTML = '<path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>';
     }
 }
 </script>

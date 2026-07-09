@@ -212,6 +212,7 @@ class UserController extends Controller
     {
         $user = User::onlyTrashed()->findOrFail($id);
         $name = $user->full_name;
+        (new \App\Services\DeviceRegistrationService)->detachUser($user->id);
         $user->forceDelete();
 
         return response()->json(['success' => true, 'message' => "User \"{$name}\" permanently deleted."]);

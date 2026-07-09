@@ -1598,13 +1598,24 @@ class AdminController extends Controller
         $declineReasonKeys = array_keys(\App\Models\User::ID_DECLINE_REASONS);
 
         $validated = $request->validate([
-            'decline_reason' => 'required|string|in:' . implode(',', $declineReasonKeys),
+            'decline_reason' => 'required|string',
         ], [
             'decline_reason.required' => 'Please select a reason for declining the valid ID.',
-            'decline_reason.in' => 'Please select a valid decline reason.',
         ]);
 
-        $reasonText = \App\Models\User::ID_DECLINE_REASONS[$validated['decline_reason']];
+        $rawReason = $validated['decline_reason'];
+
+        // Handle "other:custom text" format
+        if (str_starts_with($rawReason, 'other:')) {
+            $reasonText = trim(substr($rawReason, 6));
+            if (empty($reasonText)) {
+                return response()->json(['success' => false, 'message' => 'Please specify the reason for declining.'], 422);
+            }
+        } elseif (array_key_exists($rawReason, \App\Models\User::ID_DECLINE_REASONS)) {
+            $reasonText = \App\Models\User::ID_DECLINE_REASONS[$rawReason];
+        } else {
+            return response()->json(['success' => false, 'message' => 'Please select a valid decline reason.'], 422);
+        }
         $userEmail = $user->email;
         $userFullName = $user->full_name;
         $userMunicipality = $user->municipality;
