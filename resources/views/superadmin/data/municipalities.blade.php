@@ -536,6 +536,46 @@
         .section-tab.active {
             display: block;
         }
+
+        /* ── NOTIFICATION ANIMATIONS ── */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes timerBar {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+
+        .notification-toast {
+            animation-fill-mode: both;
+        }
+
+        .notification-toast.fade-out {
+            animation: slideOutRight 0.4s ease-in forwards;
+        }
     </style>
 </head>
 
@@ -589,8 +629,9 @@
                 $topNotice = session('success') ?: session('error');
             @endphp
             @if($topNotice)
-                <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                <div class="notification-toast" style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:16px 16px 12px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;animation:slideInRight 0.4s ease-out;overflow:hidden;">
                     {{ $topNotice }}
+                    <div class="progress-bar-timer" style="position:absolute;bottom:0;left:0;height:3px;background:#FDB913;animation:timerBar 5s linear forwards;"></div>
                 </div>
             @endif
             @if($errors->any())
@@ -601,8 +642,8 @@
 
             <!-- Tab Pills -->
             <div class="tab-pills">
-                <button class="tab-pill active" onclick="switchTab('records')">&#128202; Records</button>
-                <button class="tab-pill" onclick="switchTab('analysis')">&#128200; Analysis</button>
+                <button class="tab-pill active" onclick="switchTab('records')"> Records</button>
+                <button class="tab-pill" onclick="switchTab('analysis')"> Analysis</button>
             </div>
 
             <!-- ===================== RECORDS TAB ===================== -->
@@ -612,7 +653,7 @@
                     <h6 class="mb-0 fw-bold" style="color:var(--primary-blue);">Yearly Municipality Summary Records</h6>
                     <div class="d-flex gap-2 align-items-center">
                         <button class="btn-archive-view" data-bs-toggle="modal" data-bs-target="#archivedSummaryModal">
-                            &#128193; Archived (<span id="archivedSummaryCount">...</span>)
+                             Archived (<span id="archivedSummaryCount">...</span>)
                         </button>
                         <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Year
                             Data</button>
@@ -867,7 +908,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title">&#128193; Archived Yearly Records</h5>
+                    <h5 class="modal-title"> Archived Yearly Records</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -898,8 +939,108 @@
         </div>
     </div>
 
+    <!-- Navy blue confirm modal (same pattern as superadmin users) -->
+    <div class="modal fade" id="uiConfirmModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered modal-md">
+            <div class="modal-content" style="border-radius:24px; overflow:hidden; box-shadow:0 30px 50px rgba(44,62,143,0.35);">
+                <div class="modal-header" style="background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%); color:white; border-bottom: none; padding: 24px 28px 16px;">
+                    <div style="display:flex; align-items:center; gap:12px;">
+                        <div style="background:rgba(253,185,19,0.2); width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
+                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#FDB913"/>
+                            </svg>
+                        </div>
+                        <h5 class="modal-title" id="uiConfirmTitle" style="font-weight:800; font-size:1.35rem; letter-spacing:-0.3px; margin:0;">Confirm Action</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" id="uiConfirmCloseBtn" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="padding:32px 28px 24px; background:#FFFFFF; min-height:140px;">
+                    <div id="uiConfirmMessage" style="color:#1E293B; font-weight:500; font-size:1rem; line-height:1.6; text-align:center; white-space:pre-line;">
+                        Are you sure you want to proceed?
+                    </div>
+                </div>
+                <div class="modal-footer" style="border-top:1px solid #E2E8F0; background:#F8FAFC; padding:20px 28px 28px; gap:16px; justify-content:center;">
+                    <button type="button" id="uiConfirmCancelBtn" class="btn-modal-cancel" style="background:white; border:2px solid #CBD5E1; color:#64748B; border-radius:50px; padding:10px 32px; font-weight:700; font-size:0.9rem; transition:all 0.2s; min-width:120px;">Cancel</button>
+                    <button type="button" id="uiConfirmOkBtn" class="btn-modal-submit" style="background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%); color:white; border-radius:50px; padding:10px 32px; font-weight:700; font-size:0.9rem; border:none; transition:all 0.2s; min-width:120px;">OK</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
+
+        function uiConfirm(title, message, okText, cancelText) {
+            return new Promise((resolve) => {
+                const modalEl = document.getElementById('uiConfirmModal');
+                if (!modalEl) {
+                    resolve(false);
+                    return;
+                }
+                const titleEl = document.getElementById('uiConfirmTitle');
+                const messageEl = document.getElementById('uiConfirmMessage');
+                let okBtn = document.getElementById('uiConfirmOkBtn');
+                let cancelBtn = document.getElementById('uiConfirmCancelBtn');
+                const closeBtn = document.getElementById('uiConfirmCloseBtn');
+
+                if (!okBtn || !cancelBtn) {
+                    resolve(false);
+                    return;
+                }
+
+                if (titleEl) titleEl.textContent = title || 'Confirm Action';
+                if (messageEl) messageEl.textContent = message || 'Are you sure you want to proceed?';
+                if (okBtn) okBtn.textContent = okText || 'OK';
+                if (cancelBtn) cancelBtn.textContent = cancelText || 'Cancel';
+
+                let resolved = false;
+                const done = (val) => {
+                    if (resolved) return;
+                    resolved = true;
+                    resolve(val);
+                };
+
+                const hideModal = () => {
+                    const bsModal = bootstrap.Modal.getInstance(modalEl);
+                    if (bsModal) bsModal.hide();
+                };
+
+                const newOkBtn = okBtn.cloneNode(true);
+                const newCancelBtn = cancelBtn.cloneNode(true);
+                okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+                cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+                okBtn = newOkBtn;
+                cancelBtn = newCancelBtn;
+
+                okBtn.onclick = () => {
+                    hideModal();
+                    setTimeout(() => done(true), 150);
+                };
+                cancelBtn.onclick = () => {
+                    hideModal();
+                    setTimeout(() => done(false), 150);
+                };
+
+                if (closeBtn) {
+                    const newCloseBtn = closeBtn.cloneNode(true);
+                    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+                    newCloseBtn.onclick = () => {
+                        hideModal();
+                        setTimeout(() => done(false), 150);
+                    };
+                }
+
+                modalEl.style.zIndex = '9999';
+                const bsModal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
+                bsModal.show();
+
+                modalEl.addEventListener('hidden.bs.modal', function onHidden() {
+                    modalEl.removeEventListener('hidden.bs.modal', onHidden);
+                    if (!resolved) done(false);
+                }, { once: true });
+            });
+        }
 
         // Tab switching
         function switchTab(name) {
@@ -911,8 +1052,14 @@
         }
 
         // Archive summary (AJAX)
-        function archiveSummary(id, label) {
-            if (!confirm(`Archive "${label}"?\n\nThis record will be hidden but can be restored later.`)) return;
+        async function archiveSummary(id, label) {
+            const ok = await uiConfirm(
+                'Archive record?',
+                `Archive "${label}"?\n\nThis record will be hidden but can be restored later.`,
+                'Archive',
+                'Cancel'
+            );
+            if (!ok) return;
             fetch('/superadmin/data/municipalities/summary/' + id + '/archive', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
@@ -931,7 +1078,7 @@
                 .then(data => {
                     document.getElementById('archivedSummaryCount').textContent = data.length;
                     if (!data.length) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><div style="font-size:2rem;opacity:.3;">&#128193;</div><p class="mt-2 mb-0">No archived records.</p></td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><div style="font-size:2rem;opacity:.3;"></div><p class="mt-2 mb-0">No archived records.</p></td></tr>';
                         return;
                     }
                     tbody.innerHTML = data.map(r => {
@@ -951,8 +1098,14 @@
                 .catch(() => { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-danger">Failed to load.</td></tr>'; });
         }
 
-        function restoreSummary(id) {
-            if (!confirm('Restore this record? It will appear in the active list again.')) return;
+        async function restoreSummary(id) {
+            const ok = await uiConfirm(
+                'Restore record?',
+                'Restore this record? It will appear in the active list again.',
+                'Restore',
+                'Cancel'
+            );
+            if (!ok) return;
             fetch('/superadmin/data/municipalities/summary/' + id + '/restore', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
@@ -962,8 +1115,14 @@
                 .catch(() => alert('Network error.'));
         }
 
-        function permDeleteSummary(id) {
-            if (!confirm('⚠️ PERMANENTLY DELETE this record?\n\nThis CANNOT be undone!')) return;
+        async function permDeleteSummary(id) {
+            const ok = await uiConfirm(
+                'Permanent delete',
+                'PERMANENTLY DELETE this record?\n\nThis CANNOT be undone!',
+                'Delete forever',
+                'Cancel'
+            );
+            if (!ok) return;
             fetch('/superadmin/data/municipalities/summary/' + id + '/force-delete', {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
@@ -1060,8 +1219,14 @@
             }
         }
 
-        function deleteSummary(id) {
-            if (!confirm('Delete this year record? This cannot be undone.')) return;
+        async function deleteSummary(id) {
+            const ok = await uiConfirm(
+                'Delete year record?',
+                'Delete this year record? This cannot be undone.',
+                'Delete',
+                'Cancel'
+            );
+            if (!ok) return;
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = '/superadmin/data/municipalities/summary/' + id;
@@ -1074,6 +1239,17 @@
         // --- END SCRIPT ---
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Auto-hide notification after timer completes
+        document.addEventListener('DOMContentLoaded', () => {
+            const notification = document.querySelector('.notification-toast');
+            if (notification) {
+                setTimeout(() => {
+                    notification.classList.add('fade-out');
+                    setTimeout(() => notification.remove(), 400);
+                }, 5000);
+            }
+        });
+    </script>
 </body>
 </html>

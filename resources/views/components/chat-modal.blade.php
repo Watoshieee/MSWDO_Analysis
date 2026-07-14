@@ -17,7 +17,7 @@
             <div class="modal-body p-0">
                 <!-- Admin Selection (shown initially) -->
                 <div id="adminSelection" class="p-4">
-                    <p class="text-muted mb-3" style="font-size:0.9rem;">Select an admin from your municipality to start chatting:</p>
+                    <p class="text-muted mb-3" style="font-size:0.9rem;">Every <strong>active</strong> MSWDO admin assigned to <strong>your municipality</strong> is listed here (including accounts created earlier). Matching uses your profile municipality, or your latest application if that field is empty.</p>
                     <div id="adminList"></div>
                 </div>
 
@@ -109,6 +109,7 @@
     display: flex;
     align-items: center;
     gap: 12px;
+    position: relative;
 }
 
 .admin-card:hover {
@@ -146,6 +147,24 @@
     font-size: 0.75rem;
     color: #94a3b8;
     font-weight: 600;
+}
+
+.admin-unread-badge {
+    position: absolute;
+    top: 10px;
+    right: 40px;
+    min-width: 20px;
+    height: 20px;
+    padding: 0 6px;
+    border-radius: 999px;
+    background: #C41E24;
+    color: #fff;
+    font-size: 0.7rem;
+    font-weight: 800;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid #fff;
 }
 
 .chat-messages {
@@ -273,7 +292,13 @@ document.addEventListener('DOMContentLoaded', function() {
     loadUnreadCount();
     
     // Check for new messages every 10 seconds
-    setInterval(loadUnreadCount, 10000);
+    setInterval(function () {
+        loadUnreadCount();
+        const selection = document.getElementById('adminSelection');
+        if (selection && selection.style.display !== 'none') {
+            loadAdmins();
+        }
+    }, 10000);
     
     document.getElementById('chatBtn').addEventListener('click', function() {
         const modal = new bootstrap.Modal(document.getElementById('chatModal'));
@@ -303,26 +328,56 @@ function loadUnreadCount() {
 
 function loadAdmins() {
     fetch('/chat/admins')
-        .then(r => r.json())
+        .then(r => {
+            if (!r.ok) throw new Error('Could not load admins');
+            return r.json();
+        })
         .then(admins => {
             const list = document.getElementById('adminList');
-            if (admins.length === 0) {
-                list.innerHTML = '<p class="text-muted text-center">No admins available in your municipality.</p>';
+            if (!Array.isArray(admins) || admins.length === 0) {
+                list.innerHTML = '<p class="text-muted text-center small">No admins found for your municipality. Ask your super admin to create an active admin account with the same municipality as yours, or set your municipality in <strong>Profile</strong> so it matches your barangay records.</p>';
                 return;
             }
-            
-            list.innerHTML = admins.map(admin => `
-                <div class="admin-card" onclick="selectAdmin(${admin.id}, '${admin.full_name}')">
-                    <div class="admin-avatar">${admin.full_name.charAt(0)}</div>
+
+            list.innerHTML = admins.map(admin => {
+                const name = (admin.display_name || admin.full_name || admin.username || '').trim();
+                const muni = (admin.municipality || '').trim();
+                const id = Number(admin.id);
+                const unread = Number(admin.unread_count || 0);
+                const unreadText = unread > 99 ? '99+' : String(unread);
+                return `
+                <div class="admin-card" role="button" tabindex="0" aria-label="Message ${escapeHtml(name)}"
+                    data-chat-admin-id="${id}" data-chat-admin-label="${encodeURIComponent(name)}">
+                    <div class="admin-avatar">${escapeHtml(name.charAt(0) || '?')}</div>
                     <div class="admin-info">
-                        <div class="admin-name">${admin.full_name}</div>
-                        <div class="admin-role">Admin - ${admin.municipality}</div>
+                        <div class="admin-name">${escapeHtml(name)}</div>
+                        <div class="admin-role">Admin — ${escapeHtml(muni)}</div>
                     </div>
-                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="color:#94a3b8;">
+                    ${unread > 0 ? `<span class="admin-unread-badge" title="${unreadText} unread">${unreadText}</span>` : ''}
+                    <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="color:#94a3b8;" aria-hidden="true">
                         <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
                     </svg>
-                </div>
-            `).join('');
+                </div>`;
+            }).join('');
+
+            list.querySelectorAll('.admin-card').forEach(card => {
+                card.addEventListener('click', function (e) {
+                    e.preventDefault();
+                    const id = parseInt(card.getAttribute('data-chat-admin-id') || '0', 10);
+                    const label = decodeURIComponent(card.getAttribute('data-chat-admin-label') || '');
+                    if (id) selectAdmin(id, label);
+                });
+                card.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault();
+                        card.click();
+                    }
+                });
+            });
+        })
+        .catch(() => {
+            const list = document.getElementById('adminList');
+            if (list) list.innerHTML = '<p class="text-danger text-center small">Unable to load admins. Please try again.</p>';
         });
 }
 
@@ -330,24 +385,28 @@ function selectAdmin(adminId, adminName) {
     currentAdminId = adminId;
     document.getElementById('adminSelection').style.display = 'none';
     document.getElementById('chatInterface').style.display = 'block';
-    
-    // Add back button
+
     const chatInterface = document.getElementById('chatInterface');
-    if (!document.querySelector('.back-to-admins')) {
-        const backBtn = document.createElement('div');
+    let backBtn = document.querySelector('.back-to-admins');
+    if (!backBtn) {
+        backBtn = document.createElement('div');
         backBtn.className = 'back-to-admins';
         backBtn.innerHTML = `
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16" aria-hidden="true">
                 <path fill-rule="evenodd" d="M15 8a.5.5 0 0 0-.5-.5H2.707l3.147-3.146a.5.5 0 1 0-.708-.708l-4 4a.5.5 0 0 0 0 .708l4 4a.5.5 0 0 0 .708-.708L2.707 8.5H14.5A.5.5 0 0 0 15 8z"/>
             </svg>
-            <span>Chat with ${adminName}</span>
+            <span></span>
         `;
         backBtn.onclick = backToAdminList;
         chatInterface.prepend(backBtn);
     }
-    
+    const backSpan = backBtn.querySelector('span');
+    if (backSpan) {
+        backSpan.textContent = 'Chat with ' + (adminName || 'Admin');
+    }
+
     loadMessages(adminId);
-    
+
     // Auto-refresh messages every 5 seconds
     if (messageCheckInterval) clearInterval(messageCheckInterval);
     messageCheckInterval = setInterval(() => loadMessages(adminId), 5000);
@@ -360,6 +419,7 @@ function backToAdminList() {
     document.getElementById('chatInterface').style.display = 'none';
     document.querySelector('.back-to-admins')?.remove();
     document.getElementById('chatMessages').innerHTML = '';
+    loadAdmins();
 }
 
 function loadMessages(adminId) {

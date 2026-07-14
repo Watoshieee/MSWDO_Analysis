@@ -44,6 +44,28 @@
             gap: 10px;
         }
 
+        .navbar-toggler {
+            order: -1;
+        }
+
+        .navbar-brand {
+            order: 0;
+            margin-left: auto !important;
+            margin-right: 0 !important;
+        }
+
+        @media (min-width: 992px) {
+            .navbar-toggler {
+                order: 0;
+            }
+
+            .navbar-brand {
+                order: 0;
+                margin-left: 0 !important;
+                margin-right: auto !important;
+            }
+        }
+
         .nav-link {
             color: rgba(255, 255, 255, .88) !important;
             font-weight: 600;
@@ -576,14 +598,14 @@
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card-base y text-center">
+                    <div class="card-base text-center">
                         <div class="stat-num">{{ number_format($totalHH) }}</div>
                         <div class="stat-lbl">Total Households</div>
                         <div style="font-size:.78rem;color:#22c55e;margin-top:4px;">Highest: {{ $highHH }}</div>
                     </div>
                 </div>
                 <div class="col-md-4">
-                    <div class="card-base g text-center">
+                    <div class="card-base text-center">
                         <div class="stat-num">{{ number_format($totalBenef) }}</div>
                         <div class="stat-lbl">Total Beneficiaries</div>
                         <div style="font-size:.78rem;color:#22c55e;margin-top:4px;">Highest: {{ $highBen }}</div>
@@ -1217,7 +1239,20 @@
                     </div>
                 @endforeach
             </div>
-            <div class="row g-4">
+            <div class="row g-4@media(max-width:768px) {
+                .navbar-brand {
+                    order: 2;
+                }
+                
+                .navbar-toggler {
+                    order: 1;
+                }
+                
+                .navbar > .container {
+                    display: flex;
+                }
+            }
+            ">
                 <div class="col-lg-7">
                     <div class="card-base">
                         <h6 style="font-weight:700;color:var(--blue);">Programs per Municipality (Stacked)</h6>

@@ -52,6 +52,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/municipality', [App\Http\Controllers\Admin\DataManagementController::class, 'municipality'])->name('municipality');
         Route::post('/municipality/update', [App\Http\Controllers\Admin\DataManagementController::class, 'updateMunicipality'])->name('municipality.update');
         Route::get('/barangays', [App\Http\Controllers\Admin\DataManagementController::class, 'barangays'])->name('barangays');
+        Route::post('/barangays', [App\Http\Controllers\Admin\DataManagementController::class, 'storeBarangay'])->name('barangays.store');
+        Route::get('/barangays/archived', [App\Http\Controllers\Admin\DataManagementController::class, 'getArchivedBarangays'])->name('barangays.archived');
+        Route::post('/barangays/bulk-delete', [App\Http\Controllers\Admin\DataManagementController::class, 'bulkArchiveBarangays'])->name('barangays.bulk-delete');
+        Route::delete('/barangays/archived/delete-all', [App\Http\Controllers\Admin\DataManagementController::class, 'forceDeleteAllArchivedBarangays'])->name('barangays.archived.delete-all');
+        Route::patch('/barangays/{id}/archive', [App\Http\Controllers\Admin\DataManagementController::class, 'archiveBarangay'])->name('barangays.archive');
+        Route::patch('/barangays/{id}/restore', [App\Http\Controllers\Admin\DataManagementController::class, 'restoreBarangay'])->name('barangays.restore');
+        Route::delete('/barangays/{id}/force-delete', [App\Http\Controllers\Admin\DataManagementController::class, 'forceDeleteBarangay'])->name('barangays.force-delete');
         Route::post('/barangays/bulk-update', [App\Http\Controllers\Admin\DataManagementController::class, 'bulkUpdateBarangays'])->name('barangays.bulk-update');
         Route::post('/barangays/bulk-store', [App\Http\Controllers\Admin\DataManagementController::class, 'bulkStoreBarangays'])->name('barangays.bulk-store');
         Route::post('/barangays/find-or-create', [App\Http\Controllers\Admin\DataManagementController::class, 'findOrCreateBarangay'])->name('barangays.find-or-create');
@@ -86,6 +93,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Admin user management
     Route::get('/users', [App\Http\Controllers\AdminController::class, 'users'])->name('users');
     Route::get('/users/search', [App\Http\Controllers\AdminController::class, 'searchUsers'])->name('users.search');
+    Route::get('/users/{id}/valid-id', [App\Http\Controllers\AdminController::class, 'serveUserValidId'])->name('users.valid-id');
+    Route::post('/users/{id}/approve-id', [App\Http\Controllers\AdminController::class, 'approveUserId'])->name('users.approve-id');
+    Route::post('/users/{id}/decline-id', [App\Http\Controllers\AdminController::class, 'declineUserId'])->name('users.decline-id');
 
     // Yearly Comparison Routes
     Route::prefix('yearly')->name('yearly.')->group(function () {

@@ -37,6 +37,7 @@ class AuthService
             'password'      => Hash::make($generatedPassword),
             'role'          => User::ROLE_USER,
             'status'        => 'inactive',
+            'must_change_password' => true,
         ]);
 
         // Send the generated password to the user's email

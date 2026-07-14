@@ -231,7 +231,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             left: 0;
             right: 0;
             height: 4px;
-            background: var(--secondary-gradient);
+            background: var(--primary-gradient);
         }
 
         .menu-card:hover {
@@ -243,7 +243,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .menu-card-num {
             font-size: .75rem;
             font-weight: 800;
-            color: rgba(253, 185, 19, .8);
+            color: rgba(44, 62, 143, .8);
             letter-spacing: .15em;
             text-transform: uppercase;
             margin-bottom: 10px;
@@ -267,7 +267,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             bottom: 22px;
             right: 22px;
             font-size: 1.2rem;
-            color: var(--secondary-yellow);
+            color: var(--primary-blue);
             font-weight: 900;
             transition: transform .25s ease;
         }
@@ -325,7 +325,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
     <section class="hero-banner">
         <div class="container" style="position:relative;z-index:2;">
-            <a href="{{ route('superadmin.dashboard') }}" class="back-link">&#8592; Back to Dashboard</a>
             <div class="hero-badge">Super Admin</div>
             <h1>Data Management</h1>
             <div class="hero-divider"></div>

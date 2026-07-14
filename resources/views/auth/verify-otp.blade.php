@@ -205,7 +205,7 @@
         <div class="brand-divider"></div>
         <p>
             A 6-digit verification code was sent to your email address.
-            Enter it to confirm your identity and activate your account.
+            Enter it to confirm your email. After this step, an admin will review your uploaded valid ID before you can login.
         </p>
 
         <ul class="info-list">
@@ -220,6 +220,10 @@
             <li>
                 <span class="info-dot"></span>
                 <span>Also check your spam or junk folder if not found.</span>
+            </li>
+            <li>
+                <span class="info-dot"></span>
+                <span>After email verification, please wait for admin approval of your valid ID before logging in.</span>
             </li>
             <li>
                 <span class="info-dot"></span>

@@ -6,6 +6,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Carbon\Carbon;
 
+/**
+ * @property Carbon $appointment_date
+ */
 class Appointment extends Model
 {
     use SoftDeletes;
@@ -14,13 +17,18 @@ class Appointment extends Model
         'interview_type', 'program_type', 'status',
         'user_notes', 'admin_notes', 'reminded_at',
         'solo_parent_app_id', 'validated_at',
+        'reschedule_date', 'reschedule_time', 'reschedule_reason', 'reschedule_status', 'reschedule_requested_at', 'reschedule_admin_notes',
+        'cancel_reason', 'cancellation_status', 'cancellation_admin_notes', 'cancellation_requested_at',
     ];
 
     protected $casts = [
-        'appointment_date' => 'date',
-        'reminded_at'      => 'datetime',
-        'validated_at'     => 'datetime',
-        'deleted_at'       => 'datetime',
+        'appointment_date'           => 'date',
+        'reminded_at'                => 'datetime',
+        'validated_at'               => 'datetime',
+        'deleted_at'                 => 'datetime',
+        'reschedule_date'            => 'date',
+        'reschedule_requested_at'    => 'datetime',
+        'cancellation_requested_at'  => 'datetime',
     ];
 
     // ── Relationships ──────────────────────────────────────────────────────────
@@ -81,7 +89,7 @@ class Appointment extends Model
     // ── Helpers ────────────────────────────────────────────────────────────────
     public function getFormattedDateAttribute(): string
     {
-        return $this->appointment_date->format('F d, Y (l)');
+        return Carbon::parse($this->appointment_date)->format('F d, Y (l)');
     }
 
     public function getFormattedTimeAttribute(): string
@@ -96,12 +104,23 @@ class Appointment extends Model
 
     public function getStatusBadgeAttribute(): string
     {
+        // If cancellation is pending, show "Cancellation Pending" badge
+        if ($this->cancellation_status === 'pending') {
+            return '<span style="background:#fff3cd;color:#856404;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Cancellation Pending</span>';
+        }
+        
+        // If admin rescheduled (admin_notes present and status is confirmed/approved), show "Rescheduled by Admin"
+        if (in_array($this->status, ['confirmed', 'approved']) && !empty($this->admin_notes)) {
+            return '<span style="background:#e0f2fe;color:#0c4a6e;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Rescheduled by Admin</span>';
+        }
+        
         return match($this->status) {
-            'confirmed'  => '<span style="background:#d4edda;color:#155724;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">✅ Confirmed</span>',
-            'validated'  => '<span style="background:#cce5ff;color:#004085;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">🏆 Validated</span>',
-            'rejected'   => '<span style="background:#f8d7da;color:#721c24;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">❌ Rejected</span>',
-            'cancelled'  => '<span style="background:#e9ecef;color:#6c757d;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">🚫 Cancelled</span>',
-            default      => '<span style="background:#FFF3D6;color:#856404;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">⏳ Pending</span>',
+            'confirmed'  => '<span style="background:#d4edda;color:#155724;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Confirmed</span>',
+            'approved'   => '<span style="background:#d4edda;color:#155724;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Confirmed</span>',
+            'validated'  => '<span style="background:#cce5ff;color:#004085;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Validated</span>',
+            'rejected'   => '<span style="background:#f8d7da;color:#721c24;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Rejected</span>',
+            'cancelled'  => '<span style="background:#e9ecef;color:#6c757d;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Cancelled</span>',
+            default      => '<span style="background:#FFF3D6;color:#856404;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Pending</span>',
         };
     }
 }

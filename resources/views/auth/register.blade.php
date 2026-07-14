@@ -301,13 +301,12 @@
             @if(session('error'))
                 <div class="alert-styled alert-danger-c">{{ session('error') }}</div>
             @endif
-
-            <div class="info-box">
+<div class="info-box">
                 Registration is for <strong>community members</strong> who wish to apply for MSWDO assistance programs.
-                A verification code will be sent to your email after registration.
+                A verification code will be sent to your email after registration. Your uploaded valid ID will also be reviewed by an admin before you can login.
             </div>
 
-            <form method="POST" action="{{ route('register') }}" id="registerForm" novalidate>
+            <form method="POST" action="{{ route('register') }}" id="registerForm" enctype="multipart/form-data" novalidate>
                 @csrf
 
                 <!-- Personal Info -->
@@ -402,10 +401,9 @@
                         <div class="field-wrap">
                             <select id="gender" name="gender"
                                     class="form-input @error('gender') invalid @enderror">
-                                <option value="">Select Gender</option>
+                                <option value="" disabled {{ old('gender') ? '' : 'selected' }} hidden>Select Gender</option>
                                 <option value="Male"   {{ old('gender') == 'Male'   ? 'selected' : '' }}>Male</option>
                                 <option value="Female" {{ old('gender') == 'Female' ? 'selected' : '' }}>Female</option>
-                                <option value="Other"  {{ old('gender') == 'Other'  ? 'selected' : '' }}>Other / Prefer not to say</option>
                             </select>
                         </div>
                         <div id="msg_gender" class="field-msg hint">Select your gender.</div>
@@ -427,7 +425,16 @@
                         <div id="age-display"></div>
                         @error('birthdate')<div class="field-msg err">{{ $message }}</div>@enderror
                     </div>
-                    <div><!-- spacer --></div>
+                    <div>
+                        <label class="field-label" for="valid_id">Valid ID <span class="req">*</span></label>
+                        <div class="field-wrap">
+                            <input type="file" id="valid_id" name="valid_id" accept=".jpg,.jpeg,.png,.pdf"
+                                   class="form-input @error('valid_id') invalid @enderror"
+                                   onchange="validateValidId()">
+                        </div>
+                        <div id="msg_valid_id" class="field-msg hint">Accepted formats: JPG, PNG, PDF. Max size: 5 MB.</div>
+                        @error('valid_id')<div class="field-msg err">{{ $message }}</div>@enderror
+                    </div>
                 </div>
 
                 <div class="field-row" style="margin-top:8px;">
@@ -437,7 +444,7 @@
                             <select id="municipality" name="municipality"
                                     class="form-input @error('municipality') invalid @enderror"
                                     onchange="populateBarangays()">
-                                <option value="">Select Municipality</option>
+                                <option value="" disabled {{ old('municipality') ? '' : 'selected' }} hidden>Select Municipality</option>
                                 @foreach($municipalities as $muni)
                                     <option value="{{ $muni->name }}" {{ old('municipality') == $muni->name ? 'selected' : '' }}>
                                         {{ $muni->name }}
@@ -454,7 +461,7 @@
                             <select id="barangay" name="barangay"
                                     class="form-input @error('barangay') invalid @enderror"
                                     disabled>
-                                <option value="">Select Municipality first</option>
+                                <option value="" disabled selected hidden>Select Barangay</option>
                             </select>
                         </div>
                         <div id="msg_barangay" class="field-msg hint">Select your municipality first.</div>
@@ -464,6 +471,12 @@
 
                 <!-- Hidden full_name field -->
                 <input type="hidden" id="full_name" name="full_name" value="{{ old('full_name') }}">
+
+                <div class="section-divider"></div>
+                <div class="section-label">Valid ID Verification</div>
+                <div class="info-box">
+                    Upload a clear photo or scan of your valid government-issued ID (e.g., PhilSys, Driver's License, Passport, UMID, Voter's ID, Student ID). This will be reviewed by an MSWDO admin before your account can be activated.
+                </div>
 
                 <div class="section-divider"></div>
                 <div class="section-label">Terms & Conditions and Privacy Policy</div>
@@ -492,7 +505,8 @@
                     <strong>Note:</strong> A temporary password will be automatically generated and sent to your email. You will be required to change it after email verification.
                 </div>
 
-                <button type="submit" class="btn-register" id="submitBtn">
+                <button type="submit" class="btn-register" id="submitBtn"
+>
                     Create My Account &#8594;
                 </button>
             </form>
@@ -663,14 +677,14 @@
         brgySelect.innerHTML = '';
 
         if (!muni || !barangayData[muni]) {
-            brgySelect.innerHTML = '<option value="">Select municipality first</option>';
+            brgySelect.innerHTML = '<option value="" disabled selected hidden>Select Barangay</option>';
             brgySelect.disabled = true;
             msg.textContent = 'Select your municipality first.';
             msg.className = 'field-msg hint';
             return;
         }
 
-        brgySelect.innerHTML = '<option value="">Select Barangay</option>';
+        brgySelect.innerHTML = '<option value="" disabled selected hidden>Select Barangay</option>';
         barangayData[muni].forEach(b => {
             const opt = document.createElement('option');
             opt.value = b;
@@ -752,7 +766,9 @@
         
         // Check username availability via AJAX
         setMsg('msg_username','hint','Checking availability...');
-        fetch('/check-username', {
+        // Mark as neutral while pending so submit is not blocked
+        markInput('username','');
+        fetch('{{ route("register.check-username") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
@@ -770,19 +786,20 @@
                 markInput('username','invalid');
             }
         })
-        .catch(error => {
-            console.error('Error checking username:', error);
-            setMsg('msg_username','hint','Could not verify availability. Please try again.');
+        .catch(() => {
+            // Network error — allow server-side validation to catch it
+            setMsg('msg_username','hint','Could not verify — will be checked on submit.');
             markInput('username','');
         });
     }
 
     function validateEmail() {
         const v = document.getElementById('email').value.trim();
-        const re = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+        // RFC-friendly regex: local@domain.tld — allows gmail, yahoo, etc.
+        const re = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$/;
         if (!v) { setMsg('msg_email','hint','Must be a valid email address.'); markInput('email',''); return; }
-        if (!re.test(v)) { setMsg('msg_email','err','Enter a valid email address.'); markInput('email','invalid'); return; }
-        setMsg('msg_email','ok','✓ Valid email format.'); markInput('email','valid');
+        if (!re.test(v)) { setMsg('msg_email','err','Enter a valid email (e.g. juan@gmail.com).'); markInput('email','invalid'); return; }
+        setMsg('msg_email','ok','✓ Valid email address.'); markInput('email','valid');
     }
 
     function validateMobile() {
@@ -811,6 +828,29 @@
         
         setMsg('msg_mobile','ok','✓ Valid Philippine number (+63' + cleaned + ')'); 
         markInput('mobile_number','valid');
+    }
+
+    function validateValidId() {
+        const input = document.getElementById('valid_id');
+        const file = input.files[0];
+        if (!file) {
+            setMsg('msg_valid_id', 'hint', 'Accepted formats: JPG, PNG, PDF. Max size: 5 MB.');
+            markInput('valid_id', '');
+            return;
+        }
+        const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
+        if (!allowed.includes(file.type)) {
+            setMsg('msg_valid_id', 'err', 'Only JPG, PNG, or PDF files are allowed.');
+            markInput('valid_id', 'invalid');
+            return;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            setMsg('msg_valid_id', 'err', 'File must not exceed 5 MB.');
+            markInput('valid_id', 'invalid');
+            return;
+        }
+        setMsg('msg_valid_id', 'ok', '✓ ' + file.name + ' selected');
+        markInput('valid_id', 'valid');
     }
 
     // ── Age calculator ──
@@ -902,13 +942,36 @@
         buildFullName();
         validateFirstName();
         validateLastName();
-        validateUsername();
         validateEmail();
         validateMobile();
+        validateValidId();
 
+        // Run synchronous username format check only (AJAX availability check is non-blocking)
+        const uv = document.getElementById('username').value.trim();
+        let usernameFormatOk = true;
+        if (!uv) {
+            setMsg('msg_username','err','Username is required.'); markInput('username','invalid'); usernameFormatOk = false;
+        } else if (uv.length < 4) {
+            setMsg('msg_username','err','Too short — minimum 4 characters.'); markInput('username','invalid'); usernameFormatOk = false;
+        } else if (uv.length > 20) {
+            setMsg('msg_username','err','Too long — maximum 20 characters.'); markInput('username','invalid'); usernameFormatOk = false;
+        } else if (!/^[a-zA-Z0-9_]+$/.test(uv)) {
+            setMsg('msg_username','err','Only letters, numbers, and underscores — no spaces.'); markInput('username','invalid'); usernameFormatOk = false;
+        }
+
+        // Only block on fields that are explicitly marked invalid (not neutral/pending)
         const hasInvalid = document.querySelectorAll('.form-input.invalid').length > 0;
         const agreeTerms = document.getElementById('agree_terms').checked;
         const msgTerms = document.getElementById('msg_terms');
+        const validIdInput = document.getElementById('valid_id');
+
+        if (!validIdInput.files.length) {
+            setMsg('msg_valid_id', 'err', 'Please upload your valid ID.');
+            markInput('valid_id', 'invalid');
+            e.preventDefault();
+            validIdInput.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            return;
+        }
 
         if (!agreeTerms) {
             msgTerms.textContent = '✗ You must agree to the Terms & Conditions and Privacy Policy.';

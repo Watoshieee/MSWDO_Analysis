@@ -23,6 +23,10 @@ class AppointmentController extends Controller
         $date = $request->query('date');
         $user = Auth::user();
 
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
         try {
             $carbon = Carbon::createFromFormat('Y-m-d', $date);
         } catch (\Exception $e) {
@@ -109,16 +113,31 @@ class AppointmentController extends Controller
             'user_notes'       => $request->user_notes,
         ]);
 
-        // ── Notify all admins of this municipality by email ──────────────────
+        // ── Notify all admins of this municipality by email + bell ──────────────
         $admins = User::where('role', 'admin')
             ->where('municipality', $user->municipality)
             ->get();
 
         foreach ($admins as $admin) {
+            // Email
             try {
                 Mail::to($admin->email)->send(new NewAppointmentAdminMail($appt, $user));
             } catch (\Exception $e) {
                 Log::error('Admin appointment notification email failed: ' . $e->getMessage());
+            }
+            // Bell
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $admin->id,
+                    'type'       => 'solo_parent',
+                    'title'      => '📅 New Appointment Booked',
+                    'body'       => $user->full_name . ' has booked a ' . str_replace('_', ' ', $appt->program_type) . ' appointment on ' . Carbon::parse($appt->appointment_date)->format('F d, Y') . '.',
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Admin appointment bell notification failed: ' . $e->getMessage());
             }
         }
 
@@ -126,19 +145,115 @@ class AppointmentController extends Controller
     }
 
     /**
-     * Cancel an appointment (DELETE /user/appointments/{id})
+     * Request cancellation (POST /user/appointments/{id}/cancel)
      */
-    public function cancel($id)
+    public function cancel(Request $request, $id)
     {
         $user = Auth::user();
-        // No program_type filter — users can cancel any of their own appointments
         $appt = Appointment::where('id', $id)->where('user_id', $user->id)->firstOrFail();
 
-        if (!in_array($appt->status, ['pending', 'confirmed'])) {
+        if (!in_array($appt->status, ['pending', 'confirmed', 'approved'])) {
             return back()->with('appt_error', 'This appointment cannot be cancelled.');
         }
 
-        $appt->update(['status' => 'cancelled']);
-        return back()->with('appt_success', 'Appointment cancelled successfully.');
+        $request->validate([
+            'cancel_reason' => 'required|string|max:500',
+        ]);
+
+        $appt->update([
+            'cancel_reason'              => $request->cancel_reason,
+            'cancellation_status'        => 'pending',
+            'cancellation_requested_at'  => now(),
+        ]);
+
+        // Notify admins (email + bell)
+        $admins = User::where('role', 'admin')->where('municipality', $user->municipality)->get();
+        foreach ($admins as $admin) {
+            // Email
+            try {
+                Mail::to($admin->email)->send(new \App\Mail\AppointmentCancelledMail($appt, $user, $request->cancel_reason));
+            } catch (\Exception $e) {
+                Log::error('Appointment cancellation request email failed: ' . $e->getMessage());
+            }
+            // Bell
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $admin->id,
+                    'type'       => 'solo_parent',
+                    'title'      => '🚫 Cancellation Request Received',
+                    'body'       => $user->full_name . ' has requested to cancel their ' . str_replace('_', ' ', $appt->program_type) . ' appointment.',
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Admin cancellation bell notification failed: ' . $e->getMessage());
+            }
+        }
+
+        return back()->with('appt_success', 'Cancellation request submitted. Waiting for admin approval.');
+    }
+
+    /**
+     * Request reschedule (POST /user/appointments/{id}/reschedule)
+     */
+    public function requestReschedule(Request $request, $id)
+    {
+        $user = Auth::user();
+        $appt = Appointment::where('id', $id)->where('user_id', $user->id)->firstOrFail();
+
+        if (!in_array($appt->status, ['pending', 'confirmed'])) {
+            return back()->with('appt_error', 'This appointment cannot be rescheduled.');
+        }
+
+        $request->validate([
+            'reschedule_date'   => 'required|date|after:today',
+            'reschedule_time'   => 'required|in:' . implode(',', Appointment::availableSlots()),
+            'reschedule_reason' => 'required|string|max:500',
+        ]);
+
+        $date = $request->reschedule_date;
+        if (Carbon::parse($date)->isWeekend()) {
+            return back()->with('appt_error', 'Reschedule date must be a weekday.');
+        }
+
+        if (Appointment::slotCount($date, $request->reschedule_time, $user->municipality) >= Appointment::maxPerSlot()) {
+            return back()->with('appt_error', 'That time slot is full. Please choose another.');
+        }
+
+        $appt->update([
+            'reschedule_date'         => $date,
+            'reschedule_time'         => $request->reschedule_time,
+            'reschedule_reason'       => $request->reschedule_reason,
+            'reschedule_status'       => 'pending',
+            'reschedule_requested_at' => now(),
+        ]);
+
+        // Notify admins (email + bell)
+        $admins = User::where('role', 'admin')->where('municipality', $user->municipality)->get();
+        foreach ($admins as $admin) {
+            // Email
+            try {
+                Mail::to($admin->email)->send(new \App\Mail\RescheduleRequestMail($appt, $user));
+            } catch (\Exception $e) {
+                Log::error('Reschedule request email failed: ' . $e->getMessage());
+            }
+            // Bell
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $admin->id,
+                    'type'       => 'solo_parent',
+                    'title'      => '🔄 Reschedule Request Received',
+                    'body'       => $user->full_name . ' has requested to reschedule their ' . str_replace('_', ' ', $appt->program_type) . ' appointment to ' . Carbon::parse($request->reschedule_date)->format('F d, Y') . '.',
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Admin reschedule bell notification failed: ' . $e->getMessage());
+            }
+        }
+
+        return back()->with('appt_success', 'Reschedule request submitted. Waiting for admin approval.');
     }
 }

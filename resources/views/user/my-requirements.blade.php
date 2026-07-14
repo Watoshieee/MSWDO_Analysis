@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+html, body { overscroll-behavior: none; margin: 0; padding: 0; overflow-x: hidden; }
 
         :root {
             --primary-blue: {{ $primaryColor ?? '#2C3E8F' }};
@@ -143,44 +143,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .file-name { font-weight: 700; color: var(--primary-blue); word-break: break-all; }
         .modal-footer { background: var(--bg-light); border: none; padding: 16px 24px; }
 
-        /* Alerts - Fixed Toast Notification */
-        .toast-notification {
-            position: fixed;
-            top: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-100px);
-            z-index: 9999;
-            min-width: 350px;
-            max-width: 500px;
-            border-radius: 12px;
-            border: none;
-            font-size: 0.9rem;
-            box-shadow: 0 8px 24px rgba(0,0,0,0.15);
-            animation: slideDown 0.4s ease forwards;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 16px 20px;
-        }
-        .toast-notification.success { background: linear-gradient(135deg,#2C3E8F,#1A2A5C); border-left: 5px solid #FDB913; color: #ffffff; }
-        .toast-notification.error { background: linear-gradient(135deg,#2C3E8F,#1A2A5C); border-left: 5px solid #FDB913; color: #ffffff; }
-        .toast-notification.hiding { animation: slideUp 0.4s ease forwards; }
-        
-        @keyframes slideDown {
-            from { transform: translateX(-50%) translateY(-100px); opacity: 0; }
-            to { transform: translateX(-50%) translateY(0); opacity: 1; }
-        }
-        @keyframes slideUp {
-            from { transform: translateX(-50%) translateY(0); opacity: 1; }
-            to { transform: translateX(-50%) translateY(-100px); opacity: 0; }
-        }
-        
-        .toast-content { flex: 1; display: flex; align-items: center; gap: 12px; font-weight: 600; }
-        .toast-icon { font-size: 1.3rem; }
-        .toast-close { background: transparent; border: none; color: inherit; font-size: 1.2rem; cursor: pointer; opacity: 0.7; padding: 0 5px; transition: opacity 0.2s; }
-        .toast-close:hover { opacity: 1; }
-        .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: currentColor; opacity: 0.3; transition: width linear; }
-
         /* Empty state */
         .empty-state { text-align:center; padding: 50px 0; }
         .empty-num { font-size: 4rem; font-weight: 800; color: #E2E8F0; line-height:1; }
@@ -203,6 +165,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             border: 2px solid var(--secondary-yellow) !important;
             background: var(--secondary-yellow-light) !important;
         }
+
+        /* Scrollbar — same as Programs (/user/programs) */
+        html { scrollbar-width: thin; scrollbar-color: #cbd5e1 transparent; }
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
     </style>
 </head>
 <body>
@@ -223,7 +191,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
                     <li class="nav-item"><a class="nav-link active" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
                     <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal" style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;" title="Notifications">
@@ -259,27 +226,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <div class="main-content">
     <div class="container mt-4">
 
-        @if(session('success'))
-            <div class="toast-notification success" id="toastNotification">
-                <div class="toast-content">
-                    <span class="toast-icon">✅</span>
-                    <span>{{ session('success') }}</span>
-                </div>
-                <button type="button" class="toast-close" onclick="closeToast()">&times;</button>
-                <div class="toast-progress" id="toastProgress"></div>
-            </div>
-        @endif
-        @if(session('error'))
-            <div class="toast-notification error" id="toastNotification">
-                <div class="toast-content">
-                    <span class="toast-icon">❌</span>
-                    <span>{{ session('error') }}</span>
-                </div>
-                <button type="button" class="toast-close" onclick="closeToast()">&times;</button>
-                <div class="toast-progress" id="toastProgress"></div>
-            </div>
-        @endif
-
+        @include('components.admin-notification')
 
 
         @if(count($requirementsData) > 0)
@@ -321,8 +268,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="row g-3 mb-4">
                             <div class="col-3"><div class="stat-mini"><div class="val">{{ $totalReq }}</div><div class="lbl">Total</div></div></div>
                             <div class="col-3"><div class="stat-mini"><div class="val">{{ $uploaded }}</div><div class="lbl">Uploaded</div></div></div>
-                            <div class="col-3"><div class="stat-mini"><div class="val" style="color:#28a745;">{{ $approved }}</div><div class="lbl">Approved</div></div></div>
-                            <div class="col-3"><div class="stat-mini"><div class="val" style="color:#dc3545;">{{ $rejected }}</div><div class="lbl">Rejected</div></div></div>
+                            <div class="col-3"><div class="stat-mini"><div class="val">{{ $approved }}</div><div class="lbl">Approved</div></div></div>
+                            <div class="col-3"><div class="stat-mini"><div class="val">{{ $rejected }}</div><div class="lbl">Rejected</div></div></div>
                         </div>
 
                         <!-- Progress bar -->
@@ -495,41 +442,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         // Global variable for modal instances
         let fileViewerModal;
         let remarksModal;
-        let toastTimeout;
-        
+
         // Initialize modals when document is ready
         document.addEventListener('DOMContentLoaded', function() {
             fileViewerModal = new bootstrap.Modal(document.getElementById('fileViewerModal'));
             remarksModal = new bootstrap.Modal(document.getElementById('remarksModal'));
-            
-            // Auto-dismiss toast notification after 5 seconds
-            const toast = document.getElementById('toastNotification');
-            if (toast) {
-                const progress = document.getElementById('toastProgress');
-                if (progress) {
-                    progress.style.width = '100%';
-                    progress.style.transition = 'width 5s linear';
-                    setTimeout(() => { progress.style.width = '0%'; }, 10);
-                }
-                
-                toastTimeout = setTimeout(() => {
-                    closeToast();
-                }, 5000);
-            }
         });
-        
-        // Function to close toast notification
-        function closeToast() {
-            const toast = document.getElementById('toastNotification');
-            if (toast) {
-                clearTimeout(toastTimeout);
-                toast.classList.add('hiding');
-                setTimeout(() => {
-                    toast.remove();
-                }, 400);
-            }
-        }
-        
+
         // Function to show rejection remarks modal
         function showRemarksModal(remarks, programType) {
             document.getElementById('remarksProgram').textContent = programType;

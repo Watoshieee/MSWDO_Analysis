@@ -96,12 +96,7 @@
         .ql-text span   { font-size: 0.76rem; color: var(--text-light); }
         .ql-arrow { margin-left: auto; color: var(--text-light); font-size: 1.2rem; font-weight: 300; }
 
-        /* Alerts */
-        .dash-alert { border-radius: 14px; border: none; padding: 16px 20px; font-size: 0.9rem; margin-bottom: 16px; border-left: 5px solid transparent; display: flex; align-items: flex-start; gap: 14px; }
-        .dash-alert-label { font-weight: 800; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; display: block; margin-bottom: 3px; }
-        .alert-success-c { background: #d4edda; border-left-color: var(--accent-green); color: #155724; }
-        .alert-danger-c  { background: var(--accent-red-light); border-left-color: var(--accent-red); color: #721c24; }
-        .alert-icon { width: 36px; height: 36px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 1rem; flex-shrink: 0; }
+    
 
         /* Footer */
         .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.84rem; margin-top: 60px; }
@@ -131,9 +126,14 @@
                     <li class="nav-item"><a class="nav-link active" href="{{ route('user.profile') }}">User Profile</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
+                <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal" style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;" title="Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($notificationCount) && $notificationCount > 0)
+                        <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $notificationCount > 9 ? '9+' : $notificationCount }}</span>
+                        @endif
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -160,15 +160,7 @@
 
     <div class="container mt-4 mb-5">
 
-        {{-- Session Alerts --}}
-        @php
-            $topNotice = session('success') ?: session('error');
-        @endphp
-        @if($topNotice)
-            <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
-                {{ $topNotice }}
-            </div>
-        @endif
+        @include('components.admin-notification')
 
         <div class="row g-4">
             <!-- Profile Information -->
@@ -333,6 +325,7 @@
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
+    @include('components.user-notification-modal')
     @include('components.chat-modal')
     @include('components.chatbot-widget')
 

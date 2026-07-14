@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\MobileApiController;
 use App\Http\Controllers\Api\SoloParentApiController;
 use App\Http\Controllers\Api\AicsApiController;
+use App\Http\Controllers\Api\PwdApiController;
 
 // ============================================
 // PUBLIC ENDPOINTS
@@ -35,12 +36,14 @@ Route::post('/chatbot/message', [\App\Http\Controllers\ChatbotController::class,
 Route::middleware('auth:sanctum')->group(function () {
     // User profile
     Route::get('/user', [MobileApiController::class, 'user']);
+    Route::put('/user', [MobileApiController::class, 'updateUserProfile']);
+
+    // Change password (first-login forced reset)
+    Route::post('/change-password', [MobileApiController::class, 'changePassword']);
 
     // Dashboard & announcements
     Route::get('/dashboard', [MobileApiController::class, 'dashboard']);
     Route::get('/announcements', [MobileApiController::class, 'announcements']);
-    
-    // Notifications
     Route::get('/notifications', [MobileApiController::class, 'notifications']);
     Route::post('/notifications/read', [MobileApiController::class, 'markNotificationsRead']);
 
@@ -62,6 +65,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/appointments', [SoloParentApiController::class, 'bookAppointment']);
         Route::get('/appointments', [SoloParentApiController::class, 'getAppointments']);
         Route::delete('/appointments/{id}', [SoloParentApiController::class, 'cancelAppointment']);
+        // New: cancel with reason (leaves request for admin review)
+        Route::post('/appointments/{id}/cancel', [SoloParentApiController::class, 'requestCancellation']);
+        // New: reschedule request
+        Route::post('/appointments/{id}/reschedule', [SoloParentApiController::class, 'requestReschedule']);
         Route::get('/application', [SoloParentApiController::class, 'getApplication']);
         Route::post('/requirements/upload', [SoloParentApiController::class, 'uploadRequirement']);
         Route::get('/notifications', [SoloParentApiController::class, 'getNotifications']);
@@ -85,7 +92,22 @@ Route::middleware('auth:sanctum')->group(function () {
         });
     });
 
+    // PWD Application
+    Route::prefix('pwd')->group(function () {
+        Route::get('/application', [PwdApiController::class, 'getApplication']);
+        Route::post('/requirements/upload', [PwdApiController::class, 'uploadRequirement']);
+        Route::post('/requirements/{fileId}/reupload', [PwdApiController::class, 'reuploadRequirement']);
+    });
+
     // Device Token Management
     Route::post('/device-token', [MobileApiController::class, 'registerDeviceToken']);
     Route::delete('/device-token', [MobileApiController::class, 'removeDeviceToken']);
+
+    // ── Chat (reuses existing ChatController) ─────────────────────────────
+    Route::prefix('chat')->group(function () {
+        Route::get('/admins',           [\App\Http\Controllers\ChatController::class, 'getAdmins']);
+        Route::get('/messages/{adminId}',[\App\Http\Controllers\ChatController::class, 'getMessages']);
+        Route::post('/send',            [\App\Http\Controllers\ChatController::class, 'sendMessage']);
+        Route::get('/unread-count',     [\App\Http\Controllers\ChatController::class, 'getUnreadCount']);
+    });
 });

@@ -21,10 +21,13 @@ class BarangayAnalysisController extends Controller
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
         
-        // Get all barangays in this municipality
+        // One row per barangay name (latest year) so multi-year data does not duplicate analysis
         $barangays = Barangay::where('municipality', $user->municipality)
+            ->orderByDesc('year')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->unique('name')
+            ->values();
         
         // Get applications data per barangay
         $applications = Application::where('municipality', $user->municipality)->get();
@@ -119,10 +122,12 @@ class BarangayAnalysisController extends Controller
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
         
-        // Get all barangays
         $barangays = Barangay::where('municipality', $user->municipality)
+            ->orderByDesc('year')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->unique('name')
+            ->values();
         
         // Get program data
         $programs = SocialWelfareProgram::where('municipality', $user->municipality)->get();
@@ -179,10 +184,12 @@ class BarangayAnalysisController extends Controller
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
         
-        // Get all barangays
         $barangays = Barangay::where('municipality', $user->municipality)
+            ->orderByDesc('year')
             ->orderBy('name')
-            ->get();
+            ->get()
+            ->unique('name')
+            ->values();
         
         // Get applications
         $applications = Application::where('municipality', $user->municipality)->get();
@@ -248,6 +255,7 @@ class BarangayAnalysisController extends Controller
         
         $barangay = Barangay::where('municipality', $user->municipality)
             ->where('name', $barangayName)
+            ->orderByDesc('year')
             ->firstOrFail();
         
         $applications = Application::where('municipality', $user->municipality)

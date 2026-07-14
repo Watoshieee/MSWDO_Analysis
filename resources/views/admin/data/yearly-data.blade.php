@@ -185,17 +185,21 @@
         .back-link {
             display: inline-flex;
             align-items: center;
-            gap: 6px;
+            gap: 8px;
             color: rgba(255, 255, 255, .75);
-            font-size: .85rem;
+            font-size: .82rem;
             font-weight: 600;
             text-decoration: none;
             margin-bottom: 14px;
-            transition: color .2s;
+            transition: all .25s;
+            border: 1px solid rgba(255, 255, 255, .25);
+            border-radius: 20px;
+            padding: 5px 14px;
         }
 
         .back-link:hover {
-            color: var(--secondary-yellow);
+            color: white;
+            background: rgba(255, 255, 255, .15);
         }
 
         .main-content {
@@ -469,6 +473,14 @@
         .footer-strip strong {
             color: white;
         }
+
+        /* Toast Notification */
+        .toast-msg { position: fixed; top: 22px; right: 22px; padding: 14px 24px; border-radius: 12px; color: white; font-weight: 600; z-index: 9999; font-size: 0.88rem; animation: slideIn 0.3s ease; box-shadow: 0 6px 20px rgba(0,0,0,0.18); display: flex; align-items: center; gap: 10px; overflow: hidden; }
+        .toast-success { background: var(--primary-blue); }
+        .toast-error   { background: #C41E24; }
+        .toast-timer { height: 3px; width: 100%; background: var(--secondary-yellow); position: absolute; bottom: 0; left: 0; border-radius: 0 0 12px 12px; animation: timerShrink 3.5s linear; }
+        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes timerShrink { from { width: 100%; } to { width: 0%; } }
     </style>
 </head>
 
@@ -515,9 +527,9 @@
     <!-- HERO -->
     <section class="hero-banner">
         <div class="container" style="position:relative;z-index:2;">
-            <a href="{{ route('admin.data.dashboard') }}" class="back-link">&#8592; Back to Data Management</a>
+            <a href="{{ route('admin.data.dashboard') }}#return" class="back-link">&#8592; Data Management</a>
             <div class="hero-badge">Data Management</div>
-            <h1>📊 Municipality Yearly Data</h1>
+            <h1>Municipality Yearly Data</h1>
             <div class="hero-divider"></div>
             <p>Manage population and household summary records per year for <strong>{{ $municipality->name }}</strong>.
             </p>
@@ -527,50 +539,56 @@
     <div class="main-content">
         <div class="container py-5">
 
-            @php
-                $topNotice = session('success') ?: session('error');
-            @endphp
-            @if($topNotice)
-                <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
-                    {{ $topNotice }}
-                </div>
-            @endif
+            <div id="toast" class="toast-msg" style="display:none;"></div>
+
+            @include('components.admin-notification')
             @if($errors->any())
                 <div class="alert-danger-c">
                     <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
                 </div>
             @endif
 
-            <!-- Tab Pills -->
-            <div class="tab-pills">
-                <button class="tab-pill active" onclick="switchTab('records', this)">📋 Yearly Records</button>
-                <button class="tab-pill" onclick="switchTab('analysis', this)">📊 Analysis</button>
+            <!-- Action Buttons Row -->
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <!-- Tab Pills -->
+                <div class="tab-pills" style="margin-bottom:0;">
+                    <button class="tab-pill active" onclick="switchTab('records', this)">📋 Yearly Records</button>
+                    <button class="tab-pill" onclick="switchTab('analysis', this)">📊 Analysis</button>
+                </div>
+                
+                <!-- Import/Export Buttons -->
+                <div class="d-flex gap-2">
+                    <button class="btn btn-sm" onclick="openCsvModal('import')" style="background:var(--primary-blue);color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:0.85rem;">
+                        <i class="bi bi-upload"></i> Import CSV
+                    </button>
+                    <button class="btn btn-sm" onclick="openCsvModal('export')" style="background:var(--secondary-yellow);color:#333;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:0.85rem;">
+                        <i class="bi bi-download"></i> Export CSV
+                    </button>
+                </div>
             </div>
 
             <!-- ===== RECORDS TAB ===== -->
             <div class="section-tab active" id="tab-records">
                 <div class="panel-card">
                     <div class="panel-header">
-                        <div>
+                        <div class="d-flex align-items-center gap-2">
                             <h5>Yearly Summary Records — {{ $municipality->name }}</h5>
                             <span class="count-badge">{{ $summaries->count() }} year records</span>
                         </div>
                         <div class="d-flex gap-2">
-                            @if($archivedSummaries->count() > 0)
-                                <button class="btn-add"
-                                    style="background:rgba(196,30,36,.10);color:#C41E24;border:1.5px solid rgba(196,30,36,.25);"
-                                    data-bs-toggle="modal" data-bs-target="#archiveModal">
-                                    🗄️ Archived ({{ $archivedSummaries->count() }})
-                                </button>
-                            @endif
                             <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Year
                                 Data</button>
+                            @if($archivedSummaries->count() > 0)
+                                <button class="btn btn-sm" onclick="openArchivedYearlyModal()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);border-radius:8px;padding:6px 16px;font-weight:700;font-size:0.82rem;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                                    Archived
+                                </button>
+                            @endif
                         </div>
                     </div>
                     <div class="table-responsive">
                         @if($summaries->isEmpty())
                             <div style="padding:36px;text-align:center;color:#94a3b8;font-size: .85rem;">
-                                <div style="font-size:2.5rem;opacity:.3;margin-bottom:8px;">📋</div>
+                                <div style="font-size:2.5rem;opacity:.3;margin-bottom:8px;"></div>
                                 No records yet. Click <strong>"+ Add Year Data"</strong> to add your first yearly summary.
                             </div>
                         @else
@@ -705,6 +723,70 @@
                         @endif
                     </div>
                 </div>
+
+                <!-- Recent Import History -->
+                <div class="panel-card mt-4">
+                    <div class="panel-header">
+                        <div>
+                            <div class="panel-header-title"><i class="bi bi-clock-history"></i> Recent Import History</div>
+                            <div class="panel-header-sub" style="font-size:0.75rem;opacity:0.75;margin-top:2px;">Last 5 CSV import operations</div>
+                        </div>
+                        <button class="btn btn-sm" onclick="openArchivedImportModal()" style="background:rgba(255,255,255,0.2);color:white;border:1px solid rgba(255,255,255,0.4);border-radius:8px;padding:6px 16px;font-weight:700;font-size:0.82rem;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.3)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+                            Archived
+                        </button>
+                    </div>
+                    <div class="panel-body" style="padding:0;">
+                        @if($importLogs->isEmpty())
+                            <div style="text-align:center;padding:40px;color:#94a3b8;font-size:0.88rem;">
+                                <i class="bi bi-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;opacity:0.5;"></i>
+                                No import history yet
+                            </div>
+                        @else
+                            <div class="table-responsive">
+                                <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                                    <thead>
+                                        <tr style="background:#f8fafc;">
+                                            <th style="padding:12px 16px;text-align:left;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Date/Time</th>
+                                            <th style="padding:12px 16px;text-align:left;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">File Name</th>
+                                            <th style="padding:12px 16px;text-align:left;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Type</th>
+                                            <th style="padding:12px 16px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Total</th>
+                                            <th style="padding:12px 16px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Success</th>
+                                            <th style="padding:12px 16px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Failed</th>
+                                            <th style="padding:12px 16px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Status</th>
+                                            <th style="padding:12px 16px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($importLogs as $log)
+                                        <tr style="border-bottom:1px solid #E2E8F0;">
+                                            <td style="padding:12px 16px;color:#334155;font-size:0.82rem;">{{ $log->created_at->format('M d, Y H:i') }}</td>
+                                            <td style="padding:12px 16px;color:#334155;font-size:0.82rem;"><i class="bi bi-file-earmark-text" style="color:#64748b;margin-right:6px;"></i>{{ $log->file_name }}</td>
+                                            <td style="padding:12px 16px;"><span style="background:#e0f2fe;color:#0369a1;padding:4px 10px;border-radius:12px;font-size:0.72rem;font-weight:700;text-transform:uppercase;">{{ str_replace('_', ' ', $log->file_type) }}</span></td>
+                                            <td style="padding:12px 16px;text-align:center;color:#334155;font-weight:600;">{{ $log->total_rows }}</td>
+                                            <td style="padding:12px 16px;text-align:center;color:#15803d;font-weight:700;">{{ $log->successful_rows }}</td>
+                                            <td style="padding:12px 16px;text-align:center;color:#dc2626;font-weight:700;">{{ $log->failed_rows }}</td>
+                                            <td style="padding:12px 16px;text-align:center;">
+                                                @if($log->status == 'completed')
+                                                    <span style="background:#d4edda;color:#155724;padding:4px 10px;border-radius:12px;font-size:0.72rem;font-weight:700;text-transform:uppercase;">{{ $log->status }}</span>
+                                                @elseif($log->status == 'failed')
+                                                    <span style="background:#f8d7da;color:#721c24;padding:4px 10px;border-radius:12px;font-size:0.72rem;font-weight:700;text-transform:uppercase;">{{ $log->status }}</span>
+                                                @else
+                                                    <span style="background:#fff3cd;color:#856404;padding:4px 10px;border-radius:12px;font-size:0.72rem;font-weight:700;text-transform:uppercase;">{{ $log->status }}</span>
+                                                @endif
+                                            </td>
+                                            <td style="padding:12px 16px;text-align:center;">
+                                                <button class="btn btn-sm" onclick="archiveImportLog({{ $log->id }})" style="background:#fce8e8;color:#C41E24;border:none;border-radius:20px;padding:4px 14px;font-size:0.76rem;font-weight:800;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#C41E24';this.style.color='white'" onmouseout="this.style.background='#fce8e8';this.style.color='#C41E24'">
+                                                    <i class="bi bi-archive"></i> Archive
+                                                </button>
+                                            </td>
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+                </div>
             </div>
 
             <!-- ===== ANALYSIS TAB ===== -->
@@ -806,23 +888,19 @@
     <!-- ===== ARCHIVED RECORDS MODAL ===== -->
     <div class="modal fade" id="archiveModal" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
-            <div class="modal-content">
-                <div class="modal-header" style="background:#1E293B;">
-                    <h5 class="modal-title">🗄️ Archived Year Records — {{ $municipality->name }}</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            <div class="modal-content" style="border-radius:16px;border:none;">
+                <div class="modal-header" style="background:var(--primary-gradient);color:white;border-radius:16px 16px 0 0;">
+                    <h5 class="modal-title" style="font-weight:800;"> Archived Year Records</h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
                     @if($archivedSummaries->isEmpty())
                         <div style="padding:48px;text-align:center;color:#94a3b8;">
-                            <div style="font-size:2.5rem;opacity:.3;margin-bottom:8px;">🗄️</div>
+                            <div style="font-size:2.5rem;opacity:.3;margin-bottom:8px;"></div>
                             No archived records found.
                         </div>
                     @else
-                        <div
-                            style="padding:12px 20px;background:#fef9ec;border-bottom:1px solid #fde68a;font-size:.83rem;color:#92400e;">
-                            ⚠️ Archived records are hidden from the main table. You can <strong>Restore</strong> them to
-                            make them active again, or <strong>Permanently Delete</strong> to remove them forever.
-                        </div>
+                    
                         <table class="premium-table">
                             <thead>
                                 <tr>
@@ -877,11 +955,438 @@
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </footer>
 
+    <!-- CSV Import/Export Modal -->
+    <div class="modal fade" id="csvModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content" style="border-radius:16px;border:none;">
+                <div class="modal-header" style="background:var(--primary-gradient);color:white;border-radius:16px 16px 0 0;">
+                    <h5 class="modal-title" id="csvModalTitle"></h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="padding:2rem;">
+                    <!-- Import Section -->
+                    <div id="importSection" style="display:none;">
+                        <form action="{{ route('admin.csv.import') }}" method="POST" enctype="multipart/form-data" id="importForm">
+                            @csrf
+                            <input type="hidden" name="import_type" value="municipality_data">
+                            <div class="mb-3">
+                                <label class="form-label" style="font-weight:700;color:var(--primary-blue);font-size:0.85rem;">Year (Optional)</label>
+                                <select name="year" class="form-select" style="border:1.5px solid var(--border-light);border-radius:10px;">
+                                    <option value="">All years in CSV file</option>
+                                    @foreach($years as $year)
+                                        <option value="{{ $year }}">{{ $year }} only</option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted">Leave as "All years" to import all data from CSV, or select a specific year to filter</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" style="font-weight:700;color:var(--primary-blue);font-size:0.85rem;">Upload CSV File</label>
+                                <input type="file" name="csv_file" class="form-control" accept=".csv" required style="border:1.5px solid var(--border-light);border-radius:10px;">
+                                <small class="text-muted">Maximum file size: 10MB</small>
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn btn-primary" id="importBtn" style="background:var(--primary-gradient);border:none;border-radius:10px;padding:12px;font-weight:700;">
+                                    <i class="bi bi-upload"></i> Import Data
+                                </button>
+                            </div>
+                        </form>
+                        <div class="mt-4 pt-3" style="border-top:1px solid #e9ecef;">
+                            <h6 style="font-weight:700;font-size:0.85rem;color:var(--primary-blue);"><i class="bi bi-file-earmark-arrow-down"></i> Download Template</h6>
+                            <div class="d-flex gap-2 flex-wrap mt-2">
+                                <a href="{{ route('admin.csv.template', 'municipality_data') }}" class="btn btn-sm btn-outline-secondary">
+                                    <i class="bi bi-download"></i> Municipality Template
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Export Section -->
+                    <div id="exportSection" style="display:none;">
+                        <form action="{{ route('admin.csv.export') }}" method="POST" id="exportForm">
+                            @csrf
+                            <input type="hidden" name="export_type" value="municipality_data">
+                            <div class="mb-3">
+                                <label class="form-label" style="font-weight:700;color:var(--primary-blue);font-size:0.85rem;">Filter by Year (Optional)</label>
+                                <select name="year" class="form-select" style="border:1.5px solid var(--border-light);border-radius:10px;">
+                                    <option value="">All Years</option>
+                                    @foreach($years as $year)
+                                        <option value="{{ $year }}">{{ $year }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="alert" style="background:#e0f2fe;border-left:4px solid #0369a1;color:#0c4a6e;font-size:0.85rem;">
+                                <i class="bi bi-info-circle"></i> <strong>Municipality:</strong> {{ $municipality->name }}
+                            </div>
+                            <div class="d-grid">
+                                <button type="submit" class="btn" style="background:var(--secondary-yellow);color:#333;border:none;border-radius:10px;padding:12px;font-weight:700;">
+                                    <i class="bi bi-download"></i> Export to CSV
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Archive Import Log Confirmation Modal -->
+    <div class="modal fade" id="archiveImportLogModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content" style="border-radius:16px;border:none;">
+            <div class="modal-header" style="background:var(--primary-gradient);color:white;border-radius:16px 16px 0 0;">
+                <h5 class="modal-title" style="font-weight:800;"><i class="bi bi-archive"></i> Confirm Archive</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:2rem;">
+                <div style="text-align:center;padding:20px;">
+                    <div style="font-size:3rem;color:#C41E24;margin-bottom:16px;"></div>
+                    <div style="font-size:1.1rem;font-weight:700;color:var(--primary-blue);margin-bottom:8px;">Archive this import log?</div>
+                    <div style="font-size:0.88rem;color:#64748b;">This will remove the log from the list. This action cannot be undone.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0" style="padding:0 2rem 2rem;gap:8px;">
+                <button type="button" class="btn" data-bs-dismiss="modal" style="background:var(--bg-light);border:1.5px solid var(--border-light);color:#64748b;border-radius:10px;padding:10px;font-weight:700;font-size:0.88rem;flex:1;">Cancel</button>
+                <button type="button" onclick="confirmArchiveImportLog()" style="background:#C41E24;color:white;border:none;border-radius:10px;padding:10px;font-weight:800;font-size:0.85rem;flex:1;">Archive</button>
+            </div>
+        </div></div>
+    </div>
+
+    <!-- Archived Import Logs Modal -->
+    <div class="modal fade" id="archivedImportLogsModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered modal-xl"><div class="modal-content" style="border-radius:16px;border:none;">
+            <div class="modal-header" style="background:var(--primary-gradient);color:white;border-radius:16px 16px 0 0;">
+                <h5 class="modal-title" style="font-weight:800;"><i class="bi bi-archive"></i> Archived Import History</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:0;">
+                <div class="table-responsive">
+                    <table style="width:100%;border-collapse:collapse;font-size:0.85rem;">
+                        <thead>
+                            <tr style="background:#f8fafc;">
+                                <th style="padding:12px 16px;text-align:left;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Date/Time</th>
+                                <th style="padding:12px 16px;text-align:left;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">File Name</th>
+                                <th style="padding:12px 16px;text-align:left;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Type</th>
+                                <th style="padding:12px 16px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Total</th>
+                                <th style="padding:12px 16px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Success</th>
+                                <th style="padding:12px 16px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Failed</th>
+                                <th style="padding:12px 16px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Status</th>
+                                <th style="padding:12px 16px;text-align:center;color:#2C3E8F;font-size:0.75rem;text-transform:uppercase;letter-spacing:.06em;border-bottom:2px solid #E2E8F0;">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="archivedImportLogsBody">
+                            <tr>
+                                <td colspan="8" style="text-align:center;padding:40px;color:#94a3b8;font-size:0.88rem;">
+                                    <i class="bi bi-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;opacity:0.5;"></i>
+                                    No archived logs
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div></div>
+    </div>
+
+    <!-- Restore Import Log Confirmation Modal -->
+    <div class="modal fade" id="restoreImportLogModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content" style="border-radius:16px;border:none;">
+            <div class="modal-header" style="background:var(--primary-gradient);color:white;border-radius:16px 16px 0 0;">
+                <h5 class="modal-title" style="font-weight:800;"><i class="bi bi-arrow-counterclockwise"></i> Confirm Restore</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:2rem;">
+                <div style="text-align:center;padding:20px;">
+                    <div style="font-size:3rem;color:#15803d;margin-bottom:16px;"></div>
+                    <div style="font-size:1.1rem;font-weight:700;color:var(--primary-blue);margin-bottom:8px;">Restore this import log?</div>
+                    <div style="font-size:0.88rem;color:#64748b;">This will move the log back to the active list.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0" style="padding:0 2rem 2rem;gap:8px;">
+                <button type="button" class="btn" data-bs-dismiss="modal" style="background:var(--bg-light);border:1.5px solid var(--border-light);color:#64748b;border-radius:10px;padding:10px;font-weight:700;font-size:0.88rem;flex:1;">Cancel</button>
+                <button type="button" onclick="confirmRestoreImportLog()" class="btn" style="background:#15803d;color:white;border:none;border-radius:10px;padding:10px;font-weight:800;font-size:0.85rem;flex:1;">Restore</button>
+            </div>
+        </div></div>
+    </div>
+
+    <!-- Delete Import Log Confirmation Modal -->
+    <div class="modal fade" id="deleteImportLogModal" tabindex="-1">
+        <div class="modal-dialog modal-dialog-centered"><div class="modal-content" style="border-radius:16px;border:none;">
+            <div class="modal-header" style="background:var(--primary-gradient);color:white;border-radius:16px 16px 0 0;">
+                <h5 class="modal-title" style="font-weight:800;"><i class="bi bi-trash"></i> Confirm Delete</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="padding:2rem;">
+                <div style="text-align:center;padding:20px;">
+                    <div style="font-size:3rem;color:#C41E24;margin-bottom:16px;"></div>
+                    <div style="font-size:1.1rem;font-weight:700;color:var(--primary-blue);margin-bottom:8px;">Permanently delete this log?</div>
+                    <div style="font-size:0.88rem;color:#64748b;">This action cannot be undone. The log will be permanently removed.</div>
+                </div>
+            </div>
+            <div class="modal-footer border-0" style="padding:0 2rem 2rem;gap:8px;">
+                <button type="button" class="btn" data-bs-dismiss="modal" style="background:var(--bg-light);border:1.5px solid var(--border-light);color:#64748b;border-radius:10px;padding:10px;font-weight:700;font-size:0.88rem;flex:1;">Cancel</button>
+                <button type="button" onclick="confirmDeleteImportLog()" class="btn" style="background:#C41E24;color:white;border:none;border-radius:10px;padding:10px;font-weight:800;font-size:0.85rem;flex:1;">Delete</button>
+            </div>
+        </div></div>
+    </div>
+
     @include('components.admin-settings-modal')
     @include('components.admin-chat-modal')
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
+        const CSRF = document.querySelector('meta[name="csrf-token"]').content;
+
+        // Toast helper
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.innerHTML = `<div class="toast-timer"></div><span>${message}</span>`;
+            toast.className = `toast-msg toast-${type}`;
+            toast.style.display = 'flex';
+            setTimeout(() => { toast.style.display = 'none'; }, 3500);
+        }
+
+        // CSV Modal
+        function openCsvModal(type) {
+            const modal = new bootstrap.Modal(document.getElementById('csvModal'));
+            const title = document.getElementById('csvModalTitle');
+            const importSection = document.getElementById('importSection');
+            const exportSection = document.getElementById('exportSection');
+            
+            if (type === 'import') {
+                title.innerHTML = '<i class="bi bi-upload"></i> Import Municipality CSV Data';
+                importSection.style.display = 'block';
+                exportSection.style.display = 'none';
+            } else {
+                title.innerHTML = '<i class="bi bi-download"></i> Export Municipality CSV Data';
+                importSection.style.display = 'none';
+                exportSection.style.display = 'block';
+            }
+            
+            modal.show();
+        }
+
+        // Handle import form submission
+        document.getElementById('importForm').addEventListener('submit', function() {
+            const btn = document.getElementById('importBtn');
+            btn.disabled = true;
+            btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Importing...';
+        });
+
+        // Import Log Archive
+        let archiveLogId = null;
+
+        function archiveImportLog(id) {
+            archiveLogId = id;
+            new bootstrap.Modal(document.getElementById('archiveImportLogModal')).show();
+        }
+
+        function confirmArchiveImportLog() {
+            if (!archiveLogId) return;
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('archiveImportLogModal'));
+            modal.hide();
+            
+            fetch(`/admin/csv/import-log/${archiveLogId}/archive`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showToast('Import log archived successfully', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3500);
+                } else {
+                    showToast(data.message || 'Failed to archive log', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error archiving log', 'error');
+            })
+            .finally(() => {
+                archiveLogId = null;
+            });
+        }
+
+        // Restore scroll position after page load
+        window.addEventListener('load', function() {
+            const scrollPosition = sessionStorage.getItem('scrollPosition');
+            if (scrollPosition) {
+                window.scrollTo(0, parseInt(scrollPosition));
+                sessionStorage.removeItem('scrollPosition');
+            }
+        });
+
+        // Archived Import Logs Modal
+        function openArchivedImportModal() {
+            const modal = new bootstrap.Modal(document.getElementById('archivedImportLogsModal'));
+            modal.show();
+            
+            const tbody = document.getElementById('archivedImportLogsBody');
+            tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8;font-size:0.88rem;"><span class="spinner-border spinner-border-sm me-2"></span>Loading...</td></tr>`;
+            
+            fetch('{{ route("admin.csv.import-log.archived") }}')
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success && data.logs.length > 0) {
+                        let html = '';
+                        data.logs.forEach(log => {
+                            const date = new Date(log.created_at).toLocaleString('en-US', { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+                            const statusBg = log.status === 'completed' ? '#d4edda' : (log.status === 'failed' ? '#f8d7da' : '#fff3cd');
+                            const statusColor = log.status === 'completed' ? '#155724' : (log.status === 'failed' ? '#721c24' : '#856404');
+                            
+                            html += `<tr style="border-bottom:1px solid #E2E8F0;">
+                                <td style="padding:12px 16px;color:#334155;font-size:0.82rem;">${date}</td>
+                                <td style="padding:12px 16px;color:#334155;font-size:0.82rem;"><i class="bi bi-file-earmark-text" style="color:#64748b;margin-right:6px;"></i>${log.file_name}</td>
+                                <td style="padding:12px 16px;"><span style="background:#e0f2fe;color:#0369a1;padding:4px 10px;border-radius:12px;font-size:0.72rem;font-weight:700;text-transform:uppercase;">${log.file_type.replace(/_/g, ' ')}</span></td>
+                                <td style="padding:12px 16px;text-align:center;color:#334155;font-weight:600;">${log.total_rows}</td>
+                                <td style="padding:12px 16px;text-align:center;color:#15803d;font-weight:700;">${log.successful_rows}</td>
+                                <td style="padding:12px 16px;text-align:center;color:#dc2626;font-weight:700;">${log.failed_rows}</td>
+                                <td style="padding:12px 16px;text-align:center;"><span style="background:${statusBg};color:${statusColor};padding:4px 10px;border-radius:12px;font-size:0.72rem;font-weight:700;text-transform:uppercase;">${log.status}</span></td>
+                                <td style="padding:12px 16px;text-align:center;">
+                                    <div style="display:flex;gap:4px;justify-content:center;">
+                                        <button onclick="restoreImportLog(${log.id})" class="btn btn-sm" style="background:#d4edda;color:#155724;border:none;border-radius:6px;padding:3px 8px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#155724';this.style.color='white'" onmouseout="this.style.background='#d4edda';this.style.color='#155724'">
+                                            <i class="bi bi-arrow-counterclockwise"></i> Restore
+                                        </button>
+                                        <button onclick="deleteImportLog(${log.id})" class="btn btn-sm" style="background:#f8d7da;color:#721c24;border:none;border-radius:6px;padding:3px 8px;font-size:0.72rem;font-weight:700;cursor:pointer;transition:all 0.2s;" onmouseover="this.style.background='#721c24';this.style.color='white'" onmouseout="this.style.background='#f8d7da';this.style.color='#721c24'">
+                                            <i class="bi bi-trash"></i> Delete
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>`;
+                        });
+                        tbody.innerHTML = html;
+                    } else {
+                        tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:#94a3b8;font-size:0.88rem;"><i class="bi bi-inbox" style="font-size:2.5rem;display:block;margin-bottom:12px;opacity:0.5;"></i>No archived logs</td></tr>`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:#dc2626;font-size:0.88rem;">Error loading archived logs</td></tr>`;
+                });
+        }
+
+        let pendingRestoreImportId = null;
+        let pendingDeleteImportId = null;
+
+        function restoreImportLog(id) {
+            pendingRestoreImportId = id;
+            const modal = new bootstrap.Modal(document.getElementById('restoreImportLogModal'));
+            modal.show();
+        }
+
+        function confirmRestoreImportLog() {
+            if (!pendingRestoreImportId) return;
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('restoreImportLogModal'));
+            modal.hide();
+            
+            fetch(`/admin/csv/import-log/${pendingRestoreImportId}/restore`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const archivedModal = bootstrap.Modal.getInstance(document.getElementById('archivedImportLogsModal'));
+                    if (archivedModal) {
+                        archivedModal.hide();
+                    }
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                    
+                    showToast('Import log restored successfully', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3500);
+                } else {
+                    showToast(data.message || 'Failed to restore log', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error restoring log', 'error');
+            })
+            .finally(() => {
+                pendingRestoreImportId = null;
+            });
+        }
+
+        function deleteImportLog(id) {
+            pendingDeleteImportId = id;
+            const modal = new bootstrap.Modal(document.getElementById('deleteImportLogModal'));
+            modal.show();
+        }
+
+        function confirmDeleteImportLog() {
+            if (!pendingDeleteImportId) return;
+            
+            const modal = bootstrap.Modal.getInstance(document.getElementById('deleteImportLogModal'));
+            modal.hide();
+            
+            fetch(`/admin/csv/import-log/${pendingDeleteImportId}/force-delete`, {
+                method: 'DELETE',
+                headers: {
+                    'X-CSRF-TOKEN': CSRF,
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const archivedModal = bootstrap.Modal.getInstance(document.getElementById('archivedImportLogsModal'));
+                    if (archivedModal) {
+                        archivedModal.hide();
+                    }
+                    document.querySelectorAll('.modal-backdrop').forEach(el => el.remove());
+                    document.body.classList.remove('modal-open');
+                    document.body.style.overflow = '';
+                    document.body.style.paddingRight = '';
+                    
+                    showToast('Import log permanently deleted', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 3500);
+                } else {
+                    showToast(data.message || 'Failed to delete log', 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showToast('Error deleting log', 'error');
+            })
+            .finally(() => {
+                pendingDeleteImportId = null;
+            });
+        }
+
+        // Show notification on page load if exists
+        @if(session('success'))
+            showToast('{{ session('success') }}', 'success');
+        @endif
+        @if(session('error'))
+            showToast('{{ session('error') }}', 'error');
+        @endif
+
+        // Open Archived Yearly Records Modal
+        function openArchivedYearlyModal() {
+            const modal = new bootstrap.Modal(document.getElementById('archiveModal'));
+            modal.show();
+        }
         function switchTab(name, el) {
             document.querySelectorAll('.section-tab').forEach(t => t.classList.remove('active'));
             document.querySelectorAll('.tab-pill').forEach(t => t.classList.remove('active'));

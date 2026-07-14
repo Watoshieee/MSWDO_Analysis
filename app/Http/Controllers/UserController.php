@@ -587,10 +587,11 @@ class UserController extends Controller
         $user = Auth::user();
         $isSoloParentBeneficiary = $this->hasSoloParentBeneficiaryStatus($user);
 
-        // Load user's active/recent appointment
+        // Load user's active/recent appointment (exclude cancelled and rejected)
         $appointment = Appointment::where('user_id', $user->id)
             ->where('program_type', 'Solo_Parent')
-            ->orderByRaw("FIELD(status,'pending','confirmed','rejected','cancelled')")
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->orderByRaw("FIELD(status,'pending','confirmed','validated')")
             ->orderBy('appointment_date', 'desc')
             ->first();
 
@@ -786,10 +787,11 @@ class UserController extends Controller
                 $uploadedFiles = FileUpload::where('file_monitoring_id', $fm->id)->get();
         }
 
-        // Load AICS Medical appointment
+        // Load AICS Medical appointment (exclude cancelled and rejected)
         $appointment = Appointment::where('user_id', $user->id)
             ->where('program_type', 'AICS_Medical')
-            ->orderByRaw("FIELD(status,'pending','confirmed','rejected','cancelled')")
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->orderByRaw("FIELD(status,'pending','confirmed')")
             ->orderBy('appointment_date', 'desc')
             ->first();
         $minDate = Carbon::tomorrow()->format('Y-m-d');
@@ -824,10 +826,11 @@ class UserController extends Controller
                 $uploadedFiles = FileUpload::where('file_monitoring_id', $fm->id)->get();
         }
 
-        // Load AICS Burial appointment
+        // Load AICS Burial appointment (exclude cancelled and rejected)
         $appointment = Appointment::where('user_id', $user->id)
             ->where('program_type', 'AICS_Burial')
-            ->orderByRaw("FIELD(status,'pending','confirmed','rejected','cancelled')")
+            ->whereNotIn('status', ['cancelled', 'rejected'])
+            ->orderByRaw("FIELD(status,'pending','confirmed')")
             ->orderBy('appointment_date', 'desc')
             ->first();
         $minDate = Carbon::tomorrow()->format('Y-m-d');
@@ -1038,7 +1041,26 @@ class UserController extends Controller
     public function profile()
     {
         $user = Auth::user();
-        return view('user.profile', compact('user'));
+        extract($this->notificationData($user));
+
+        return view('user.profile', compact(
+            'user',
+            'documentNotifications',
+            'rejectedApplications',
+            'newAnnouncements',
+            'notificationCount',
+            'validatedAppointment',
+            'idReadyApplication',
+            'confirmedAicsAppointments',
+            'newAicsConfirmedCount',
+            'newAnnouncementCount',
+            'pwdValidatedApplication',
+            'pwdIdReadyApplication',
+            'approvedSoloParentAppointment',
+            'soloParentRequirementsValidated',
+            'aicsValidatedApplications',
+            'aicsReadyApplications'
+        ));
     }
 
     /**

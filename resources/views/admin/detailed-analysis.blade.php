@@ -55,16 +55,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         /* -- STAT CARDS -- */
         .stat-card { background: var(--bg-white); border-radius: 18px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); height: 100%; position: relative; overflow: hidden; }
         .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary-gradient); }
-        .stat-card.yellow::before { background: var(--secondary-gradient); }
-        .stat-card.green::before  { background: linear-gradient(135deg,#28a745,#1e7e34); }
-        .stat-card.red::before    { background: linear-gradient(135deg,#C41E24,#8B0000); }
         .stat-card .inner { padding: 24px 26px; }
         .stat-pill  { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 20px; padding: 3px 10px; display: inline-block; margin-bottom: 8px; background: #E5EEFF; color: var(--primary-blue); }
-        .stat-pill.y { background: #FFF3D6; color: #856404; }
-        .stat-pill.g { background: #d4edda; color: #155724; }
-        .stat-pill.r { background: #fce8e8; color: #C41E24; }
         .stat-label { font-size: 0.78rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-        .stat-value { font-size: 2.6rem; font-weight: 900; line-height: 1; }
+        .stat-value { font-size: 2.6rem; font-weight: 900; line-height: 1; color: var(--primary-blue); }
         .stat-sub   { font-size: 0.75rem; color: #94a3b8; margin-top: 6px; font-weight: 500; }
 
         /* -- PANEL CARDS -- */
@@ -109,6 +103,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .bgy-table td { padding: 11px 14px; font-size: 0.86rem; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
         .bgy-table tr:last-child td { border-bottom: none; }
         .bgy-table tr:hover td { background: #FAFBFF; }
+        .bgy-chart-card { background: #FAFBFD; border: 1px solid var(--border-light); border-radius: 14px; padding: 16px 16px 8px; position: relative; }
+        .bgy-chart-actions { display: flex; justify-content: flex-end; margin-bottom: 6px; }
+        .bgy-chart-actions .btn-chart-export { border: 1px solid var(--border-light); background: #fff; color: #64748b; border-radius: 8px; padding: 4px 10px; font-size: 0.72rem; font-weight: 700; cursor: pointer; }
+        .bgy-chart-actions .btn-chart-export:hover { background: var(--bg-soft-blue); color: var(--primary-blue); }
         .badge-sm { font-size: 0.68rem; font-weight: 800; border-radius: 20px; padding: 3px 10px; letter-spacing: 0.04em; text-transform: uppercase; display: inline-block; }
         .badge-pending  { background: #FFF3D6; color: #856404; }
         .badge-approved { background: #d4edda; color: #155724; }
@@ -144,8 +142,17 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <li class="nav-item"><a class="nav-link active" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
                     <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
                 </ul>
-                <div class="d-flex">
+                <div class="d-flex align-items-center gap-3">
                     @auth
+                    <button type="button" class="btn" onclick="openAdminNotifModal()"
+                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
+                        title="Application Notifications">
+                        <i class="bi bi-bell-fill"></i>
+                        @if(isset($adminNotifCount) && $adminNotifCount > 0)
+                            <span class="admin-bell-badge"
+                                style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $adminNotifCount > 9 ? '9+' : $adminNotifCount }}</span>
+                        @endif
+                    </button>
                     <div class="user-info">
                         <span>{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
@@ -181,6 +188,20 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </section>
 
+    @if(!empty($availableAnalysisYears))
+    <div class="container" style="margin-top:14px;">
+        <div class="d-flex flex-wrap align-items-center gap-3 py-3 px-4" style="background:var(--bg-white);border:1px solid var(--border-light);border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,.04);">
+            <span style="font-size:0.88rem;font-weight:800;color:var(--primary-blue);letter-spacing:0.02em;">Data year</span>
+            <span style="font-size:0.78rem;color:#64748b;">One filter for this page: applications, demographics, programs, and barangay data</span>
+            <select class="form-select form-select-sm analysis-year-select ms-auto" style="max-width:140px;font-weight:700;border-radius:10px;border:1px solid var(--border-light);">
+                @foreach($availableAnalysisYears as $y)
+                    <option value="{{ $y }}" @selected((int) $analysisYear === (int) $y)>{{ $y }}</option>
+                @endforeach
+            </select>
+        </div>
+    </div>
+    @endif
+
     <div class="main-content">
     <div class="container mt-4">
 
@@ -191,37 +212,37 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="inner">
                         <span class="stat-pill">Total</span>
                         <div class="stat-label">Applications</div>
-                        <div class="stat-value" style="color:var(--primary-blue);">{{ number_format($totalApplications) }}</div>
-                        <div class="stat-sub">All time in {{ $municipality->name }}</div>
+                        <div class="stat-value">{{ number_format($totalApplications) }}</div>
+                        <div class="stat-sub">Applications dated in {{ $analysisYear }} ({{ $municipality->name }})</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card yellow">
+                <div class="stat-card">
                     <div class="inner">
-                        <span class="stat-pill y">Pending</span>
+                        <span class="stat-pill">Pending</span>
                         <div class="stat-label">For Review</div>
-                        <div class="stat-value" style="color:#856404;">{{ number_format($pendingApplications) }}</div>
+                        <div class="stat-value">{{ number_format($pendingApplications) }}</div>
                         <div class="stat-sub">Awaiting action</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card green">
+                <div class="stat-card">
                     <div class="inner">
-                        <span class="stat-pill g">Approved</span>
+                        <span class="stat-pill">Approved</span>
                         <div class="stat-label">Completed</div>
-                        <div class="stat-value" style="color:#155724;">{{ number_format($approvedApplications) }}</div>
+                        <div class="stat-value">{{ number_format($approvedApplications) }}</div>
                         <div class="stat-sub">Successfully processed</div>
                     </div>
                 </div>
             </div>
             <div class="col-md-3 col-sm-6">
-                <div class="stat-card red">
+                <div class="stat-card">
                     <div class="inner">
-                        <span class="stat-pill r">Rejected</span>
+                        <span class="stat-pill">Rejected</span>
                         <div class="stat-label">Declined</div>
-                        <div class="stat-value" style="color:#C41E24;">{{ number_format($rejectedApplications) }}</div>
+                        <div class="stat-value">{{ number_format($rejectedApplications) }}</div>
                         <div class="stat-sub">Did not qualify</div>
                     </div>
                 </div>
@@ -237,7 +258,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="panel-header">
                         <div>
                             <div class="panel-header-title">Applications by Program</div>
-                            <div class="panel-header-sub">Pending, Approved &amp; Rejected per program</div>
+                            <div class="panel-header-sub">Pending, Approved &amp; Rejected per program ({{ $analysisYear }})</div>
                         </div>
                         <span class="panel-header-badge">{{ $applicationsByProgram->count() }} programs</span>
                     </div>
@@ -255,7 +276,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="panel-header">
                         <div>
                             <div class="panel-header-title">Status Distribution</div>
-                            <div class="panel-header-sub">Overall application outcomes</div>
+                            <div class="panel-header-sub">Application outcomes for {{ $analysisYear }}</div>
                         </div>
                     </div>
                     <div class="panel-body">
@@ -298,7 +319,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="panel-header">
                         <div>
                             <div class="panel-header-title">Program Share Overview</div>
-                            <div class="panel-header-sub">Relative volume of applications per program</div>
+                            <div class="panel-header-sub">Relative volume per program (beneficiary counts, {{ $analysisYear }})</div>
                         </div>
                     </div>
                     <div class="panel-body">
@@ -320,6 +341,51 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             </div>
         </div>
 
+        <!-- Barangay data (year follows top Data year filter) -->
+        <div class="row g-4 mb-0 mt-0">
+            <div class="col-12">
+                <div class="panel-card">
+                    <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
+                        <div>
+                            <div class="panel-header-title">Barangay data</div>
+                            <div class="panel-header-sub">Population and program counts by barangay ({{ $analysisYear }}) — use Data year above to change</div>
+                        </div>
+                    </div>
+                    <div class="panel-body p-0">
+                        @if($barangayRowsForAnalysis->isEmpty())
+                            <div class="no-data py-4 px-3">No barangay records for {{ $analysisYear }} yet. Add or update figures in <a href="{{ route('admin.data.barangays', ['year' => $analysisYear]) }}#return">Barangay Data</a>. Saving there updates the charts and table here, and rolls up totals for the municipality charts below.</div>
+                        @else
+                            <div class="p-4 pb-3">
+                                <div class="row g-4">
+                                    <div class="col-12">
+                                        <div class="bgy-chart-card mb-2">
+                                            <div class="bgy-chart-actions">
+                                                <button type="button" class="btn-chart-export" id="bgyPopulationChartExport" title="Save chart as PNG">Export</button>
+                                            </div>
+                                            <div class="chart-wrap" style="height:{{ max(380, min(120 + $barangayRowsForAnalysis->count() * 28, 560)) }}px;">
+                                                <canvas id="bgyPopulationChart"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-12">
+                                        <div class="bgy-chart-card">
+                                            <div class="bgy-chart-actions">
+                                                <button type="button" class="btn-chart-export" id="bgyProgramsByBarangayChartExport" title="Save chart as PNG">Export</button>
+                                            </div>
+                                            <div class="chart-wrap" style="height:{{ max(400, min(140 + $barangayRowsForAnalysis->count() * 28, 580)) }}px;">
+                                                <canvas id="bgyProgramsByBarangayChart"></canvas>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- ROW 3: Population & Households + Male vs Female -->
         <div class="row g-4 mb-0 mt-0">
 
@@ -329,7 +395,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="panel-header">
                         <div>
                             <div class="panel-header-title">Population & Households</div>
-                            <div class="panel-header-sub">{{ $municipality->name }} demographics</div>
+                            <div class="panel-header-sub">{{ $municipality->name }} demographics ({{ $analysisYear }})</div>
                         </div>
                     </div>
                     <div class="panel-body">
@@ -346,7 +412,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="panel-header">
                         <div>
                             <div class="panel-header-title">Male vs Female</div>
-                            <div class="panel-header-sub">Gender distribution</div>
+                            <div class="panel-header-sub">Gender distribution ({{ $analysisYear }})</div>
                         </div>
                     </div>
                     <div class="panel-body">
@@ -368,7 +434,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="panel-header">
                         <div>
                             <div class="panel-header-title">Age Group Analysis</div>
-                            <div class="panel-header-sub">Population by age range</div>
+                            <div class="panel-header-sub">Population by age range ({{ $analysisYear }})</div>
                         </div>
                     </div>
                     <div class="panel-body">
@@ -385,7 +451,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="panel-header">
                         <div>
                             <div class="panel-header-title">Program Beneficiaries Analysis</div>
-                            <div class="panel-header-sub">Beneficiaries by program (2024)</div>
+                            <div class="panel-header-sub">Beneficiaries by program ({{ $analysisYear }})</div>
                         </div>
                     </div>
                     <div class="panel-body">
@@ -405,9 +471,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
+    @include('components.admin-notification-modal')
     @include('components.admin-settings-modal')
     @include('components.admin-chat-modal')
 
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         // -- SHARED DEFAULTS --
@@ -675,6 +743,194 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     }
                 }
             }
+        });
+
+@if($barangayRowsForAnalysis->isNotEmpty())
+        // -- 7 & 8. BARANGAY DATA (vertical bar style — population + programs by barangay) --
+        const bgyMuniName = {!! json_encode($municipality->name) !!};
+        const bgyAnalysisYear = {{ (int) $analysisYear }};
+        const bgyLabels = {!! json_encode($barangayRowsForAnalysis->pluck('name')->values()->all()) !!};
+        const bgyPopData = {!! json_encode($barangayRowsForAnalysis->pluck('total_population')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+        const bgyPwd = {!! json_encode($barangayRowsForAnalysis->pluck('pwd_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+        const bgyAics = {!! json_encode($barangayRowsForAnalysis->pluck('aics_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+        const bgySolo = {!! json_encode($barangayRowsForAnalysis->pluck('single_parent_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+        const bgy4ps = {!! json_encode($barangayRowsForAnalysis->pluck('four_ps_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+        const bgySenior = {!! json_encode($barangayRowsForAnalysis->pluck('senior_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+
+        const bgyPastelPalette = [
+            'rgba(147, 197, 253, 0.92)', 'rgba(252, 211, 77, 0.92)', 'rgba(251, 182, 206, 0.92)', 'rgba(167, 243, 208, 0.92)',
+            'rgba(196, 181, 253, 0.92)', 'rgba(165, 243, 252, 0.92)', 'rgba(254, 215, 170, 0.92)', 'rgba(216, 180, 254, 0.92)',
+            'rgba(190, 242, 100, 0.92)', 'rgba(253, 186, 116, 0.92)', 'rgba(125, 211, 252, 0.92)', 'rgba(249, 168, 212, 0.92)'
+        ];
+        const bgyBarColors = bgyLabels.map((_, i) => bgyPastelPalette[i % bgyPastelPalette.length]);
+
+        const bgyAxisTickShort = (value) => {
+            const n = Number(value);
+            if (!Number.isFinite(n) || n === 0) return '0';
+            if (n >= 1_000_000) return (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1).replace(/\.0$/, '') + 'M';
+            if (n >= 1_000) return (n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1).replace(/\.0$/, '') + 'K';
+            return n.toLocaleString();
+        };
+
+        const bgyGridColor = 'rgba(148, 163, 184, 0.35)';
+        const bgyChartScalesXY = {
+            x: {
+                grid: { color: bgyGridColor, drawBorder: true, borderColor: '#cbd5e1' },
+                ticks: {
+                    font: { size: 10, weight: '600' },
+                    maxRotation: 45,
+                    minRotation: 45,
+                    autoSkip: true,
+                    maxTicksLimit: 48
+                }
+            },
+            y: {
+                beginAtZero: true,
+                grid: { color: bgyGridColor, drawBorder: true, borderColor: '#cbd5e1' },
+                ticks: {
+                    font: { size: 11 },
+                    callback: (v) => bgyAxisTickShort(v)
+                }
+            }
+        };
+
+        const bgyPopChart = new Chart(document.getElementById('bgyPopulationChart'), {
+            type: 'bar',
+            data: {
+                labels: bgyLabels,
+                datasets: [{
+                    label: 'Population',
+                    data: bgyPopData,
+                    backgroundColor: bgyBarColors,
+                    borderRadius: { topLeft: 4, topRight: 4 },
+                    borderSkipped: false,
+                    maxBarThickness: 36,
+                    categoryPercentage: 0.72,
+                    barPercentage: 0.9
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                layout: { padding: { top: 8, bottom: 16, left: 4, right: 8 } },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Population by barangay: ' + bgyMuniName + ' (' + bgyAnalysisYear + ')',
+                        font: { family: "'Inter', sans-serif", size: 15, weight: '700' },
+                        color: '#1e293b',
+                        padding: { bottom: 6, top: 4 }
+                    },
+                    subtitle: {
+                        display: true,
+                        text: 'Touch or hover over bars for details.',
+                        font: { family: "'Inter', sans-serif", size: 11.5, weight: '500' },
+                        color: '#64748b',
+                        padding: { bottom: 14 }
+                    },
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: '#1E293B',
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            title: (items) => items[0]?.label || '',
+                            label: (ctx) => ' ' + Number(ctx.parsed.y ?? ctx.raw ?? 0).toLocaleString() + ' residents'
+                        }
+                    }
+                },
+                scales: bgyChartScalesXY
+            }
+        });
+
+        const bgyProgChart = new Chart(document.getElementById('bgyProgramsByBarangayChart'), {
+            type: 'bar',
+            data: {
+                labels: bgyLabels,
+                datasets: [
+                    { label: 'PWD', data: bgyPwd, backgroundColor: 'rgba(44, 62, 143, 0.78)' },
+                    { label: 'AICS', data: bgyAics, backgroundColor: 'rgba(253, 185, 19, 0.85)' },
+                    { label: 'Solo parent', data: bgySolo, backgroundColor: 'rgba(40, 167, 69, 0.78)' },
+                    { label: '4Ps', data: bgy4ps, backgroundColor: 'rgba(99, 102, 241, 0.78)' },
+                    { label: 'Senior', data: bgySenior, backgroundColor: 'rgba(196, 30, 36, 0.72)' }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false },
+                layout: { padding: { top: 8, bottom: 16, left: 4, right: 8 } },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Program counts by barangay: ' + bgyMuniName + ' (' + bgyAnalysisYear + ')',
+                        font: { family: "'Inter', sans-serif", size: 15, weight: '700' },
+                        color: '#1e293b',
+                        padding: { bottom: 6, top: 4 }
+                    },
+                    subtitle: {
+                        display: true,
+                        text: 'Stacked totals per barangay — hover a segment for counts.',
+                        font: { family: "'Inter', sans-serif", size: 11.5, weight: '500' },
+                        color: '#64748b',
+                        padding: { bottom: 14 }
+                    },
+                    legend: {
+                        position: 'bottom',
+                        labels: { usePointStyle: true, pointStyle: 'circle', padding: 14, font: { weight: '600', size: 11 } }
+                    },
+                    tooltip: {
+                        backgroundColor: '#1E293B',
+                        padding: 12,
+                        cornerRadius: 10,
+                        callbacks: {
+                            label: (ctx) => {
+                                const v = ctx.parsed.y ?? ctx.raw ?? 0;
+                                return ' ' + ctx.dataset.label + ': ' + Number(v).toLocaleString();
+                            },
+                            footer: (items) => {
+                                if (!items.length) return '';
+                                const sum = items.reduce((s, it) => s + Number(it.parsed.y ?? it.raw ?? 0), 0);
+                                return 'Combined: ' + sum.toLocaleString();
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        stacked: true,
+                        ...bgyChartScalesXY.x
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        grid: { color: bgyGridColor, drawBorder: true, borderColor: '#cbd5e1' },
+                        ticks: {
+                            font: { size: 11 },
+                            callback: (v) => bgyAxisTickShort(v)
+                        }
+                    }
+                }
+            }
+        });
+
+        document.getElementById('bgyPopulationChartExport')?.addEventListener('click', function () {
+            const a = document.createElement('a');
+            a.href = bgyPopChart.toBase64Image();
+            a.download = 'population-by-barangay-' + bgyAnalysisYear + '.png';
+            a.click();
+        });
+        document.getElementById('bgyProgramsByBarangayChartExport')?.addEventListener('click', function () {
+            const a = document.createElement('a');
+            a.href = bgyProgChart.toBase64Image();
+            a.download = 'program-counts-by-barangay-' + bgyAnalysisYear + '.png';
+            a.click();
+        });
+@endif
+        document.querySelectorAll('.analysis-year-select').forEach(function (sel) {
+            sel.addEventListener('change', function () {
+                window.location.href = @json(route('admin.detailed-analysis')) + '?year=' + encodeURIComponent(this.value);
+            });
         });
     </script>
 </body>

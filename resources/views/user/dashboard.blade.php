@@ -29,7 +29,7 @@
         }
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body { margin: 0; padding: 0; overscroll-behavior: none; }
-        body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); }
+        body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; }
         a { text-decoration: none; color: inherit; }
 
         /* ── NAVBAR ── */
@@ -152,12 +152,6 @@
             display: flex; flex-direction: column;
         }
         .program-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary-gradient); }
-        .program-card.pc-yellow::before { background: var(--primary-gradient); }
-        .program-card.pc-green::before  { background: var(--primary-gradient); }
-        .program-card.pc-purple::before { background: var(--primary-gradient); }
-        .program-card.pc-red::before    { background: var(--primary-gradient); }
-        .program-card.pc-teal::before   { background: var(--primary-gradient); }
-        .program-card.pc-orange::before { background: var(--primary-gradient); }
         .program-card:hover:not(.locked) { transform: translateY(-5px); box-shadow: 0 14px 30px rgba(44,62,143,0.12); border-color: var(--primary-blue-soft); }
         .program-card.locked { opacity: 0.48; cursor: not-allowed; }
         .prog-num {
@@ -165,12 +159,6 @@
             color: var(--primary-blue); background: var(--bg-soft-blue);
             border-radius: 20px; padding: 3px 12px; display: inline-block; margin-bottom: 12px;
         }
-        .prog-num.n-yellow { color: #856404; background: var(--secondary-yellow-light); }
-        .prog-num.n-green  { color: #155724; background: #d4edda; }
-        .prog-num.n-purple { color: #6f42c1; background: #ede4ff; }
-        .prog-num.n-red    { color: var(--accent-red); background: var(--accent-red-light); }
-        .prog-num.n-teal   { color: #17a2b8; background: #d1f5f9; }
-        .prog-num.n-orange { color: #fd7e14; background: #fff0e0; }
         .prog-title { font-size: 1rem; font-weight: 800; color: var(--primary-blue); margin-bottom: 6px; }
         .prog-sub   { font-size: 0.79rem; color: var(--text-mid); line-height: 1.55; margin-bottom: 16px; flex: 1; }
         .apply-btn {
@@ -211,7 +199,7 @@
             background: white; transition: all 0.25s; margin-bottom: 10px; color: var(--text-dark);
         }
         .quick-link:hover { background: var(--bg-soft-blue); border-color: var(--primary-blue-soft); padding-left: 22px; }
-        .ql-num { width: 36px; height: 36px; border-radius: 10px; background: var(--bg-soft-blue); color: var(--primary-blue); font-weight: 900; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: 0.05em; }
+        .ql-num { width: 36px; height: 36px; border-radius: 10px; background: var(--primary-gradient); color: white; font-weight: 900; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; flex-shrink: 0; letter-spacing: 0.05em; }
         .ql-text strong { display: block; font-size: 0.9rem; font-weight: 700; color: var(--primary-blue); }
         .ql-text span   { font-size: 0.76rem; color: var(--text-light); }
         .ql-arrow { margin-left: auto; color: var(--text-light); font-size: 1.2rem; font-weight: 300; }
@@ -231,8 +219,11 @@
         .btn-browse { background: var(--primary-gradient); color: white; border: none; border-radius: 10px; padding: 10px 24px; font-weight: 700; font-size: 0.88rem; display: inline-block; cursor: pointer; transition: all 0.25s; }
         .btn-browse:hover { color: white; box-shadow: 0 6px 20px rgba(44,62,143,0.3); transform: translateY(-1px); }
 
+        /* Main content */
+        .main-content { flex: 1; padding-bottom: 0; margin-bottom: 0; }
+
         /* Footer */
-        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.84rem; margin-top: 60px; }
+        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.84rem; margin-top: 0; }
         .footer-strip strong { color: white; }
 
         /* Session alerts */
@@ -257,7 +248,6 @@
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
                     <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
                 </ul>
                 <div class="d-flex align-items-center gap-3">
                     <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal" style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;" title="Notifications">
@@ -295,17 +285,10 @@
         </div>
     </section>
 
-    <div class="container mt-4">
+    <div class="main-content">
+    <div class="container mt-4 mb-0" style="padding-bottom:0;">
 
-        {{-- Session Alerts --}}
-        @php
-            $topNotice = session('success') ?: session('error');
-        @endphp
-        @if($topNotice)
-            <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
-                {{ $topNotice }}
-            </div>
-        @endif
+        @include('components.admin-notification')
 
         {{-- Stat Cards --}}
         <div class="row g-3 mb-4">
@@ -357,9 +340,9 @@
 
         @php
             $programs = [
-                ['key' => 'PWD_Assistance',          'num' => '01', 'num_class' => 'n-green',   'card_class' => 'pc-green',  'title' => 'PWD Assistance',             'sub' => 'Support services for persons with disability.',             'url' => route('user.pwd-application')],
-                ['key' => 'Solo_Parent',             'num' => '02', 'num_class' => 'n-purple',  'card_class' => 'pc-purple', 'title' => 'Solo Parent Support',        'sub' => 'Assistance for solo parents raising children alone.',       'url' => route('user.solo-parent-application')],
-                ['key' => 'AICS',                    'num' => '03', 'num_class' => 'n-red',     'card_class' => 'pc-red',    'title' => 'Assistance in Crisis',       'sub' => 'Emergency financial aid for families in crisis situations.', 'url' => route('user.aics-category')],
+                ['key' => 'PWD_Assistance',          'num' => '01', 'title' => 'PWD Assistance',             'sub' => 'Support services for persons with disability.',             'url' => route('user.pwd-application')],
+                ['key' => 'Solo_Parent',             'num' => '02', 'title' => 'Solo Parent Support',        'sub' => 'Assistance for solo parents raising children alone.',       'url' => route('user.solo-parent-application')],
+                ['key' => 'AICS',                    'num' => '03', 'title' => 'Assistance in Crisis',       'sub' => 'Emergency financial aid for families in crisis situations.', 'url' => route('user.aics-category')],
             ];
         @endphp
 
@@ -367,8 +350,8 @@
             @foreach($programs as $p)
             <div class="col-md-4 col-sm-6">
                 <a href="{{ $p['url'] ?? route('user.apply', $p['key']) }}" style="display:block;height:100%;">
-                    <div class="program-card {{ $p['card_class'] }}">
-                        <span class="prog-num {{ $p['num_class'] }}">{{ $p['num'] }}</span>
+                    <div class="program-card">
+                        <span class="prog-num">{{ $p['num'] }}</span>
                         <div class="prog-title">{{ $p['title'] }}</div>
                         <div class="prog-sub">{{ $p['sub'] }}</div>
                         <button class="apply-btn">Apply Now &rarr;</button>
@@ -453,7 +436,7 @@
                                     <span class="ql-arrow">&rsaquo;</span>
                                 </a>
                                 <a href="{{ route('user.my-requirements') }}" class="quick-link">
-                                    <div class="ql-num" style="background:#d4edda;color:#155724;">02</div>
+                                    <div class="ql-num">02</div>
                                     <div class="ql-text">
                                         <strong>My Requirements</strong>
                                         <span>Upload and manage your documents</span>
@@ -461,7 +444,7 @@
                                     <span class="ql-arrow">&rsaquo;</span>
                                 </a>
                                 <a href="{{ route('user.pwd-application') }}" class="quick-link" style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border:1px solid rgba(44,62,143,.15);">
-                                    <div class="ql-num" style="background:var(--primary-blue);color:white;">03</div>
+                                    <div class="ql-num">03</div>
                                     <div class="ql-text">
                                         <strong style="color:var(--primary-blue);">PWD Application (Apply)</strong>
                                         <span>Guide, forms &amp; verification tool</span>
@@ -469,7 +452,7 @@
                                     <span class="ql-arrow" style="color:var(--primary-blue);">&rsaquo;</span>
                                 </a>
                                 <a href="{{ route('user.solo-parent-application') }}" class="quick-link" style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border:1px solid rgba(44,62,143,.15);">
-                                    <div class="ql-num" style="background:var(--primary-blue);color:white;">04</div>
+                                    <div class="ql-num">04</div>
                                     <div class="ql-text">
                                         <strong style="color:var(--primary-blue);">Solo Parent ID (Apply)</strong>
                                         <span>Step-by-step application guide</span>
@@ -477,7 +460,7 @@
                                     <span class="ql-arrow" style="color:var(--primary-blue);">&rsaquo;</span>
                                 </a>
                                 <a href="/user/announcements" class="quick-link">
-                                    <div class="ql-num" style="background:var(--secondary-yellow-light);color:#856404;">05</div>
+                                    <div class="ql-num">05</div>
                                     <div class="ql-text">
                                         <strong>Announcements</strong>
                                         <span>Stay updated with MSWDO news</span>
@@ -485,7 +468,7 @@
                                     <span class="ql-arrow">&rsaquo;</span>
                                 </a>
                                 <a href="/analysis" class="quick-link">
-                                    <div class="ql-num" style="background:#d1f5f9;color:#17a2b8;">05</div>
+                                    <div class="ql-num">06</div>
                                     <div class="ql-text">
                                         <strong>Public Analysis</strong>
                                         <span>View demographic &amp; program data</span>
@@ -527,10 +510,11 @@
 
         </div>
     </div>
-
-    <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
+
+    <footer class="footer-strip">
+        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
+    </footer>
 
     @include('components.user-notification-modal')
 

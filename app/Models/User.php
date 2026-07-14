@@ -39,6 +39,13 @@ class User extends Authenticatable
         'phone_number',
         'address',
         'status',
+        'valid_id_path',
+        'valid_id_filename',
+        'id_verification_status',
+        'id_verified_at',
+        'id_verified_by',
+        'id_rejection_reason',
+        'must_change_password',
         'email_verified_at',
         'otp_code',
         'otp_expires_at',
@@ -59,6 +66,22 @@ class User extends Authenticatable
         'otp_expires_at' => 'datetime',
         'reset_token_expires_at' => 'datetime',
         'password' => 'hashed',
+        'must_change_password' => 'boolean',
+        'id_verified_at' => 'datetime',
+    ];
+
+    const ID_STATUS_PENDING = 'pending';
+    const ID_STATUS_APPROVED = 'approved';
+    const ID_STATUS_REJECTED = 'rejected';
+
+    const ID_DECLINE_REASONS = [
+        'blurry_image'        => 'Image is blurry or unclear',
+        'incomplete_details'  => 'ID details are incomplete or partially visible',
+        'expired_id'          => 'Submitted ID appears to be expired',
+        'invalid_id_type'     => 'ID type is not accepted or not government-issued',
+        'wrong_municipality'  => 'Applicant does not belong to this municipality',
+        'suspected_fake'      => 'Submitted ID appears to be falsified or tampered',
+        'other'               => 'Other reason (please specify)',
     ];
 
     // Role constants
@@ -106,6 +129,27 @@ class User extends Authenticatable
     public function hasVerifiedEmail()
     {
         return !is_null($this->email_verified_at);
+    }
+
+    public function isIdVerificationPending(): bool
+    {
+        return $this->id_verification_status === self::ID_STATUS_PENDING;
+    }
+
+    public function isIdVerificationApproved(): bool
+    {
+        return $this->id_verification_status === null
+            || $this->id_verification_status === self::ID_STATUS_APPROVED;
+    }
+
+    public function isIdVerificationRejected(): bool
+    {
+        return $this->id_verification_status === self::ID_STATUS_REJECTED;
+    }
+
+    public function canLoginAsUser(): bool
+    {
+        return $this->isIdVerificationApproved() && $this->status === 'active';
     }
 
     public function generateOtp()

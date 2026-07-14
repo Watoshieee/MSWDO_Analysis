@@ -46,7 +46,7 @@ class NewApplicationNotification extends Mailable
         $muni    = $this->application->municipality ?? 'Unknown Municipality';
 
         return new Envelope(
-            subject: "[MSWDO] New {$program} Application – {$muni}",
+            subject: "MSWDO: New {$program} Application – {$muni}",
         );
     }
 

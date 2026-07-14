@@ -20,15 +20,19 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         body { background: var(--bg-light); font-family: 'Inter', sans-serif; min-height: 100vh; display: flex; flex-direction: column; }
         a { text-decoration: none; }
 
-        /* NAVBAR */
-        .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
-        .navbar-brand { font-weight: 800; font-size: 1.45rem; color: white !important; display: flex; align-items: center; gap: 10px; }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; border-radius: 8px; padding: 10px 18px !important; font-size: 0.93rem; transition: all 0.25s; }
-        .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
-        .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-pill { color: white; background: rgba(255,255,255,0.1); padding: 8px 22px; border-radius: 40px; font-size: 0.88rem; font-weight: 600; }
-        .logout-btn { background: transparent; border: 2px solid rgba(255,255,255,0.8); color: white; border-radius: 30px; padding: 5px 16px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.3s; }
-        .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
+        /* TOP BAR */
+        .top-bar{background:var(--primary-gradient);padding:14px 0;box-shadow:0 4px 20px rgba(44,62,143,.22);}
+        .top-bar-inner{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;}
+        .brand{display:flex;align-items:center;gap:12px;color:white;font-weight:800;font-size:1.45rem;}
+        .brand img{width:34px;height:34px;object-fit:contain;}
+        .back-btn{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:2px solid rgba(255,255,255,.4);color:white;border-radius:30px;padding:8px 22px;font-weight:700;font-size:.88rem;cursor:pointer;transition:all .3s;text-decoration:none;}
+        .back-btn:hover{background:var(--secondary-yellow);color:var(--primary-blue);border-color:var(--secondary-yellow);}
+
+        /* Language toggle */
+        .lang-toggle{display:inline-flex;border-radius:30px;overflow:hidden;border:2px solid rgba(255,255,255,.4);background:rgba(255,255,255,.08);}
+        .lang-btn{background:transparent;border:none;color:rgba(255,255,255,.7);font-weight:700;font-size:.82rem;padding:8px 20px;cursor:pointer;transition:all .2s;letter-spacing:.05em;}
+        .lang-btn.active{background:var(--secondary-yellow);color:var(--primary-blue);}
+        .lang-btn:hover:not(.active){background:rgba(255,255,255,.15);color:white;}
 
         /* HERO */
         .page-hero { background: var(--primary-gradient); border-radius: 20px; padding: 36px 40px; color: white; margin-bottom: 36px; position: relative; overflow: hidden; }
@@ -68,62 +72,38 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 </head>
 <body>
 
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
+    <!-- TOP BAR + HERO COMBINED -->
+    <div style="background:var(--primary-gradient);box-shadow:0 4px 20px rgba(44,62,143,.22);position:relative;overflow:hidden;">
+        <div style="content:'';position:absolute;top:-60px;right:-60px;width:260px;height:260px;border-radius:50%;background:rgba(253,185,19,0.09);"></div>
         <div class="container">
-            <a class="navbar-brand" href="{{ route('user.dashboard') }}">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.dashboard') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('user.programs') }}">Programs</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis">Public Analysis</a></li>
-                </ul>
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 0;position:relative;z-index:2;">
+                <div class="brand">
+                    <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD">
+                    <span>MSWDO</span>
+                </div>
                 <div class="d-flex align-items-center gap-3">
-                    {{-- Notification Bell --}}
-                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal"
-                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
-                        title="Notifications">
-                        <i class="bi bi-bell-fill"></i>
-                        @if(isset($notificationCount) && $notificationCount > 0)
-                        <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">
-                            {{ $notificationCount > 9 ? '9+' : $notificationCount }}
-                        </span>
-                        @endif
-                    </button>
-                    <div class="user-pill">{{ $user->full_name }}</div>
-                    <form method="POST" action="{{ route('logout') }}">
-                        @csrf
-                        <button type="submit" class="logout-btn">Logout</button>
-                    </form>
+                    <div class="lang-toggle">
+                        <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+                        <button class="lang-btn" data-lang="tl" onclick="setLang('tl')">TL</button>
+                    </div>
+                    <a href="{{ route('user.programs') }}" class="back-btn">&#8592; <span data-en="Back to Programs" data-tl="Bumalik sa Programs">Back to Programs</span></a>
                 </div>
             </div>
         </div>
-    </nav>
+        
+        <!-- HERO -->
+        <div class="container" style="padding:20px 0 44px;position:relative;z-index:2;">
+            <div class="hero-badge" data-en="Assistance in Crisis (AICS)" data-tl="Tulong sa Krisis (AICS)">Assistance in Crisis (AICS)</div>
+            <h1 style="font-size:2.5rem;font-weight:900;margin-bottom:8px;line-height:1.12;color:white;" data-en="AICS - Choose a Category" data-tl="AICS - Pumili ng Kategorya">AICS - Choose a Category</h1>
+            <div class="hero-divider"></div>
+            <p style="opacity:.85;font-size:.97rem;margin:0;max-width:900px;line-height:1.7;color:white;" data-en="Assistance to Individuals in Crisis Situation (AICS) provides targeted financial aid to individuals and families facing emergencies. Select the type of assistance you need to begin your application." data-tl="Ang Tulong sa mga Indibidwal sa Krisis na Sitwasyon (AICS) ay nagbibigay ng tulong pinansyal sa mga indibidwal at pamilyang nahaharap sa emerhensya. Pumili ng uri ng tulong na kailangan mo para magsimula ng iyong aplikasyon.">Assistance to Individuals in Crisis Situation (AICS) provides targeted financial aid to individuals and families facing emergencies. Select the type of assistance you need to begin your application.</p>
+        </div>
+    </div>
 
     <div style="flex:1;">
-    <div class="container mt-4 pb-5">
+    <div class="container pb-5" style="padding-top:32px;">
 
-        <a href="{{ route('user.programs') }}" class="back-link">
-             Back to Programs
-        </a>
-
-        <!-- HERO -->
-        <div class="page-hero">
-            <div class="hero-badge">Assistance in Crisis (AICS)</div>
-            <h1>AICS -Choose a Category</h1>
-            <div class="hero-divider"></div>
-            <p>Assistance to Individuals in Crisis Situation (AICS) provides targeted financial aid to individuals and families facing emergencies. Select the type of assistance you need to begin your application.</p>
-        </div>
-
-        <p class="section-label">Available Categories</p>
+        <p class="section-label" data-en="Available Categories" data-tl="Mga Available na Kategorya">Available Categories</p>
 
         <div class="row g-4">
 
@@ -132,9 +112,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <a href="{{ route('user.aics-medical') }}" class="aics-card-link">
                     <div class="aics-card">
                         <span class="card-num">01 - AICS</span>
-                        <div class="card-title">Medical Assistance</div>
-                        <div class="card-desc">Financial support for medical needs including hospital bills, medicines, laboratory tests, and other health-related expenses for individuals in crisis situations.</div>
-                        <span class="card-arrow">View Requirements ?</span>
+                        <div class="card-title" data-en="Medical Assistance" data-tl="Tulong Medikal">Medical Assistance</div>
+                        <div class="card-desc" data-en="Financial support for medical needs including hospital bills, medicines, laboratory tests, and other health-related expenses for individuals in crisis situations." data-tl="Tulong pinansyal para sa pangangailangang medikal kabilang ang hospital bills, gamot, laboratory tests, at iba pang gastusin sa kalusugan para sa mga indibidwal sa krisis na sitwasyon.">Financial support for medical needs including hospital bills, medicines, laboratory tests, and other health-related expenses for individuals in crisis situations.</div>
+                        <span class="card-arrow" data-en="View Requirements →" data-tl="Tingnan ang mga Kinakailangan →">View Requirements →</span>
                     </div>
                 </a>
             </div>
@@ -144,9 +124,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <a href="{{ route('user.aics-burial') }}" class="aics-card-link">
                     <div class="aics-card">
                         <span class="card-num">02 - AICS</span>
-                        <div class="card-title">Burial Assistance</div>
-                        <div class="card-desc">Financial aid to help individuals and families manage funeral and burial expenses for an immediate family member who has passed away.</div>
-                        <span class="card-arrow">View Requirements ?</span>
+                        <div class="card-title" data-en="Burial Assistance" data-tl="Tulong sa Libing">Burial Assistance</div>
+                        <div class="card-desc" data-en="Financial aid to help individuals and families manage funeral and burial expenses for an immediate family member who has passed away." data-tl="Tulong pinansyal para sa mga indibidwal at pamilya sa paggastos sa libing at funeral para sa miyembro ng pamilyang pumanaw.">Financial aid to help individuals and families manage funeral and burial expenses for an immediate family member who has passed away.</div>
+                        <span class="card-arrow" data-en="View Requirements →" data-tl="Tingnan ang mga Kinakailangan →">View Requirements →</span>
                     </div>
                 </a>
             </div>
@@ -155,16 +135,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             <div class="col-md-4">
                 <div class="aics-card disabled">
                     <span class="card-num">03 - AICS</span>
-                    <div class="card-title">Emergency Shelter Assistance</div>
-                    <div class="card-desc">Support for solo parents who have lost or are at risk of losing their shelter due to disaster, calamity, or emergency situations.</div>
-                    <span class="card-badge-unavail">? Not yet available</span>
+                    <div class="card-title" data-en="Emergency Shelter Assistance" data-tl="Tulong sa Emergency Shelter">Emergency Shelter Assistance</div>
+                    <div class="card-desc" data-en="Support for solo parents who have lost or are at risk of losing their shelter due to disaster, calamity, or emergency situations." data-tl="Tulong para sa mga solo parent na nawalan o nanganganib na mawalan ng tirahan dahil sa sakuna, kalamidad, o emergency na sitwasyon.">Support for solo parents who have lost or are at risk of losing their shelter due to disaster, calamity, or emergency situations.</div>
+                    <span class="card-badge-unavail" data-en="⏳ Not yet available" data-tl="⏳ Hindi pa available">⏳ Not yet available</span>
                 </div>
             </div>
 
         </div>
 
         <div class="mt-4" style="background:rgba(44,62,143,0.06);border-radius:14px;padding:16px 20px;border-left:4px solid var(--primary-blue);font-size:0.85rem;color:#475569;">
-            <strong style="color:var(--primary-blue);">Note:</strong> Emergency Shelter Assistance is currently unavailable while we prepare the necessary data and forms. Medical and Burial Assistance applications are open.
+            <strong style="color:var(--primary-blue);" data-en="Note:" data-tl="Paalala:">Note:</strong> <span data-en="Emergency Shelter Assistance is currently unavailable while we prepare the necessary data and forms. Medical and Burial Assistance applications are open." data-tl="Ang Emergency Shelter Assistance ay kasalukuyang hindi available habang inihahanda namin ang kinakailangang data at forms. Bukas ang Medical at Burial Assistance applications.">Emergency Shelter Assistance is currently unavailable while we prepare the necessary data and forms. Medical and Burial Assistance applications are open.</span>
         </div>
 
     </div>
@@ -174,9 +154,21 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
 
-    @include('components.user-notification-modal')
     @include('components.chat-modal')
     @include('components.chatbot-widget')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let currentLang = 'en';
+        function setLang(lang) {
+            currentLang = lang;
+            document.querySelectorAll('.lang-btn').forEach(b => {
+                b.classList.toggle('active', b.dataset.lang === lang);
+            });
+            document.querySelectorAll('[data-en]').forEach(el => {
+                const text = lang === 'tl' ? (el.dataset.tl || el.dataset.en) : el.dataset.en;
+                if (text) el.textContent = text;
+            });
+        }
+    </script>
 </body>
 </html>

@@ -21,7 +21,7 @@ class AicsApiController extends Controller
      * GET available time slots for a specific date (scoped by municipality).
      * GET /mobile-api/aics/{type}/slots?date=YYYY-MM-DD
      */
-    public function getAvailableSlots(Request $request): \Illuminate\Http\JsonResponse
+    public function getAvailableSlots(Request $request): JsonResponse
     {
         $request->validate(['date' => 'required|date']);
 
@@ -50,29 +50,43 @@ class AicsApiController extends Controller
     /**
      * Booking helper (mirrors existing web appointment booking validation).
      */
-    private function bookAppointment(Request $request, string $programType): \Illuminate\Http\JsonResponse
+    private function bookAppointment(Request $request, string $programType): JsonResponse
     {
         $user = Auth::user();
 
-        // Prevent booking another appointment once user has started or completed
-        // an AICS application for the same program type.
-        $hasActiveOrCompletedApp = Application::where('user_id', $user->id)
+        // Block only if user has an active appointment (pending/confirmed/validated)
+        // for this program. A CANCELLED appointment allows rebooking.
+        $hasActiveAppointment = Appointment::where('user_id', $user->id)
             ->where('program_type', $programType)
-            ->whereIn('status', ['pending', 'approved', 'rejected'])
+            ->whereIn('status', ['pending', 'confirmed', 'validated'])
             ->exists();
 
-        if ($hasActiveOrCompletedApp) {
+        if ($hasActiveAppointment) {
             return response()->json([
                 'success' => false,
-                'message' => 'You already have an active AICS application for this assistance type.',
+                'message' => 'You already have an active appointment for this program. Please cancel it before booking a new one.',
+            ], 409);
+        }
+
+        // Also block if user has an approved or processing application
+        // (rejected or pending-only apps that came from a cancelled appointment should NOT block)
+        $hasCompletedApp = Application::where('user_id', $user->id)
+            ->where('program_type', $programType)
+            ->whereIn('status', ['approved'])
+            ->exists();
+
+        if ($hasCompletedApp) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You already have an approved AICS application for this assistance type.',
             ], 409);
         }
 
         $request->validate([
             'appointment_date' => 'required|date|after:today',
             'appointment_time' => 'required|in:' . implode(',', Appointment::availableSlots()),
-            'interview_type' => 'required|in:face_to_face,online',
-            'user_notes' => 'nullable|string|max:500',
+            'interview_type'   => 'required|in:face_to_face,online',
+            'user_notes'       => 'nullable|string|max:500',
         ]);
 
         $date = $request->appointment_date;
@@ -83,19 +97,6 @@ class AicsApiController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Appointments can only be booked on weekdays (Mon–Fri).',
-            ], 422);
-        }
-
-        // Check user doesn't already have an active appointment for this program
-        $existing = Appointment::where('user_id', $user->id)
-            ->whereIn('status', ['pending', 'confirmed'])
-            ->where('program_type', $programType)
-            ->first();
-
-        if ($existing) {
-            return response()->json([
-                'success' => false,
-                'message' => 'You already have an active appointment for this program. Please cancel it before booking a new one.',
             ], 422);
         }
 
@@ -140,12 +141,66 @@ class AicsApiController extends Controller
         ], 201);
     }
 
-    public function bookMedicalAppointment(Request $request): \Illuminate\Http\JsonResponse
+    // ── Shared push notification helper (DB first, then OneSignal) ───────────
+    private function sendPushNotification(int $userId, string $title, string $body, string $type = 'aics'): void
+    {
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $userId,
+                'type'       => $type,
+                'title'      => $title,
+                'body'       => $body,
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AICS: Failed to insert notification', ['error' => $e->getMessage()]);
+        }
+
+        try {
+            $oneSignalKey = env('ONESIGNAL_API_KEY', '');
+            if (!$oneSignalKey) return;
+
+            $payload = [
+                'app_id'          => env('ONESIGNAL_APP_ID', '3db6828d-49af-4f5a-8d89-ff0b90749aec'),
+                'target_channel'  => 'push',
+                'include_aliases' => ['external_id' => [(string) $userId]],
+                'headings'        => ['en' => $title],
+                'contents'        => ['en' => $body],
+                'data'            => ['type' => $type],
+                'priority'        => 10,
+            ];
+
+            $ch = curl_init('https://api.onesignal.com/notifications');
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_POST           => true,
+                CURLOPT_HTTPHEADER     => [
+                    'Content-Type: application/json; charset=utf-8',
+                    'Authorization: Key ' . $oneSignalKey,
+                ],
+                CURLOPT_POSTFIELDS     => json_encode($payload),
+                CURLOPT_TIMEOUT        => 10,
+            ]);
+            $response = curl_exec($ch);
+            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            curl_close($ch);
+
+            if ($httpCode !== 200 && $httpCode !== 201) {
+                Log::warning('AICS: OneSignal push failed', ['http_code' => $httpCode]);
+            }
+        } catch (\Exception $e) {
+            Log::error('AICS: Push notification exception', ['error' => $e->getMessage()]);
+        }
+    }
+
+    public function bookMedicalAppointment(Request $request): JsonResponse
     {
         return $this->bookAppointment($request, 'AICS_Medical');
     }
 
-    public function bookBurialAppointment(Request $request): \Illuminate\Http\JsonResponse
+    public function bookBurialAppointment(Request $request): JsonResponse
     {
         return $this->bookAppointment($request, 'AICS_Burial');
     }
@@ -154,7 +209,7 @@ class AicsApiController extends Controller
      * GET the user's most relevant appointment (mirrors web ordering).
      * GET /mobile-api/aics/{type}/appointment
      */
-    private function getAppointment(string $programType): \Illuminate\Http\JsonResponse
+    private function getAppointment(string $programType): JsonResponse
     {
         $user = Auth::user();
 
@@ -169,12 +224,12 @@ class AicsApiController extends Controller
         ]);
     }
 
-    public function getMedicalAppointment(): \Illuminate\Http\JsonResponse
+    public function getMedicalAppointment(): JsonResponse
     {
         return $this->getAppointment('AICS_Medical');
     }
 
-    public function getBurialAppointment(): \Illuminate\Http\JsonResponse
+    public function getBurialAppointment(): JsonResponse
     {
         return $this->getAppointment('AICS_Burial');
     }
@@ -208,7 +263,7 @@ class AicsApiController extends Controller
      * Cancel appointment (pending/confirmed only).
      * DELETE /mobile-api/aics/{type}/appointments/{id}
      */
-    private function cancelAppointment(string $programType, int $id): \Illuminate\Http\JsonResponse
+    private function cancelAppointment(string $programType, int $id): JsonResponse
     {
         $user = Auth::user();
         $appt = Appointment::where('id', $id)
@@ -229,12 +284,12 @@ class AicsApiController extends Controller
         return response()->json(['message' => 'Appointment cancelled successfully.'], 200);
     }
 
-    public function cancelMedicalAppointment(int $id): \Illuminate\Http\JsonResponse
+    public function cancelMedicalAppointment(int $id): JsonResponse
     {
         return $this->cancelAppointment('AICS_Medical', $id);
     }
 
-    public function cancelBurialAppointment(int $id): \Illuminate\Http\JsonResponse
+    public function cancelBurialAppointment(int $id): JsonResponse
     {
         return $this->cancelAppointment('AICS_Burial', $id);
     }
@@ -242,17 +297,28 @@ class AicsApiController extends Controller
     private function formatAppointment($appt): array
     {
         return [
-            'id' => $appt->id,
-            'appointment_date' => $appt->appointment_date->format('Y-m-d'),
-            'appointment_time' => $appt->appointment_time,
-            'formatted_date' => $appt->formatted_date,
-            'formatted_time' => $appt->formatted_time,
-            'interview_type' => $appt->interview_type,
-            'interview_label' => $appt->interview_label,
-            'status' => $appt->status,
-            'user_notes' => $appt->user_notes,
-            'admin_notes' => $appt->admin_notes,
-            'created_at' => $appt->created_at?->toIso8601String(),
+            'id'                       => $appt->id,
+            'appointment_date'         => $appt->appointment_date->format('Y-m-d'),
+            'appointment_time'         => $appt->appointment_time,
+            'formatted_date'           => $appt->formatted_date,
+            'formatted_time'           => $appt->formatted_time,
+            'interview_type'           => $appt->interview_type,
+            'interview_label'          => $appt->interview_label,
+            'status'                   => $appt->status,
+            'user_notes'               => $appt->user_notes,
+            'admin_notes'              => $appt->admin_notes,
+            'created_at'               => $appt->created_at?->toIso8601String(),
+            // Reschedule fields
+            'reschedule_date'          => $appt->reschedule_date
+                ? (is_string($appt->reschedule_date) ? $appt->reschedule_date : $appt->reschedule_date->format('Y-m-d'))
+                : null,
+            'reschedule_time'          => $appt->reschedule_time,
+            'reschedule_reason'        => $appt->reschedule_reason,
+            'reschedule_status'        => $appt->reschedule_status,
+            // Cancellation fields
+            'cancel_reason'            => $appt->cancel_reason,
+            'cancellation_status'      => $appt->cancellation_status,
+            'cancellation_admin_notes' => $appt->cancellation_admin_notes,
         ];
     }
 

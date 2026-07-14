@@ -3,15 +3,20 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Mail\NewUserIdVerificationAdminMail;
 use App\Models\User;
+use App\Services\DeviceRegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Exception;
 
 class OtpController extends Controller
 {
+    public function __construct(private DeviceRegistrationService $deviceService) {}
     public function showVerifyForm()
     {
         // Must have pending registration data in session
@@ -50,12 +55,39 @@ class OtpController extends Controller
             }
 
             // OTP is correct — NOW create the user in the database
+            $fingerprint = session('pending_device_fingerprint');
             try {
+                $validIdPath = $registrationData['valid_id_path'] ?? null;
+                $validIdFilename = $registrationData['valid_id_filename'] ?? null;
+                unset(
+                    $registrationData['valid_id_path'],
+                    $registrationData['valid_id_filename']
+                );
+
                 $user = User::create(array_merge($registrationData, [
-                    'role'              => 'user',
-                    'status'            => 'active',
-                    'email_verified_at' => now(),
+                    'role'                    => 'user',
+                    'status'                  => 'inactive',
+                    'email_verified_at'       => now(),
+                    'valid_id_path'           => $validIdPath,
+                    'valid_id_filename'       => $validIdFilename,
+                    'id_verification_status'  => User::ID_STATUS_PENDING,
                 ]));
+
+                if ($validIdPath && Storage::disk('public')->exists($validIdPath)) {
+                    $extension = pathinfo($validIdPath, PATHINFO_EXTENSION);
+                    $newPath = 'valid-ids/' . $user->id . '/valid-id.' . $extension;
+                    Storage::disk('public')->makeDirectory('valid-ids/' . $user->id);
+                    Storage::disk('public')->move($validIdPath, $newPath);
+                    $user->update(['valid_id_path' => $newPath]);
+                }
+
+                $this->notifyAdminsOfPendingIdVerification($user);
+
+                // Attach device fingerprint and set cookie
+                if ($fingerprint) {
+                    $this->deviceService->attachUser($fingerprint, $user->id);
+                    session()->forget('pending_device_fingerprint');
+                }
             } catch (Exception $e) {
                 Log::error('Failed to create user after OTP: ' . $e->getMessage());
                 return back()->withErrors(['otp' => 'Account creation failed. Please try again.']);
@@ -78,7 +110,8 @@ class OtpController extends Controller
             ]);
 
             return redirect()->route('password.change')
-                ->with('success', 'Email verified successfully! Please set your new password.');
+                ->cookie($this->deviceService->makeCookie($fingerprint ?? ''))
+                ->with('success', 'Email verified successfully! Please set your new password. Your valid ID will be reviewed by an admin before you can login.');
         }
 
         // ------------------------------------------------------------------
@@ -126,7 +159,7 @@ class OtpController extends Controller
 
             // Check if existing OTP is still valid — don't spam
             $otpExpiresAt = session('pending_otp_expires_at');
-            if ($otpExpiresAt && now()->lt($otpExpiresAt)) {
+            if ($otpExpiresAt && now()->lt(\Carbon\Carbon::parse($otpExpiresAt))) {
                 return back()->with('warning', 'Your current OTP is still valid. Please check your email.');
             }
 
@@ -169,7 +202,7 @@ class OtpController extends Controller
                 ->withErrors(['error' => 'User not found.']);
         }
 
-        if ($user->otp_expires_at && $user->otp_expires_at > now()) {
+        if ($user->otp_expires_at && Carbon::parse($user->otp_expires_at)->gt(now())) {
             return back()->with('warning', 'Your current OTP is still valid. Please check your email.');
         }
 
@@ -189,6 +222,22 @@ class OtpController extends Controller
         } catch (Exception $e) {
             Log::error('Failed to resend OTP: ' . $e->getMessage());
             return back()->withErrors(['error' => 'Failed to send OTP. Please try again.']);
+        }
+    }
+
+    private function notifyAdminsOfPendingIdVerification(User $user): void
+    {
+        try {
+            $admins = User::where('role', 'admin')
+                ->where('municipality', $user->municipality)
+                ->where('status', 'active')
+                ->get();
+
+            foreach ($admins as $admin) {
+                Mail::to($admin->email)->send(new NewUserIdVerificationAdminMail($user));
+            }
+        } catch (Exception $e) {
+            Log::error('Failed to send admin ID verification notification: ' . $e->getMessage());
         }
     }
 }

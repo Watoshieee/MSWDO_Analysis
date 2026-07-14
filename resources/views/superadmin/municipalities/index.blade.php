@@ -585,6 +585,46 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(44,62,143,0.3);
         }
+
+        /* ── NOTIFICATION ANIMATIONS ── */
+        @keyframes slideInRight {
+            from {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideOutRight {
+            from {
+                transform: translateX(0);
+                opacity: 1;
+            }
+            to {
+                transform: translateX(450px);
+                opacity: 0;
+            }
+        }
+
+        @keyframes timerBar {
+            from {
+                width: 100%;
+            }
+            to {
+                width: 0%;
+            }
+        }
+
+        .notification-toast {
+            animation-fill-mode: both;
+        }
+
+        .notification-toast.fade-out {
+            animation: slideOutRight 0.4s ease-in forwards;
+        }
     </style>
 </head>
 
@@ -622,7 +662,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
     <section class="hero-banner">
         <div class="container" style="position:relative;z-index:2;">
-            <a href="{{ route('superadmin.dashboard') }}" class="back-link">&#8592; Back to Dashboard</a>
             <div class="hero-badge">Super Admin</div>
             <h1>Municipalities Management</h1>
             <div class="hero-divider"></div>
@@ -636,9 +675,32 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 $topNotice = session('success') ?: session('error');
             @endphp
             @if($topNotice)
-                <div style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;">
+                <div id="superAdminTopNotice" class="notification-toast" style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:16px 16px 12px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;animation:slideInRight 0.4s ease-out;overflow:hidden;">
                     {{ $topNotice }}
+                    <div id="superAdminTopNoticeTimer" class="progress-bar-timer" style="position:absolute;bottom:0;left:0;height:3px;background:#FDB913;animation:timerBar 5s linear forwards;"></div>
                 </div>
+                <script>
+                    (function () {
+                        const toast = document.getElementById('superAdminTopNotice');
+                        const timer = document.getElementById('superAdminTopNoticeTimer');
+                        if (!toast) return;
+
+                        let dismissed = false;
+                        function dismiss() {
+                            if (dismissed) return;
+                            dismissed = true;
+                            toast.style.animation = 'slideOutRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55) forwards';
+                            setTimeout(() => { try { toast.remove(); } catch (e) {} }, 420);
+                        }
+
+                        if (timer) {
+                            timer.addEventListener('animationend', dismiss);
+                        }
+
+                        // fallback
+                        setTimeout(dismiss, 5200);
+                    })();
+                </script>
             @endif
 
             <div class="d-flex justify-content-between align-items-center mb-4">

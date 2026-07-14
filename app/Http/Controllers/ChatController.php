@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Application;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -18,6 +19,19 @@ class ChatController extends Controller
             ->where('municipality', $user->municipality)
             ->select('id', 'full_name', 'municipality')
             ->get();
+
+        if ($admins->isNotEmpty()) {
+            $unreadByAdmin = Message::where('receiver_id', $user->id)
+                ->where('is_read', false)
+                ->whereIn('sender_id', $admins->pluck('id'))
+                ->selectRaw('sender_id, COUNT(*) as unread_count')
+                ->groupBy('sender_id')
+                ->pluck('unread_count', 'sender_id');
+
+            $admins->each(function ($admin) use ($unreadByAdmin) {
+                $admin->unread_count = (int) ($unreadByAdmin[$admin->id] ?? 0);
+            });
+        }
         
         return response()->json($admins);
     }

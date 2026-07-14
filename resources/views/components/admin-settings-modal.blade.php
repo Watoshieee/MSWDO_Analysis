@@ -4,14 +4,18 @@
 </button>
 
 <!-- Settings Modal -->
-<div class="modal fade" id="settingsModal" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
-        <div class="modal-content" style="border-radius:20px;border:none;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,0.2);">
-            <div class="modal-header" style="background:var(--primary-gradient);color:white;border:none;padding:24px;">
-                <h5 class="modal-title" style="font-weight:800;font-size:1.2rem;">⚙️ Customize Colors</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:brightness(0) invert(1);"></button>
-            </div>
-            <div class="modal-body" style="padding:28px;">
+<div id="settingsModal"
+    style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;"
+    onclick="if(event.target===this) this.style.display='none'">
+    <div style="background:white;width:90%;max-width:900px;border-radius:20px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.2);animation:fadeInScale .25s ease;">
+        <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;padding:24px;border-radius:20px 20px 0 0;display:flex;align-items:center;justify-content:space-between;">
+            <h5 style="font-weight:800;font-size:1.2rem;margin:0;">Customize Colors</h5>
+            <button onclick="document.getElementById('settingsModal').style.display='none'"
+                style="background:rgba(255,255,255,.15);border:none;color:white;border-radius:50%;width:34px;height:34px;font-size:1.1rem;cursor:pointer;line-height:1;">
+                &times;
+            </button>
+        </div>
+        <div style="padding:28px;overflow-y:auto;">
                 <div class="row">
                     <div class="col-md-6">
                         <h6 style="color:var(--primary-blue);font-weight:700;margin-bottom:20px;">Color Customization</h6>
@@ -57,12 +61,12 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer" style="border:none;padding:20px 28px;gap:10px;background:#f8fafc;display:flex;">
+            <div style="border:none;padding:20px 28px;gap:10px;background:#f8fafc;display:flex;border-radius:0 0 20px 20px;">
                 <button type="button" onclick="resetModalColors()" style="background:white;border:2px solid #e2e8f0;color:#64748b;border-radius:12px;padding:12px 24px;font-weight:700;font-size:0.9rem;flex:1;cursor:pointer;transition:all 0.2s;">
-                    🔄 Reset to Default
+                    Reset to Default
                 </button>
-                <button type="button" onclick="saveModalColors()" style="background:var(--primary-gradient);color:white;border:none;border-radius:12px;padding:12px 24px;font-weight:700;font-size:0.9rem;flex:1;cursor:pointer;transition:all 0.2s;">
-                    💾 Save Changes
+                <button type="button" onclick="saveModalColors()" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:12px;padding:12px 24px;font-weight:700;font-size:0.9rem;flex:1;cursor:pointer;transition:all 0.2s;">
+                    Save Changes
                 </button>
             </div>
         </div>
@@ -71,6 +75,8 @@
 
 <script>
     function openSettingsModal() {
+        document.getElementById('settingsModal').style.display = 'flex';
+        
         // Load current colors from CSS variables or defaults
         const currentPrimary = getComputedStyle(document.documentElement).getPropertyValue('--primary-blue').trim() || '#2C3E8F';
         const currentSecondary = getComputedStyle(document.documentElement).getPropertyValue('--secondary-yellow').trim() || '#FDB913';
@@ -102,9 +108,6 @@
             document.getElementById('modalAccentColorText').value = currentAccent;
             updateModalPreview();
         });
-
-        const modal = new bootstrap.Modal(document.getElementById('settingsModal'));
-        modal.show();
     }
 
     // Update text inputs and preview when color picker changes
@@ -154,7 +157,7 @@
         .then(result => {
             if (result.success) {
                 showSettingsToast(result.message, 'success');
-                bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+                document.getElementById('settingsModal').style.display = 'none';
                 setTimeout(() => location.reload(), 1500);
             } else {
                 showSettingsToast('Error saving settings.', 'danger');
@@ -177,7 +180,7 @@
         .then(result => {
             if (result.success) {
                 showSettingsToast(result.message, 'success');
-                bootstrap.Modal.getInstance(document.getElementById('settingsModal')).hide();
+                document.getElementById('settingsModal').style.display = 'none';
                 setTimeout(() => location.reload(), 1500);
             } else {
                 showSettingsToast('Error resetting settings.', 'danger');
@@ -195,3 +198,10 @@
         setTimeout(() => t.remove(), 3500);
     }
 </script>
+
+<style>
+    @keyframes fadeInScale {
+        from { transform: scale(.95); opacity: 0; }
+        to { transform: scale(1); opacity: 1; }
+    }
+</style>

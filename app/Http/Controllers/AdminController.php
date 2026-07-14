@@ -7,19 +7,26 @@ use App\Models\Barangay;
 use App\Models\Application;
 use App\Models\Appointment;
 use App\Models\SocialWelfareProgram;
+use App\Models\MunicipalityYearlySummary;
 use App\Models\FileMonitoring;
 use App\Models\FileUpload;
 use App\Models\MunicipalityVision;
 use App\Mail\RequirementsReviewedMail;
 use App\Mail\SoloParentFilesUploadedMail;
 use App\Mail\SoloParentIdReadyMail;
+use App\Mail\SoloParentClaimedMail;
+use App\Mail\AicsGrantReleasedMail;
 use App\Mail\PwdValidatedMail;
 use App\Mail\PwdIdReadyMail;
 use App\Mail\AicsStatusMail;
+use App\Mail\UserIdApprovedMail;
+use App\Mail\UserIdDeclinedMail;
+use App\Services\DeviceRegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class AdminController extends Controller
@@ -79,6 +86,17 @@ class AdminController extends Controller
             : $adminNewUploads->count();
 
         $adminNotifCount = $newApplicationsCount + $newAppointmentsCount + $newUploadsCount;
+
+        // ── Unread admin-targeted notifications (reschedule/cancel requests etc) ──
+        try {
+            $adminUnreadCount = \DB::table('notifications')
+                ->where('user_id', $user->id)
+                ->where('is_read', false)
+                ->count();
+            $adminNotifCount += $adminUnreadCount;
+        } catch (\Exception $e) {
+            // If notifications table doesn't exist yet, ignore
+        }
 
         return compact('adminNewApplications', 'adminNewAppointments', 'adminNewUploads', 'adminNotifCount');
     }
@@ -406,6 +424,24 @@ class AdminController extends Controller
         $application->refresh();
 
         $user = \App\Models\User::find($application->user_id);
+
+        // ── Create in-app notification for user ─────────────────────────
+        $label = $isPwd ? 'PWD ID' : ($isAics ? 'AICS grant' : 'Solo Parent ID');
+        $programLabel = $isPwd ? 'pwd' : ($isAics ? 'aics' : 'solo_parent');
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $application->user_id,
+                'type'       => $programLabel,
+                'title'      => $label . ' Ready for Pickup',
+                'body'       => 'Your ' . $label . ' is now ready for pickup at the MSWDO office. Please bring a valid ID when claiming.',
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('markIdReady notification insert failed: ' . $e->getMessage());
+        }
+
         if ($user && $user->email) {
             try {
                 if ($isSoloParent) {
@@ -420,7 +456,6 @@ class AdminController extends Controller
             }
         }
 
-        $label = $isPwd ? 'PWD ID' : ($isAics ? 'AICS grant' : 'Solo Parent ID');
         $msg = $label . ' marked as ready. Email sent to ' . ($user?->email ?? 'user') . '.';
 
         if (request()->expectsJson() || request()->ajax()) {
@@ -428,6 +463,150 @@ class AdminController extends Controller
                 'success' => true,
                 'message' => $msg,
             ]);
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
+
+    // ── Mark Solo Parent ID as claimed ───────────────────────────────────────
+    public function markClaimed($id)
+    {
+        $admin = Auth::user();
+        $application = Application::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->where('program_type', 'Solo_Parent')
+            ->firstOrFail();
+
+        if ($application->id_status !== 'ready_for_pickup') {
+            $msg = 'Application must be in \'Ready for Pickup\' status before marking as claimed.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
+        // Atomic transition — prevent duplicate operations
+        $updated = Application::where('id', $application->id)
+            ->where('municipality', $admin->municipality)
+            ->where('id_status', 'ready_for_pickup')
+            ->update([
+                'id_status'    => 'claimed',
+                'completed_at' => now(),
+            ]);
+
+        if ($updated === 0) {
+            $msg = 'Already marked as claimed.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => true, 'message' => $msg]);
+            }
+            return redirect()->back()->with('success', $msg);
+        }
+
+        $application->refresh();
+        $user = \App\Models\User::find($application->user_id);
+
+        // ── Bell notification ────────────────────────────────────────────────
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $application->user_id,
+                'type'       => 'solo_parent',
+                'title'      => '✅ Solo Parent ID Claimed',
+                'body'       => 'Your Solo Parent ID has been successfully claimed and recorded. Congratulations!',
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('markClaimed notification insert failed: ' . $e->getMessage());
+        }
+
+        // ── Email user ───────────────────────────────────────────────────────
+        if ($user && $user->email) {
+            try {
+                Mail::to($user->email)->send(new SoloParentClaimedMail($application, $user));
+            } catch (\Exception $e) {
+                Log::error('SoloParentClaimedMail failed: ' . $e->getMessage());
+            }
+        }
+
+        $msg = 'Solo Parent ID marked as claimed. Confirmation email sent to ' . ($user?->email ?? 'user') . '.';
+
+        if (request()->expectsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => $msg]);
+        }
+
+        return redirect()->back()->with('success', $msg);
+    }
+
+    // ── Mark AICS grant as released (final step) ──────────────────────────────
+    public function markReleased($id)
+    {
+        $admin = Auth::user();
+        $application = Application::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->whereIn('program_type', ['AICS_Medical', 'AICS_Burial'])
+            ->firstOrFail();
+
+        if ($application->id_status !== 'ready_for_pickup') {
+            $msg = 'Application must be in \'Ready for Pickup\' status before marking as released.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => false, 'message' => $msg], 422);
+            }
+            return redirect()->back()->with('error', $msg);
+        }
+
+        // Atomic transition
+        $updated = Application::where('id', $application->id)
+            ->where('municipality', $admin->municipality)
+            ->where('id_status', 'ready_for_pickup')
+            ->update([
+                'id_status'    => 'released',
+                'completed_at' => now(),
+            ]);
+
+        if ($updated === 0) {
+            $msg = 'Already marked as released.';
+            if (request()->expectsJson() || request()->ajax()) {
+                return response()->json(['success' => true, 'message' => $msg]);
+            }
+            return redirect()->back()->with('success', $msg);
+        }
+
+        $application->refresh();
+        $user = \App\Models\User::find($application->user_id);
+
+        $programLabel = $application->program_type === 'AICS_Burial'
+            ? 'AICS Burial Assistance'
+            : 'AICS Medical Assistance';
+
+        // ── Bell notification ──────────────────────────────────────────────────
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $application->user_id,
+                'type'       => 'aics',
+                'title'      => '✅ ' . $programLabel . ' Grant Released',
+                'body'       => 'Your ' . $programLabel . ' grant has been successfully released. Thank you for availing MSWDO assistance.',
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('markReleased notification insert failed: ' . $e->getMessage());
+        }
+
+        // ── Email user ─────────────────────────────────────────────────────────
+        if ($user && $user->email) {
+            try {
+                Mail::to($user->email)->send(new AicsGrantReleasedMail($application, $user));
+            } catch (\Exception $e) {
+                Log::error('AicsGrantReleasedMail failed: ' . $e->getMessage());
+            }
+        }
+
+        $msg = $programLabel . ' grant marked as released. Confirmation email sent to ' . ($user?->email ?? 'user') . '.';
+
+        if (request()->expectsJson() || request()->ajax()) {
+            return response()->json(['success' => true, 'message' => $msg]);
         }
 
         return redirect()->back()->with('success', $msg);
@@ -454,6 +633,21 @@ class AdminController extends Controller
             'id_status' => 'processing',
             'completed_at' => now(),
         ]);
+
+        // ── Create in-app notification ───────────────────────────────────
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $application->user_id,
+                'type'       => 'pwd',
+                'title'      => 'PWD Application Validated',
+                'body'       => 'Your PWD application requirements have been validated. Your PWD ID is now being processed.',
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('PWD validate notification insert failed: ' . $e->getMessage());
+        }
 
         $user = \App\Models\User::find($application->user_id);
         if ($user && $user->email) {
@@ -676,15 +870,55 @@ class AdminController extends Controller
             'updated_at' => now(),
         ]);
 
+        // ── Create in-app notification for the user ──────────────────────
+        if ($fileMonitoring->application && in_array($request->status, ['approved', 'rejected'], true)) {
+            $programType = $fileMonitoring->application->program_type ?? 'application';
+            $notifType = match (true) {
+                str_contains($programType, 'PWD')         => 'pwd',
+                str_contains($programType, 'Solo_Parent') => 'solo_parent',
+                str_contains($programType, 'AICS')        => 'aics',
+                default                                   => 'application',
+            };
+            $programLabel = str_replace('_', ' ', $programType);
+            $docName = $fileUpload->requirement_name ?? 'document';
+
+            if ($request->status === 'approved') {
+                $notifTitle = 'Document Approved';
+                $notifBody  = 'Your "' . $docName . '" for ' . $programLabel . ' has been approved.';
+            } else {
+                $notifTitle = 'Document Rejected';
+                $remarks    = $request->admin_remarks ? ' Reason: ' . $request->admin_remarks : '';
+                $notifBody  = 'Your "' . $docName . '" for ' . $programLabel . ' was rejected.' . $remarks;
+            }
+
+            // Add overall status context
+            $newOverall = $fileMonitoring->overall_status;
+            if ($newOverall === 'approved') {
+                $notifBody .= ' All requirements are now approved!';
+            } elseif ($newOverall === 'rejected') {
+                $notifBody .= ' Please re-upload the rejected document(s).';
+            }
+
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $fileMonitoring->application->user_id,
+                    'type'       => $notifType,
+                    'title'      => $notifTitle,
+                    'body'       => $notifBody,
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('File status notification insert failed: ' . $e->getMessage());
+            }
+        }
+
         // ── Email user when requirements are reviewed (all program types) ────────
         if ($fileMonitoring->application && $fileMonitoring->application->user) {
             $fileMonitoring->load('fileUploads', 'application.user');
             $newOverall = $fileMonitoring->overall_status;
 
-            // Notify user on every approve/reject action.
-            // - If all files are approved => send "approved"
-            // - If any file is rejected   => send "rejected"
-            // - Otherwise                 => send generic "in_review" update
             if (in_array($request->status, ['approved', 'rejected'], true)) {
                 try {
                     $mailStatus = match ($newOverall) {
@@ -701,7 +935,6 @@ class AdminController extends Controller
             }
         }
 
-
         return redirect()->back()->with('success', 'File status updated successfully!');
     }
 
@@ -709,11 +942,56 @@ class AdminController extends Controller
      * Detailed Analysis Page — delegates to focused private helpers
      * to keep the public method small and IDE-friendly.
      */
-    public function detailedAnalysis()
+    public function detailedAnalysis(Request $request)
     {
         $user = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
+
+        $muniYear = (int) ($municipality->year ?? date('Y'));
+
+        $yearsFromBarangays = Barangay::where('municipality', $user->municipality)
+            ->whereNotNull('year')
+            ->distinct()
+            ->orderByDesc('year')
+            ->pluck('year')
+            ->map(fn ($y) => (int) $y)
+            ->unique()
+            ->values()
+            ->toArray();
+
+        $yearsFromSummary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->whereNotNull('year')
+            ->distinct()
+            ->orderByDesc('year')
+            ->pluck('year')
+            ->map(fn ($y) => (int) $y)
+            ->toArray();
+
+        $availableAnalysisYears = array_values(array_unique(array_merge($yearsFromBarangays, $yearsFromSummary)));
+        rsort($availableAnalysisYears, SORT_NUMERIC);
+
+        if ($request->filled('year') && $availableAnalysisYears !== []) {
+            $reqYear = (int) $request->year;
+            if (! in_array($reqYear, $availableAnalysisYears, true)) {
+                return redirect()->route('admin.detailed-analysis', ['year' => $availableAnalysisYears[0]]);
+            }
+            $analysisYear = $reqYear;
+        } elseif ($availableAnalysisYears !== []) {
+            $analysisYear = in_array($muniYear, $availableAnalysisYears, true)
+                ? $muniYear
+                : $availableAnalysisYears[0];
+        } else {
+            $analysisYear = $muniYear;
+        }
+
         $applications = $this->loadApplications($user->municipality);
+        $applications = $applications->filter(function ($app) use ($analysisYear) {
+            if (! $app->application_date) {
+                return false;
+            }
+
+            return (int) $app->application_date->year === (int) $analysisYear;
+        });
 
         [
             $totalApplications,
@@ -723,30 +1001,65 @@ class AdminController extends Controller
             $applicationsByProgram
         ] = $this->buildApplicationStats($applications);
 
-        $programShareOverview = $this->buildProgramOverview($user->municipality);
+        $programShareOverview = $this->buildProgramOverview($user->municipality, $analysisYear);
 
-        // Get demographic data for this municipality
-        $totalPop = $municipality->male_population + $municipality->female_population;
-        $totalHouseholds = $municipality->total_households;
+        $summary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->where('year', $analysisYear)
+            ->first();
 
-        // Gender distribution
-        $genderData = [
-            'male' => $municipality->male_population,
-            'female' => $municipality->female_population,
-        ];
+        // Prefer yearly summary (kept in sync when barangay data is saved) so Analysis reflects Data Management
+        if ($summary && ($summary->total_population > 0 || $summary->total_households > 0)) {
+            $totalPop = (int) $summary->total_population;
+            $totalHouseholds = (int) $summary->total_households;
+            $genderData = [
+                'male' => (int) $summary->male_population,
+                'female' => (int) $summary->female_population,
+            ];
+            $ageGroupData = [
+                '0-19' => (int) $summary->population_0_19,
+                '20-59' => (int) $summary->population_20_59,
+                '60+' => (int) $summary->population_60_100,
+            ];
+            if (($genderData['male'] + $genderData['female']) === 0 && $totalPop > 0) {
+                $genderData = [
+                    'male' => $municipality->male_population,
+                    'female' => $municipality->female_population,
+                ];
+            }
+            if (($ageGroupData['0-19'] + $ageGroupData['20-59'] + $ageGroupData['60+']) === 0) {
+                $ageGroupData = [
+                    '0-19' => $municipality->population_0_19,
+                    '20-59' => $municipality->population_20_59,
+                    '60+' => $municipality->population_60_100,
+                ];
+            }
+        } else {
+            $totalPop = $municipality->male_population + $municipality->female_population;
+            $totalHouseholds = $municipality->total_households;
+            $genderData = [
+                'male' => $municipality->male_population,
+                'female' => $municipality->female_population,
+            ];
+            $ageGroupData = [
+                '0-19' => $municipality->population_0_19,
+                '20-59' => $municipality->population_20_59,
+                '60+' => $municipality->population_60_100,
+            ];
+        }
 
-        // Age group distribution
-        $ageGroupData = [
-            '0-19' => $municipality->population_0_19,
-            '20-59' => $municipality->population_20_59,
-            '60+' => $municipality->population_60_100,
-        ];
-
-        // Program beneficiaries - use same data as Program Share Overview
         $programBeneficiaries = $programShareOverview->toArray();
+
+        $barangayRowsForAnalysis = Barangay::where('municipality', $user->municipality)
+            ->where('year', $analysisYear)
+            ->orderBy('name')
+            ->get();
+
+        extract($this->adminNotifData($user));
 
         return view('admin.detailed-analysis', compact(
             'municipality',
+            'analysisYear',
+            'availableAnalysisYears',
             'applications',
             'totalApplications',
             'pendingApplications',
@@ -758,7 +1071,8 @@ class AdminController extends Controller
             'totalHouseholds',
             'genderData',
             'ageGroupData',
-            'programBeneficiaries'
+            'programBeneficiaries',
+            'barangayRowsForAnalysis'
         ));
     }
 
@@ -798,11 +1112,16 @@ class AdminController extends Controller
         return [$total, $pending, $approved, $rejected, $byProgram];
     }
 
-    /** Aggregate social welfare program beneficiary counts for the current year. */
-    private function buildProgramOverview(string $municipality)
+    /** Aggregate social welfare program beneficiary counts for the given year (synced from barangay data). */
+    private function buildProgramOverview(string $municipality, ?int $year = null)
     {
+        if ($year === null) {
+            $year = (int) (Municipality::where('name', $municipality)->value('year') ?? date('Y'));
+        }
+
         $programs = SocialWelfareProgram::where('municipality', $municipality)
-            ->where('year', now()->year)
+            ->where('year', $year)
+            ->whereNull('month')
             ->get();
 
         $overview = [];
@@ -868,7 +1187,10 @@ class AdminController extends Controller
             ->distinct('program_type')
             ->pluck('program_type');
 
-        $barangays = Barangay::where('municipality', $user->municipality)->pluck('name');
+        $barangays = Barangay::where('municipality', $user->municipality)
+            ->distinct()
+            ->orderBy('name')
+            ->pluck('name');
 
         return view('admin.applications', compact(
             'applications',
@@ -1014,6 +1336,41 @@ class AdminController extends Controller
             }
         }
 
+        // ── Create in-app notification for the user ──────────────────────
+        if ($oldStatus !== $request->status && in_array($request->status, ['approved', 'rejected'], true)) {
+            $programType = $application->program_type ?? 'application';
+            $notifType = match (true) {
+                str_contains($programType, 'PWD')         => 'pwd',
+                str_contains($programType, 'Solo_Parent') => 'solo_parent',
+                str_contains($programType, 'AICS')        => 'aics',
+                default                                   => 'application',
+            };
+            $programLabel = str_replace('_', ' ', $programType);
+
+            if ($request->status === 'approved') {
+                $notifTitle = 'Application Approved';
+                $notifBody  = 'Your ' . $programLabel . ' application has been approved! Your ID/grant is now being processed.';
+            } else {
+                $remarks    = $request->admin_remarks ? ' Reason: ' . $request->admin_remarks : '';
+                $notifTitle = 'Application Rejected';
+                $notifBody  = 'Your ' . $programLabel . ' application was rejected.' . $remarks;
+            }
+
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $application->user_id,
+                    'type'       => $notifType,
+                    'title'      => $notifTitle,
+                    'body'       => $notifBody,
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Application status notification insert failed: ' . $e->getMessage());
+            }
+        }
+
         // Audit log
         Log::info('Application status updated', [
             'application_id' => $application->id,
@@ -1037,6 +1394,7 @@ class AdminController extends Controller
         $user = Auth::user();
         $barangay = Barangay::where('municipality', $user->municipality)
             ->where('name', $name)
+            ->orderByDesc('year')
             ->firstOrFail();
 
         $applications = Application::where('municipality', $user->municipality)
@@ -1125,6 +1483,11 @@ class AdminController extends Controller
             $users = $users->filter(fn($u) => (int) $u->total_apps === 0)->values();
         }
 
+        $idFilter = (string) $request->query('id_filter', '');
+        if ($idFilter === 'pending') {
+            $users = $users->filter(fn($u) => $u->id_verification_status === \App\Models\User::ID_STATUS_PENDING)->values();
+        }
+
         return response()->json([
             'count' => $users->count(),
             'users' => $users->map(function ($u) {
@@ -1138,6 +1501,10 @@ class AdminController extends Controller
                     'date_of_birth' => $u->date_of_birth,
                     'created_at' => optional($u->created_at)->toDateString(),
                     'email_verified_at' => $u->email_verified_at,
+                    'id_verification_status' => $u->id_verification_status,
+                    'valid_id_path' => $u->valid_id_path,
+                    'valid_id_filename' => $u->valid_id_filename,
+                    'id_rejection_reason' => $u->id_rejection_reason,
                     'total_apps' => (int) $u->total_apps,
                     'pending_apps' => (int) $u->pending_apps,
                     'approved_apps' => (int) $u->approved_apps,
@@ -1145,5 +1512,138 @@ class AdminController extends Controller
                 ];
             })->values(),
         ]);
+    }
+
+    public function serveUserValidId($id)
+    {
+        $admin = Auth::user();
+        $user = \App\Models\User::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->where('role', 'user')
+            ->firstOrFail();
+
+        if (!$user->valid_id_path) {
+            abort(404, 'No valid ID uploaded for this user.');
+        }
+
+        $filePath = $user->valid_id_path;
+        $candidates = [
+            \Illuminate\Support\Facades\Storage::disk('public')->path($filePath),
+            base_path('storage/app/public/' . $filePath),
+            public_path('storage/' . $filePath),
+        ];
+
+        $fullPath = null;
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate) && is_file($candidate)) {
+                $fullPath = $candidate;
+                break;
+            }
+        }
+
+        if (!$fullPath) {
+            abort(404, 'Valid ID file not found.');
+        }
+
+        $mime = mime_content_type($fullPath) ?: 'application/octet-stream';
+        $filename = $user->valid_id_filename ?: basename($filePath);
+
+        return response()->file($fullPath, [
+            'Content-Type' => $mime,
+            'Content-Disposition' => 'inline; filename="' . $filename . '"',
+        ]);
+    }
+
+    public function approveUserId($id)
+    {
+        $admin = Auth::user();
+        $user = \App\Models\User::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->where('role', 'user')
+            ->where('id_verification_status', \App\Models\User::ID_STATUS_PENDING)
+            ->firstOrFail();
+
+        $user->update([
+            'id_verification_status' => \App\Models\User::ID_STATUS_APPROVED,
+            'id_verified_at' => now(),
+            'id_verified_by' => $admin->id,
+            'id_rejection_reason' => null,
+            'status' => 'active',
+        ]);
+
+        try {
+            Mail::to($user->email)->send(new UserIdApprovedMail($user));
+        } catch (\Exception $e) {
+            Log::error('Failed to send ID approval email to user: ' . $e->getMessage());
+        }
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Valid ID approved. User can now login.',
+            ]);
+        }
+
+        return back()->with('success', 'Valid ID approved for ' . $user->full_name . '. The user can now login.');
+    }
+
+    public function declineUserId(Request $request, $id)
+    {
+        $admin = Auth::user();
+        $user = \App\Models\User::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->where('role', 'user')
+            ->where('id_verification_status', \App\Models\User::ID_STATUS_PENDING)
+            ->firstOrFail();
+
+        $declineReasonKeys = array_keys(\App\Models\User::ID_DECLINE_REASONS);
+
+        $validated = $request->validate([
+            'decline_reason' => 'required|string',
+        ], [
+            'decline_reason.required' => 'Please select a reason for declining the valid ID.',
+        ]);
+
+        $rawReason = $validated['decline_reason'];
+
+        // Handle "other:custom text" format
+        if (str_starts_with($rawReason, 'other:')) {
+            $reasonText = trim(substr($rawReason, 6));
+            if (empty($reasonText)) {
+                return response()->json(['success' => false, 'message' => 'Please specify the reason for declining.'], 422);
+            }
+        } elseif (array_key_exists($rawReason, \App\Models\User::ID_DECLINE_REASONS)) {
+            $reasonText = \App\Models\User::ID_DECLINE_REASONS[$rawReason];
+        } else {
+            return response()->json(['success' => false, 'message' => 'Please select a valid decline reason.'], 422);
+        }
+        $userEmail = $user->email;
+        $userFullName = $user->full_name;
+        $userMunicipality = $user->municipality;
+        $validIdPath = $user->valid_id_path;
+        $userId = $user->id;
+
+        try {
+            Mail::to($userEmail)->send(new UserIdDeclinedMail($userFullName, $reasonText, $userMunicipality));
+        } catch (\Exception $e) {
+            Log::error('Failed to send ID decline email to user: ' . $e->getMessage());
+        }
+
+        if ($validIdPath && Storage::disk('public')->exists($validIdPath)) {
+            Storage::disk('public')->delete($validIdPath);
+        }
+        Storage::disk('public')->deleteDirectory('valid-ids/' . $userId);
+
+        app(DeviceRegistrationService::class)->detachUser($userId);
+        $user->forceDelete();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Valid ID declined. The user has been notified by email and removed from the system.',
+            ]);
+        }
+
+        return back()->with('success', 'Valid ID declined for ' . $userFullName . '. The user was notified by email.');
     }
 }

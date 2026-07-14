@@ -42,11 +42,12 @@ class ChangePasswordController extends Controller
         }
 
         $user->password = Hash::make($request->password);
+        $user->must_change_password = false;
         $user->save();
 
         session()->forget(['must_change_password', 'change_password_user_id', 'temp_password']);
 
         return redirect()->route('login')
-            ->with('success', 'Password changed successfully! You can now login with your new password.');
+            ->with('success', 'Password changed successfully! Your account is pending admin approval of your valid ID. You will be able to login once an administrator approves your ID.');
     }
 }
