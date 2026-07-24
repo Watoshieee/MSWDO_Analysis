@@ -867,7 +867,7 @@
             <div class="hero-divider"></div>
             <p>
                 MSWDO is the local government office responsible for delivering social welfare services
-                and programs to support individuals, families, and communities—especially those in need—through
+                and programs to support individuals, families, and communities especially those in need through
                 assistance, protection, and development initiatives.
             </p>
         </div>

@@ -64,9 +64,9 @@ class UserController extends Controller
         $request->validate([
             'username'     => 'required|string|max:50|unique:users,username',
             'email'        => 'required|string|email|max:100|unique:users,email',
-            'password'     => 'required|string|min:8',
+            'password'     => 'required|string|min:8|confirmed',
             'full_name'    => 'required|string|max:100',
-            'gender'       => 'nullable|string|max:30',
+            'gender'       => 'required|string|in:Male,Female',
             'role'         => 'required|in:super_admin,admin,user',
             'municipality' => $muniRules,
             'status'       => 'required|in:active,inactive',

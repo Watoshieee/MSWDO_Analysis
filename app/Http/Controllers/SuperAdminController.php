@@ -81,8 +81,9 @@ class SuperAdminController extends Controller
         $request->validate([
             'username' => 'required|string|max:50|unique:users',
             'email' => 'required|string|email|max:100|unique:users',
-            'password' => 'required|string|min:8',
+            'password' => 'required|string|min:8|confirmed',
             'full_name' => 'required|string|max:100',
+            'gender' => 'nullable|in:Male,Female',
             'role' => 'required|in:super_admin,admin,user',
             'municipality' => 'required_if:role,admin|nullable|string',
             'status' => 'required|in:active,inactive',
@@ -93,6 +94,7 @@ class SuperAdminController extends Controller
             'email' => $request->email,
             'password' => Hash::make($request->password),
             'full_name' => $request->full_name,
+            'gender' => $request->gender,
             'role' => $request->role,
             'municipality' => $request->municipality,
             'status' => $request->status,
@@ -109,20 +111,29 @@ class SuperAdminController extends Controller
         $request->validate([
             'username' => 'required|string|max:50|unique:users,username,' . $id,
             'email' => 'required|string|email|max:100|unique:users,email,' . $id,
+            'password' => 'nullable|string|min:8|confirmed',
             'full_name' => 'required|string|max:100',
+            'gender' => 'nullable|in:Male,Female',
             'role' => 'required|in:super_admin,admin,user',
             'municipality' => 'required_if:role,admin|nullable|string',
             'status' => 'required|in:active,inactive',
         ]);
 
-        $user->update([
+        $data = [
             'username' => $request->username,
             'email' => $request->email,
             'full_name' => $request->full_name,
+            'gender' => $request->gender,
             'role' => $request->role,
             'municipality' => $request->municipality,
             'status' => $request->status,
-        ]);
+        ];
+
+        if ($request->filled('password')) {
+            $data['password'] = Hash::make($request->password);
+        }
+
+        $user->update($data);
 
         return redirect()->route('superadmin.users')->with('success', 'User updated successfully!');
     }
