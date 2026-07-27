@@ -442,8 +442,8 @@ class AnalysisController extends Controller
         $totAge20 = array_sum(array_map(fn($d) => $d['age_20_59'],  $demographicData));
         $totAge60 = array_sum(array_map(fn($d) => $d['age_60_100'], $demographicData));
         $domAgeGroup = $totAge0 >= $totAge20 && $totAge0 >= $totAge60
-            ? 'Youth (0â€“19)'
-            : ($totAge20 >= $totAge0 && $totAge20 >= $totAge60 ? 'Working Age (20â€“59)' : 'Senior (60+)');
+            ? 'Youth (0-19)'
+            : ($totAge20 >= $totAge0 && $totAge20 >= $totAge60 ? 'Working Age (20-59)' : 'Senior (60+)');
         // Gender imbalance
         $totalMale   = array_sum(array_map(fn($d) => $d['male'],   $demographicData));
         $totalFemale = array_sum(array_map(fn($d) => $d['female'], $demographicData));
@@ -453,10 +453,10 @@ class AnalysisController extends Controller
 
         $insights = [
             "$highPop has the largest population at " . number_format($demographicData[$highPop]['total']) . " in {$selectedYear}, making it the most populous municipality in this dataset.",
-            "$fastestGrowing shows the highest population growth between available years — indicating strong community expansion and increasing demand for social services.",
-            "$highBen leads in registered beneficiaries with " . number_format($demographicData[$highBen]['beneficiaries']) . " — representing " . $demographicData[$highBen]['beneficiaries_pct'] . "% of its total population.",
+            "$fastestGrowing shows the highest population growth between available years indicating strong community expansion and increasing demand for social services.",
+            "$highBen leads in registered beneficiaries with " . number_format($demographicData[$highBen]['beneficiaries']) . " representing " . $demographicData[$highBen]['beneficiaries_pct'] . "% of its total population.",
             "The $domAgeGroup age bracket is the dominant age segment across all municipalities, which should guide targeted program prioritization.",
-            "Overall gender distribution is $genderNote. Male: " . number_format($totalMale) . ", Female: " . number_format($totalFemale) . " — a gap of " . number_format(abs($totalMale - $totalFemale)) . " persons.",
+            "Overall gender distribution is $genderNote. Male: " . number_format($totalMale) . ", Female: " . number_format($totalFemale) . " a gap of " . number_format(abs($totalMale - $totalFemale)) . " persons.",
             "Average household sizes: " . implode(', ', array_map(fn($n) => "$n: {$demographicData[$n]['avg_hh_size']}", $coreNames)) . " persons per household.",
         ];
 
@@ -601,8 +601,8 @@ class AnalysisController extends Controller
         $totAge0  = array_sum(array_map(fn($n) => $snapshot[$n]['age_0_19'],   $coreNames));
         $totAge20 = array_sum(array_map(fn($n) => $snapshot[$n]['age_20_59'],  $coreNames));
         $totAge60 = array_sum(array_map(fn($n) => $snapshot[$n]['age_60_100'], $coreNames));
-        $domAge   = $totAge0 >= $totAge20 && $totAge0 >= $totAge60 ? 'Youth (0–19)'
-                  : ($totAge20 >= $totAge60 ? 'Working Age (20–59)' : 'Senior (60+)');
+        $domAge   = $totAge0 >= $totAge20 && $totAge0 >= $totAge60 ? 'Youth (0-19)'
+                  : ($totAge20 >= $totAge60 ? 'Working Age (20-59)' : 'Senior (60+)');
 
         $totalMale   = array_sum(array_map(fn($n) => $snapshot[$n]['male'],   $coreNames));
         $totalFemale = array_sum(array_map(fn($n) => $snapshot[$n]['female'], $coreNames));
@@ -622,7 +622,7 @@ class AnalysisController extends Controller
             "$highestPop has the highest population (" . number_format($snapshot[$highestPop]['population']) . ") while $lowestPop has the lowest.",
             "$fastest shows the highest average population growth rate among the municipalities.",
             "$highestBenef has the most registered beneficiaries (" . number_format($snapshot[$highestBenef]['beneficiaries']) . ") — " . $snapshot[$highestBenef]['benef_pct'] . "% of its population.",
-            "The dominant age group across all municipalities is $domAge — indicating a " . ($domAge === 'Youth (0–19)' ? 'young, growing' : ($domAge === 'Working Age (20–59)' ? 'productive' : 'aging')) . " population.",
+            "The dominant age group across all municipalities is $domAge — indicating a " . ($domAge === 'Youth (0-19)' ? 'young, growing' : ($domAge === 'Working Age (20-59)' ? 'productive' : 'aging')) . " population.",
             $genderGap > 0 ? "A gender gap of " . number_format($genderGap) . " exists: " . ($totalMale > $totalFemale ? "Male-dominant ($totalMale M vs $totalFemale F)." : "Female-dominant ($totalFemale F vs $totalMale M).") : "Gender distribution is balanced.",
             "The $topProgram program has the highest total beneficiaries (" . number_format($progTotals[$topProgram]) . ") across all municipalities.",
             "Dependency ratios: " . implode(', ', array_map(fn($n) => "$n: {$snapshot[$n]['dependency_ratio']}%", $coreNames)) . " — higher ratio means more dependents per working-age person.",

@@ -7,6 +7,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>User Management MSWDO Super Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
 html, body { overscroll-behavior: none; margin: 0; padding: 0; }
@@ -442,6 +443,30 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             outline: none;
         }
 
+        .pw-wrap {
+            position: relative;
+        }
+        .pw-wrap .form-control {
+            padding-right: 42px;
+        }
+        .pw-toggle {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            background: none;
+            border: none;
+            padding: 0;
+            color: #94a3b8;
+            cursor: pointer;
+            line-height: 1;
+        }
+        .pw-toggle:hover { color: #475569; }
+        .pw-wrap .form-control::-ms-reveal,
+        .pw-wrap .form-control::-ms-clear,
+        .pw-wrap .form-control::-webkit-credentials-auto-fill-button { display: none !important; }
+        .pw-wrap .form-control[type="password"]::-webkit-textfield-decoration-container { display: none !important; }
+
         .btn-modal-submit {
             background: var(--primary-gradient);
             color: white;
@@ -741,16 +766,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-4">
-                        @if($errors->any() && old('_form') === 'create')
-                            <div class="alert alert-danger small mb-3" role="alert">
-                                <strong>Please fix the following:</strong>
-                                <ul class="mb-0 mt-2 ps-3">
-                                    @foreach($errors->all() as $err)
-                                        <li>{{ $err }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
                         <div class="mb-3">
                             <label class="form-label">Username</label>
                             <input type="text" name="username" class="form-control" required
@@ -767,9 +782,34 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 placeholder="user@example.com" value="{{ old('email') }}">
                         </div>
                         <div class="mb-3">
+                            <label class="form-label">Gender</label>
+                            <select name="gender" class="form-select" required>
+                                <option value="" disabled selected hidden>Select Gender</option>
+                                <option value="Male" @selected(old('gender') === 'Male')>Male</option>
+                                <option value="Female" @selected(old('gender') === 'Female')>Female</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
                             <label class="form-label">Password</label>
-                            <input type="password" name="password" class="form-control" required
-                                placeholder="Minimum 8 characters" autocomplete="new-password">
+                            <div class="pw-wrap">
+                                <input type="password" name="password" id="createPassword" class="form-control" required
+                                    placeholder="Minimum 8 characters" autocomplete="new-password"
+                                    oninput="checkCreateConfirm()">
+                                <button type="button" class="pw-toggle" onclick="togglePw('createPassword', 'createPwEye')" tabindex="-1">
+                                    <i id="createPwEye" class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirm Password</label>
+                            <div class="pw-wrap">
+                                <input type="password" name="password_confirmation" id="createPasswordConfirm" class="form-control" required
+                                    placeholder="Re-enter password" oninput="checkCreateConfirm()">
+                                <button type="button" class="pw-toggle" onclick="togglePw('createPasswordConfirm', 'createPwConfirmEye')" tabindex="-1">
+                                    <i id="createPwConfirmEye" class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div id="createPwMsg" style="font-size:.73rem;margin-top:3px;min-height:16px;"></div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Role</label>
@@ -783,7 +823,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="mb-3" id="createMunicipalityField" style="display:none;">
                             <label class="form-label">Municipality</label>
                             <select name="municipality" id="createMunicipalitySelect" class="form-select">
-                                <option value="">Select Municipality</option>
+                                <option value="" disabled selected hidden>Select Municipality</option>
                                 @foreach($municipalities as $m)
                                     <option value="{{ $m }}" @selected(old('municipality') === $m)>{{ $m }}</option>
                                 @endforeach
@@ -821,16 +861,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-4">
-                        @if($errors->any() && old('_form') === 'edit')
-                            <div class="alert alert-danger small mb-3" role="alert">
-                                <strong>Please fix the following:</strong>
-                                <ul class="mb-0 mt-2 ps-3">
-                                    @foreach($errors->all() as $err)
-                                        <li>{{ $err }}</li>
-                                    @endforeach
-                                </ul>
-                            </div>
-                        @endif
                         <div class="mb-3">
                             <label class="form-label">Username</label>
                             <input type="text" name="username" id="editUsername" class="form-control" required value="{{ old('_form') === 'edit' ? old('username') : '' }}">
@@ -844,10 +874,33 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             <input type="email" name="email" id="editEmail" class="form-control" required value="{{ old('_form') === 'edit' ? old('email') : '' }}">
                         </div>
                         <div class="mb-3">
-                            <label class="form-label">New Password <small class="text-muted">(leave blank to keep
-                                    current)</small></label>
-                            <input type="password" name="password" id="editPassword" class="form-control"
-                                placeholder="Leave blank to keep unchanged">
+                            <label class="form-label">Gender</label>
+                            <select name="gender" id="editGender" class="form-select">
+                                <option value="" disabled hidden>Select Gender</option>
+                                <option value="Male">Male</option>
+                                <option value="Female">Female</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">New Password <small class="text-muted">(leave blank to keep current)</small></label>
+                            <div class="pw-wrap">
+                                <input type="password" name="password" id="editPassword" class="form-control"
+                                    placeholder="Leave blank to keep unchanged" oninput="checkEditConfirm()">
+                                <button type="button" class="pw-toggle" onclick="togglePw('editPassword', 'editPwEye')" tabindex="-1">
+                                    <i id="editPwEye" class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Confirm New Password <small class="text-muted">(leave blank to keep current)</small></label>
+                            <div class="pw-wrap">
+                                <input type="password" name="password_confirmation" id="editPasswordConfirm" class="form-control"
+                                    placeholder="Leave blank to keep unchanged" oninput="checkEditConfirm()">
+                                <button type="button" class="pw-toggle" onclick="togglePw('editPasswordConfirm', 'editPwConfirmEye')" tabindex="-1">
+                                    <i id="editPwConfirmEye" class="bi bi-eye"></i>
+                                </button>
+                            </div>
+                            <div id="editPwMsg" style="font-size:.73rem;margin-top:3px;min-height:16px;"></div>
                         </div>
                         <div class="mb-3">
                             <label class="form-label">Role</label>
@@ -861,7 +914,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <div class="mb-3" id="editMunicipalityField">
                             <label class="form-label">Municipality</label>
                             <select name="municipality" id="editMunicipality" class="form-select">
-                                <option value="">Select Municipality</option>
+                                <option value="" disabled hidden>Select Municipality</option>
                                 @foreach($municipalities as $m)
                                     <option value="{{ $m }}" @selected(old('_form') === 'edit' && old('municipality') === $m)>{{ $m }}</option>
                                 @endforeach
@@ -1108,22 +1161,81 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         }
 
 
+        function checkCreateConfirm() {
+            const pw  = document.getElementById('createPassword').value;
+            const cpw = document.getElementById('createPasswordConfirm').value;
+            const msg = document.getElementById('createPwMsg');
+            const inp = document.getElementById('createPasswordConfirm');
+            if (!cpw) { msg.textContent = ''; inp.style.borderColor = ''; return; }
+            if (pw === cpw) {
+                msg.textContent = '✓ Passwords match!';
+                msg.style.color = '#16a34a';
+                inp.style.borderColor = '#16a34a';
+            } else {
+                msg.textContent = '✗ Passwords do not match.';
+                msg.style.color = '#dc3545';
+                inp.style.borderColor = '#dc3545';
+            }
+        }
+
+        function checkEditConfirm() {
+            const pw  = document.getElementById('editPassword').value;
+            const cpw = document.getElementById('editPasswordConfirm').value;
+            const msg = document.getElementById('editPwMsg');
+            const inp = document.getElementById('editPasswordConfirm');
+            if (!cpw) { msg.textContent = ''; inp.style.borderColor = ''; return; }
+            if (pw === cpw) {
+                msg.textContent = '✓ Passwords match!';
+                msg.style.color = '#16a34a';
+                inp.style.borderColor = '#16a34a';
+            } else {
+                msg.textContent = '✗ Passwords do not match.';
+                msg.style.color = '#dc3545';
+                inp.style.borderColor = '#dc3545';
+            }
+        }
+
+        function togglePw(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (!input || !icon) return;
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('bi-eye', 'bi-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('bi-eye-slash', 'bi-eye');
+            }
+        }
+
         // Initialise create form
         document.addEventListener('DOMContentLoaded', function () {
             const createRole = document.getElementById('createRole');
-            if (createRole) {
-                createRole.dispatchEvent(new Event('change'));
-            }
-
-            @if(old('_form') === 'create' && $errors->any())
-            new bootstrap.Modal(document.getElementById('createUserModal')).show();
-            @endif
-            @if(old('_form') === 'edit' && $errors->any())
-            toggleMunicipalityField('editMunicipalityField', document.getElementById('editRole')?.value || 'super_admin');
-            new bootstrap.Modal(document.getElementById('editUserModal')).show();
-            @endif
+            if (createRole) createRole.dispatchEvent(new Event('change'));
 
             loadArchivedCount();
+
+            // Block create form if passwords don't match
+            document.querySelector('#createUserModal form').addEventListener('submit', function(e) {
+                const pw  = document.getElementById('createPassword').value;
+                const cpw = document.getElementById('createPasswordConfirm').value;
+                if (pw !== cpw) {
+                    e.preventDefault();
+                    checkCreateConfirm();
+                    document.getElementById('createPasswordConfirm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
+
+            // Block edit form if passwords don't match
+            document.getElementById('editUserForm').addEventListener('submit', function(e) {
+                const pw  = document.getElementById('editPassword').value;
+                const cpw = document.getElementById('editPasswordConfirm').value;
+                if (pw && pw !== cpw) {
+                    e.preventDefault();
+                    checkEditConfirm();
+                    document.getElementById('editPasswordConfirm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            });
         });
 
         // -- Load Archived Count ---------------------------------------
@@ -1178,8 +1290,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             const muniEl = document.getElementById('editMunicipality');
             if (muniEl) muniEl.value = user.municipality || '';
 
+            const genderEl = document.getElementById('editGender');
+            if (genderEl) genderEl.value = user.gender || '';
+
             const statusEl = document.getElementById('editStatus');
             if (statusEl) statusEl.value = user.status || 'active';
+
+            const editPwConfirm = document.getElementById('editPasswordConfirm');
+            if (editPwConfirm) editPwConfirm.value = '';
         }
 
                 // -- Archive (soft-delete) -------------------------------------

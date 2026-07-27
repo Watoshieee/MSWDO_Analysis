@@ -875,7 +875,7 @@
                 <div class="col-lg-5">
                     <div class="chart-card h-100">
                         <h5>Overall Male vs Female</h5>
-                        <p class="chart-sub">Combined across all {{ count($demographicData) }} municipalities — {{ $selectedYear }}</p>
+                        <p class="chart-sub">Combined across all {{ count($demographicData) }} municipalities {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:280px;">
                             <canvas id="genderPieChart"></canvas>
                         </div>
@@ -884,7 +884,7 @@
                 <div class="col-lg-7">
                     <div class="chart-card h-100">
                         <h5>Male vs Female per Municipality</h5>
-                        <p class="chart-sub">Side-by-side comparison — {{ $selectedYear }}</p>
+                        <p class="chart-sub">Side-by-side comparison {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:280px;">
                             <canvas id="genderBarChart"></canvas>
                         </div>
@@ -902,7 +902,7 @@
                 or aging? Compare age brackets per municipality.</p>
             <div class="chart-card">
                 <h5>Population by Age Group per Municipality</h5>
-                <p class="chart-sub">Stacked bars show Youth (0–19), Working Age (20–59), Senior (60+) —
+                <p class="chart-sub">Stacked bars show Youth (0–19), Working Age (20–59), Senior (60+)
                     {{ $selectedYear }}</p>
                 <div class="chart-container" style="height:320px;">
                     <canvas id="ageStackedChart"></canvas>
@@ -1026,7 +1026,7 @@
                 <div class="col-lg-7">
                     <div class="chart-card h-100">
                         <h5>Population vs Households</h5>
-                        <p class="chart-sub">Combo chart showing population (bars) and households (line) —
+                        <p class="chart-sub">Combo chart showing population (bars) and households (line)
                             {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:300px;">
                             <canvas id="hhComboChart"></canvas>
@@ -1122,7 +1122,7 @@
                 <div class="col-lg-8">
                     <div class="chart-card h-100">
                         <h5>Programs per Municipality (Stacked)</h5>
-                        <p class="chart-sub">PWD, AICS, Solo Parent, 4Ps, Senior — {{ $selectedYear }}</p>
+                        <p class="chart-sub">PWD, AICS, Solo Parent, 4Ps, Senior {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:320px;">
                             <canvas id="benefStackedChart"></canvas>
                         </div>
@@ -1131,7 +1131,7 @@
                 <div class="col-lg-4">
                     <div class="chart-card h-100">
                         <h5>Total Beneficiaries</h5>
-                        <p class="chart-sub">Combined all programs — {{ $selectedYear }}</p>
+                        <p class="chart-sub">Combined all programs {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:320px;">
                             <canvas id="benefTotalChart"></canvas>
                         </div>
