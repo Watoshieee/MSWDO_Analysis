@@ -1226,7 +1226,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 input.type = 'password';
                 icon.classList.replace('bi-eye-slash', 'bi-eye');
             }
->>>>>>> origin/main
         }
 
       
