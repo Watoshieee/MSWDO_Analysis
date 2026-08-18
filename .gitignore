@@ -1,8 +1,16 @@
 *.log
 .DS_Store
+
+# Environment files
 .env
-.env.backup
-.env.production
+.env.*
+!.env.example
+
+# Laravel generated files
+/storage/framework/sessions/*
+/storage/framework/cache/*
+/storage/framework/views/*
+
 .phpactor.json
 .phpunit.result.cache
 /.fleet
