@@ -16,5 +16,5 @@
         ['en'=>'Submit Requirements','tl'=>'Isumite ang mga Requirements','descEn'=>'If eligible, upload all required documents for admin review.','descTl'=>'Kung karapat-dapat, i-upload ang lahat ng kinakailangang dokumento.'],
         ['en'=>'Receive Assistance','tl'=>'Tumanggap ng Tulong','descEn'=>'Once approved, MSWDO will process your medical assistance.','descTl'=>'Kapag naaprubahan, ipoproseso ng MSWDO ang iyong tulong medikal.'],
     ];
-@endphp
+                @endphp
 @include('user.partials.aics-application')

@@ -620,19 +620,95 @@
         }
 
         /* ===== DYNAMIC VMG SLIDER ===== */
-        .vmg-main-section { padding:52px 0;background:#EEF5FF; }
-        .vmg-dyn-card { background:#fff !important;border-radius:16px;padding:24px 22px 22px;height:100%;box-shadow:0 4px 24px rgba(44,62,143,.1);position:relative; }
-        .vmg-dyn-icon { width:40px;height:40px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;flex-shrink:0; }
-        .vmg-dyn-label { font-size:.68rem;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:#94a3b8;margin-bottom:8px; }
-        .vmg-dyn-text { font-size:.9rem;color:#334155;line-height:1.78;margin:0; }
+        .vmg-main-section {
+            padding: 52px 0;
+            background: #EEF5FF;
+        }
+
+        .vmg-dyn-card {
+            background: #fff !important;
+            border-radius: 16px;
+            padding: 24px 22px 22px;
+            height: 100%;
+            box-shadow: 0 4px 24px rgba(44, 62, 143, .1);
+            position: relative;
+        }
+
+        .vmg-dyn-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 14px;
+            flex-shrink: 0;
+        }
+
+        .vmg-dyn-label {
+            font-size: .68rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .12em;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        .vmg-dyn-text {
+            font-size: .9rem;
+            color: #334155;
+            line-height: 1.78;
+            margin: 0;
+        }
 
         /* ===== DYNAMIC STRATEGIC GOALS SLIDER ===== */
-        .sg-main-section { padding:52px 0; }
-        .sg-dyn-card { background:#fff !important;border:1px solid #e2e8f0;border-radius:14px;padding:20px 22px;display:flex;align-items:flex-start;gap:16px;transition:all .2s;box-shadow:0 2px 12px rgba(44,62,143,.06); }
-        .sg-dyn-card:hover { background:#f0f5ff !important;box-shadow:0 6px 20px rgba(44,62,143,.1); }
-        .sg-dyn-num { font-size:.62rem;font-weight:900;letter-spacing:.1em;color:#fff;border-radius:8px;padding:5px 9px;flex-shrink:0;margin-top:2px;min-width:34px;text-align:center; }
-        .sg-dyn-text { font-size:.9rem;color:#334155;line-height:1.72;margin:0; }
-        .sg-empty { text-align:center;padding:48px 0;color:#94a3b8;font-size:.92rem; }
+        .sg-main-section {
+            padding: 52px 0;
+        }
+
+        .sg-dyn-card {
+            background: #fff !important;
+            border: 1px solid #e2e8f0;
+            border-radius: 14px;
+            padding: 20px 22px;
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            transition: all .2s;
+            box-shadow: 0 2px 12px rgba(44, 62, 143, .06);
+        }
+
+        .sg-dyn-card:hover {
+            background: #f0f5ff !important;
+            box-shadow: 0 6px 20px rgba(44, 62, 143, .1);
+        }
+
+        .sg-dyn-num {
+            font-size: .62rem;
+            font-weight: 900;
+            letter-spacing: .1em;
+            color: #fff;
+            border-radius: 8px;
+            padding: 5px 9px;
+            flex-shrink: 0;
+            margin-top: 2px;
+            min-width: 34px;
+            text-align: center;
+        }
+
+        .sg-dyn-text {
+            font-size: .9rem;
+            color: #334155;
+            line-height: 1.72;
+            margin: 0;
+        }
+
+        .sg-empty {
+            text-align: center;
+            padding: 48px 0;
+            color: #94a3b8;
+            font-size: .92rem;
+        }
 
         @media (max-width: 768px) {
             .hero-banner h1 {
@@ -879,42 +955,62 @@
             <h2 class="section-title" style="margin-bottom:32px;">Vision, Mission &amp; Goals</h2>
             <div class="vmg-slider-wrap" style="position:relative;overflow:hidden;">
                 <div class="vmg-dyn-track" id="vmgTrack"
-                     style="display:flex;transition:transform .6s cubic-bezier(.4,0,.2,1);will-change:transform;">
+                    style="display:flex;transition:transform .6s cubic-bezier(.4,0,.2,1);will-change:transform;">
                     @foreach($coreNames as $idx => $muni)
-                        @php $vd = $visionData[$muni]; $col = '#2C3E8F'; @endphp
+                        @php $vd = $visionData[$muni];
+                        $col = '#2C3E8F'; @endphp
                         <div style="min-width:100%;box-sizing:border-box;padding:0 4px;">
                             {{-- Municipality badge --}}
                             <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-                                <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:{{ $col }};flex-shrink:0;"></span>
-                                <span style="font-size:1.08rem;font-weight:900;color:#1e293b;letter-spacing:.02em;">{{ $muni }}</span>
-                                <span style="font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;">Municipality</span>
+                                <span
+                                    style="display:inline-block;width:14px;height:14px;border-radius:50%;background:{{ $col }};flex-shrink:0;"></span>
+                                <span
+                                    style="font-size:1.08rem;font-weight:900;color:#1e293b;letter-spacing:.02em;">{{ $muni }}</span>
+                                <span
+                                    style="font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;">Municipality</span>
                             </div>
                             <div class="row g-4">
                                 <div class="col-md-4">
                                     <div class="vmg-dyn-card" style="border-top:4px solid #2C3E8F;">
                                         <div class="vmg-dyn-icon" style="background:#2C3E8F;">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff"
+                                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z" />
+                                                <circle cx="12" cy="12" r="3" />
+                                            </svg>
                                         </div>
                                         <div class="vmg-dyn-label">Vision</div>
-                                        <p class="vmg-dyn-text">{{ $vd['vision'] ?: 'Vision statement not yet set for '.$muni.'.' }}</p>
+                                        <p class="vmg-dyn-text">
+                                            {{ $vd['vision'] ?: 'Vision statement not yet set for ' . $muni . '.' }}</p>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="vmg-dyn-card" style="border-top:4px solid #2C3E8F;">
                                         <div class="vmg-dyn-icon" style="background:#2C3E8F;">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff"
+                                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                                                <polyline points="22 4 12 14.01 9 11.01" />
+                                            </svg>
                                         </div>
                                         <div class="vmg-dyn-label">Mission</div>
-                                        <p class="vmg-dyn-text">{{ $vd['mission'] ?: 'Mission statement not yet set for '.$muni.'.' }}</p>
+                                        <p class="vmg-dyn-text">
+                                            {{ $vd['mission'] ?: 'Mission statement not yet set for ' . $muni . '.' }}</p>
                                     </div>
                                 </div>
                                 <div class="col-md-4">
                                     <div class="vmg-dyn-card" style="border-top:4px solid #2C3E8F;">
                                         <div class="vmg-dyn-icon" style="background:#2C3E8F;">
-                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff"
+                                                stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                                <circle cx="12" cy="12" r="10" />
+                                                <circle cx="12" cy="12" r="6" />
+                                                <circle cx="12" cy="12" r="2" />
+                                            </svg>
                                         </div>
                                         <div class="vmg-dyn-label">Goals</div>
-                                        <p class="vmg-dyn-text">{{ $vd['goals'] ?: 'Goals not yet set for '.$muni.'.' }}</p>
+                                        <p class="vmg-dyn-text">{{ $vd['goals'] ?: 'Goals not yet set for ' . $muni . '.' }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -927,7 +1023,7 @@
                 <div style="display:flex;gap:8px;">
                     @foreach($coreNames as $i => $n)
                         <button onclick="vmgGoTo({{ $i }})" class="vmg-dyn-dot"
-                                style="width:10px;height:10px;border-radius:50%;border:none;cursor:pointer;background:{{ $i===0 ? '#2C3E8F' : '#cbd5e1' }};transition:background .3s;padding:0;"></button>
+                            style="width:10px;height:10px;border-radius:50%;border:none;cursor:pointer;background:{{ $i === 0 ? '#2C3E8F' : '#cbd5e1' }};transition:background .3s;padding:0;"></button>
                     @endforeach
                 </div>
             </div>
@@ -941,21 +1037,28 @@
             <p style="color:#64748b;font-size:.85rem;margin-bottom:32px;">Per-municipality strategic direction</p>
             <div class="sg-dyn-wrap" style="position:relative;overflow:hidden;">
                 <div class="sg-dyn-track" id="sgTrack"
-                     style="display:flex;transition:transform .6s cubic-bezier(.4,0,.2,1);will-change:transform;">
+                    style="display:flex;transition:transform .6s cubic-bezier(.4,0,.2,1);will-change:transform;">
                     @foreach($coreNames as $idx => $muni)
-                        @php $vd = $visionData[$muni]; $col = '#2C3E8F'; $sgoals = $vd['strategic_goals'] ?? []; @endphp
+                        @php $vd = $visionData[$muni];
+                            $col = '#2C3E8F';
+                        $sgoals = $vd['strategic_goals'] ?? []; @endphp
                         <div style="min-width:100%;box-sizing:border-box;padding:0 4px;">
                             <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;">
-                                <span style="display:inline-block;width:14px;height:14px;border-radius:50%;background:{{ $col }};flex-shrink:0;"></span>
-                                <span style="font-size:1.08rem;font-weight:900;color:#1e293b;letter-spacing:.02em;">{{ $muni }}</span>
-                                <span style="font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;">Strategic Goals</span>
+                                <span
+                                    style="display:inline-block;width:14px;height:14px;border-radius:50%;background:{{ $col }};flex-shrink:0;"></span>
+                                <span
+                                    style="font-size:1.08rem;font-weight:900;color:#1e293b;letter-spacing:.02em;">{{ $muni }}</span>
+                                <span
+                                    style="font-size:.72rem;font-weight:700;color:#94a3b8;text-transform:uppercase;letter-spacing:.1em;">Strategic
+                                    Goals</span>
                             </div>
                             @if(count($sgoals) > 0)
                                 <div class="row g-3">
                                     @foreach($sgoals as $gi => $goal)
                                         <div class="col-md-6">
                                             <div class="sg-dyn-card">
-                                                <div class="sg-dyn-num" style="background:#2C3E8F;">{{ str_pad($gi+1,2,'0',STR_PAD_LEFT) }}</div>
+                                                <div class="sg-dyn-num" style="background:#2C3E8F;">
+                                                    {{ str_pad($gi + 1, 2, '0', STR_PAD_LEFT) }}</div>
                                                 <p class="sg-dyn-text">{{ $goal }}</p>
                                             </div>
                                         </div>
@@ -963,7 +1066,12 @@
                                 </div>
                             @else
                                 <div class="sg-empty">
-                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="opacity:.4;margin-bottom:12px;display:block;margin-inline:auto;"><circle cx="12" cy="12" r="10"/><path d="M12 8v4m0 4h.01"/></svg>
+                                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                        stroke-width="1.5"
+                                        style="opacity:.4;margin-bottom:12px;display:block;margin-inline:auto;">
+                                        <circle cx="12" cy="12" r="10" />
+                                        <path d="M12 8v4m0 4h.01" />
+                                    </svg>
                                     Strategic goals not yet set for {{ $muni }}.
                                 </div>
                             @endif
@@ -975,7 +1083,7 @@
                 <div style="display:flex;gap:8px;">
                     @foreach($coreNames as $i => $n)
                         <button onclick="sgGoTo({{ $i }})" class="sg-dyn-dot"
-                                style="width:10px;height:10px;border-radius:50%;border:none;cursor:pointer;background:{{ $i===0 ? '#2C3E8F' : '#cbd5e1' }};transition:background .3s;padding:0;"></button>
+                            style="width:10px;height:10px;border-radius:50%;border:none;cursor:pointer;background:{{ $i === 0 ? '#2C3E8F' : '#cbd5e1' }};transition:background .3s;padding:0;"></button>
                     @endforeach
                 </div>
             </div>
@@ -1796,41 +1904,41 @@
     @include('components.chatbot-widget')
 
     <script>
-    // ── VMG Slider ────────────────────────────────────────────────────────────
-    (function(){
-        const track = document.getElementById('vmgTrack');
-        const dots = document.querySelectorAll('.vmg-dyn-dot');
-        let cur = 0, total = dots.length;
-        function vmgUpdate(n){
-            cur=(n+total)%total;
-            track.style.transform=`translateX(-${cur*100}%)`;
-            dots.forEach((d,i)=>d.style.background=i===cur?'#2C3E8F':'#cbd5e1');
-        }
-        window.vmgPrev=()=>vmgUpdate(cur-1);
-        window.vmgNext=()=>vmgUpdate(cur+1);
-        window.vmgGoTo=(n)=>vmgUpdate(n);
-        let t=setInterval(()=>vmgUpdate(cur+1),5000);
-        track.closest('.vmg-slider-wrap').addEventListener('mouseenter',()=>clearInterval(t));
-        track.closest('.vmg-slider-wrap').addEventListener('mouseleave',()=>{t=setInterval(()=>vmgUpdate(cur+1),5000);});
-    })();
+        // ── VMG Slider ────────────────────────────────────────────────────────────
+        (function () {
+            const track = document.getElementById('vmgTrack');
+            const dots = document.querySelectorAll('.vmg-dyn-dot');
+            let cur = 0, total = dots.length;
+            function vmgUpdate(n) {
+                cur = (n + total) % total;
+                track.style.transform = `translateX(-${cur * 100}%)`;
+                dots.forEach((d, i) => d.style.background = i === cur ? '#2C3E8F' : '#cbd5e1');
+            }
+            window.vmgPrev = () => vmgUpdate(cur - 1);
+            window.vmgNext = () => vmgUpdate(cur + 1);
+            window.vmgGoTo = (n) => vmgUpdate(n);
+            let t = setInterval(() => vmgUpdate(cur + 1), 5000);
+            track.closest('.vmg-slider-wrap').addEventListener('mouseenter', () => clearInterval(t));
+            track.closest('.vmg-slider-wrap').addEventListener('mouseleave', () => { t = setInterval(() => vmgUpdate(cur + 1), 5000); });
+        })();
 
-    // ── Strategic Goals Slider ────────────────────────────────────────────────
-    (function(){
-        const track = document.getElementById('sgTrack');
-        const dots = document.querySelectorAll('.sg-dyn-dot');
-        let cur = 0, total = dots.length;
-        function sgUpdate(n){
-            cur=(n+total)%total;
-            track.style.transform=`translateX(-${cur*100}%)`;
-            dots.forEach((d,i)=>d.style.background=i===cur?'#2C3E8F':'#cbd5e1');
-        }
-        window.sgPrev=()=>sgUpdate(cur-1);
-        window.sgNext=()=>sgUpdate(cur+1);
-        window.sgGoTo=(n)=>sgUpdate(n);
-        let t=setInterval(()=>sgUpdate(cur+1),5500);
-        track.closest('.sg-dyn-wrap').addEventListener('mouseenter',()=>clearInterval(t));
-        track.closest('.sg-dyn-wrap').addEventListener('mouseleave',()=>{t=setInterval(()=>sgUpdate(cur+1),5500);});
-    })();
+        // ── Strategic Goals Slider ────────────────────────────────────────────────
+        (function () {
+            const track = document.getElementById('sgTrack');
+            const dots = document.querySelectorAll('.sg-dyn-dot');
+            let cur = 0, total = dots.length;
+            function sgUpdate(n) {
+                cur = (n + total) % total;
+                track.style.transform = `translateX(-${cur * 100}%)`;
+                dots.forEach((d, i) => d.style.background = i === cur ? '#2C3E8F' : '#cbd5e1');
+            }
+            window.sgPrev = () => sgUpdate(cur - 1);
+            window.sgNext = () => sgUpdate(cur + 1);
+            window.sgGoTo = (n) => sgUpdate(n);
+            let t = setInterval(() => sgUpdate(cur + 1), 5500);
+            track.closest('.sg-dyn-wrap').addEventListener('mouseenter', () => clearInterval(t));
+            track.closest('.sg-dyn-wrap').addEventListener('mouseleave', () => { t = setInterval(() => sgUpdate(cur + 1), 5500); });
+        })();
     </script>
 
 </body>
