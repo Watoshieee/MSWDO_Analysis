@@ -76,10 +76,16 @@ class LoginController extends Controller
             ])->withInput($request->only('login'));
         }
 
-        // Check if user is active
+        // Check if user is active or pending
+        if ($user->role === 'user' && $user->status === 'pending') {
+            return back()->withErrors([
+                'login' => 'Your registration has been successfully submitted. Your account is currently under verification. Please wait for your account to be approved before signing in.',
+            ])->withInput($request->only('login'));
+        }
+
         if ($user->status !== 'active') {
             return back()->withErrors([
-                'login' => 'Your account is inactive. Please contact administrator.',
+                'login' => 'Your account is inactive. Please contact your municipal office.',
             ])->withInput($request->only('login'));
         }
 

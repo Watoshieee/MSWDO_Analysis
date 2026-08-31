@@ -1488,6 +1488,11 @@ class AdminController extends Controller
             $users = $users->filter(fn($u) => $u->id_verification_status === \App\Models\User::ID_STATUS_PENDING)->values();
         }
 
+        $statusFilter = (string) $request->query('status_filter', '');
+        if ($statusFilter !== '') {
+            $users = $users->filter(fn($u) => $u->status === $statusFilter)->values();
+        }
+
         return response()->json([
             'count' => $users->count(),
             'users' => $users->map(function ($u) {
@@ -1498,6 +1503,7 @@ class AdminController extends Controller
                     'phone_number' => $u->phone_number,
                     'barangay' => $u->barangay,
                     'gender' => $u->gender,
+                    'status' => $u->status ?? 'pending',
                     'date_of_birth' => $u->date_of_birth,
                     'created_at' => optional($u->created_at)->toDateString(),
                     'email_verified_at' => $u->email_verified_at,
@@ -1645,5 +1651,41 @@ class AdminController extends Controller
         }
 
         return back()->with('success', 'Valid ID declined for ' . $userFullName . '. The user was notified by email.');
+    }
+
+    public function approveUserAccount($id)
+    {
+        $admin = Auth::user();
+        $user = \App\Models\User::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->where('role', 'user')
+            ->firstOrFail();
+
+        $user->update([
+            'status' => 'active',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Account for ' . $user->full_name . ' has been approved successfully.',
+        ]);
+    }
+
+    public function declineUserAccount($id)
+    {
+        $admin = Auth::user();
+        $user = \App\Models\User::where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->where('role', 'user')
+            ->firstOrFail();
+
+        $user->update([
+            'status' => 'inactive',
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Account for ' . $user->full_name . ' has been declined and set to inactive.',
+        ]);
     }
 }

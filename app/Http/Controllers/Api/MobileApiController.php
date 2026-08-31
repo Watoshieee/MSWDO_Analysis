@@ -18,6 +18,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class MobileApiController extends Controller
 {
@@ -122,11 +123,21 @@ class MobileApiController extends Controller
         }
 
         if ($this->otp->verify($user, $request->otp)) {
-            if ($user->status !== 'active') {
-                $user->status = 'active';
-                $user->save();
+            $user->status = 'pending';
+            if (is_null($user->email_verified_at)) {
+                $user->email_verified_at = now();
             }
-            return response()->json(['success' => true, 'message' => 'OTP verified successfully.']);
+            $regToken = Str::random(64);
+            $user->registration_token = $regToken;
+            $user->registration_token_expires_at = now()->addMinutes(30);
+            $user->save();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'OTP verified successfully.',
+                'registration_token' => $regToken,
+                'account_pending' => true,
+            ]);
         }
 
         return response()->json(['success' => false, 'message' => 'Invalid or expired OTP.']);
@@ -183,7 +194,16 @@ class MobileApiController extends Controller
         $request->validate([
             'email'    => 'required|email',
             'otp'      => 'required|string',
-            'password' => 'required|string|min:8',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+            ],
+        ], [
+            'password.min' => 'Password must be at least 8 characters.',
+            'password.regex' => 'Password must contain at least one uppercase letter and one number.',
         ]);
 
         $user = User::where('email', $request->email)->first();
@@ -207,6 +227,62 @@ class MobileApiController extends Controller
         return response()->json(['success' => false, 'message' => 'Invalid or expired OTP.']);
     }
 
+    // ── POST /set-initial-password (public — verified registration session) ──
+    public function setInitialPassword(Request $request): JsonResponse
+    {
+        $validator = Validator::make($request->all(), [
+            'email'              => 'required|email',
+            'registration_token' => 'required|string',
+            'password'           => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'confirmed',
+            ],
+        ], [
+            'password.min'       => 'Password must be at least 8 characters.',
+            'password.regex'     => 'Password must contain at least one uppercase letter and one number.',
+            'password.confirmed' => 'Password confirmation does not match.',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+                'errors'  => $validator->errors(),
+            ], 422);
+        }
+
+        $user = User::where('email', $request->email)
+            ->where('registration_token', $request->registration_token)
+            ->where('registration_token_expires_at', '>', now())
+            ->first();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid or expired registration session. Please verify your OTP again.',
+            ], 403);
+        }
+
+        $user->password = Hash::make($request->password);
+        $user->must_change_password = false;
+        $user->registration_token = null;
+        $user->registration_token_expires_at = null;
+        if (is_null($user->email_verified_at)) {
+            $user->email_verified_at = now();
+        }
+        $user->status = 'pending';
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Your registration has been successfully submitted. Your account is currently under verification. Please wait for your account to be approved before signing in.',
+        ]);
+    }
+
     public function login(Request $request): JsonResponse
     {
         $request->validate([
@@ -217,13 +293,15 @@ class MobileApiController extends Controller
         try {
             $user = $this->auth->attemptLogin($request->login, $request->password);
         } catch (\Illuminate\Auth\AuthenticationException $e) {
-            $status = match ($e->getMessage()) {
+            $msg = $e->getMessage();
+            $status = match ($msg) {
                 'User not found'           => 404,
                 'Incorrect password'       => 401,
-                'Account not yet verified' => 403,
-                default                    => 401,
+                'Account not yet verified',
+                'Email not yet verified'   => 403,
+                default                    => str_contains($msg, 'under verification') ? 403 : (str_contains($msg, 'inactive') ? 403 : 401),
             };
-            return response()->json(['success' => false, 'message' => $e->getMessage()], $status);
+            return response()->json(['success' => false, 'message' => $msg], $status);
         }
 
         $token = $this->auth->createToken($user);
@@ -251,9 +329,17 @@ class MobileApiController extends Controller
         $user = $request->user();
 
         $validator = Validator::make($request->all(), [
-            'password' => 'required|string|min:8|confirmed',
+            'password' => [
+                'required',
+                'string',
+                'min:8',
+                'regex:/[A-Z]/',
+                'regex:/[0-9]/',
+                'confirmed',
+            ],
         ], [
-            'password.min' => 'Password must be at least 8 characters.',
+            'password.min'       => 'Password must be at least 8 characters.',
+            'password.regex'     => 'Password must contain at least one uppercase letter and one number.',
             'password.confirmed' => 'Password confirmation does not match.',
         ]);
 

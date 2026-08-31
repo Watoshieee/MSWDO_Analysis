@@ -96,6 +96,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/users/{id}/valid-id', [App\Http\Controllers\AdminController::class, 'serveUserValidId'])->name('users.valid-id');
     Route::post('/users/{id}/approve-id', [App\Http\Controllers\AdminController::class, 'approveUserId'])->name('users.approve-id');
     Route::post('/users/{id}/decline-id', [App\Http\Controllers\AdminController::class, 'declineUserId'])->name('users.decline-id');
+    Route::post('/users/{id}/approve-account', [App\Http\Controllers\AdminController::class, 'approveUserAccount'])->name('users.approve-account');
+    Route::post('/users/{id}/decline-account', [App\Http\Controllers\AdminController::class, 'declineUserAccount'])->name('users.decline-account');
 
     // Yearly Comparison Routes
     Route::prefix('yearly')->name('yearly.')->group(function () {

@@ -51,6 +51,8 @@ class User extends Authenticatable
         'otp_expires_at',
         'reset_token',
         'reset_token_expires_at',
+        'registration_token',
+        'registration_token_expires_at',
         'archived_by',
     ];
 
@@ -59,12 +61,14 @@ class User extends Authenticatable
         'remember_token',
         'otp_code',
         'reset_token',
+        'registration_token',
     ];
 
     protected $casts = [
         'email_verified_at' => 'datetime',
         'otp_expires_at' => 'datetime',
         'reset_token_expires_at' => 'datetime',
+        'registration_token_expires_at' => 'datetime',
         'password' => 'hashed',
         'must_change_password' => 'boolean',
         'id_verified_at' => 'datetime',

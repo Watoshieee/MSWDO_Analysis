@@ -18,10 +18,11 @@ Route::get('/municipalities', [MobileApiController::class, 'municipalities']);
 Route::middleware('throttle:3,1')->post('/register', [MobileApiController::class, 'register']);
 Route::middleware('throttle:10,1')->post('/login', [MobileApiController::class, 'login']);
 
-// OTP endpoints — strict rate limiting (5 per minute per IP)
+// OTP and verification endpoints — strict rate limiting (5 per minute per IP)
 Route::middleware('throttle:5,1')->group(function () {
     Route::post('/verify-otp', [MobileApiController::class, 'verifyOtp']);
     Route::post('/resend-otp', [MobileApiController::class, 'resendOtp']);
+    Route::post('/set-initial-password', [MobileApiController::class, 'setInitialPassword']);
     Route::post('/forgot-password', [MobileApiController::class, 'forgotPassword']);
     Route::post('/reset-password', [MobileApiController::class, 'resetPassword']);
 });

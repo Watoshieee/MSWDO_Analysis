@@ -102,6 +102,32 @@
             white-space: nowrap;
         }
         .btn-view-id:hover { opacity: 0.92; }
+        .btn-approve-acct {
+            background: #16a34a;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 11px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s ease;
+        }
+        .btn-approve-acct:hover { background: #15803d; }
+        .btn-decline-acct {
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 6px 11px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.15s ease;
+        }
+        .btn-decline-acct:hover { background: #b02a37; }
         .id-modal-backdrop {
             display: none;
             position: fixed;
@@ -293,16 +319,16 @@
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
-                    <div class="stat-label">With Applications</div>
-                    <div class="stat-value">{{ $users->where('total_apps', '>', 0)->count() }}</div>
-                    <div class="stat-sub">Have submitted at least 1</div>
+                    <div class="stat-label">Pending Accounts</div>
+                    <div class="stat-value" style="color:#d97706;">{{ $users->where('status', 'pending')->count() }}</div>
+                    <div class="stat-sub">Awaiting account approval</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
                 <div class="stat-card">
-                    <div class="stat-label">Pending Reviews</div>
-                    <div class="stat-value">{{ $users->sum('pending_apps') }}</div>
-                    <div class="stat-sub">Across all users</div>
+                    <div class="stat-label">Active Users</div>
+                    <div class="stat-value" style="color:#16a34a;">{{ $users->where('status', 'active')->count() }}</div>
+                    <div class="stat-sub">Approved and verified</div>
                 </div>
             </div>
             <div class="col-6 col-md-3">
@@ -317,26 +343,34 @@
         <!-- SEARCH & FILTER BAR -->
         <div class="filter-bar mb-4">
             <div class="row g-3 align-items-center">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <div class="search-wrap">
                         <svg class="search-icon" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
                         <input type="text" id="userSearch" class="search-input" placeholder="Search by name, email or barangay…" oninput="filterUsers()">
                     </div>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
+                    <select id="statusFilter" class="search-input" style="padding-left:14px;cursor:pointer;" onchange="filterUsers()">
+                        <option value="">All account statuses</option>
+                        <option value="pending">Pending approval</option>
+                        <option value="active">Active</option>
+                        <option value="inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
                     <select id="appFilter" class="search-input" style="padding-left:14px;cursor:pointer;" onchange="filterUsers()">
                         <option value="">All users</option>
                         <option value="with">With applications</option>
                         <option value="without">No applications yet</option>
                     </select>
                 </div>
-                <div class="col-md-3">
+                <div class="col-md-2">
                     <select id="idFilter" class="search-input" style="padding-left:14px;cursor:pointer;" onchange="filterUsers()">
                         <option value="">All ID statuses</option>
                         <option value="pending">Pending ID review</option>
                     </select>
                 </div>
-                <div class="col-md-3 text-end">
+                <div class="col-md-2 text-end">
                     <span id="userCount" style="font-size:.82rem;font-weight:700;color:#64748b;">{{ $users->count() }} users</span>
                 </div>
             </div>
@@ -360,7 +394,7 @@
                             <th>Gender</th>
                             <th>Applications</th>
                             <th>Joined</th>
-                            <th>Status</th>
+                            <th>Account Status</th>
                             <th>ID Verification</th>
                             <th>Actions</th>
                         </tr>
@@ -419,10 +453,14 @@
                                 {{ $user->created_at ? $user->created_at->format('M d, Y') : '—' }}
                             </td>
                             <td>
-                                @if($user->email_verified_at)
-                                    <span class="badge-pill badge-active">Verified</span>
+                                @if($user->status === 'active')
+                                    <span class="badge-pill badge-active">Active</span>
+                                @elseif($user->status === 'pending')
+                                    <span class="badge-pill badge-pending">Pending</span>
+                                @elseif($user->status === 'inactive')
+                                    <span class="badge-pill badge-rejected">Inactive</span>
                                 @else
-                                    <span class="badge-pill badge-pending">Unverified</span>
+                                    <span class="badge-pill badge-pending">{{ ucfirst($user->status ?? 'Pending') }}</span>
                                 @endif
                             </td>
                             <td>
@@ -437,17 +475,33 @@
                                 @endif
                             </td>
                             <td>
-                                @if($user->id_verification_status === 'pending' && $user->valid_id_path)
-                                    <button type="button" class="btn-view-id"
-                                        data-user-id="{{ $user->id }}"
-                                        data-full-name="{{ $user->full_name }}"
-                                        data-filename="{{ $user->valid_id_filename ?? '' }}"
-                                        data-file-url="{{ route('admin.users.valid-id', $user->id) }}">
-                                        View ID
-                                    </button>
-                                @else
-                                    <span style="color:#cbd5e1;font-size:.82rem;">—</span>
-                                @endif
+                                <div class="d-flex align-items-center gap-1 flex-wrap">
+                                    @if($user->status === 'pending')
+                                        <button type="button" class="btn-approve-acct"
+                                            data-user-id="{{ $user->id }}"
+                                            data-full-name="{{ $user->full_name }}"
+                                            title="Approve Account">
+                                            Approve
+                                        </button>
+                                        <button type="button" class="btn-decline-acct"
+                                            data-user-id="{{ $user->id }}"
+                                            data-full-name="{{ $user->full_name }}"
+                                            title="Decline Account">
+                                            Decline
+                                        </button>
+                                    @endif
+                                    @if($user->id_verification_status === 'pending' && $user->valid_id_path)
+                                        <button type="button" class="btn-view-id"
+                                            data-user-id="{{ $user->id }}"
+                                            data-full-name="{{ $user->full_name }}"
+                                            data-filename="{{ $user->valid_id_filename ?? '' }}"
+                                            data-file-url="{{ route('admin.users.valid-id', $user->id) }}">
+                                            View ID
+                                        </button>
+                                    @elseif($user->status !== 'pending')
+                                        <span style="color:#cbd5e1;font-size:.82rem;">—</span>
+                                    @endif
+                                </div>
                             </td>
                         </tr>
                         @endforeach
@@ -555,15 +609,14 @@
                     <button type="button" class="btn-approve-id" id="okResultActionBtn">OK</button>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+         <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
     let _searchDebounce;
     let currentIdUserId = null;
     const approveIdUrlTemplate = @json(route('admin.users.approve-id', ['id' => '__ID__']));
     const declineIdUrlTemplate = @json(route('admin.users.decline-id', ['id' => '__ID__']));
+    const approveAccountUrlTemplate = @json(route('admin.users.approve-account', ['id' => '__ID__']));
+    const declineAccountUrlTemplate = @json(route('admin.users.decline-account', ['id' => '__ID__']));
     const validIdUrlTemplate = @json(route('admin.users.valid-id', ['id' => '__ID__']));
     const csrfToken = document.querySelector('meta[name="csrf-token"]').content;
 
@@ -586,24 +639,41 @@
             appsPills = '<span style="color:#cbd5e1;font-size:.82rem;font-style:italic;">No applications yet</span>';
         }
 
-        const statusBadge = user.email_verified_at
-            ? '<span class="badge-pill badge-active">Verified</span>'
-            : '<span class="badge-pill badge-pending">Unverified</span>';
+        let statusBadge = '<span class="badge-pill badge-pending">Pending</span>';
+        if (user.status === 'active') {
+            statusBadge = '<span class="badge-pill badge-active">Active</span>';
+        } else if (user.status === 'inactive') {
+            statusBadge = '<span class="badge-pill badge-rejected">Inactive</span>';
+        } else if (user.status === 'pending') {
+            statusBadge = '<span class="badge-pill badge-pending">Pending</span>';
+        }
 
         let idBadge = '<span class="badge-pill badge-zero">N/A</span>';
         if (user.id_verification_status === 'pending') idBadge = '<span class="badge-pill badge-pending">Pending Review</span>';
         else if (user.id_verification_status === 'approved') idBadge = '<span class="badge-pill badge-approved">Approved</span>';
         else if (user.id_verification_status === 'rejected') idBadge = '<span class="badge-pill badge-rejected">Declined</span>';
 
-        let actionCell = '<span style="color:#cbd5e1;font-size:.82rem;">—</span>';
+        let actionBtns = [];
+        if (user.status === 'pending') {
+            actionBtns.push(`<button type="button" class="btn-approve-acct"
+                data-user-id="${user.id}"
+                data-full-name="${escapeHtml(user.full_name || '')}">Approve</button>`);
+            actionBtns.push(`<button type="button" class="btn-decline-acct"
+                data-user-id="${user.id}"
+                data-full-name="${escapeHtml(user.full_name || '')}">Decline</button>`);
+        }
         if (user.id_verification_status === 'pending' && user.valid_id_path) {
             const fileUrl = validIdUrlTemplate.replace('__ID__', user.id);
-            actionCell = `<button type="button" class="btn-view-id"
+            actionBtns.push(`<button type="button" class="btn-view-id"
                 data-user-id="${user.id}"
                 data-full-name="${escapeHtml(user.full_name || '')}"
                 data-filename="${escapeHtml(user.valid_id_filename || '')}"
-                data-file-url="${fileUrl}">View ID</button>`;
+                data-file-url="${fileUrl}">View ID</button>`);
         }
+
+        const actionCell = actionBtns.length
+            ? `<div class="d-flex align-items-center gap-1 flex-wrap">${actionBtns.join('')}</div>`
+            : '<span style="color:#cbd5e1;font-size:.82rem;">—</span>';
 
         const initials = (user.full_name || '').substring(0, 2).toUpperCase();
         const joined = user.created_at ? new Date(user.created_at).toLocaleDateString('en-US', {month:'short', day:'2-digit', year:'numeric'}) : '—';
@@ -650,7 +720,7 @@
         currentIdUserId = userId;
         document.getElementById('idModalUserName').textContent = fullName;
         document.getElementById('idModalFilename').textContent = filename ? `File: ${filename}` : '';
-    document.querySelectorAll('input[name="decline_reason"]').forEach(r => { r.checked = false; });
+        document.querySelectorAll('input[name="decline_reason"]').forEach(r => { r.checked = false; });
         document.querySelectorAll('.decline-reason-option').forEach(el => el.classList.remove('selected'));
         document.getElementById('declineReasonWrap').style.display = 'none';
         document.getElementById('confirmDeclineBtn').style.display = 'none';
@@ -758,7 +828,7 @@
             heading: 'Approve this valid ID?',
             message: 'This will activate the user account and allow them to login to the portal.',
             type: 'approve',
-            action: 'approve',
+            action: 'approve_id',
         });
     }
 
@@ -808,7 +878,7 @@
             heading: 'Decline this valid ID?',
             message: 'The user will be removed from the system and notified by email. Reason: ' + reasonLabel,
             type: 'decline',
-            action: 'decline',
+            action: 'decline_id',
         });
     }
 
@@ -886,6 +956,108 @@
         });
     }
 
+    function requestApproveAccount(userId, fullName) {
+        showConfirmModal({
+            title: 'Approve User Account',
+            heading: 'Approve this account?',
+            message: `Are you sure you want to approve the account for ${fullName}? This will activate the account and allow them to sign in.`,
+            type: 'approve',
+            action: () => submitApproveAccount(userId, fullName),
+        });
+    }
+
+    function requestDeclineAccount(userId, fullName) {
+        showConfirmModal({
+            title: 'Decline User Account',
+            heading: 'Decline this account?',
+            message: `Are you sure you want to decline the account for ${fullName}? The account will be marked as inactive and cannot sign in.`,
+            type: 'decline',
+            action: () => submitDeclineAccount(userId, fullName),
+        });
+    }
+
+    async function submitApproveAccount(userId, fullName) {
+        try {
+            const res = await fetch(approveAccountUrlTemplate.replace('__ID__', userId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            let data = {};
+            try { data = await res.json(); } catch (e) {}
+
+            if (!res.ok) {
+                showResultModal({
+                    title: 'Approval Failed',
+                    heading: 'Could not approve',
+                    message: data.message || 'Failed to approve account. Please try again.',
+                    type: 'error',
+                });
+                return;
+            }
+
+            fetchUsersAjax();
+            showResultModal({
+                title: 'Account Approved',
+                heading: 'Successfully Approved',
+                message: data.message || `Account for ${fullName} has been approved and activated.`,
+                type: 'success',
+            });
+        } catch (e) {
+            showResultModal({
+                title: 'Action Failed',
+                heading: 'Network error',
+                message: 'Failed to connect to server. Please try again.',
+                type: 'error',
+            });
+        }
+    }
+
+    async function submitDeclineAccount(userId, fullName) {
+        try {
+            const res = await fetch(declineAccountUrlTemplate.replace('__ID__', userId), {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
+                },
+            });
+
+            let data = {};
+            try { data = await res.json(); } catch (e) {}
+
+            if (!res.ok) {
+                showResultModal({
+                    title: 'Decline Failed',
+                    heading: 'Could not decline',
+                    message: data.message || 'Failed to decline account. Please try again.',
+                    type: 'error',
+                });
+                return;
+            }
+
+            fetchUsersAjax();
+            showResultModal({
+                title: 'Account Declined',
+                heading: 'Successfully Declined',
+                message: data.message || `Account for ${fullName} has been marked as inactive.`,
+                type: 'success',
+            });
+        } catch (e) {
+            showResultModal({
+                title: 'Action Failed',
+                heading: 'Network error',
+                message: 'Failed to connect to server. Please try again.',
+                type: 'error',
+            });
+        }
+    }
+
     document.addEventListener('change', function(e) {
         if (e.target && e.target.name === 'decline_reason') {
             document.querySelectorAll('.decline-reason-option').forEach(el => el.classList.remove('selected'));
@@ -895,6 +1067,22 @@
     });
 
     document.addEventListener('click', function(e) {
+        const approveAcctBtn = e.target.closest('.btn-approve-acct');
+        if (approveAcctBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            requestApproveAccount(approveAcctBtn.dataset.userId, approveAcctBtn.dataset.fullName);
+            return;
+        }
+
+        const declineAcctBtn = e.target.closest('.btn-decline-acct');
+        if (declineAcctBtn) {
+            e.preventDefault();
+            e.stopPropagation();
+            requestDeclineAccount(declineAcctBtn.dataset.userId, declineAcctBtn.dataset.fullName);
+            return;
+        }
+
         const viewBtn = e.target.closest('.btn-view-id');
         if (viewBtn) {
             e.preventDefault();
@@ -935,14 +1123,24 @@
         }
 
         if (e.target.id === 'proceedConfirmActionBtn') {
+            const action = pendingConfirmAction;
             closeConfirmModal();
-            submitApproveId();
+            if (typeof action === 'function') {
+                action();
+            } else if (action === 'approve_id') {
+                submitApproveId();
+            }
             return;
         }
 
         if (e.target.id === 'proceedDeclineConfirmBtn') {
+            const action = pendingConfirmAction;
             closeConfirmModal();
-            submitDeclineId();
+            if (typeof action === 'function') {
+                action();
+            } else if (action === 'decline_id') {
+                submitDeclineId();
+            }
             return;
         }
 
@@ -986,12 +1184,14 @@
         const q = document.getElementById('userSearch').value.trim();
         const appFilter = document.getElementById('appFilter').value;
         const idFilter = document.getElementById('idFilter').value;
+        const statusFilter = document.getElementById('statusFilter') ? document.getElementById('statusFilter').value : '';
         const tbody = document.getElementById('usersTableBody');
 
         const params = new URLSearchParams();
         if (q) params.set('q', q);
         if (appFilter) params.set('app_filter', appFilter);
         if (idFilter) params.set('id_filter', idFilter);
+        if (statusFilter) params.set('status_filter', statusFilter);
 
         try {
             const res = await fetch(`{{ route('admin.users.search') }}?${params.toString()}`, {
