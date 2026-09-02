@@ -19,6 +19,10 @@ Route::get('/', function () {
     return redirect('/analysis');
 });
 
+Route::get('/privacy-policy', function () {
+    return view('privacy-policy');
+})->name('privacy.policy');
+
 // ============================================
 // PUBLIC ANALYSIS PAGES
 // ============================================
