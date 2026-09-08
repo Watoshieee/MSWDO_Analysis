@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -766,6 +766,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-4">
+                        @if($errors->any() && old('_form') === 'create')
+                            <div class="alert alert-danger small mb-3" role="alert">
+                                <strong>Please fix the following:</strong>
+                                <ul class="mb-0 mt-2 ps-3">
+                                    @foreach($errors->all() as $err)
+                                        <li>{{ $err }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
                         <div class="mb-3">
                             <label class="form-label">Username</label>
                             <input type="text" name="username" class="form-control" required
@@ -861,6 +871,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                         <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body p-4">
+                        @if($errors->any() && old('_form') === 'edit')
+                            <div class="alert alert-danger small mb-3" role="alert">
+                                <strong>Please fix the following:</strong>
+                                <ul class="mb-0 mt-2 ps-3">
+                                    @foreach($errors->all() as $err)
+                                        <li>{{ $err }}</li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        @endif
                         <div class="mb-3">
                             <label class="form-label">Username</label>
                             <input type="text" name="username" id="editUsername" class="form-control" required value="{{ old('_form') === 'edit' ? old('username') : '' }}">
@@ -1208,10 +1228,152 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
         }
 
+      
+                        // -- UI Confirm (lalabas sa harap ng kahit anong modal) ----------------------
+        function uiConfirm(title, message, okText, cancelText) {
+            return new Promise((resolve) => {
+                let modalEl = document.getElementById('uiConfirmModal');
+                
+                // Kung wala pang modal, gawin ito
+                if (!modalEl) {
+                    console.error('Confirm modal not found!');
+                    resolve(false);
+                    return;
+                }
+
+                const titleEl = document.getElementById('uiConfirmTitle');
+                const messageEl = document.getElementById('uiConfirmMessage');
+                let okBtn = document.getElementById('uiConfirmOkBtn');
+                let cancelBtn = document.getElementById('uiConfirmCancelBtn');
+                const closeBtn = document.getElementById('uiConfirmCloseBtn');
+
+                // Set texts
+                if (titleEl) titleEl.textContent = title || 'Confirm Action';
+                if (messageEl) messageEl.textContent = message || 'Are you sure you want to proceed?';
+                if (okBtn) okBtn.textContent = okText || 'OK';
+                if (cancelBtn) cancelBtn.textContent = cancelText || 'Cancel';
+
+                let resolved = false;
+                const done = (val) => {
+                    if (resolved) return;
+                    resolved = true;
+                    resolve(val);
+                };
+
+                // I-close ang modal ng maayos
+                const hideModal = () => {
+                    const bsModal = bootstrap.Modal.getInstance(modalEl);
+                    if (bsModal) {
+                        bsModal.hide();
+                    }
+                };
+
+                // I-remove ang lumang event listeners at maglagay ng bago
+                const newOkBtn = okBtn.cloneNode(true);
+                const newCancelBtn = cancelBtn.cloneNode(true);
+                okBtn.parentNode.replaceChild(newOkBtn, okBtn);
+                cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+                okBtn = newOkBtn;
+                cancelBtn = newCancelBtn;
+
+                okBtn.onclick = () => {
+                    hideModal();
+                    setTimeout(() => done(true), 150);
+                };
+                
+                cancelBtn.onclick = () => {
+                    hideModal();
+                    setTimeout(() => done(false), 150);
+                };
+                
+                if (closeBtn) {
+                    const newCloseBtn = closeBtn.cloneNode(true);
+                    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
+                    newCloseBtn.onclick = () => {
+                        hideModal();
+                        setTimeout(() => done(false), 150);
+                    };
+                }
+
+                // Siguraduhing nasa harap ito ng lahat
+                modalEl.style.zIndex = '9999';
+                
+                // I-show ang modal
+                const bsModal = new bootstrap.Modal(modalEl, {
+                    backdrop: 'static',
+                    keyboard: false
+                });
+                bsModal.show();
+                
+                // Kapag na-hide, i-clean up
+                modalEl.addEventListener('hidden.bs.modal', function onHidden() {
+                    modalEl.removeEventListener('hidden.bs.modal', onHidden);
+                    if (!resolved) {
+                        done(false);
+                    }
+                }, { once: true });
+            });
+        }
+
+        // -- Toast (replace browser alert) -----------------------------
+        function uiToast(message, type) {
+            // type: 'success' | 'error' | 'info'
+            const toast = document.createElement('div');
+            const isError = type === 'error';
+
+            toast.setAttribute('role', 'alert');
+            toast.style.position = 'fixed';
+            toast.style.top = '84px';
+            toast.style.right = '18px';
+            toast.style.zIndex = '1080';
+            toast.style.maxWidth = '420px';
+            toast.style.borderRadius = '12px';
+            toast.style.padding = '14px 16px 12px';
+            toast.style.boxShadow = '0 10px 28px rgba(26,42,92,.35)';
+            toast.style.fontSize = '.84rem';
+            toast.style.fontWeight = '700';
+            toast.style.color = 'white';
+            toast.style.border = '1px solid rgba(255,255,255,.18)';
+
+            if (isError) {
+                toast.style.background = 'linear-gradient(135deg,#C41E24,#8B0000)';
+            } else {
+                toast.style.background = 'linear-gradient(135deg,#2C3E8F,#1A2A5C)';
+            }
+
+            toast.innerHTML = `
+                <div>${escapeHtml(message || '')}</div>
+                <div style="position:absolute;bottom:0;left:0;height:3px;background:#FDB913;animation:timerBar 5s linear forwards;"></div>
+            `;
+
+            toast.className = 'notification-toast';
+            toast.style.animation = 'slideInRight 0.4s ease-out';
+
+            document.body.appendChild(toast);
+
+            setTimeout(() => {
+                try {
+                    toast.style.animation = 'slideOutRight 0.4s cubic-bezier(0.68,-0.55,0.265,1.55) forwards';
+                    setTimeout(() => {
+                        try { toast.remove(); } catch (e) {}
+                    }, 420);
+                } catch (e) {}
+            }, 5200);
+        }
+
+
         // Initialise create form
         document.addEventListener('DOMContentLoaded', function () {
             const createRole = document.getElementById('createRole');
             if (createRole) createRole.dispatchEvent(new Event('change'));
+
+            @if(old('_form') === 'create' && $errors->any())
+            new bootstrap.Modal(document.getElementById('createUserModal')).show();
+            @endif
+            @if(old('_form') === 'edit' && $errors->any())
+            toggleMunicipalityField('editMunicipalityField', document.getElementById('editRole')?.value || 'super_admin');
+            new bootstrap.Modal(document.getElementById('editUserModal')).show();
+            @endif
 
             loadArchivedCount();
 

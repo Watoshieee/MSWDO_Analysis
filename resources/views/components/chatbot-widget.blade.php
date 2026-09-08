@@ -1,6 +1,6 @@
 ﻿{{--
-MSWDO AI Chatbot Widget
-Floating bottom-right panel powered by Google Gemini 1.5 Flash.
+MSWDO System Chatbot Widget
+System-restricted AI assistant. Conversation persists across page navigation (localStorage).
 Include with: @include('components.chatbot-widget')
 --}}
 
@@ -186,11 +186,11 @@ Include with: @include('components.chatbot-widget')
         }
     }
 
-    #mswdo-bot-close {
+    #mswdo-bot-close,
+    #mswdo-bot-clear {
         background: rgba(255, 255, 255, 0.12);
         border: none;
         color: white;
-        width: 30px;
         height: 30px;
         border-radius: 50%;
         cursor: pointer;
@@ -202,8 +202,29 @@ Include with: @include('components.chatbot-widget')
         flex-shrink: 0;
     }
 
-    #mswdo-bot-close:hover {
+    #mswdo-bot-clear {
+        width: auto;
+        border-radius: 14px;
+        padding: 0 10px;
+        font-size: 0.68rem;
+        font-weight: 700;
+        letter-spacing: 0.02em;
+    }
+
+    #mswdo-bot-close {
+        width: 30px;
+    }
+
+    #mswdo-bot-close:hover,
+    #mswdo-bot-clear:hover {
         background: rgba(255, 255, 255, 0.25);
+    }
+
+    .bot-header-actions {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
     }
 
     /* FAQ block */
@@ -518,7 +539,7 @@ Include with: @include('components.chatbot-widget')
 </style>
 
 {{-- ── Widget HTML ──────────────────────────────────────────────────── --}}
-<div id="mswdo-bot-wrap">
+<div id="mswdo-bot-wrap" data-user-id="{{ auth()->id() ?? 'guest' }}">
 
     {{-- Toggle bubble --}}
     <button id="mswdo-bot-toggle" onclick="msBot.toggle()" title="MSWDO AI Assistant" aria-label="Open MSWDO chatbot">
@@ -542,17 +563,21 @@ Include with: @include('components.chatbot-widget')
             </div>
             <div class="bot-header-info">
                 <div class="bot-header-name">MSWDO Assistant</div>
-                <div class="bot-header-sub"><span class="bot-status-dot"></span>Online</div>
+                <div class="bot-header-sub"><span class="bot-status-dot"></span>System-only · Online</div>
             </div>
-            <button id="mswdo-bot-close" onclick="msBot.toggle()" aria-label="Close chatbot">✕</button>
+            <div class="bot-header-actions">
+                <button type="button" id="mswdo-bot-clear" onclick="msBot.clearChat()" title="Clear conversation">Clear</button>
+                <button type="button" id="mswdo-bot-close" onclick="msBot.toggle()" aria-label="Close chatbot">✕</button>
+            </div>
         </div>
 
         {{-- FAQs --}}
         <div id="mswdo-bot-faq">
             <div class="bot-faq-title">FAQs</div>
             <div class="bot-faq-list">
-                <button class="bot-faq-btn" onclick="msBot.chip('Paano mag register?')">Paano mag-register?</button>
+                <button class="bot-faq-btn" onclick="msBot.chip('Paano mag-register?')">Paano mag-register?</button>
                 <button class="bot-faq-btn" onclick="msBot.chip('Paano mag login?')">Paano mag-login?</button>
+                <button class="bot-faq-btn" onclick="msBot.chip('Check my application status')">My application status</button>
                 <button class="bot-faq-btn" onclick="msBot.chip('Paano mag apply ng PWD?')">PWD application</button>
                 <button class="bot-faq-btn" onclick="msBot.chip('Ano ang requirements ng Solo Parent?')">Solo Parent requirements</button>
             </div>
@@ -598,8 +623,10 @@ Include with: @include('components.chatbot-widget')
     (function () {
         const CSRF = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
         const ENDPOINT = '/chatbot/message';
+        const STORAGE_KEY = 'mswdo_chatbot_v1';
+        const PANEL_KEY = 'mswdo_chatbot_panel_open';
+        const currentUserId = document.getElementById('mswdo-bot-wrap')?.dataset.userId ?? 'guest';
 
-        // Conversation history (multi-turn)
         let history = [];
         let isOpen = false;
         let sending = false;
@@ -611,28 +638,120 @@ Include with: @include('components.chatbot-widget')
         const typing = document.getElementById('mswdo-bot-typing');
         const badge = document.getElementById('mswdo-bot-badge');
 
-        // ── Greeting ───────────────────────────────────────────────────────
-        const greeting = [
-            'Mabuhay! \ud83d\udc4b Ako ang inyong **MSWDO AI Assistant** para sa Liliw, Majayjay, at Magdalena, Laguna.',
+        const GREETING = [
+            'Mabuhay! 👋 Ako ang **MSWDO System Assistant** para sa Liliw, Majayjay, at Magdalena, Laguna.',
             '',
-            'I-click ang isang button sa itaas o magtanong ng direkta! Maaari akong tumulong sa:',
-            '1. Population, Age, Households, Male/Female data',
-            '2. 4Ps, PWD, AICS, Solo Parent programs',
-            '3. Paano mag-apply at mga requirements',
-            '4. Paano mag-login at mag-register sa system'
+            'Maaari lang akong tumulong sa **system na ito** — features, data, analysis, programs, at kung paano mag-apply.',
+            '',
+            'I-click ang FAQ sa itaas o magtanong ng direkta:',
+            '• Population, age, households, beneficiaries',
+            '• 4Ps, PWD, AICS, Solo Parent programs',
+            '• Paano mag-login, mag-register, at mag-apply',
+            '',
+            '_Para sa **personal application status**, kailangan munang mag-login._'
         ].join('\n');
-        appendBotMsg(greeting);
 
-        // ── Toggle open/close ──────────────────────────────────────────────
+        function loadState() {
+            try {
+                const raw = localStorage.getItem(STORAGE_KEY);
+                if (!raw) return null;
+                const state = JSON.parse(raw);
+                if (state.userId !== currentUserId) return null;
+                return state;
+            } catch { return null; }
+        }
+
+        function saveState() {
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                    userId: currentUserId,
+                    history,
+                    uiMessages: collectUiMessages(),
+                    updatedAt: Date.now(),
+                }));
+            } catch { /* ignore quota errors */ }
+        }
+
+        function clearStorage() {
+            localStorage.removeItem(STORAGE_KEY);
+            sessionStorage.removeItem(PANEL_KEY);
+        }
+
+        function collectUiMessages() {
+            const items = [];
+            messages.querySelectorAll('.bot-msg').forEach(el => {
+                const bubble = el.querySelector('.bot-bubble');
+                if (!bubble) return;
+                items.push({
+                    role: el.classList.contains('user') ? 'user' : 'model',
+                    text: bubble.dataset.raw ?? bubble.textContent,
+                });
+            });
+            return items;
+        }
+
+        function restoreFromState(state) {
+            history = Array.isArray(state.history) ? state.history : [];
+            messages.innerHTML = '';
+            const ui = state.uiMessages ?? [];
+            if (ui.length) {
+                ui.forEach(m => {
+                    if (m.role === 'user') appendUserMsg(m.text, false);
+                    else appendBotMsg(m.text, false);
+                });
+            } else if (history.length) {
+                history.forEach(m => {
+                    if (m.role === 'user') appendUserMsg(m.text, false);
+                    else appendBotMsg(m.text, false);
+                });
+            } else {
+                appendBotMsg(GREETING, false);
+            }
+            scrollToBottom();
+        }
+
+        function showGreetingOnly() {
+            messages.innerHTML = '';
+            history = [];
+            appendBotMsg(GREETING, false);
+            saveState();
+        }
+
+        const saved = loadState();
+        if (saved && (saved.uiMessages?.length || saved.history?.length)) {
+            restoreFromState(saved);
+            badge.classList.add('hidden');
+        } else {
+            appendBotMsg(GREETING, false);
+        }
+
+        if (sessionStorage.getItem(PANEL_KEY) === '1') {
+            isOpen = true;
+            panel.classList.add('open');
+            badge.classList.add('hidden');
+        }
+
+        document.querySelectorAll('form[action*="logout"]').forEach(form => {
+            form.addEventListener('submit', () => clearStorage());
+        });
+
         window.msBot = {
             toggle() {
                 isOpen = !isOpen;
                 panel.classList.toggle('open', isOpen);
+                sessionStorage.setItem(PANEL_KEY, isOpen ? '1' : '0');
                 if (isOpen) {
                     badge.classList.add('hidden');
                     setTimeout(() => input.focus(), 350);
                     scrollToBottom();
                 }
+            },
+            clearChat() {
+                if (sending) return;
+                if (!confirm('Clear this conversation and start a new chat?')) return;
+                clearStorage();
+                showGreetingOnly();
+                scrollToBottom();
             },
             chip(text) {
                 if (!isOpen) this.toggle();
@@ -644,7 +763,6 @@ Include with: @include('components.chatbot-widget')
                     e.preventDefault();
                     this.send();
                 }
-                // Auto-resize textarea
                 input.style.height = 'auto';
                 input.style.height = Math.min(input.scrollHeight, 80) + 'px';
             },
@@ -657,16 +775,13 @@ Include with: @include('components.chatbot-widget')
                 sending = true;
                 sendBtn.disabled = true;
 
-                // Show user bubble
                 appendUserMsg(msg);
-
-                // Show typing indicator
                 typing.classList.add('show');
                 messages.appendChild(typing);
                 scrollToBottom();
 
-                // Push to history
                 history.push({ role: 'user', text: msg });
+                saveState();
 
                 try {
                     const resp = await fetch(ENDPOINT, {
@@ -677,9 +792,16 @@ Include with: @include('components.chatbot-widget')
                         },
                         body: JSON.stringify({
                             message: msg,
-                            history: history.slice(-6),
+                            history: history.slice(0, -1).slice(-10),
                         }),
                     });
+
+                    if (!resp.ok) {
+                        typing.classList.remove('show');
+                        appendBotMsg('⚠️ Server error. Pakisubukan ulit.');
+                        saveState();
+                        return;
+                    }
 
                     const data = await resp.json();
                     typing.classList.remove('show');
@@ -687,10 +809,12 @@ Include with: @include('components.chatbot-widget')
                     const reply = data.reply ?? 'Paumanhin, hindi ako nakakuha ng sagot.';
                     appendBotMsg(reply);
                     history.push({ role: 'model', text: reply });
+                    saveState();
 
                 } catch (err) {
                     typing.classList.remove('show');
                     appendBotMsg('⚠️ Network error. Pakisubukan ulit.');
+                    saveState();
                 }
 
                 sending = false;
@@ -700,28 +824,28 @@ Include with: @include('components.chatbot-widget')
             }
         };
 
-        // ── Helpers ────────────────────────────────────────────────────────
-        function appendBotMsg(text) {
+        function appendBotMsg(text, doScroll = true) {
             const wrap = document.createElement('div');
             wrap.className = 'bot-msg';
             wrap.innerHTML = `
             <div class="bot-msg-avatar">
                 <svg viewBox="0 0 24 24"><path d="M12 2C6.477 2 2 6.477 2 12c0 1.82.487 3.53 1.338 5.007L2.07 21.19a1 1 0 001.24 1.24l4.183-1.268A9.953 9.953 0 0012 22c5.523 0 10-4.477 10-10S17.523 2 12 2zm-1 13H7v-2h4v2zm6 0h-4v-2h4v2zm0-4H7V9h10v2z"/></svg>
             </div>
-            <div class="bot-bubble ai">${formatMarkdown(text)}</div>`;
-            messages.appendChild(wrap);
-            scrollToBottom();
+            <div class="bot-bubble ai" data-raw="${escAttr(text)}">${formatMarkdown(text)}</div>`;
+            messages.insertBefore(wrap, typing.parentElement === messages ? typing : null);
+            if (doScroll) scrollToBottom();
         }
 
-        function appendUserMsg(text) {
+        function appendUserMsg(text, doScroll = true) {
             const wrap = document.createElement('div');
             wrap.className = 'bot-msg user';
             wrap.innerHTML = `
-            <div class="bot-bubble user">${escapeHtml(text)}</div>
+            <div class="bot-bubble user" data-raw="${escAttr(text)}">${escapeHtml(text)}</div>
             <div class="bot-msg-avatar user-av">
                 <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
             </div>`;
-            messages.appendChild(wrap);
+            messages.insertBefore(wrap, typing.parentElement === messages ? typing : null);
+            if (doScroll) scrollToBottom();
         }
 
         function scrollToBottom() {
@@ -734,30 +858,25 @@ Include with: @include('components.chatbot-widget')
             return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
         }
 
-        // Markdown → HTML with clickable list items
         function formatMarkdown(text) {
             let html = escapeHtml(text);
-
-            // Bold **text**
             html = html.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+            html = html.replace(/_(.+?)_/g, '<em>$1</em>');
 
-            // Process line by line so we can detect list items
             const lines = html.split('\n');
             const out = [];
 
             lines.forEach(line => {
-                // Numbered list: "1. text" or "1) text"
                 const numMatch = line.match(/^(\d+)[.)\s]\s+(.+)$/);
-                // Bullet list: "• text", "- text", "* text"
                 const bulMatch = line.match(/^[•\-\*]\s+(.+)$/);
 
                 if (numMatch) {
                     const label = numMatch[1] + '. ' + numMatch[2];
                     const val = numMatch[2];
-                    out.push(`<button class="bot-option" onclick="msBot.chip(this.dataset.val)" data-val="${escAttr(val)}">${label}</button>`);
+                    out.push(`<button type="button" class="bot-option" onclick="msBot.chip(this.dataset.val)" data-val="${escAttr(val)}">${label}</button>`);
                 } else if (bulMatch) {
                     const val = bulMatch[1];
-                    out.push(`<button class="bot-option" onclick="msBot.chip(this.dataset.val)" data-val="${escAttr(val)}">• ${val}</button>`);
+                    out.push(`<button type="button" class="bot-option" onclick="msBot.chip(this.dataset.val)" data-val="${escAttr(val)}">• ${val}</button>`);
                 } else {
                     out.push(line);
                 }
@@ -767,7 +886,7 @@ Include with: @include('components.chatbot-widget')
         }
 
         function escAttr(str) {
-            return str.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+            return str.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;').replace(/</g, '&lt;');
         }
 
     })();

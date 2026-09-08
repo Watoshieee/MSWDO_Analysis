@@ -73,8 +73,14 @@ class AuthService
         }
 
         if ($user->role === User::ROLE_USER) {
-            if (!$user->hasVerifiedEmail() || $user->status !== 'active') {
+            if (!$user->hasVerifiedEmail()) {
                 throw new \Illuminate\Auth\AuthenticationException('Account not yet verified');
+            }
+            if ($user->status === 'pending') {
+                throw new \Illuminate\Auth\AuthenticationException('Your registration has been successfully submitted. Your account is currently under verification. Please wait for your account to be approved before signing in.');
+            }
+            if ($user->status !== 'active') {
+                throw new \Illuminate\Auth\AuthenticationException('Your account is inactive. Please contact your municipal office.');
             }
         }
 

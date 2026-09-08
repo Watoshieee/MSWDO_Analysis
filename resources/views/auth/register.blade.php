@@ -661,6 +661,12 @@
 
                 <h4>9. Updates to Privacy Policy</h4>
                 <p>This policy may be updated from time to time. Continued use of the System indicates your acceptance of any changes.</p>
+
+                <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #e2e8f0; text-align: center;">
+                    <a href="{{ url('/privacy-policy') }}" target="_blank" style="color: var(--primary-blue); font-weight: 700; text-decoration: none; font-size: 0.95rem;">
+                        View Full Privacy Policy &rarr;
+                    </a>
+                </div>
             </div>
         </div>
     </div>

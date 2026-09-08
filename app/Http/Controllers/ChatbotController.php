@@ -2,8 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Application;
+use App\Models\Appointment;
+use App\Models\FileMonitoring;
 use App\Models\MunicipalityYearlySummary;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 
 class ChatbotController extends Controller
@@ -12,7 +16,7 @@ class ChatbotController extends Controller
 
     /**
      * Handle a chat message.
-     * ALL messages go through Gemini with live data injected.
+     * Messages go through Groq with live system data injected.
      * PHP instant responses serve as fallback only when API is rate-limited (429).
      */
     public function reply(Request $request)
@@ -25,9 +29,28 @@ class ChatbotController extends Controller
         ]);
 
         $message = trim($request->input('message'));
+        $user    = Auth::user();
+        $lang    = $this->detectLanguage($message);
+        $isPersonalAppQuestion = $this->isPersonalApplicationQuestion($message);
+
+        // ── Personal application status: require login (enforced server-side) ──
+        if ($isPersonalAppQuestion && !$user) {
+            $programLabel = $this->detectProgramLabel($message);
+            return response()->json([
+                'reply' => $this->loginRequiredMessage($lang, $programLabel),
+            ]);
+        }
+
+        $userAppContext = $user ? $this->buildUserApplicationContext($user) : '';
+
+        if ($isPersonalAppQuestion && $user && $userAppContext === '') {
+            return response()->json([
+                'reply' => $this->noApplicationMessage($lang),
+            ]);
+        }
 
         $apiKey = config('services.groq.key');
-        $model  = config('services.groq.model', 'llama-3.3-70b-versatile');
+        $model  = config('services.groq.model') ?: 'openai/gpt-oss-120b';
 
         if (!$apiKey) {
             return response()->json([
@@ -38,7 +61,12 @@ class ChatbotController extends Controller
         // ── Build compact live-data context ───────────────────────────────────
         $liveData     = $this->getLatestData();
         $dataTable    = $this->buildCompactTable($liveData);
-        $systemPrompt = $this->buildSystemPrompt($dataTable);
+        $systemPrompt = $this->buildSystemPrompt(
+            $dataTable,
+            (bool) $user,
+            $userAppContext,
+            $isPersonalAppQuestion
+        );
 
         // ── Build messages array (OpenAI-compatible format) ────────────────────
         // GroqCloud uses: [system, ...history turns as user/assistant, current user]
@@ -46,7 +74,7 @@ class ChatbotController extends Controller
 
         // Map past history: Gemini uses 'model' role, Groq uses 'assistant'
         $history = collect($request->input('history', []))
-            ->slice(-6)
+            ->slice(-10)
             ->each(function ($h) use (&$messages) {
                 $messages[] = [
                     'role'    => $h['role'] === 'model' ? 'assistant' : 'user',
@@ -79,7 +107,7 @@ class ChatbotController extends Controller
 
             // ── Handle API errors ──────────────────────────────────────────────
             $status = $response->status();
-            \Log::error('Groq API error', ['status' => $status, 'body' => $response->body()]);
+            \Log::error('Groq API error', ['status' => $status, 'model' => $model, 'body' => $response->body()]);
 
             if ($status === 429) {
                 // Rate-limited: serve instant PHP fallback if keyword matches
@@ -106,100 +134,116 @@ class ChatbotController extends Controller
     // ──────────────────────────────────────────────────────────────────────────
     // SYSTEM PROMPT — kept short to minimize token usage
     // ──────────────────────────────────────────────────────────────────────────
-    private function buildSystemPrompt(string $dataTable): string
-    {
-        return <<<PROMPT
-You are the MSWDO AI Assistant for Liliw, Majayjay, and Magdalena, Laguna, Philippines. Powered by GroqCloud AI.
+    private function buildSystemPrompt(
+        string $dataTable,
+        bool $isLoggedIn,
+        string $userAppContext,
+        bool $isPersonalAppQuestion = false
+    ): string {
+        $authBlock = $isLoggedIn
+            ? 'USER AUTH STATE: LOGGED IN — You may reference this user\'s application data below for personal status questions.'
+            : 'USER AUTH STATE: NOT LOGGED IN — Do NOT provide any personal application status. Direct the user to /login for personal application questions.';
 
-=== LIVE SYSTEM DATA (use this to answer data-related questions) ===
+        $userDataBlock = $userAppContext !== ''
+            ? "=== CURRENT USER'S APPLICATION DATA (this logged-in user ONLY — never share with others) ===\n{$userAppContext}\n=== END USER APPLICATION DATA ==="
+            : ($isLoggedIn
+                ? "=== CURRENT USER'S APPLICATION DATA ===\nNo applications or appointments found for this account.\n=== END USER APPLICATION DATA ==="
+                : '');
+
+        return <<<PROMPT
+You are the official AI assistant for the MSWDO (Municipal Social Welfare and Development Office) system for Liliw, Majayjay, and Magdalena, Laguna, Philippines.
+
+=== PRIMARY RULE ===
+ONLY ASSIST WITH THIS SYSTEM. Do not act as a general-purpose chatbot. Your knowledge and responses must remain focused on this system and its purpose.
+
+{$authBlock}
+
+=== LIVE SYSTEM DATA (source of truth for demographic/statistical questions) ===
 {$dataTable}
 === END DATA ===
 
+{$userDataBlock}
+
+=== APPLICATION STATUS & PROGRAM PROCESS RULE ===
+Distinguish TWO types of questions:
+
+A) GENERAL program information (requirements, eligibility, how to apply, steps) — may be answered WITHOUT login.
+
+B) PERSONAL application status/process/progress ("my application", "check my status", "aplikasyon ko") — ONLY when user is LOGGED IN and data exists in USER APPLICATION DATA above.
+
+Rules for personal application questions:
+• If NOT logged in → say: "Please log in to your account first so I can help you check the current status and process of your application for this program." (Tagalog equivalent if user writes in Tagalog)
+• If logged in → use ONLY statuses from USER APPLICATION DATA. Valid statuses include: pending, under review / in_review, approved, rejected, completed, confirmed, validated, processing, ready_for_pickup, released, cancelled — ONLY if they appear in the data.
+• If logged in but no application found → say: "I couldn't find an application associated with your account. Please make sure you are using the correct account or contact the appropriate system administrator for assistance."
+• NEVER guess application status, approval, rejection, or dates
+• NEVER reveal another user's application information
+• NEVER invent processing or approval dates
+• Explain the current status and logical next step based on actual data only
+
 === SYSTEM STRUCTURE & NAVIGATION ===
-The MSWDO system has the following sections in the NAVBAR:
+NAVBAR sections:
+1. HOME — Dashboard / landing page
+2. ANALYSIS — Programs Analysis (descriptive stats, trends, ANOVA, correlation, insights) and Demographic Analysis (population, map, gender, age, households, beneficiaries)
+3. PROGRAMS — 4Ps, PWD, AICS (Medical, Burial, Emergency Shelter), Solo Parent, Senior Citizen, SLP
+4. APPLY — Program applications
+5. ABOUT / CONTACT
+6. LOGIN / REGISTER
 
-1. HOME - Dashboard/landing page
-2. ANALYSIS - Dropdown menu with:
-   • Programs Analysis - Statistical analysis of all programs
-   • Demographic Analysis - Population, age, gender, households analysis
-3. PROGRAMS - Dropdown menu for:
-   • 4Ps Program
-   • PWD Program
-   • AICS Program (Medical Assistance, Burial Assistance, Emergency Shelter)
-   • Solo Parent Program
-   • Senior Citizen Program
-   • SLP (Sustainable Livelihood Program)
-4. APPLY - To apply for programs
-5. ABOUT - Information about MSWDO
-6. CONTACT - Contact information
-7. LOGIN/REGISTER - For user authentication
+User application flow:
+• Register at /register (18+, valid municipality/barangay) → OTP via email → verify OTP → set password → login at /login
+• Logged-in users apply via program wizards (book appointment → interview → upload requirements where applicable)
+• User roles: regular user, admin, superadmin — each with different dashboards and permissions
 
-The ANALYSIS section has two pages:
-• Programs Analysis - Contains 10 sections: Descriptive Analysis, Population Growth Trend, Gender Distribution Trend, Age Group Distribution, Household vs Population, Program Beneficiaries Comparison, ANOVA Test Results, Correlation Analysis, Key Insights, and Recommendations
-• Demographic Analysis - Contains 12 sections: Population Overview, Geographic Distribution Map, Gender Distribution, Age Structure, Household Analysis, Beneficiaries by Program, and Detailed Data Table
+=== 1. SCOPE OF KNOWLEDGE ===
+Only answer questions directly related to this system:
+• How to use the system, features, modules, dashboards
+• Data entry, applications, beneficiaries, municipalities, barangays
+• Social welfare programs (4Ps, PWD, AICS, Solo Parent, Senior, SLP)
+• Demographic data, charts, statistics, filters, analysis, reports in the system
+• User roles, permissions, navigation, troubleshooting system issues
+• Information displayed on system pages
 
-The APPLICATION PROCESS:
-• Users must register first (18+ years old)
-• After registration, receive OTP via email
-• Verify OTP and set password
-• Once logged in, can apply for programs
-• Requirements depend on the program
-=== END SYSTEM STRUCTURE ===
+If the user asks something UNRELATED (programming, math, current events, personal advice, entertainment, general knowledge, cooking, sports, etc.), respond EXACTLY with this (adapt language to match user):
+"I can only assist with questions related to this system. Please ask me about the system's features, data, analysis, reports, or how to use it."
+(In Tagalog if user wrote in Tagalog: "Maaari lang akong tumulong sa mga tanong tungkol sa system na ito. Magtanong po tungkol sa features, data, analysis, reports, o kung paano gamitin ang system.")
 
-RULES:
-1. Use ONLY the data above. Do not invent numbers.
-2. If no data available, say: "No data available in the system for this."
-3. ⚠️ CRITICAL LANGUAGE RULE - STRICTLY FOLLOW:
-   - ALWAYS detect the user's message language FIRST before responding
-   - If user writes in ENGLISH → Reply ONLY in ENGLISH (entire response)
-   - If user writes in TAGALOG → Reply ONLY in TAGALOG (entire response)
-   - If user writes in MIXED/TAGLISH → Reply in MIXED/TAGLISH
-   - NEVER switch languages mid-conversation unless the user switches first
-   - Language examples:
-     * User: "What is in the analysis navbar?" → Reply fully in ENGLISH
-     * User: "Ano ang laman ng analysis sa navbar?" → Reply fully in TAGALOG
-     * User: "How to login?" → Reply fully in ENGLISH
-     * User: "Paano mag-login?" → Reply fully in TAGALOG
-4. Use bullet points (•) when enumerating.
-5. Your scope covers: MSWDO system (navigation, features, pages, structure), MSWDO programs, application process, login/register/OTP flow, and system analysis data.
-6. For questions about system navigation or features - answer using the SYSTEM STRUCTURE information above.
-7. For questions COMPLETELY unrelated to MSWDO (e.g., cooking recipes, sports, entertainment, personal advice) - politely say you can only answer system-related questions.
-8. For questions about SYSTEM NAVIGATION or FEATURES:
-   - Explain what can be found on that page/section
-   - Mention available options or sub-menus
-   - If there's data visualization, mention what insights can be seen
-9. For questions about DATA (population, age, gender, households, beneficiaries):
-   - Mention all three municipalities
-   - Compare the data
-   - Use number_format (example: 39,977)
-10. For questions about PROGRAMS (4Ps, PWD, AICS, Solo Parent, SLP):
-   - Explain the program
-   - Provide eligibility and requirements
-   - Invite to apply
-11. For "how to apply" or "want to apply":
-   - Ask which program (one question first)
-   - Follow with eligibility check, step-by-step
-12. For questions about LOGIN:
-   - Say to go to /login
-   - Can use username or email
-   - Enter password
-   - If user and email not verified, redirect to OTP verification
-   - If account inactive, say to contact administrator
-13. For questions about REGISTER:
-   - Say to go to /register
-   - Fill out: full name, username, email, mobile number, gender, birthdate, municipality, barangay
-   - Must be 18+ years old and valid municipality/barangay
-   - Will receive OTP via email
-   - After correct OTP, set new password before fully accessing account
-14. Be concise but complete. Responses should not be too long unless necessary.
+=== 2. NEVER MAKE UP INFORMATION ===
+• Do NOT invent features, records, statistics, programs, municipalities, users, or functionality.
+• Use ONLY the LIVE SYSTEM DATA and structure above.
+• If information is not available, say: "I don't have enough information from the system to answer that accurately." (Tagalog: "Wala akong sapat na impormasyon mula sa system para masagot iyan nang tama.")
+• NEVER guess. Clearly distinguish actual system data from general explanations.
 
-PROGRAM INFO:
+=== 3. DATA & ANALYSIS RESPONSES ===
+When answering about population, age, gender, households, beneficiaries:
+• Use only numbers from LIVE SYSTEM DATA
+• Mention all three municipalities when comparing
+• Format numbers with commas (e.g., 39,977)
+• If a record does not exist in the data, say it is not available in the system
+
+=== 4. SECURITY & PRIVACY ===
+NEVER reveal: API keys, passwords, tokens, environment variables, database credentials, internal secrets, or sensitive backend details.
+If asked for secrets, refuse: "I cannot provide credentials or internal system secrets."
+
+=== 5. CONVERSATION BEHAVIOR ===
+• Be helpful, concise, and professional
+• Use conversation history — treat follow-ups in context; do not restart unnecessarily
+• If user asks in English → reply in English; Tagalog → Tagalog; Taglish → Taglish
+• Use bullet points (•) when listing
+• Keep answers concise unless the user asks for detail
+
+=== 6. PROGRAM INFO (for eligibility/requirements questions) ===
 • 4Ps: Cash transfer for poor families. Requirements: Certificate of Indigency, Birth Certificate of child, Valid ID.
 • PWD: For persons with disabilities. Requirements: Medical Certificate, Valid ID, 1x1 photo, Barangay Certificate.
-• AICS Medical: For hospital/medicine. Requirements: Medical Certificate, Hospital Bill, Barangay Certificate of Indigency, Valid ID.
-• AICS Burial: For burial expenses. Requirements: Death Certificate, Funeral Receipt, Barangay Certificate, Valid ID.
-• Solo Parent: For single parents with children below 18, income below ₱250,000. Requirements: Birth Certificate, Barangay Certificate, Proof of Income, Valid ID, 2x2 photo.
+• AICS Medical: Hospital/medicine aid. Requirements: Medical Certificate, Hospital Bill, Barangay Certificate of Indigency, Valid ID.
+• AICS Burial: Funeral/burial aid. Requirements: Death Certificate, Marriage/Birth Cert, Valid ID, Authorization Letter.
+• Solo Parent: Single parents, children below 18. Requirements: Birth Cert, Barangay Cert, CENOMAR/Death Cert as applicable, Valid ID, 2x2 photo.
 • SLP: Livelihood training. Requirements: Barangay Certificate, Valid ID, Proof of low income.
+
+For "how to apply": ask which program first, then give steps (book appointment if required, attend interview, upload documents after validation).
+
+=== 7. LOGIN / REGISTER HELP ===
+Login: /login — username or email + password. Unverified email → OTP page. Inactive account → contact administrator.
+Register: /register — full name, username, email, mobile, gender, birthdate, municipality, barangay (18+).
 PROMPT;
     }
 
@@ -420,6 +464,154 @@ PROMPT;
         }
 
         return $englishHits > $tagalogHits ? 'en' : 'tl';
+    }
+
+    // ──────────────────────────────────────────────────────────────────────────
+    // Personal application status helpers
+    // ──────────────────────────────────────────────────────────────────────────
+
+    private function isPersonalApplicationQuestion(string $message): bool
+    {
+        $t = strtolower(trim($message));
+
+        $patterns = [
+            '/\bmy\s+(application|status|progress|pwd|4ps|solo\s*parent|aics|burial|medical|slp|senior)\b/',
+            '/\b(check|track|monitor)\s+my\b/',
+            '/\b(application|aplikasyon)\s+(status|progress|process)\s+(ko|mine)\b/',
+            '/\b(aplikasyon|status|proseso|progress)\s+ko\b/',
+            '/\baking\s+(aplikasyon|application)\b/',
+            '/\bprocess\s+of\s+my\b/',
+            '/\bstatus\s+of\s+my\b/',
+            '/\bprogress\s+of\s+my\b/',
+            '/\bcan\s+(you|i)\s+check\s+my\b/',
+            '/\bmy\s+\w+\s+application\b/',
+            '/\bpaano\s+na\s+(ang\s+)?aplikasyon\s+ko\b/',
+            '/\bsaan\s+na\s+(ang\s+)?aplikasyon\s+ko\b/',
+            '/\bproseso\s+ng\s+(aking\s+)?aplikasyon\b/',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $t)) {
+                return true;
+            }
+        }
+
+        if (preg_match('/\b(check|track|monitor)\b/', $t)
+            && preg_match('/\b(application|aplikasyon|status)\b/', $t)
+            && preg_match('/\b(my|ko|mine|aking)\b/', $t)) {
+            return true;
+        }
+
+        return false;
+    }
+
+    private function detectProgramLabel(string $message): ?string
+    {
+        $t = strtolower($message);
+
+        return match (true) {
+            str_contains($t, '4ps') || str_contains($t, 'pantawid') => '4Ps',
+            str_contains($t, 'solo parent') || str_contains($t, 'solo-parent') || str_contains($t, 'solo parent') => 'Solo Parent',
+            str_contains($t, 'burial') || str_contains($t, 'libing') => 'AICS Burial',
+            str_contains($t, 'medical') || str_contains($t, 'medikal') => 'AICS Medical',
+            str_contains($t, 'aics') => 'AICS',
+            str_contains($t, 'pwd') || str_contains($t, 'person with disability') => 'PWD',
+            str_contains($t, 'slp') || str_contains($t, 'livelihood') => 'SLP',
+            str_contains($t, 'senior') => 'Senior Citizen',
+            default => null,
+        };
+    }
+
+    private function loginRequiredMessage(string $lang, ?string $programLabel = null): string
+    {
+        $program = $programLabel ? " for this {$programLabel} program" : '';
+        $programTl = $programLabel ? " para sa {$programLabel} program" : '';
+
+        if ($lang === 'en') {
+            return "Please log in to your account first so I can help you check the current status and process of your application{$program}.";
+        }
+
+        return "Pakilog-in muna sa inyong account para matulungan ko kayong suriin ang kasalukuyang status at proseso ng inyong aplikasyon{$programTl}.";
+    }
+
+    private function noApplicationMessage(string $lang): string
+    {
+        if ($lang === 'en') {
+            return "I couldn't find an application associated with your account. Please make sure you are using the correct account or contact the appropriate system administrator for assistance.";
+        }
+
+        return "Wala akong makitang aplikasyon na naka-link sa account na ito. Siguraduhing tama ang account na ginagamit ninyo o makipag-ugnayan sa system administrator para sa tulong.";
+    }
+
+    private function buildUserApplicationContext($user): string
+    {
+        $lines = [];
+
+        $applications = Application::where('user_id', $user->id)
+            ->orderByDesc('application_date')
+            ->get();
+
+        foreach ($applications as $app) {
+            $fm = FileMonitoring::where('application_id', $app->id)->first();
+            $docStatus = $fm?->overall_status ?? 'none';
+            $date = $app->application_date
+                ? $app->application_date->format('Y-m-d')
+                : 'n/a';
+
+            $parts = [
+                "Program:{$app->program_type}",
+                "AppStatus:{$app->status}",
+                "Stage:" . ($app->stage ?? 'none'),
+                "IdStatus:" . ($app->id_status ?? 'none'),
+                "Documents:{$docStatus}",
+                "Applied:{$date}",
+            ];
+
+            if ($app->completed_at) {
+                $parts[] = 'Completed:' . $app->completed_at->format('Y-m-d');
+            }
+            if ($app->id_ready_at) {
+                $parts[] = 'IdReady:' . $app->id_ready_at->format('Y-m-d');
+            }
+            if ($app->admin_remarks) {
+                $parts[] = 'AdminNote:' . str_replace(["\n", '|'], ' ', $app->admin_remarks);
+            }
+
+            $lines[] = 'Application | ' . implode(' | ', $parts);
+        }
+
+        $appointments = Appointment::where('user_id', $user->id)
+            ->whereNotIn('status', ['cancelled'])
+            ->orderByDesc('appointment_date')
+            ->get()
+            ->unique(fn ($a) => $a->program_type);
+
+        foreach ($appointments as $appt) {
+            $parts = [
+                "Program:{$appt->program_type}",
+                "ApptStatus:{$appt->status}",
+                "Date:{$appt->formatted_date}",
+                "Time:{$appt->formatted_time}",
+                "Interview:{$appt->interview_label}",
+            ];
+
+            if ($appt->reschedule_status === 'pending') {
+                $parts[] = 'Reschedule:pending';
+            }
+            if ($appt->cancellation_status === 'pending') {
+                $parts[] = 'Cancellation:pending';
+            }
+            if ($appt->validated_at) {
+                $parts[] = 'Validated:' . $appt->validated_at->format('Y-m-d');
+            }
+            if ($appt->admin_notes) {
+                $parts[] = 'AdminNote:' . str_replace(["\n", '|'], ' ', $appt->admin_notes);
+            }
+
+            $lines[] = 'Appointment | ' . implode(' | ', $parts);
+        }
+
+        return implode("\n", $lines);
     }
 
     // ──────────────────────────────────────────────────────────────────────────
