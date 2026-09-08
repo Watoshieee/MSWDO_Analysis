@@ -38,9 +38,9 @@
         .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.85rem; white-space: nowrap; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-info { color:white; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.1); padding:9px 22px; border-radius:40px; font-size:0.9rem; font-weight:600; max-width: 100%; }
-        .user-info span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
-        .logout-btn { background:transparent; border:2px solid rgba(255,255,255,0.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; transition:all 0.3s; font-size:0.88rem; cursor:pointer; }
+        .user-info { color:white; display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.1); padding:9px 14px; border-radius:40px; font-size:0.9rem; font-weight:600; }
+        .user-info .name-text { display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100px; vertical-align:middle; cursor:default; }
+        .logout-btn { background:transparent; border:2px solid rgba(255,255,255,0.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; transition:all 0.3s; font-size:0.88rem; cursor:pointer; white-space:nowrap; flex-shrink:0; }
         .logout-btn:hover { background:var(--secondary-yellow); color:var(--primary-blue); border-color:var(--secondary-yellow); }
 
         /* ── HERO BANNER ── */
@@ -175,7 +175,7 @@
                         @endif
                     </button>
                     <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
+                        <span class="name-text" title="{{ Auth::user()->full_name }}">{{ Auth::user()->full_name }}</span>
                         <form method="POST" action="{{ route('logout') }}" class="d-inline">
                             @csrf
                             <button type="submit" class="logout-btn">Logout</button>
