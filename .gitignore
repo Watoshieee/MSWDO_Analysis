@@ -29,4 +29,7 @@
 /vendor
 Homestead.json
 Homestead.yaml
+
 Thumbs.db
+
+.env
