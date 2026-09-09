@@ -51,11 +51,14 @@
                     @else <span class="aics-badge none">○ Not uploaded</span>
                     @endif
                     @if($uf && $uf->file_path)
-                    @php $ext = strtolower(pathinfo($uf->file_path, PATHINFO_EXTENSION)); @endphp
+                    @php 
+                        $ext = strtolower(pathinfo($uf->file_path, PATHINFO_EXTENSION)); 
+                        $fileUrl = route('user.serve-file', $uf->id);
+                    @endphp
                     @if(in_array($ext, ['jpg','jpeg','png','webp']))
-                    <img src="{{ asset('storage/'.$uf->file_path) }}" onclick="window.open('{{ asset('storage/'.$uf->file_path) }}')" class="aics-thumb">
+                    <img src="{{ $fileUrl }}" onclick="window.open('{{ $fileUrl }}')" class="aics-thumb">
                     @endif
-                    <a href="{{ asset('storage/'.$uf->file_path) }}" target="_blank" class="aics-view-link">View</a>
+                    <a href="{{ $fileUrl }}" target="_blank" class="aics-view-link">View</a>
                     @endif
                 </div>
             </div>

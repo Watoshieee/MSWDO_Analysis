@@ -9,7 +9,8 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; overflow-x: hidden; }
+        * { box-sizing: border-box; }
+        html, body { margin: 0; padding: 0; }
 
         :root {
             --primary-blue: {{ $primaryColor ?? '#2C3E8F' }};
@@ -299,7 +300,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; overflow-x: hidde
                                                 @if($hasFile)
                                                     @php 
                                                         $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION));
-                                                        $fileUrl = asset('storage/' . $file->file_path);
+                                                        $fileUrl = route('user.serve-file', $file->id);
                                                     @endphp
                                                     @if(in_array($ext, ['jpg','jpeg','png','gif','webp']))
                                                         <img src="{{ $fileUrl }}" 
@@ -445,8 +446,20 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; overflow-x: hidde
 
         // Initialize modals when document is ready
         document.addEventListener('DOMContentLoaded', function() {
-            fileViewerModal = new bootstrap.Modal(document.getElementById('fileViewerModal'));
-            remarksModal = new bootstrap.Modal(document.getElementById('remarksModal'));
+            const fileViewerEl = document.getElementById('fileViewerModal');
+            const remarksEl = document.getElementById('remarksModal');
+            if (fileViewerEl) fileViewerModal = new bootstrap.Modal(fileViewerEl);
+            if (remarksEl) remarksModal = new bootstrap.Modal(remarksEl);
+
+            // Ensure body scroll is completely restored whenever any modal closes
+            const restoreScroll = function() {
+                document.body.style.overflow = '';
+                document.body.style.paddingRight = '';
+            };
+            fileViewerEl?.addEventListener('hidden.bs.modal', restoreScroll);
+            remarksEl?.addEventListener('hidden.bs.modal', restoreScroll);
+            document.getElementById('announcementsModal')?.addEventListener('hidden.bs.modal', restoreScroll);
+            document.getElementById('chatModal')?.addEventListener('hidden.bs.modal', restoreScroll);
         });
 
         // Function to show rejection remarks modal

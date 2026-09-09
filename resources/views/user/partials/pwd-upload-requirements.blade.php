@@ -52,14 +52,17 @@
                     <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
                         {!! $badge !!}
                         @if($uf && $uf->file_path)
-                            @php $ext = strtolower(pathinfo($uf->file_path, PATHINFO_EXTENSION)); @endphp
+                            @php 
+                                $ext = strtolower(pathinfo($uf->file_path, PATHINFO_EXTENSION)); 
+                                $fileUrl = route('user.serve-file', $uf->id);
+                            @endphp
                             @if(in_array($ext, ['jpg', 'jpeg', 'png', 'webp']))
-                                <img src="{{ asset('storage/' . $uf->file_path) }}"
-                                    onclick="openFileModal('{{ asset('storage/' . $uf->file_path) }}', '{{ addslashes($reqName) }}', '{{ $ext }}')"
+                                <img src="{{ $fileUrl }}"
+                                    onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($reqName) }}', '{{ $ext }}')"
                                     class="pwd-thumb" alt="">
                             @endif
                             <button type="button"
-                                onclick="openFileModal('{{ asset('storage/' . $uf->file_path) }}', '{{ addslashes($reqName) }}', '{{ $ext }}')"
+                                onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($reqName) }}', '{{ $ext }}')"
                                 class="pwd-view">View</button>
                         @endif
                     </div>

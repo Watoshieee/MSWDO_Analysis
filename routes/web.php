@@ -85,6 +85,7 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::put('/user/profile', [UserController::class, 'updateProfile'])->name('user.profile.update');
     Route::get('/user/announcements', [UserController::class, 'announcements'])->name('user.announcements');
     Route::get('/user/my-requirements', [UserController::class, 'myRequirements'])->name('user.my-requirements');
+    Route::get('/user/files/{id}/serve', [UserController::class, 'serveFile'])->name('user.serve-file');
     Route::put('/user/resubmit-requirement/{fileUploadId}', [UserController::class, 'resubmitRequirement'])->name('user.resubmit-requirement');
     Route::post('/user/resubmit-requirement/{fileUploadId}', [UserController::class, 'resubmitRequirement']); // Fallback for browsers that don't support PUT
     Route::get('/user/apply/AICS/aics', [UserController::class, 'aicsCategory'])->name('user.aics-category');

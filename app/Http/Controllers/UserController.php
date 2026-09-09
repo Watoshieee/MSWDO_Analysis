@@ -1099,4 +1099,95 @@ class UserController extends Controller
         return redirect()->route('user.profile')->with('success', 'Profile updated successfully!');
     }
 
+    /**
+     * Securely serve an uploaded requirement document to its owning user.
+     * Streams the file through PHP to support Hostinger environments
+     * without relying on public storage symlinks.
+     *
+     * Authorizes access via: FileUpload -> FileMonitoring -> Application -> user_id === Auth::id()
+     */
+    public function serveFile(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        // Authorize that the file belongs to an application owned by this user
+        // Strictly verified chain: FileUpload -> FileMonitoring -> Application -> Application.user_id === Auth::id()
+        $fileUpload = FileUpload::with(['fileMonitoring.application'])
+            ->where('id', $id)
+            ->whereHas('fileMonitoring.application', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->first();
+
+        if (!$fileUpload) {
+            abort(404, 'File not found or access denied.');
+        }
+
+        $filePath = $fileUpload->file_path;
+
+        if (!$filePath) {
+            abort(404, 'No file path stored for this record.');
+        }
+
+        // Reject directory traversal attempts
+        if (str_contains($filePath, '..') || str_starts_with($filePath, '/') || str_starts_with($filePath, '\\')) {
+            abort(403, 'Invalid file path.');
+        }
+
+        // Candidate paths matching AdminController logic for Hostinger
+        $candidates = [
+            Storage::disk('public')->path($filePath),
+            base_path('storage/app/public/' . $filePath),
+            public_path('storage/' . $filePath),
+        ];
+
+        $fullPath = null;
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate) && is_file($candidate)) {
+                $fullPath = $candidate;
+                break;
+            }
+        }
+
+        if (!$fullPath) {
+            Log::warning('user.serveFile: file not found on disk for upload ID ' . $id, [
+                'user_id'    => $user->id,
+                'file_path'  => $filePath,
+                'candidates' => $candidates,
+            ]);
+            abort(404, 'File not found on disk.');
+        }
+
+        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+
+        $mimeMap = [
+            'pdf'  => 'application/pdf',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'webp' => 'image/webp',
+            'bmp'  => 'image/bmp',
+        ];
+
+        $mime = $mimeMap[$ext] ?? (mime_content_type($fullPath) ?: 'application/octet-stream');
+        $forceDownload = $request->query('dl') === '1';
+        $filename = $fileUpload->file_name ?: basename($filePath);
+        $disposition = $forceDownload
+            ? 'attachment; filename="' . basename($filename) . '"'
+            : 'inline; filename="' . basename($filename) . '"';
+
+        return response()->file($fullPath, [
+            'Content-Type'        => $mime,
+            'Content-Disposition' => $disposition,
+            'Content-Length'      => (string) filesize($fullPath),
+            'Cache-Control'       => 'private, max-age=3600',
+        ]);
+    }
+
 }
+
