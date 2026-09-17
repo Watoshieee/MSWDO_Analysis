@@ -41,7 +41,7 @@ class AppointmentController extends Controller
             return response()->json(['error' => 'Past dates are not available'], 422);
         }
 
-        return response()->json(Appointment::slotsForDate($date, $user->municipality));
+        return response()->json(Appointment::slotsForDate($date, $user->municipality, $carbon->isToday()));
     }
 
     /** Allowed program types for appointment booking */
@@ -61,7 +61,7 @@ class AppointmentController extends Controller
 
         $request->validate([
             'appointment_date' => 'required|date|after:today',
-            'appointment_time' => 'required|in:' . implode(',', Appointment::availableSlots()),
+            'appointment_time' => ['required', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
             'interview_type'   => 'required|in:face_to_face,online',
             'user_notes'       => 'nullable|string|max:500',
             'program_type'     => 'nullable|in:' . $allowed,
@@ -208,7 +208,7 @@ class AppointmentController extends Controller
 
         $request->validate([
             'reschedule_date'   => 'required|date|after:today',
-            'reschedule_time'   => 'required|in:' . implode(',', Appointment::availableSlots()),
+            'reschedule_time'   => ['required', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
             'reschedule_reason' => 'required|string|max:500',
         ]);
 

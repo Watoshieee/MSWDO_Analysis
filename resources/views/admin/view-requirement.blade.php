@@ -490,7 +490,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 $extUpper = strtoupper($ext);
             @endphp
             
-            <div class="req-card {{ $status }}">
+            <div class="req-card {{ $status }}" data-file-id="{{ $file->id }}">
                 {{-- Thumbnail / File Icon --}}
                 <div class="req-card-image"
                      onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')"
@@ -696,23 +696,119 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         let currentFileName = null;
         let currentFileStatus = null;
         
+        // Prevent browser scroll restoration on all loads (AJAX and non-AJAX)
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+        // Restore scroll from URL query param (fallback for non-AJAX browsers)
+        (function () {
+            var s = {{ (int) request('scroll', 0) }};
+            if (s > 0) {
+                window.addEventListener('load', function () { window.scrollTo(0, s); });
+            }
+        })();
+
         document.addEventListener('DOMContentLoaded', function() {
             fileViewerModal = new bootstrap.Modal(document.getElementById('fileViewerModal'));
+
+            // Intercept all approve forms — submit via AJAX, update DOM in-place
             document.querySelectorAll('.js-loading-submit').forEach(form => {
-                form.addEventListener('submit', function () {
-                    const submitBtn = this.querySelector('button[type="submit"]');
-                    if (submitBtn) {
-                        submitBtn.disabled = true;
-                        submitBtn.style.opacity = '.65';
-                        submitBtn.style.cursor = 'not-allowed';
-                    }
-                    showLoading(
-                        this.getAttribute('data-loading-title') || 'Processing Request',
-                        this.getAttribute('data-loading-sub') || 'Please wait while we update records.'
-                    );
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    submitFileStatus(this);
                 });
             });
         });
+
+        function submitFileStatus(form, extraData) {
+            const data = new FormData(form);
+            if (extraData) {
+                Object.entries(extraData).forEach(([k, v]) => data.set(k, v));
+            }
+            const fileId = form.action.match(/\/requirements\/(\d+)\//)?.[1]
+                        || form.action.match(/\/requirements\/(\d+)/)?.[1];
+            const card = fileId ? document.querySelector('.req-card[data-file-id="' + fileId + '"]') : null;
+
+            const scrollBefore = window.scrollY || window.pageYOffset;
+
+            // Disable submit button and show loading overlay
+            const btn = form.querySelector('button[type="submit"]');
+            if (btn) { btn.disabled = true; btn.style.opacity = '.65'; }
+            const loadingTitle = form.getAttribute('data-loading-title') || 'Processing Request';
+            const loadingSub   = form.getAttribute('data-loading-sub')   || 'Please wait while we update records.';
+            showLoading(loadingTitle, loadingSub);
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'X-Requested-With': 'XMLHttpRequest' },
+                body: data
+            })
+            .then(r => r.json())
+            .then(res => {
+                hideLoading();
+                if (!res.success) {
+                    alert(res.message || 'Error');
+                    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+                    return;
+                }
+                if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+                if (card) {
+                    updateCardDOM(card, res);
+                    window.scrollTo(0, scrollBefore);
+                } else {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('scroll', scrollBefore);
+                    window.location.href = url.toString();
+                }
+            })
+            .catch(() => {
+                hideLoading();
+                if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+                const url = new URL(window.location.href);
+                url.searchParams.set('scroll', scrollBefore);
+                window.location.href = url.toString();
+            });
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function updateCardDOM(card, res) {
+            const status = res.new_status; // 'approved' or 'rejected'
+
+            // Update card border class
+            card.classList.remove('pending', 'approved', 'rejected');
+            card.classList.add(status);
+
+            // Update status badge
+            const badge = card.querySelector('.req-status-badge');
+            if (badge) {
+                badge.className = 'req-status-badge s-' + status;
+                badge.textContent = status === 'approved' ? 'Approved' : 'Rejected';
+            }
+
+            // Update remarks if rejected
+            const content = card.querySelector('.req-card-content');
+            if (status === 'rejected' && res.admin_remarks) {
+                let remarksEl = card.querySelector('.req-remarks');
+                if (!remarksEl) {
+                    remarksEl = document.createElement('div');
+                    remarksEl.className = 'req-remarks';
+                    badge.insertAdjacentElement('afterend', remarksEl);
+                }
+                remarksEl.innerHTML = '<strong>Admin Note:</strong> ' + escapeHtml(res.admin_remarks);
+            }
+
+            // Replace action buttons with status text
+            const actions = card.querySelector('.req-actions');
+            if (actions) {
+                if (status === 'approved') {
+                    actions.innerHTML = '<div class="req-status-text req-text-approved">✔ Already Approved</div>';
+                } else {
+                    actions.innerHTML = '<div class="req-status-text req-text-rejected">⏳ Waiting for Re-upload</div>';
+                }
+            }
+        }
 
         function showLoading(title = 'Processing Request', subtitle = 'Please wait while we update records.') {
             const backdrop = document.getElementById('uiLoadingBackdrop');
@@ -723,6 +819,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             if (subEl) subEl.textContent = subtitle;
             backdrop.style.display = 'flex';
             backdrop.setAttribute('aria-hidden', 'false');
+        }
+
+        function hideLoading() {
+            const backdrop = document.getElementById('uiLoadingBackdrop');
+            if (!backdrop) return;
+            backdrop.style.display = 'none';
+            backdrop.setAttribute('aria-hidden', 'true');
         }
         
         function openFileModal(fileUrl, fileName, fileExt, fileId, fileStatus) {
@@ -842,18 +945,22 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }, 300);
         });
         
-        // Populate the decline modal with the correct file data
+        // Populate the decline modal with the correct file data + reset state
         const declineModal = document.getElementById('declineModal');
         declineModal.addEventListener('show.bs.modal', function (e) {
-            const btn      = e.relatedTarget;
-            const fileId   = btn.getAttribute('data-file-id');
-            const fileName = btn.getAttribute('data-file-name');
-
-            document.getElementById('declineDocName').textContent = fileName;
-            document.getElementById('declineForm').action = '/admin/requirements/' + fileId + '/status';
+            // Reset button and form state on every open
+            const confirmBtn = document.getElementById('confirmDeclineBtn');
+            if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.style.opacity = ''; }
             document.getElementById('rejectionReason').value = '';
             document.getElementById('declineRemarks').value = '';
             document.getElementById('remarksError').style.display = 'none';
+
+            const btn = e.relatedTarget;
+            if (!btn) return; // triggered programmatically — action already set by show.bs.modal or modalDeclineBtn handler
+            const fileId   = btn.getAttribute('data-file-id');
+            const fileName = btn.getAttribute('data-file-name');
+            document.getElementById('declineDocName').textContent = fileName;
+            document.getElementById('declineForm').action = '/admin/requirements/' + fileId + '/status';
         });
         
         // Auto-fill rejection reason into additional comments
@@ -881,42 +988,43 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
         });
         
-        // Client-side validation: require rejection reason before submit
+        // Client-side validation + AJAX submit for decline form
         document.getElementById('declineForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
             var reason = document.getElementById('rejectionReason').value;
             var comments = document.getElementById('declineRemarks').value.trim();
             var errorDiv = document.getElementById('remarksError');
-            
+
             if (!reason) {
-                e.preventDefault();
                 errorDiv.textContent = 'Please select a rejection reason.';
                 errorDiv.style.display = 'block';
                 document.getElementById('rejectionReason').focus();
                 return;
             }
-            
-            // If "Other" is selected, require additional comments
             if (reason === 'Other' && !comments) {
-                e.preventDefault();
                 errorDiv.textContent = 'Please specify the reason in Additional Comments when selecting "Other".';
                 errorDiv.style.display = 'block';
                 document.getElementById('declineRemarks').focus();
                 return;
             }
-            
-            // For non-Other reasons, use the reason as final remarks (comments are already auto-filled)
-            var finalRemarks = comments || reason;
-            document.getElementById('declineRemarks').value = finalRemarks;
-            const declineBtn = document.getElementById('confirmDeclineBtn');
-            if (declineBtn) {
-                declineBtn.disabled = true;
-                declineBtn.style.opacity = '.65';
-                declineBtn.style.cursor = 'not-allowed';
+
+            document.getElementById('declineRemarks').value = comments || reason;
+
+            const confirmBtn = document.getElementById('confirmDeclineBtn');
+            if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.style.opacity = '.65'; }
+
+            // Hide modal first, then fire AJAX — same pattern as Approve
+            const bsModal = bootstrap.Modal.getInstance(document.getElementById('declineModal'));
+            if (bsModal) {
+                document.getElementById('declineModal').addEventListener('hidden.bs.modal', function handler() {
+                    document.getElementById('declineModal').removeEventListener('hidden.bs.modal', handler);
+                    submitFileStatus(document.getElementById('declineForm'));
+                }, { once: true });
+                bsModal.hide();
+            } else {
+                submitFileStatus(this);
             }
-            showLoading(
-                this.getAttribute('data-loading-title') || 'Declining Requirement',
-                this.getAttribute('data-loading-sub') || 'Saving remarks and notifying the applicant...'
-            );
         });
     </script>
 </body>

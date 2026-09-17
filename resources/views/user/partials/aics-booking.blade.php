@@ -86,9 +86,11 @@
                 </div>
                 <div class="col-md-4">
                     <label class="aics-label">Select Time Slot <span class="text-danger">*</span></label>
-                    <select id="apptTime-{{ $bp }}" name="appointment_time" class="form-control aics-input" required disabled>
-                        <option value="">Select date first</option>
-                    </select>
+                    <input type="hidden" id="apptTime-{{ $bp }}" name="appointment_time" required>
+                    <button type="button" id="timePickerBtn-{{ $bp }}" class="sp-timepicker-btn" onclick="openClockModal('{{ $bp }}')" disabled>
+                        <span class="btn-icon">🕐</span>
+                        <span>Select date first</span>
+                    </button>
                     <div id="slotMsg-{{ $bp }}" class="aics-hint"></div>
                 </div>
                 <div class="col-md-4">

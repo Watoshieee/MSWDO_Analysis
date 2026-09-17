@@ -14,14 +14,14 @@
         </div>
         <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;">
                 <!-- User List -->
-                <div id="userSelection" class="p-4">
+                <div id="userSelection" class="p-4" style="display:flex;flex-direction:column;min-height:0;flex:1;">
                     <p class="text-muted mb-3" style="font-size:0.9rem;">Select a user to view conversation:</p>
                     <input type="text" id="userSearchInput" class="form-control mb-3" placeholder="Search users..." style="border-radius:10px;">
-                    <div id="userList"></div>
+                    <div id="userList" style="overflow-y:auto;overflow-x:hidden;flex:1;min-height:0;padding-right:2px;"></div>
                 </div>
 
                 <!-- Chat Interface -->
-                <div id="chatInterface" style="display:none;">
+                <div id="chatInterface" style="display:none;flex-direction:column;overflow:hidden;">
                     <div class="chat-messages" id="chatMessages"></div>
                     <div class="chat-input-area">
                         <input type="text" id="messageInput" class="form-control" placeholder="Type your message..." maxlength="1000">
@@ -72,7 +72,6 @@
 .user-card:hover {
     background: #F0F5FF;
     border-color: #2C3E8F;
-    transform: translateX(4px);
 }
 
 .user-avatar {
@@ -91,6 +90,7 @@
 
 .user-info {
     flex: 1;
+    min-width: 0;
 }
 
 .user-name {
@@ -98,6 +98,9 @@
     color: #1E293B;
     font-size: 0.95rem;
     margin-bottom: 2px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .user-role {
@@ -122,6 +125,7 @@
 .chat-messages {
     height: 400px;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 20px;
     background: #F8FAFC;
 }
@@ -248,6 +252,7 @@
 <script>
 function openChatModal() {
     document.getElementById('chatModal').style.display = 'flex';
+    document.body.style.overflow = 'hidden';
     loadUnreadCount();
     loadUsers();
 }
@@ -255,6 +260,7 @@ function openChatModal() {
 function closeChatModal() {
     if (messageCheckInterval) clearInterval(messageCheckInterval);
     document.getElementById('chatModal').style.display = 'none';
+    document.body.style.overflow = '';
     backToUserList();
 }
 
@@ -304,20 +310,33 @@ function displayUsers(users) {
         list.innerHTML = '<p class="text-muted text-center">No users found.</p>';
         return;
     }
-    
-    list.innerHTML = users.map(user => `
-        <div class="user-card" onclick="selectUser(${user.id}, '${user.full_name}')">
+
+    const now = new Date();
+    list.innerHTML = users.map(user => {
+        let timeLabel = '';
+        if (user.latest_message_at) {
+            const msgDate = new Date(user.latest_message_at);
+            const diffMs = now - msgDate;
+            if (diffMs < 24 * 60 * 60 * 1000) {
+                timeLabel = msgDate.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+            } else {
+                timeLabel = msgDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+            }
+        }
+        return `
+        <div class="user-card" onclick="selectUser(${user.id}, '${user.full_name.replace(/'/g, "\\'")}')">  
             <div class="user-avatar">${user.full_name.charAt(0)}</div>
             <div class="user-info">
                 <div class="user-name">${user.full_name}</div>
                 <div class="user-role">User</div>
             </div>
             ${user.unread_count > 0 ? `<div class="user-unread">${user.unread_count}</div>` : ''}
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="color:#94a3b8;">
+            ${timeLabel ? `<div style="font-size:0.72rem;color:#94a3b8;font-weight:600;white-space:nowrap;margin-left:auto;padding-left:6px;">${timeLabel}</div>` : ''}
+            <svg width="20" height="20" fill="currentColor" viewBox="0 0 16 16" style="color:#94a3b8;flex-shrink:0;">
                 <path fill-rule="evenodd" d="M4.646 1.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1 0 .708l-6 6a.5.5 0 0 1-.708-.708L10.293 8 4.646 2.354a.5.5 0 0 1 0-.708z"/>
             </svg>
-        </div>
-    `).join('');
+        </div>`;
+    }).join('');
 }
 
 function filterUsers() {
@@ -331,7 +350,7 @@ function filterUsers() {
 function selectUser(userId, userName) {
     currentUserId = userId;
     document.getElementById('userSelection').style.display = 'none';
-    document.getElementById('chatInterface').style.display = 'block';
+    document.getElementById('chatInterface').style.display = 'flex';
     
     const chatInterface = document.getElementById('chatInterface');
     if (!document.querySelector('.back-to-users')) {
@@ -356,7 +375,7 @@ function selectUser(userId, userName) {
 function backToUserList() {
     currentUserId = null;
     if (messageCheckInterval) clearInterval(messageCheckInterval);
-    document.getElementById('userSelection').style.display = 'block';
+    document.getElementById('userSelection').style.display = 'flex';
     document.getElementById('chatInterface').style.display = 'none';
     document.querySelector('.back-to-users')?.remove();
     document.getElementById('chatMessages').innerHTML = '';
@@ -417,6 +436,7 @@ function sendMessage() {
     .then(() => {
         input.value = '';
         loadMessages(currentUserId);
+        loadUsers();
     })
     .catch(err => {
         console.error('Send error:', err);

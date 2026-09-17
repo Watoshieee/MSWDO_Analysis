@@ -1147,6 +1147,106 @@
                 width: 0%;
             }
         }
+
+        /* Loading overlay — same as /user/my-requirements */
+        .ui-loading-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,0.55);
+            backdrop-filter: blur(1.5px);
+            z-index: 12050; display: none;
+            align-items: center; justify-content: center;
+        }
+        .ui-loading-box {
+            width: 100%; max-width: 340px; border-radius: 16px;
+            background: linear-gradient(135deg,#2C3E8F,#1A2A5C);
+            color: #fff; box-shadow: 0 16px 44px rgba(15,23,42,.35);
+            border: 1px solid rgba(255,255,255,.15);
+            padding: 20px 18px; text-align: center;
+        }
+        .ui-loading-spinner {
+            width: 44px; height: 44px; margin: 0 auto 10px;
+            border-radius: 50%; border: 3px solid rgba(255,255,255,.25);
+            border-top-color: #FDB913; animation: uiSpin .8s linear infinite;
+        }
+        @keyframes uiSpin { to { transform: rotate(360deg); } }
+        .ui-loading-title { font-weight: 800; font-size: .98rem; }
+        .ui-loading-sub   { margin-top: 4px; opacity: .85; font-size: .8rem; }
+        /* â”€â”€ Clock Time Picker â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+        .sp-timepicker-btn {
+            display: flex; align-items: center; gap: 10px;
+            width: 100%; padding: 10px 14px;
+            border: 1.5px solid #e2e8f0; border-radius: 10px;
+            background: #fff; cursor: pointer; font-size: .9rem;
+            color: #64748b; transition: border-color .2s;
+        }
+        .sp-timepicker-btn:hover:not(:disabled) { border-color: #2C3E8F; }
+        .sp-timepicker-btn.has-value { color: #1e293b; font-weight: 600; }
+        .sp-timepicker-btn:disabled { opacity: .5; cursor: not-allowed; }
+        .sp-timepicker-btn .btn-icon { font-size: 1.1rem; }
+
+        .clock-modal-overlay {
+            display: none; position: fixed; inset: 0;
+            background: rgba(0,0,0,.55); z-index: 10000;
+            align-items: center; justify-content: center;
+        }
+        .clock-modal-overlay.open { display: flex; }
+        .clock-modal {
+            background: #fff; border-radius: 20px;
+            padding: 24px 20px 20px; width: 300px;
+            box-shadow: 0 8px 40px rgba(0,0,0,.22);
+        }
+        .clock-header { background: #2C3E8F; border-radius: 12px; padding: 14px 18px; margin-bottom: 16px; }
+        .clock-header-label { color: rgba(255,255,255,.7); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; margin-bottom: 6px; }
+        .clock-digital { display: flex; align-items: center; gap: 4px; }
+        .clock-digit-hour, .clock-digit-min {
+            font-size: 2.4rem; font-weight: 700; color: rgba(255,255,255,.6);
+            cursor: pointer; padding: 2px 6px; border-radius: 6px; line-height: 1;
+        }
+        .clock-digit-hour.active, .clock-digit-min.active { color: #fff; background: rgba(255,255,255,.15); }
+        .clock-digit-sep { font-size: 2.4rem; font-weight: 700; color: rgba(255,255,255,.6); line-height: 1; }
+        .clock-digit-ampm { font-size: 1.1rem; font-weight: 700; color: rgba(255,255,255,.85); margin-left: 6px; align-self: flex-end; padding-bottom: 4px; }
+
+        .clock-face-wrap { display: flex; justify-content: center; margin-bottom: 12px; }
+        .clock-face {
+            position: relative; width: 240px; height: 240px;
+            border-radius: 50%; background: #f1f5f9;
+        }
+        .clock-center-dot {
+            position: absolute; top: 50%; left: 50%;
+            width: 8px; height: 8px; border-radius: 50%;
+            background: #2C3E8F; transform: translate(-50%,-50%); z-index: 2;
+        }
+        .clock-hand {
+            position: absolute; bottom: 50%; left: 50%;
+            width: 2px; background: #2C3E8F; border-radius: 2px;
+            transform-origin: bottom center;
+            transform: translateX(-50%) rotate(0deg);
+            transition: transform .2s ease; z-index: 1;
+        }
+        .clock-num {
+            position: absolute; width: 32px; height: 32px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-size: .82rem; font-weight: 600; cursor: pointer;
+            transform: translate(-50%, -50%);
+            transition: background .15s, color .15s;
+            color: #1e293b;
+        }
+        .clock-num:hover:not(.disabled):not(.full-slot) { background: #e0e7ff; }
+        .clock-num.selected { background: #2C3E8F; color: #fff; }
+        .clock-num.disabled { color: #cbd5e1; cursor: default; }
+        .clock-num.full-slot { color: #ef4444; cursor: default; }
+
+        .clock-slot-info { text-align: center; font-size: .8rem; min-height: 18px; margin-bottom: 12px; }
+        .clock-slot-info.avail { color: #16a34a; }
+        .clock-slot-info.full  { color: #ef4444; }
+        .clock-slot-info.none  { color: transparent; }
+
+        .clock-actions { display: flex; justify-content: flex-end; gap: 10px; }
+        .clock-btn-cancel { background: none; border: none; color: #64748b; font-weight: 600; cursor: pointer; padding: 8px 14px; border-radius: 8px; }
+        .clock-btn-cancel:hover { background: #f1f5f9; }
+        .clock-btn-ok { background: #2C3E8F; color: #fff; border: none; font-weight: 700; cursor: pointer; padding: 8px 20px; border-radius: 8px; }
+        .clock-btn-ok:disabled { opacity: .4; cursor: not-allowed; }
+        .clock-btn-ok:not(:disabled):hover { background: #1A2A5C; }
     </style>
 </head>
 
@@ -1348,15 +1448,17 @@
                                 </aside>
 
                                 <div class="monitor-main">
-                                    <div class="panel-heading" data-en="Your Appointment" data-tl="Iyong Appointment">Your
-                                        Appointment</div>
-                                    <div class="panel-sub" data-en="Manage your interview booking below."
-                                        data-tl="Pamahalaan ang iyong booking sa panayam sa ibaba.">Manage your interview
-                                        booking below.</div>
-                                    @include('user.partials.solo-parent-booking', ['bookingPrefix' => 'mon'])
+                                    @if(!$isValidated)
+                                        <div class="panel-heading" data-en="Your Appointment" data-tl="Iyong Appointment">Your
+                                            Appointment</div>
+                                        <div class="panel-sub" data-en="Manage your interview booking below."
+                                            data-tl="Pamahalaan ang iyong booking sa panayam sa ibaba.">Manage your interview
+                                            booking below.</div>
+                                        @include('user.partials.solo-parent-booking', ['bookingPrefix' => 'mon'])
+                                    @endif
 
                                     @if($isValidated)
-                                        <div class="panel-heading mt-4" data-en="Required Documents"
+                                        <div class="panel-heading" data-en="Required Documents"
                                             data-tl="Mga Kinakailangang Dokumento">Required Documents</div>
                                         <div class="panel-sub" data-en="Upload your documents for admin review."
                                             data-tl="I-upload ang iyong mga dokumento para sa review ng admin.">Upload your
@@ -1633,6 +1735,40 @@
         {{ date('Y') }}
     </div>
 
+    {{-- Loading overlay — same as /user/my-requirements --}}
+    <div id="uiLoadingBackdrop" class="ui-loading-backdrop" aria-hidden="true">
+        <div class="ui-loading-box">
+            <div class="ui-loading-spinner"></div>
+            <div class="ui-loading-title">Uploading Document</div>
+            <div class="ui-loading-sub">Please wait while we process your file.</div>
+        </div>
+    </div>
+    {{-- Clock Time Picker Modal --}}
+    <div id="clockModal" class="clock-modal-overlay" onclick="if(event.target===this)closeClockModal()">
+        <div class="clock-modal">
+            <div class="clock-header">
+                <div class="clock-header-label">Select appointment time</div>
+                <div class="clock-digital">
+                    <span class="clock-digit-hour active" id="clockDigitHour" onclick="clockSetMode('hour')">08</span>
+                    <span class="clock-digit-sep">:</span>
+                    <span class="clock-digit-min" id="clockDigitMin" onclick="clockSetMode('min')">00</span>
+                    <span class="clock-digit-ampm" id="clockDigitAmPm">AM</span>
+                </div>
+            </div>
+            <div class="clock-face-wrap">
+                <div class="clock-face" id="clockFace">
+                    <div class="clock-center-dot"></div>
+                    <div class="clock-hand" id="clockHand" style="height:80px;"></div>
+                </div>
+            </div>
+            <div class="clock-slot-info none" id="clockSlotInfo"></div>
+            <div class="clock-actions">
+                <button class="clock-btn-cancel" onclick="closeClockModal()">Cancel</button>
+                <button class="clock-btn-ok" id="clockOkBtn" onclick="confirmClockTime()" disabled>OK</button>
+            </div>
+        </div>
+    </div>
+
     {{-- Cancel Modal --}}
     <div id="cancelModal"
         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
@@ -1760,47 +1896,229 @@
             showMonitorView();
         }
 
-        // Appointment slot loading
+        const prefixSlots = {};
+        let clockPrefix = null;
+        let clockMode   = 'hour';
+        let clockHour   = 8;
+        let clockHour24 = 8;
+        let clockMin    = 0;
+
+        const OFFICE_HOURS_24 = [8, 9, 10, 11, 13, 14, 15, 16];
+        const MIN_POSITIONS   = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+
+        function autoAmPm(h24) { return h24 >= 12 ? 'PM' : 'AM'; }
+        function to12(h24) { if (h24 === 0) return 12; if (h24 > 12) return h24 - 12; return h24; }
+
+        function openClockModal(prefix) {
+            clockPrefix = prefix;
+            const slots = prefixSlots[prefix] || [];
+            if (!slots.length) return;
+            const firstAvail = slots.find(s => !s.full);
+            if (firstAvail) {
+                clockHour24 = firstAvail.hour;
+                clockHour   = to12(firstAvail.hour);
+                clockMin    = firstAvail.minute;
+            } else {
+                clockHour24 = 8; clockHour = 8; clockMin = 0;
+            }
+            clockMode = 'hour';
+            syncDigits();
+            renderClockFace();
+            updateSlotInfo();
+            document.getElementById('clockModal').classList.add('open');
+        }
+
+        function closeClockModal() {
+            document.getElementById('clockModal').classList.remove('open');
+        }
+
+        function clockSetMode(mode) {
+            clockMode = mode;
+            document.getElementById('clockDigitHour').classList.toggle('active', mode === 'hour');
+            document.getElementById('clockDigitMin').classList.toggle('active', mode === 'min');
+            renderClockFace();
+        }
+
+        function findSlot(h24, min) {
+            const slots = prefixSlots[clockPrefix] || [];
+            return slots.find(s => s.hour === h24 && s.minute === min) || null;
+        }
+
+        function syncDigits() {
+            document.getElementById('clockDigitHour').textContent = String(clockHour).padStart(2, '0');
+            document.getElementById('clockDigitMin').textContent  = String(clockMin).padStart(2, '0');
+            document.getElementById('clockDigitAmPm').textContent = autoAmPm(clockHour24);
+        }
+
+        function updateSlotInfo() {
+            const info  = document.getElementById('clockSlotInfo');
+            const okBtn = document.getElementById('clockOkBtn');
+            const slot  = findSlot(clockHour24, clockMin);
+            if (!slot) {
+                info.textContent = 'Not an available slot';
+                info.className   = 'clock-slot-info full';
+                okBtn.disabled   = true;
+                return;
+            }
+            if (slot.full) {
+                info.textContent = slot.past_time ? 'This time has already passed' : 'This slot is full';
+                info.className   = 'clock-slot-info full';
+                okBtn.disabled   = true;
+            } else {
+                info.textContent = slot.remaining + ' slot' + (slot.remaining !== 1 ? 's' : '') + ' available';
+                info.className   = 'clock-slot-info avail';
+                okBtn.disabled   = false;
+            }
+        }
+
+        function renderClockFace() {
+            const face   = document.getElementById('clockFace');
+            const hand   = document.getElementById('clockHand');
+            const radius = 88;
+            const cx = 120, cy = 120;
+            face.querySelectorAll('.clock-num').forEach(n => n.remove());
+
+            if (clockMode === 'hour') {
+                for (let h = 1; h <= 12; h++) {
+                    let h24;
+                    if (h >= 8 && h <= 11)     h24 = h;
+                    else if (h >= 1 && h <= 4) h24 = h + 12;
+                    else                        h24 = h;
+
+                    const slots     = prefixSlots[clockPrefix] || [];
+                    const hourSlots = slots.filter(s => s.hour === h24);
+                    const anyAvail  = hourSlots.some(s => !s.full);
+                    const isOffice  = OFFICE_HOURS_24.includes(h24);
+
+                    const angle = (h / 12) * 360 - 90;
+                    const rad   = angle * Math.PI / 180;
+                    const x = cx + radius * Math.cos(rad);
+                    const y = cy + radius * Math.sin(rad);
+
+                    const el = document.createElement('div');
+                    el.className   = 'clock-num';
+                    el.textContent = h;
+                    el.style.left  = x + 'px';
+                    el.style.top   = y + 'px';
+
+                    if (!isOffice) {
+                        el.classList.add('disabled');
+                    } else if (!anyAvail) {
+                        el.classList.add('full-slot');
+                    } else {
+                        if (h === clockHour) el.classList.add('selected');
+                        el.addEventListener('click', () => {
+                            clockHour24 = h24;
+                            clockHour   = h;
+                            const firstMin = hourSlots.find(s => !s.full);
+                            if (firstMin) clockMin = firstMin.minute;
+                            syncDigits();
+                            updateSlotInfo();
+                            renderClockFace();
+                            setTimeout(() => clockSetMode('min'), 280);
+                        });
+                    }
+                    face.appendChild(el);
+                }
+                const deg = (clockHour / 12) * 360;
+                hand.style.height    = (radius - 10) + 'px';
+                hand.style.transform = 'translateX(-50%) rotate(' + deg + 'deg)';
+
+            } else {
+                const h24 = clockHour24;
+                MIN_POSITIONS.forEach(function(m, i) {
+                    const angle = (i / 12) * 360 - 90;
+                    const rad   = angle * Math.PI / 180;
+                    const x = cx + radius * Math.cos(rad);
+                    const y = cy + radius * Math.sin(rad);
+
+                    const slot = findSlot(h24, m);
+                    const el   = document.createElement('div');
+                    el.className   = 'clock-num';
+                    el.textContent = String(m).padStart(2, '0');
+                    el.style.left  = x + 'px';
+                    el.style.top   = y + 'px';
+
+                    if (!slot || slot.full) {
+                        el.classList.add(slot && slot.past_time ? 'disabled' : 'full-slot');
+                        el.title = slot && slot.past_time ? 'Time has passed' : 'Slot full';
+                    } else {
+                        if (m === clockMin) el.classList.add('selected');
+                        el.addEventListener('click', function() {
+                            clockMin = m;
+                            syncDigits();
+                            updateSlotInfo();
+                            renderClockFace();
+                        });
+                    }
+                    face.appendChild(el);
+                });
+                const minIdx = MIN_POSITIONS.indexOf(clockMin);
+                const deg    = minIdx >= 0 ? (minIdx / 12) * 360 : 0;
+                hand.style.height    = (radius - 10) + 'px';
+                hand.style.transform = 'translateX(-50%) rotate(' + deg + 'deg)';
+            }
+        }
+
+        function confirmClockTime() {
+            const slot = findSlot(clockHour24, clockMin);
+            if (!slot || slot.full) return;
+            const timeVal = String(clockHour24).padStart(2, '0') + ':' + String(clockMin).padStart(2, '0');
+            document.getElementById('apptTime-' + clockPrefix).value = timeVal;
+            const btn = document.getElementById('timePickerBtn-' + clockPrefix);
+            btn.querySelector('span:last-child').textContent = slot.label;
+            btn.classList.add('has-value');
+            closeClockModal();
+        }
+
         function initApptSlotLoader(prefix) {
             const dateInput = document.getElementById('apptDate-' + prefix);
-            const timeSelect = document.getElementById('apptTime-' + prefix);
-            const slotMsg = document.getElementById('slotMsg-' + prefix);
-            if (!dateInput || !timeSelect) return;
-            dateInput.addEventListener('change', function () {
+            const btn       = document.getElementById('timePickerBtn-' + prefix);
+            const slotMsg   = document.getElementById('slotMsg-' + prefix);
+            if (!dateInput || !btn) return;
+
+            dateInput.addEventListener('change', function() {
                 const date = this.value;
+                document.getElementById('apptTime-' + prefix).value = '';
+                btn.querySelector('span:last-child').textContent = 'Select date first';
+                btn.classList.remove('has-value');
+                btn.disabled = true;
+                prefixSlots[prefix] = [];
+                if (slotMsg) slotMsg.textContent = '';
+
                 if (!date) return;
+
                 const d = new Date(date + 'T00:00:00');
                 if (d.getDay() === 0 || d.getDay() === 6) {
-                    timeSelect.innerHTML = '<option value="">Weekdays only</option>';
-                    timeSelect.disabled = true;
-                    if (slotMsg) { slotMsg.textContent = 'Please select a weekday (Mon–Fri).'; slotMsg.style.color = '#dc3545'; }
+                    if (slotMsg) { slotMsg.textContent = 'Please select a weekday (Mon-Fri).'; slotMsg.style.color = '#dc3545'; }
+                    btn.querySelector('span:last-child').textContent = 'Weekdays only';
                     return;
                 }
-                timeSelect.disabled = true;
-                timeSelect.innerHTML = '<option value="">Loading slots…</option>';
-                if (slotMsg) slotMsg.textContent = '';
-                fetch(`/user/appointments/slots?date=${date}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-                    .then(r => r.json())
-                    .then(slots => {
-                        timeSelect.innerHTML = '<option value="">Choose a time</option>';
-                        let available = 0;
-                        slots.forEach(s => {
-                            const opt = document.createElement('option');
-                            opt.value = s.time;
-                            opt.textContent = s.full ? `${s.label} — FULL` : `${s.label} (${s.remaining} slot${s.remaining !== 1 ? 's' : ''} left)`;
-                            if (s.full) opt.disabled = true;
-                            else available++;
-                            timeSelect.appendChild(opt);
-                        });
-                        timeSelect.disabled = false;
-                        if (slotMsg) {
-                            slotMsg.textContent = available > 0 ? `${available} time slot${available > 1 ? 's' : ''} available` : 'No slots available. Pick another day.';
-                            slotMsg.style.color = available > 0 ? '#16a34a' : '#dc3545';
+
+                btn.querySelector('span:last-child').textContent = 'Loading slots...';
+
+                fetch('/user/appointments/slots?date=' + date, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+                    .then(function(r) { return r.json(); })
+                    .then(function(slots) {
+                        prefixSlots[prefix] = slots;
+                        const available = slots.filter(function(s) { return !s.full; }).length;
+                        if (available > 0) {
+                            btn.querySelector('span:last-child').textContent = 'Select Time Slot';
+                            btn.disabled = false;
+                            if (slotMsg) { slotMsg.textContent = available + ' slot' + (available !== 1 ? 's' : '') + ' available'; slotMsg.style.color = '#16a34a'; }
+                        } else {
+                            btn.querySelector('span:last-child').textContent = 'No slots available';
+                            btn.disabled = true;
+                            if (slotMsg) { slotMsg.textContent = 'No slots available. Pick another day.'; slotMsg.style.color = '#dc3545'; }
                         }
                     })
-                    .catch(() => { timeSelect.innerHTML = '<option value="">Error loading slots</option>'; });
+                    .catch(function() {
+                        btn.querySelector('span:last-child').textContent = 'Error loading slots';
+                        if (slotMsg) { slotMsg.textContent = 'Could not load slots. Try again.'; slotMsg.style.color = '#dc3545'; }
+                    });
             });
         }
+
         ['mon', 'wiz'].forEach(initApptSlotLoader);
 
         let activeCancelPrefix = 'mon';
@@ -1850,43 +2168,139 @@
             });
         }
 
-        function showUploadNotification(message) {
+        function showReqLoading() {
+            const el = document.getElementById('uiLoadingBackdrop');
+            if (el) { el.style.display = 'flex'; el.setAttribute('aria-hidden','false'); }
+        }
+        function hideReqLoading() {
+            const el = document.getElementById('uiLoadingBackdrop');
+            if (el) { el.style.display = 'none'; el.setAttribute('aria-hidden','true'); }
+        }
+
+        // File viewer for Solo Parent requirement cards (same as my-requirements)
+        function openSpFileModal(fileUrl, fileName, fileExt) {
+            const ext = fileExt.toLowerCase();
+            let content;
+            if (['jpg','jpeg','png','gif','webp','bmp'].includes(ext)) {
+                content = `<img src="${fileUrl}" alt="${fileName}" style="max-width:100%;max-height:70vh;border-radius:8px;box-shadow:0 4px 16px rgba(0,0,0,.1);">` ;
+            } else if (ext === 'pdf') {
+                content = `<iframe src="${fileUrl}" style="width:100%;height:70vh;border:none;border-radius:8px;"></iframe>`;
+            } else {
+                content = `<div style="text-align:center;"><div style="font-size:3rem;margin-bottom:12px;">📄</div><p>Cannot preview this file type.</p><a href="${fileUrl}" class="btn btn-primary" download>Download</a></div>`;
+            }
+            // Simple inline viewer modal
+            const existing = document.getElementById('spFileViewerOverlay');
+            if (existing) existing.remove();
+            const overlay = document.createElement('div');
+            overlay.id = 'spFileViewerOverlay';
+            overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:13500;display:flex;align-items:center;justify-content:center;padding:20px;';
+            overlay.innerHTML = `
+                <div style="background:white;border-radius:16px;max-width:860px;width:100%;max-height:90vh;overflow:auto;">
+                    <div style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;padding:16px 20px;border-radius:16px 16px 0 0;display:flex;justify-content:space-between;align-items:center;">
+                        <span style="font-weight:800;font-size:.95rem;">${fileName}</span>
+                        <button onclick="document.getElementById('spFileViewerOverlay').remove()" style="background:rgba(255,255,255,.15);border:none;color:white;border-radius:6px;width:28px;height:28px;cursor:pointer;font-size:1.1rem;">&times;</button>
+                    </div>
+                    <div style="padding:20px;display:flex;align-items:center;justify-content:center;min-height:300px;">${content}</div>
+                    <div style="padding:12px 20px;background:#f8f9fa;border-radius:0 0 16px 16px;display:flex;justify-content:flex-end;gap:8px;">
+                        <a href="${fileUrl}" download class="btn btn-sm btn-primary" style="background:#2C3E8F;border:none;border-radius:8px;font-weight:600;">Download</a>
+                        <button onclick="document.getElementById('spFileViewerOverlay').remove()" class="btn btn-sm btn-secondary" style="border-radius:8px;font-weight:600;">Close</button>
+                    </div>
+                </div>
+            `;
+            overlay.addEventListener('click', function(e) { if (e.target === overlay) overlay.remove(); });
+            document.body.appendChild(overlay);
+        }
+
+        function showUploadNotification(message, isError) {
             const existing = document.getElementById('uploadNotification');
             if (existing) existing.remove();
             const notif = document.createElement('div');
             notif.id = 'uploadNotification';
             notif.className = 'toast-notice';
-            notif.innerHTML = `<div style="display:flex;justify-content:space-between;gap:12px;"><span>${message}</span><button onclick="this.closest('#uploadNotification').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);font-size:1.2rem;cursor:pointer;">&times;</button></div>`;
+            notif.style.cssText = 'position:fixed;top:84px;right:18px;z-index:1081;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;animation:slideInRight .4s ease;';
+            notif.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                    <span>${message}</span>
+                    <button onclick="this.closest('div[id]').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);font-size:1.2rem;cursor:pointer;line-height:1;">&times;</button>
+                </div>
+                <div id="uploadNotifTimer" style="position:absolute;bottom:0;left:0;height:3px;background:rgba(253,185,19,.9);width:100%;border-radius:0 0 12px 12px;animation:flashTimerShrink 5s linear forwards;"></div>
+            `;
             document.body.appendChild(notif);
-            setTimeout(() => notif.remove(), 5000);
+            setTimeout(() => { if (notif.parentNode) { notif.style.animation = 'slideOutRight .4s ease forwards'; setTimeout(() => notif.remove(), 400); } }, 5000);
         }
 
         function uploadAllFiles(prefix) {
             const scope = document.getElementById('req-scope-' + prefix);
             if (!scope) return;
-            const rows = scope.querySelectorAll('.solo-req-row');
+            const rows = scope.querySelectorAll('.sp-req-item, .solo-req-row');
             const allUploaded = Array.from(rows).every(row => row.querySelector('.sp-badge.uploaded'));
             if (allUploaded) { showUploadNotification('All requirements have already been uploaded.'); return; }
             const toUpload = [];
+            const MAX_SIZE = 5 * 1024 * 1024; // 5MB — matches server validation
+            let sizeError = null;
             rows.forEach(row => {
                 const input = row.querySelector('input[type="file"][name="file"]');
                 const reqInput = row.querySelector('input[name="requirement_name"]');
                 const form = row.querySelector('form[data-upload-type="single"]');
                 if (input && input.files.length > 0 && reqInput && form) {
-                    toUpload.push({ file: input.files[0], reqName: reqInput.value, action: form.action });
+                    const file = input.files[0];
+                    if (file.size > MAX_SIZE) {
+                        sizeError = '"' + file.name + '" exceeds the 5MB limit. Please choose a smaller file.';
+                        return;
+                    }
+                    toUpload.push({ file, reqName: reqInput.value, action: form.action });
                 }
             });
+            if (sizeError) { showUploadNotification(sizeError); return; }
             if (!toUpload.length) { showUploadNotification('Please select at least one file before clicking Upload All.'); return; }
             const btn = document.getElementById('uploadAllBtn-' + prefix);
             const status = document.getElementById('uploadAllStatus-' + prefix);
             btn.disabled = true; btn.textContent = 'Uploading...';
+            showReqLoading();
             const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
             let done = 0, failed = 0;
             const uploadNext = (index) => {
                 if (index >= toUpload.length) {
+                    hideReqLoading();
                     btn.disabled = false; btn.textContent = 'Upload All';
-                    if (failed === 0) { status.textContent = done + ' file(s) uploaded! Refreshing...'; setTimeout(() => location.reload(), 1200); }
-                    else status.textContent = done + ' uploaded, ' + failed + ' failed.';
+                    if (failed === 0) {
+                        // Mark all uploaded rows as pending in-place (new sp-req-item style)
+                        toUpload.forEach(({ reqName }) => {
+                            const row = document.querySelector(
+                                '.sp-req-item[data-req-name="' + CSS.escape(reqName) + '"], ' +
+                                '.solo-req-row[data-req-name="' + CSS.escape(reqName) + '"]'
+                            );
+                            if (row) {
+                                // Remove upload form
+                                const formWrap = row.querySelector('form[data-upload-type="single"], .solo-upload-form, .sp-reupload-form');
+                                if (formWrap) formWrap.remove();
+                                // Update border/bg to pending
+                                row.className = row.className.replace(/\b(rejected|approved|in_review|not_uploaded)\b/g, '').trim() + ' pending';
+                                // Update or add status badge
+                                const badge = row.querySelector('.sp-status-badge');
+                                if (badge) {
+                                    badge.className = 'sp-status-badge sp-status-pending';
+                                    badge.textContent = 'Pending';
+                                } else {
+                                    const badgeWrap = row.querySelector('.d-flex.align-items-center.gap-1');
+                                    if (badgeWrap) {
+                                        const newBadge = document.createElement('span');
+                                        newBadge.className = 'sp-status-badge sp-status-pending';
+                                        newBadge.textContent = 'Pending';
+                                        badgeWrap.insertBefore(newBadge, badgeWrap.firstChild);
+                                    }
+                                }
+                                // Remove admin remark
+                                const remark = row.querySelector('.sp-req-remark');
+                                if (remark) remark.remove();
+                            }
+                        });
+                        status.textContent = done + ' file(s) uploaded!';
+                        showUploadNotification(done + ' file(s) uploaded successfully.');
+                    } else {
+                        status.textContent = done + ' uploaded, ' + failed + ' failed.';
+                        showUploadNotification(done + ' uploaded, ' + failed + ' failed.', true);
+                    }
                     return;
                 }
                 const { file, reqName, action } = toUpload[index];
@@ -1909,14 +2323,22 @@
         }
 
         document.addEventListener('DOMContentLoaded', function () {
+            var savedScroll = parseInt(sessionStorage.getItem('spScrollRestore') || '0', 10);
+            if (savedScroll > 0) sessionStorage.removeItem('spScrollRestore');
+
             document.querySelectorAll('.wiz-step').forEach(btn => {
                 btn.addEventListener('click', () => { const s = parseInt(btn.dataset.step, 10); if (s <= currentStep) goToStep(s); });
             });
             const timer = document.getElementById('flashTimer');
             if (timer) { timer.style.animation = 'flashTimerShrink 5s linear forwards'; setTimeout(closeFlashNotification, 5000); }
 
-            if (shouldShowMonitor()) showMonitorView();
-            else {
+            if (shouldShowMonitor()) {
+                document.getElementById('sp-wizard-view').style.display = 'none';
+                document.getElementById('sp-monitor-view').style.display = 'block';
+                document.getElementById('hero-title').textContent = currentLang === 'tl' ? 'Tracker ng Solo Parent Application' : 'Solo Parent Application Tracker';
+                document.getElementById('hero-sub').textContent = currentLang === 'tl' ? 'Subaybayan ang appointment, mag-upload ng dokumento, at i-monitor ang progress.' : 'Track your appointment, upload documents, and monitor your application progress.';
+                if (savedScroll > 0) window.scrollTo(0, savedScroll);
+            } else {
                 const saved = sessionStorage.getItem('spWizardStep');
                 if (APPT_NOTICE && WIZARD_STEPS.includes('book')) goToStep(WIZARD_STEPS.indexOf('book'), false);
                 else if (saved !== null) { const idx = parseInt(saved, 10); if (!isNaN(idx) && idx < WIZARD_STEPS.length) goToStep(idx, false); }
@@ -1926,13 +2348,85 @@
             ['mon', 'wiz'].forEach(prefix => {
                 const scope = document.getElementById('req-scope-' + prefix);
                 if (!scope) return;
-                const rows = scope.querySelectorAll('.solo-req-row');
-                const allUploaded = rows.length && Array.from(rows).every(row => row.querySelector('.sp-badge.uploaded'));
+                const rows = scope.querySelectorAll('.sp-req-item, .solo-req-row');
+                const allUploaded = rows.length && Array.from(rows).every(row =>
+                    row.querySelector('.sp-status-badge.sp-status-pending, .sp-status-badge.sp-status-approved, .sp-badge.uploaded')
+                    && !row.querySelector('form[data-upload-type="single"]')
+                );
                 if (allUploaded) {
                     const btn = document.getElementById('uploadAllBtn-' + prefix);
                     if (btn) { btn.disabled = true; btn.style.opacity = '.5'; }
                 }
             });
+        });
+
+        // AJAX single-file upload — in-place DOM update, no reload, no scroll jump
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (!form.classList.contains('js-ajax-upload')) return;
+            e.preventDefault();
+            var fileInput = form.querySelector('input[type="file"][name="file"]');
+            if (!fileInput || !fileInput.files.length) return;
+            var file = fileInput.files[0];
+            if (file.size > 5 * 1024 * 1024) {
+                alert('"' + file.name + '" exceeds the 5MB limit. Please choose a smaller file.');
+                return;
+            }
+            var btn = form.querySelector('button[type="submit"]');
+            var origText = btn.textContent;
+            btn.disabled = true;
+            showReqLoading();
+            var scrollBefore = window.scrollY || window.pageYOffset;
+            var fd = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd
+            })
+                .then(function (r) {
+                    hideReqLoading();
+                    // Server returns redirect (non-JSON) — treat any non-error response as success
+                    if (r.ok || r.redirected) {
+                        var reqName = form.querySelector('input[name="requirement_name"]')?.value;
+                        var row = reqName
+                            ? document.querySelector('.sp-req-item[data-req-name="' + CSS.escape(reqName) + '"], .solo-req-row[data-req-name="' + CSS.escape(reqName) + '"]')
+                            : form.closest('.sp-req-item, .solo-req-row');
+                        if (row) {
+                            // Remove upload form
+                            var formWrap = row.querySelector('.solo-upload-form, .sp-reupload-form');
+                            if (formWrap) formWrap.remove();
+                            // Update border/bg to pending
+                            row.className = row.className.replace(/\b(rejected|approved|in_review|not_uploaded)\b/g, '').trim() + ' pending';
+                            // Update or add status badge
+                            var badge = row.querySelector('.sp-status-badge');
+                            if (badge) {
+                                badge.className = 'sp-status-badge sp-status-pending';
+                                badge.textContent = 'Pending';
+                            } else {
+                                var badgeWrap = row.querySelector('.d-flex.align-items-center.gap-1');
+                                if (badgeWrap) {
+                                    var newBadge = document.createElement('span');
+                                    newBadge.className = 'sp-status-badge sp-status-pending';
+                                    newBadge.textContent = 'Pending';
+                                    badgeWrap.insertBefore(newBadge, badgeWrap.firstChild);
+                                }
+                            }
+                            // Remove admin remark
+                            var remark = row.querySelector('.sp-req-remark');
+                            if (remark) remark.remove();
+                        }
+                        window.scrollTo(0, scrollBefore);
+                        showUploadNotification('File uploaded successfully.');
+                    } else {
+                        btn.disabled = false;
+                        showUploadNotification('Upload failed. Please try again.', true);
+                    }
+                })
+                .catch(function () {
+                    hideReqLoading();
+                    btn.disabled = false;
+                    showUploadNotification('Upload failed. Please try again.', true);
+                });
         });
 
         function setLang(lang) {

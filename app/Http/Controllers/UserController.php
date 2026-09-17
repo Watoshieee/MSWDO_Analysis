@@ -470,9 +470,23 @@ class UserController extends Controller
             }
             $fileMonitoring->save();
 
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success'          => true,
+                    'message'          => 'Document re-uploaded successfully! Waiting for admin review.',
+                    'file_upload_id'   => $fileUpload->id,
+                    'requirement_name' => $fileUpload->requirement_name,
+                    'file_name'        => $fileUpload->file_name,
+                    'file_url'         => route('user.serve-file', $fileUpload->id),
+                    'file_ext'         => strtolower(pathinfo($fileUpload->file_path, PATHINFO_EXTENSION)),
+                ]);
+            }
             return redirect()->back()->with('success', 'Document re-uploaded successfully! Waiting for admin review.');
         } catch (\Exception $e) {
             Log::error('Resubmit Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Failed to upload file: ' . $e->getMessage()], 500);
+            }
             return redirect()->back()->with('error', 'Failed to upload file: ' . $e->getMessage());
         }
     }
@@ -615,10 +629,20 @@ class UserController extends Controller
 
         // If validated, load the associated Application with its file monitoring / uploads
         $soloParentApplication = null;
-        if ($appointment && $appointment->solo_parent_app_id) {
-            $soloParentApplication = Application::with([
-                'fileMonitoring.fileUploads'
-            ])->find($appointment->solo_parent_app_id);
+        if ($appointment && $appointment->status === 'validated') {
+            // Primary: use solo_parent_app_id if set and record still exists
+            if ($appointment->solo_parent_app_id) {
+                $soloParentApplication = Application::with(['fileMonitoring.fileUploads'])
+                    ->find($appointment->solo_parent_app_id);
+            }
+            // Fallback: find by user_id + program_type (handles deleted/missing app_id)
+            if (!$soloParentApplication) {
+                $soloParentApplication = Application::with(['fileMonitoring.fileUploads'])
+                    ->where('user_id', $user->id)
+                    ->where('program_type', 'Solo_Parent')
+                    ->latest('id')
+                    ->first();
+            }
         }
 
         return view('user.solo-parent-application', compact('appointment', 'minDate', 'maxDate', 'soloParentApplication', 'isSoloParentBeneficiary'));
@@ -719,7 +743,7 @@ class UserController extends Controller
                 'file_name' => $file->getClientOriginalName(),
                 'status' => 'pending',
                 'uploaded_at' => now(),
-                'admin_remarks' => null,
+
             ]
         );
 
