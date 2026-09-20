@@ -200,6 +200,11 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('superadmin')->name('sup
         Route::delete('/programs/{id}/force-delete', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'forceDeleteProgram'])->name('programs.force-delete');
         Route::post('/programs/{id}', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'updateProgram'])->name('programs.update');
         Route::delete('/programs/{id}', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'deleteProgram'])->name('programs.delete');
+
+        // Data Export & Analysis Report Routes
+        Route::match(['get', 'post'], '/export/csv', [App\Http\Controllers\Admin\ExportDataController::class, 'exportCsv'])->name('export.csv');
+        Route::match(['get', 'post'], '/export/report', [App\Http\Controllers\Admin\ExportDataController::class, 'exportAnalysisReport'])->name('export.report');
+        Route::match(['get', 'post'], '/export/comparative', [App\Http\Controllers\Admin\ExportDataController::class, 'exportComparative'])->name('export.comparative');
     });
 
     // MUNICIPALITY MANAGEMENT ROUTES
@@ -326,6 +331,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::post('/yearly/{id}/archive', [App\Http\Controllers\Admin\DataManagementController::class, 'archiveYearlySummary'])->name('yearly.archive');
             Route::post('/yearly/{id}/restore', [App\Http\Controllers\Admin\DataManagementController::class, 'restoreYearlySummary'])->name('yearly.restore');
             Route::delete('/yearly/{id}/force-delete', [App\Http\Controllers\Admin\DataManagementController::class, 'forceDeleteYearlySummary'])->name('yearly.forceDelete');
+
+            // Data Export & Analysis Report Routes
+            Route::match(['get', 'post'], '/export/csv', [App\Http\Controllers\Admin\ExportDataController::class, 'exportCsv'])->name('export.csv');
+            Route::match(['get', 'post'], '/export/report', [App\Http\Controllers\Admin\ExportDataController::class, 'exportAnalysisReport'])->name('export.report');
+            Route::match(['get', 'post'], '/export/comparative', [App\Http\Controllers\Admin\ExportDataController::class, 'exportComparative'])->name('export.comparative');
         }
     );
 

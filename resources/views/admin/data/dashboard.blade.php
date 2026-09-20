@@ -82,6 +82,15 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         /* YEAR BUTTONS */
         .year-btn:hover { transform: translateY(-2px); filter: brightness(0.92); box-shadow: 0 4px 12px rgba(44,62,143,0.15); }
 
+        /* EXPORT BUTTONS */
+        .export-btn { border-radius: 8px; font-weight: 700; font-size: 0.83rem; transition: all 0.2s ease; cursor: pointer; text-decoration: none; display: inline-flex; align-items: center; white-space: nowrap; line-height: 1.4; }
+        .export-btn-csv { background: #FFFFFF; color: var(--primary-blue); border: 1.5px solid var(--primary-blue); padding: 7px 15px; box-shadow: 0 2px 6px rgba(44,62,143,0.08); }
+        .export-btn-csv:hover { background: var(--primary-blue); color: #FFFFFF; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(44,62,143,0.18); }
+        .export-btn-report { background: var(--primary-gradient); color: #FFFFFF; border: none; padding: 8.5px 16px; box-shadow: 0 3px 12px rgba(44,62,143,0.22); }
+        .export-btn-report:hover { filter: brightness(1.08); transform: translateY(-1px); color: #FFFFFF; box-shadow: 0 6px 16px rgba(44,62,143,0.30); }
+        .export-btn-options { background: #E2E8F0; color: #475569; border: none; padding: 8.5px 12px; }
+        .export-btn-options:hover { background: #CBD5E1; color: #1E293B; transform: translateY(-1px); }
+
         /* FOOTER */
         .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.75); text-align: center; padding: 20px 0; font-size: 0.85rem; margin-top: 48px; }
         .footer-strip strong { color: white; }
@@ -159,17 +168,60 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         @include('components.admin-notification')
 
-        <!-- YEAR FILTERS -->
+        @if(session('success'))
+        <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius:12px; font-weight:600; font-size:0.88rem;">
+            <i class="bi bi-check-circle-fill me-2"></i>{{ session('success') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        @endif
+
+        @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius:12px; font-weight:600; font-size:0.88rem;">
+            <i class="bi bi-exclamation-triangle-fill me-2"></i>{{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        @endif
+
+        <!-- YEAR FILTERS & EXPORT ACTIONS -->
         <div style="margin: 8px 0 24px; display:flex; justify-content:space-between; align-items:flex-end; flex-wrap:wrap; gap:15px;">
             <div>
                 <div class="section-heading" style="margin-bottom:0; padding-bottom:8px;">Dashboard Overview</div>
                 <div style="font-size:0.85rem; color:#64748b;">Showing stats for selected year.</div>
             </div>
             
-            <div class="year-filter-buttons" style="display:flex;gap:6px;flex-wrap:wrap; margin-bottom:10px;">
-                @foreach($allYears as $year)
-                <a href="{{ route('admin.data.dashboard') }}?year={{ $year }}" class="year-btn" style="background:{{ request('year', $currentYear) == $year ? 'var(--primary-gradient)' : '#E2E8F0' }};color:{{ request('year', $currentYear) == $year ? 'white' : '#64748b' }};border:none;border-radius:8px;padding:8px 16px;font-size:0.85rem;font-weight:700;text-decoration:none;transition:all 0.2s;">{{ $year }}</a>
-                @endforeach
+            <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:10px;">
+                <!-- Year Filter Pills -->
+                <div class="year-filter-buttons" style="display:flex;gap:6px;flex-wrap:wrap;">
+                    @foreach($allYears as $year)
+                    <a href="{{ route('admin.data.dashboard') }}?year={{ $year }}" class="year-btn" style="background:{{ request('year', $currentYear) == $year ? 'var(--primary-gradient)' : '#E2E8F0' }};color:{{ request('year', $currentYear) == $year ? 'white' : '#64748b' }};border:none;border-radius:8px;padding:8px 16px;font-size:0.85rem;font-weight:700;text-decoration:none;transition:all 0.2s;">{{ $year }}</a>
+                    @endforeach
+                </div>
+
+                <!-- Export Action Buttons -->
+                <div class="d-flex align-items-center gap-2">
+                    <!-- Export CSV / Raw Data Button -->
+                    <form method="POST" action="{{ route('admin.data.export.csv') }}" class="d-inline m-0">
+                        @csrf
+                        <input type="hidden" name="year" value="{{ request('year', $currentYear) }}">
+                        <button type="submit" class="export-btn export-btn-csv" title="Export raw data CSV files, DSS/WSM, and graphs in a ZIP package for {{ $municipality->name }}">
+                            <i class="bi bi-file-earmark-zip me-1"></i> Export CSV
+                        </button>
+                    </form>
+
+                    <!-- Export Analysis Report Button -->
+                    <form method="POST" action="{{ route('admin.data.export.report') }}" class="d-inline m-0">
+                        @csrf
+                        <input type="hidden" name="year" value="{{ request('year', $currentYear) }}">
+                        <button type="submit" class="export-btn export-btn-report" title="Export complete Excel Analysis Report (.xlsx) with DSS, WSM, and Graphs for {{ $municipality->name }}">
+                            <i class="bi bi-file-earmark-spreadsheet me-1"></i> Export Analysis Report
+                        </button>
+                    </form>
+
+                    <!-- More Export Options (Modal Trigger) -->
+                    <button type="button" class="export-btn export-btn-options" data-bs-toggle="modal" data-bs-target="#exportOptionsModal" title="More Export Options (All Years, Comparative)">
+                        <i class="bi bi-sliders"></i>
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -264,6 +316,154 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
         });
     </script>
+    <!-- EXPORT OPTIONS MODAL -->
+    <div class="modal fade" id="exportOptionsModal" tabindex="-1" aria-labelledby="exportOptionsModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border:none; border-radius:18px; overflow:hidden; box-shadow:0 12px 48px rgba(44,62,143,0.22);">
+                <div class="modal-header" style="background:var(--primary-gradient); color:white; padding:18px 24px;">
+                    <div>
+                        <div style="font-size:0.72rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; color:var(--secondary-yellow); margin-bottom:2px;">
+                            DATA MANAGEMENT &bull; EXPORT CENTER
+                        </div>
+                        <h5 class="modal-title" id="exportOptionsModalLabel" style="font-weight:900; font-size:1.25rem; margin:0;">
+                            Export Data &amp; Analysis Reports
+                        </h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body" style="background:#F8FAFC; padding:24px;">
+                    <!-- Municipality & Scope Info -->
+                    <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:12px; padding:14px 18px; margin-bottom:20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+                        <div>
+                            <span style="font-size:0.72rem; font-weight:700; text-transform:uppercase; color:#64748B; letter-spacing:0.06em; display:block;">Active Municipality</span>
+                            <strong style="color:var(--primary-blue); font-size:1.1rem;">{{ $municipality->name }}</strong>
+                        </div>
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <label for="exportYearSelect" style="font-size:0.8rem; font-weight:700; color:#475569;">Target Year:</label>
+                            <select id="exportYearSelect" class="form-select form-select-sm" style="width:auto; font-weight:700; border-radius:8px; border-color:#CBD5E1;" onchange="updateExportForms(this.value)">
+                                <option value="{{ request('year', $currentYear) }}" selected>Selected Year ({{ request('year', $currentYear) }})</option>
+                                <option value="all">All Available Years</option>
+                                @foreach($allYears as $y)
+                                    @if($y != request('year', $currentYear))
+                                    <option value="{{ $y }}">Year {{ $y }}</option>
+                                    @endif
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Export Option Cards -->
+                    <div class="row g-3">
+                        <!-- Option A: CSV / Raw Data -->
+                        <div class="col-md-6">
+                            <div style="background:#FFFFFF; border:1px solid #C7D6F5; border-radius:14px; padding:20px; height:100%; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 4px 16px rgba(44,62,143,0.06);">
+                                <div>
+                                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                        <div style="width:38px; height:38px; border-radius:10px; background:#EEF2FF; color:var(--primary-blue); display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                            <i class="bi bi-file-earmark-zip"></i>
+                                        </div>
+                                        <div>
+                                            <span style="font-size:0.65rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:var(--primary-blue);">Option A</span>
+                                            <h6 style="font-weight:800; color:var(--text-dark); margin:0; font-size:0.95rem;">Export CSV / Raw Data</h6>
+                                        </div>
+                                    </div>
+                                    <p style="font-size:0.78rem; color:#64748B; margin-bottom:12px; line-height:1.5;">
+                                        Downloads a complete ZIP package containing UTF-8 CSV raw data tables, DSS &amp; WSM calculations, 7 high-res PNG visualization charts, and methodology README.
+                                    </p>
+                                    <ul style="font-size:0.73rem; color:#475569; padding-left:18px; margin-bottom:16px;">
+                                        <li>01_Municipality_Yearly_Data.csv</li>
+                                        <li>02_Barangay_Data.csv</li>
+                                        <li>03_Social_Programs.csv</li>
+                                        <li>04_DSS_WSM.csv</li>
+                                        <li>05_Graphs/ (7 PNG charts)</li>
+                                        <li>README.txt (WSM formulas &amp; weights)</li>
+                                    </ul>
+                                </div>
+                                <form id="modalCsvForm" method="POST" action="{{ route('admin.data.export.csv') }}">
+                                    @csrf
+                                    <input type="hidden" name="year" id="modalCsvYear" value="{{ request('year', $currentYear) }}">
+                                    <button type="submit" class="btn w-100" style="background:#FFFFFF; color:var(--primary-blue); border:2px solid var(--primary-blue); font-weight:800; font-size:0.85rem; border-radius:10px; padding:9px 16px;">
+                                        <i class="bi bi-download me-1"></i> Download ZIP Package
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Option B: Analysis Report Excel -->
+                        <div class="col-md-6">
+                            <div style="background:#FFFFFF; border:1px solid #FCD34D; border-radius:14px; padding:20px; height:100%; display:flex; flex-direction:column; justify-content:space-between; box-shadow:0 4px 16px rgba(253,185,19,0.12);">
+                                <div>
+                                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:10px;">
+                                        <div style="width:38px; height:38px; border-radius:10px; background:#FEF3C7; color:#B45309; display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
+                                            <i class="bi bi-file-earmark-spreadsheet"></i>
+                                        </div>
+                                        <div>
+                                            <span style="font-size:0.65rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; color:#B45309;">Option B</span>
+                                            <h6 style="font-weight:800; color:var(--text-dark); margin:0; font-size:0.95rem;">Export Analysis Report</h6>
+                                        </div>
+                                    </div>
+                                    <p style="font-size:0.78rem; color:#64748B; margin-bottom:12px; line-height:1.5;">
+                                        Generates a professional Excel workbook (.xlsx) organized into 10 structured worksheets with formatted KPI cards, YoY analysis, DSS prevalence rates, WSM priority scores, and embedded charts.
+                                    </p>
+                                    <ul style="font-size:0.73rem; color:#475569; padding-left:18px; margin-bottom:16px;">
+                                        <li>10 Structured Worksheets</li>
+                                        <li>Executive Summary &amp; YoY Trends</li>
+                                        <li>DSS &amp; Transparent WSM Calculations</li>
+                                        <li>Embedded High-Resolution Charts</li>
+                                        <li>Methodological Framework</li>
+                                    </ul>
+                                </div>
+                                <form id="modalReportForm" method="POST" action="{{ route('admin.data.export.report') }}">
+                                    @csrf
+                                    <input type="hidden" name="year" id="modalReportYear" value="{{ request('year', $currentYear) }}">
+                                    <button type="submit" class="btn w-100" style="background:var(--primary-gradient); color:white; border:none; font-weight:800; font-size:0.85rem; border-radius:10px; padding:10px 16px; box-shadow:0 4px 12px rgba(44,62,143,0.25);">
+                                        <i class="bi bi-file-earmark-excel me-1"></i> Download Excel (.xlsx)
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+
+                        <!-- Option C: Comparative Analysis Export -->
+                        <div class="col-12">
+                            <div style="background:#FFFFFF; border:1px solid #E2E8F0; border-radius:14px; padding:16px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:14px;">
+                                <div>
+                                    <div style="display:flex; align-items:center; gap:8px;">
+                                        <span class="badge" style="background:#E0E7FF; color:var(--primary-blue); font-weight:800; font-size:0.68rem;">COMPARATIVE</span>
+                                        <h6 style="font-weight:800; margin:0; font-size:0.92rem; color:var(--primary-blue);">Municipal Comparative Export</h6>
+                                    </div>
+                                    <p style="font-size:0.75rem; color:#64748B; margin:4px 0 0;">
+                                        Compares demographic scale, beneficiary concentration, and calculated DSS/WSM indicators among <strong>Magdalena, Liliw, and Majayjay</strong>.
+                                    </p>
+                                </div>
+                                <form method="POST" action="{{ route('admin.data.export.comparative') }}" class="m-0">
+                                    @csrf
+                                    <input type="hidden" name="year" id="modalCompYear" value="{{ request('year', $currentYear) }}">
+                                    <button type="submit" class="btn btn-sm" style="background:#F1F5F9; color:#334155; border:1px solid #CBD5E1; font-weight:700; border-radius:8px; padding:7px 16px;">
+                                        <i class="bi bi-bar-chart me-1"></i> Export Comparative CSV
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Note -->
+                    <div style="margin-top:16px; font-size:0.72rem; color:#64748B; font-style:italic;">
+                        <i class="bi bi-info-circle me-1"></i> The DSS/WSM result is a decision-support indicator calculated from the available MSWDO data and configured criteria. It does not replace professional assessment, field validation, or official MSWDO decision-making.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function updateExportForms(yearVal) {
+            document.getElementById('modalCsvYear').value = yearVal;
+            document.getElementById('modalReportYear').value = yearVal;
+            const compYear = document.getElementById('modalCompYear');
+            if (compYear) compYear.value = yearVal;
+        }
+    </script>
+
     @include('components.admin-notification-modal')
     @include('components.admin-settings-modal')
     @include('components.admin-chat-modal')
