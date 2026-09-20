@@ -36,11 +36,11 @@
     {{-- Header --}}
     <div class="header">
         @if($newStatus === 'confirmed')
-        <h1>✅ Appointment Confirmed!</h1>
+        <h1>Appointment Confirmed!</h1>
         @elseif($newStatus === 'rejected')
-        <h1>❌ Appointment Not Approved</h1>
+        <h1>Appointment Not Approved</h1>
         @else
-        <h1>⏰ Appointment Reminder</h1>
+        <h1>Appointment Reminder</h1>
         @endif
         <p>Municipal Social Welfare &amp; Development Office</p>
     </div>
@@ -97,9 +97,9 @@
                 <span class="detail-label">Status</span>
                 <span class="detail-value">
                     <span class="status-pill-{{ $newStatus === 'reminder' ? 'reminder' : $newStatus }}">
-                        @if($newStatus === 'confirmed') ✅ Confirmed
-                        @elseif($newStatus === 'rejected') ❌ Rejected
-                        @else ⏰ Tomorrow
+                        @if($newStatus === 'confirmed') Confirmed
+                        @elseif($newStatus === 'rejected') Rejected
+                        @else Tomorrow
                         @endif
                     </span>
                 </span>
@@ -115,10 +115,10 @@
 
         @if($newStatus === 'confirmed')
         <p class="intro" style="margin-bottom:0;">
-            📍 <strong>MSWDO Office</strong> — Municipal Hall, Ground Floor.<br>
+            <strong>MSWDO Office</strong> — Municipal Hall, Ground Floor.<br>
             Office hours: Monday–Friday, 8:00 AM – 5:00 PM.<br>
             @if($appointment->interview_type === 'online')
-            📱 Since you chose <strong>Online Interview</strong>, the admin will contact you on your registered mobile number at the scheduled time.
+            Since you chose <strong>Online Interview</strong>, the admin will contact you on your registered mobile number at the scheduled time.
             @else
             Please bring a valid ID and any documents you have ready.
             @endif

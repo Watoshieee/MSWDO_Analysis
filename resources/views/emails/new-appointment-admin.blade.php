@@ -38,11 +38,11 @@ $programLabel = match($appointment->program_type ?? 'Solo_Parent') {
 };
 @endphp
     <div class="header">
-        <h1>📋 New {{ $programLabel }} Appointment</h1>
+        <h1>New {{ $programLabel }} Appointment</h1>
         <p>Municipal Social Welfare and Development Office</p>
     </div>
 
-    <div class="badge-row">⚠️ Action Required — New Appointment Pending Review</div>
+    <div class="badge-row">Action Required — New Appointment Pending Review</div>
 
     <div class="body">
         <p class="greeting">Hello, Admin!</p>
@@ -51,7 +51,7 @@ $programLabel = match($appointment->program_type ?? 'Solo_Parent') {
         </p>
 
         <div class="detail-box">
-            <h3>📋 Applicant Details</h3>
+            <h3>Applicant Details</h3>
             <div class="detail-row">
                 <span class="detail-label">Applicant Name</span>
                 <span class="detail-value">{{ $applicant->full_name }}</span>
@@ -71,7 +71,7 @@ $programLabel = match($appointment->program_type ?? 'Solo_Parent') {
         </div>
 
         <div class="detail-box">
-            <h3>📅 Appointment Details</h3>
+            <h3>Appointment Details</h3>
             <div class="detail-row">
                 <span class="detail-label">Date</span>
                 <span class="detail-value">{{ $appointment->appointment_date->format('F d, Y (l)') }}</span>
@@ -93,7 +93,7 @@ $programLabel = match($appointment->program_type ?? 'Solo_Parent') {
         </div>
 
         <div style="text-align:center;margin-bottom:16px;">
-            <a href="{{ url('/admin/requirements') }}" class="cta-btn">🔍 Review Appointment</a>
+            <a href="{{ url('/admin/requirements') }}" class="cta-btn">Review Appointment</a>
         </div>
 
         <p class="note">

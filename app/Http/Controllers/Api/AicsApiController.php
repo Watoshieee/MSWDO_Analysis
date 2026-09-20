@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use App\Models\User;
 use App\Models\ProgramRequirement;
 use App\Mail\NewAppointmentAdminMail;
+use App\Services\PhilippineHolidayService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +43,11 @@ class AicsApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Past dates are not available'], 422);
         }
 
+        $holidayCheck = app(PhilippineHolidayService::class)->isAllowedBookingDate($date);
+        if (!$holidayCheck['allowed']) {
+            return response()->json(['success' => false, 'message' => $holidayCheck['reason']], 422);
+        }
+
         $slots = Appointment::slotsForDate($date, $user->municipality);
 
         return response()->json(['slots' => $slots]);
@@ -53,6 +59,25 @@ class AicsApiController extends Controller
     private function bookAppointment(Request $request, string $programType): JsonResponse
     {
         $user = Auth::user();
+
+        $request->validate([
+            'appointment_date' => 'required|date|after:today',
+            'appointment_time' => 'required|in:' . implode(',', Appointment::availableSlots()),
+            'interview_type'   => 'required|in:face_to_face,online',
+            'user_notes'       => 'nullable|string|max:500',
+        ]);
+
+        $date = $request->appointment_date;
+        $time = $request->appointment_time;
+
+        // Validate weekday and Philippine holiday
+        $holidayCheck = app(PhilippineHolidayService::class)->isAllowedBookingDate($date);
+        if (!$holidayCheck['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $holidayCheck['reason'],
+            ], 422);
+        }
 
         // Block only if user has an active appointment (pending/confirmed/validated)
         // for this program. A CANCELLED appointment allows rebooking.
@@ -80,24 +105,6 @@ class AicsApiController extends Controller
                 'success' => false,
                 'message' => 'You already have an approved AICS application for this assistance type.',
             ], 409);
-        }
-
-        $request->validate([
-            'appointment_date' => 'required|date|after:today',
-            'appointment_time' => 'required|in:' . implode(',', Appointment::availableSlots()),
-            'interview_type'   => 'required|in:face_to_face,online',
-            'user_notes'       => 'nullable|string|max:500',
-        ]);
-
-        $date = $request->appointment_date;
-        $time = $request->appointment_time;
-
-        // Validate weekday only
-        if (Carbon::parse($date)->isWeekend()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Appointments can only be booked on weekdays (Mon–Fri).',
-            ], 422);
         }
 
         // Check slot capacity (scoped to user's municipality)
@@ -185,7 +192,6 @@ class AicsApiController extends Controller
             ]);
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
 
             if ($httpCode !== 200 && $httpCode !== 201) {
                 Log::warning('AICS: OneSignal push failed', ['http_code' => $httpCode]);

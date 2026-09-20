@@ -41,4 +41,8 @@ return [
         'model' => env('GROQ_MODEL') ?: 'openai/gpt-oss-120b',
     ],
 
+    'calendarific' => [
+        'key' => env('CALENDARIFIC_API_KEY'),
+    ],
+
 ];

@@ -8,6 +8,7 @@ use App\Models\Application;
 use App\Models\User;
 use App\Mail\AppointmentStatusMail;
 use App\Mail\NewAppointmentAdminMail;
+use App\Services\PhilippineHolidayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -41,6 +42,11 @@ class SoloParentApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Past dates are not available'], 422);
         }
 
+        $holidayCheck = app(PhilippineHolidayService::class)->isAllowedBookingDate($date);
+        if (!$holidayCheck['allowed']) {
+            return response()->json(['success' => false, 'message' => $holidayCheck['reason']], 422);
+        }
+
         $slots = Appointment::slotsForDate($date, $user->municipality);
         return response()->json(['slots' => $slots]);
     }
@@ -63,9 +69,10 @@ class SoloParentApiController extends Controller
         $date = $request->appointment_date;
         $time = $request->appointment_time;
 
-        // Validate: weekday only
-        if (Carbon::parse($date)->isWeekend()) {
-            return response()->json(['success' => false, 'message' => 'Appointments can only be booked on weekdays (Mon–Fri).'], 422);
+        // Validate: weekday and Philippine holiday
+        $holidayCheck = app(PhilippineHolidayService::class)->isAllowedBookingDate($date);
+        if (!$holidayCheck['allowed']) {
+            return response()->json(['success' => false, 'message' => $holidayCheck['reason']], 422);
         }
 
         // ── Block if user already has an active/approved Solo Parent ID or is already validated ──
@@ -321,9 +328,9 @@ class SoloParentApiController extends Controller
             ->limit(50)
             ->get()
             ->map(function ($notification) use ($lastViewedAt) {
-                $createdAt = $notification->created_at ? \Carbon\Carbon::parse($notification->created_at) : null;
+                $createdAt = $notification->created_at ? Carbon::parse($notification->created_at) : null;
                 $isNew = $lastViewedAt && $createdAt
-                    ? $createdAt->gt(\Carbon\Carbon::parse($lastViewedAt))
+                    ? $createdAt->gt(Carbon::parse($lastViewedAt))
                     : false;
 
                 return [
@@ -489,7 +496,6 @@ class SoloParentApiController extends Controller
             ]);
             $response = curl_exec($ch);
             $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
 
             if ($httpCode !== 200 && $httpCode !== 201) {
                 Log::warning('OneSignal push failed', ['http_code' => $httpCode, 'response' => $response]);
@@ -605,10 +611,11 @@ class SoloParentApiController extends Controller
         ]);
 
         $date = $request->reschedule_date;
-        if (Carbon::parse($date)->isWeekend()) {
+        $holidayCheck = app(PhilippineHolidayService::class)->isAllowedBookingDate($date);
+        if (!$holidayCheck['allowed']) {
             return response()->json([
                 'success' => false,
-                'message' => 'Reschedule date must be a weekday (Mon–Fri).',
+                'message' => $holidayCheck['reason'],
             ], 422);
         }
 

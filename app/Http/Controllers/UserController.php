@@ -624,8 +624,8 @@ class UserController extends Controller
             }
         }
 
-        $minDate = Carbon::tomorrow()->format('Y-m-d');
-        $maxDate = Carbon::now()->addDays(30)->format('Y-m-d');
+        $minDate = Carbon::tomorrow('Asia/Manila')->format('Y-m-d');
+        $maxDate = Carbon::now('Asia/Manila')->addYears(5)->format('Y-m-d');
 
         // If validated, load the associated Application with its file monitoring / uploads
         $soloParentApplication = null;
@@ -818,8 +818,8 @@ class UserController extends Controller
             ->orderByRaw("FIELD(status,'pending','confirmed')")
             ->orderBy('appointment_date', 'desc')
             ->first();
-        $minDate = Carbon::tomorrow()->format('Y-m-d');
-        $maxDate = Carbon::now()->addDays(30)->format('Y-m-d');
+        $minDate = Carbon::tomorrow('Asia/Manila')->format('Y-m-d');
+        $maxDate = Carbon::now('Asia/Manila')->addYears(5)->format('Y-m-d');
 
         $notifData = $this->notificationData($user);
 
@@ -857,8 +857,8 @@ class UserController extends Controller
             ->orderByRaw("FIELD(status,'pending','confirmed')")
             ->orderBy('appointment_date', 'desc')
             ->first();
-        $minDate = Carbon::tomorrow()->format('Y-m-d');
-        $maxDate = Carbon::now()->addDays(30)->format('Y-m-d');
+        $minDate = Carbon::tomorrow('Asia/Manila')->format('Y-m-d');
+        $maxDate = Carbon::now('Asia/Manila')->addYears(5)->format('Y-m-d');
 
         $notifData = $this->notificationData($user);
 

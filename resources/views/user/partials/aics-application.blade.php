@@ -623,7 +623,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             @csrf
             <div style="margin-bottom:16px;">
                 <label class="aics-label">New Date <span class="text-danger">*</span></label>
-                <input type="date" name="reschedule_date" id="rescheduleDate" min="{{ $minDate ?? '' }}" max="{{ $maxDate ?? '' }}" required class="form-control aics-input">
+                <input type="date" name="reschedule_date" id="rescheduleDate"
+                    min="{{ $minDate ?? \Carbon\Carbon::tomorrow('Asia/Manila')->format('Y-m-d') }}"
+                    max="{{ $maxDate ?? \Carbon\Carbon::now('Asia/Manila')->addYears(5)->format('Y-m-d') }}"
+                    required class="form-control aics-input">
             </div>
             <div style="margin-bottom:16px;">
                 <label class="aics-label">New Time <span class="text-danger">*</span></label>
@@ -918,6 +921,13 @@ function initApptSlotLoader(prefix) {
         if (!date) return;
 
         const d = new Date(date + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (d <= today) {
+            if (slotMsg) { slotMsg.textContent = 'Appointments must be booked for future dates (starting tomorrow).'; slotMsg.style.color = '#dc3545'; }
+            btn.querySelector('span:last-child').textContent = 'Future dates only';
+            return;
+        }
         if (d.getDay() === 0 || d.getDay() === 6) {
             if (slotMsg) { slotMsg.textContent = 'Please select a weekday (Mon-Fri).'; slotMsg.style.color = '#dc3545'; }
             btn.querySelector('span:last-child').textContent = 'Weekdays only';
@@ -927,7 +937,14 @@ function initApptSlotLoader(prefix) {
         btn.querySelector('span:last-child').textContent = 'Loading slots...';
 
         fetch('/user/appointments/slots?date=' + date, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-            .then(function(r) { return r.json(); })
+            .then(function(r) {
+                return r.json().then(function(data) {
+                    if (!r.ok || data.error) {
+                        throw new Error(data.error || 'Could not load slots.');
+                    }
+                    return data;
+                });
+            })
             .then(function(slots) {
                 prefixSlots[prefix] = slots;
                 const available = slots.filter(function(s) { return !s.full; }).length;
@@ -941,9 +958,10 @@ function initApptSlotLoader(prefix) {
                     if (slotMsg) { slotMsg.textContent = 'No slots available. Pick another day.'; slotMsg.style.color = '#dc3545'; }
                 }
             })
-            .catch(function() {
-                btn.querySelector('span:last-child').textContent = 'Error loading slots';
-                if (slotMsg) { slotMsg.textContent = 'Could not load slots. Try again.'; slotMsg.style.color = '#dc3545'; }
+            .catch(function(err) {
+                btn.querySelector('span:last-child').textContent = 'Unavailable';
+                btn.disabled = true;
+                if (slotMsg) { slotMsg.textContent = err.message || 'Could not load slots. Try again.'; slotMsg.style.color = '#dc3545'; }
             });
     });
 }
@@ -972,17 +990,34 @@ if (rescheduleDate) {
         const date = this.value;
         if (!date) return;
         const d = new Date(date + 'T00:00:00');
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (d <= today) {
+            rescheduleTime.innerHTML = '<option value="">Future dates only</option>';
+            rescheduleTime.disabled = true;
+            rescheduleSlotMsg.textContent = 'Appointments must be booked for future dates (starting tomorrow).';
+            rescheduleSlotMsg.style.color = '#dc3545';
+            return;
+        }
         if (d.getDay() === 0 || d.getDay() === 6) {
             rescheduleTime.innerHTML = '<option value="">Weekdays only</option>';
             rescheduleTime.disabled = true;
             rescheduleSlotMsg.textContent = 'Please select a weekday (Mon–Fri).';
+            rescheduleSlotMsg.style.color = '#dc3545';
             return;
         }
         rescheduleTime.disabled = true;
         rescheduleTime.innerHTML = '<option value="">Loading slots…</option>';
+        rescheduleSlotMsg.textContent = '';
         fetch(`/user/appointments/slots?date=${date}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(r => r.json())
+        .then(r => r.json().then(data => {
+            if (!r.ok || data.error) {
+                throw new Error(data.error || 'Could not load slots.');
+            }
+            return data;
+        }))
         .then(slots => {
+            rescheduleSlotMsg.textContent = '';
             rescheduleTime.innerHTML = '<option value="">Choose a time</option>';
             slots.forEach(s => {
                 const opt = document.createElement('option');
@@ -992,6 +1027,12 @@ if (rescheduleDate) {
                 rescheduleTime.appendChild(opt);
             });
             rescheduleTime.disabled = false;
+        })
+        .catch(err => {
+            rescheduleTime.innerHTML = '<option value="">Unavailable</option>';
+            rescheduleTime.disabled = true;
+            rescheduleSlotMsg.textContent = err.message || 'Could not load slots.';
+            rescheduleSlotMsg.style.color = '#dc3545';
         });
     });
 }

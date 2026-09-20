@@ -67,7 +67,7 @@
     </div>
     <div class="sp-booking-body">
         <div class="sp-office-hours">
-            Office hours: <strong>Monday – Friday, 8:00 AM – 5:00 PM</strong> (lunch 12:00–1:00 PM excluded) · Max 5 appointments per time slot.
+            Office hours: <strong>Monday – Friday, 8:00 AM – 5:00 PM</strong> (lunch 12:00–1:00 PM excluded) · 1 appointment per time slot.
         </div>
 
         <form id="apptForm-{{ $bp }}" method="POST" action="{{ route('user.appointments.store') }}">
@@ -76,7 +76,8 @@
                 <div class="col-md-4">
                     <label class="sp-label">Select Date <span class="text-danger">*</span></label>
                     <input type="date" id="apptDate-{{ $bp }}" name="appointment_date"
-                           min="{{ $minDate }}" max="{{ $maxDate }}"
+                           min="{{ $minDate ?? \Carbon\Carbon::tomorrow('Asia/Manila')->format('Y-m-d') }}"
+                           max="{{ $maxDate ?? \Carbon\Carbon::now('Asia/Manila')->addYears(5)->format('Y-m-d') }}"
                            class="form-control sp-input" required>
                     <div class="sp-hint">Weekdays only (Mon–Fri)</div>
                 </div>

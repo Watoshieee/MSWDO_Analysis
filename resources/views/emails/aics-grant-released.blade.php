@@ -32,7 +32,6 @@
 <div class="wrapper">
     <!-- Header -->
     <div class="header">
-        <div class="header-icon">✅</div>
         @php
             $programLabel = $application->program_type === 'AICS_Burial' ? 'AICS Burial Assistance' : 'AICS Medical Assistance';
         @endphp
@@ -53,7 +52,7 @@
 
         <!-- Info Card -->
         <div class="info-card">
-            <h3>📋 Release Details</h3>
+            <h3>Release Details</h3>
             <div class="info-row">
                 <span>Applicant:</span>
                 <span>{{ $application->full_name }}</span>
@@ -74,7 +73,7 @@
 
         <!-- Note -->
         <div class="highlight-box">
-            <strong>🎉 Thank You for Availing MSWDO Assistance</strong>
+            <strong>Thank You for Availing MSWDO Assistance</strong>
             If you need further assistance or have questions about other welfare programs,
             please visit the <strong>{{ $application->municipality }} MSWDO Office</strong> during office hours:
             <strong>Monday – Friday, 8:00 AM – 5:00 PM</strong>.

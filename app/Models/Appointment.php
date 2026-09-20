@@ -61,16 +61,22 @@ class Appointment extends Model
         return $slots;
     }
 
-    public static function maxPerSlot(): int { return 5; }
+    public static function maxPerSlot(): int { return 1; }
 
     /**
-     * Count confirmed appointments in a specific date+time slot.
+     * Count active appointments in a specific date+time slot.
      */
     public static function slotCount(string $date, string $time, ?string $municipality = null): int
     {
-        $query = static::where('appointment_date', $date)
-            ->where('appointment_time', $time)
-            ->whereIn('status', ['pending', 'confirmed']);
+        $timeNorm = substr(trim($time), 0, 5);
+
+        $query = static::whereDate('appointment_date', $date)
+            ->where(function ($q) use ($time, $timeNorm) {
+                $q->where('appointment_time', $time)
+                  ->orWhere('appointment_time', $timeNorm)
+                  ->orWhere('appointment_time', 'like', $timeNorm . ':%');
+            })
+            ->whereIn('status', ['pending', 'confirmed', 'validated']);
 
         if ($municipality) {
             $query->where('municipality', $municipality);
@@ -80,17 +86,33 @@ class Appointment extends Model
     }
 
     /**
-     * Returns slot data for a given date (15-min intervals per office hour).
+     * Returns slot data for a given date (5-min intervals per office hour).
      * When $isToday is true, slots at or before the current time are marked past.
      */
     public static function slotsForDate(string $date, ?string $municipality = null, bool $isToday = false): array
     {
         $now   = Carbon::now();
         $slots = [];
+
+        // Batch query all booked appointments for the day
+        $query = static::whereDate('appointment_date', $date)
+            ->whereIn('status', ['pending', 'confirmed', 'validated']);
+
+        if ($municipality) {
+            $query->where('municipality', $municipality);
+        }
+
+        $rows = $query->select('appointment_time')->get();
+        $counts = [];
+        foreach ($rows as $row) {
+            $t = substr(trim((string) $row->appointment_time), 0, 5);
+            $counts[$t] = ($counts[$t] ?? 0) + 1;
+        }
+
         foreach (static::officeHours() as $h) {
             foreach (range(0, 55, 5) as $m) {
                 $time    = sprintf('%02d:%02d', $h, $m);
-                $taken   = static::slotCount($date, $time, $municipality);
+                $taken   = (int) ($counts[$time] ?? 0);
                 $isPast  = $isToday && ($h < $now->hour || ($h === $now->hour && $m <= $now->minute));
                 $slots[] = [
                     'time'      => $time,

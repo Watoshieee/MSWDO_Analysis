@@ -21,7 +21,7 @@
 <body>
     <div class="wrapper">
         <div class="header">
-            <h1>✅ PWD Requirements Validated</h1>
+            <h1>PWD Requirements Validated</h1>
             <p>Municipal Social Welfare and Development Office</p>
         </div>
         <div class="body">

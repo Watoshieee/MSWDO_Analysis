@@ -173,7 +173,7 @@
     <div class="wrapper">
         {{-- Header --}}
         <div class="header">
-            <h1>🔔 New Program Application</h1>
+            <h1>New Program Application</h1>
             <p>Municipal Social Welfare &amp; Development Office</p>
         </div>
         <div class="badge-row">{{ strtoupper($application->municipality ?? 'Municipality') }} &mdash; Action Required

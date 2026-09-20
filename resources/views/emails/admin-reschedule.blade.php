@@ -14,7 +14,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>📅 Your Appointment Has Been Rescheduled</h2>
+            <h2>Your Appointment Has Been Rescheduled</h2>
         </div>
         
         <div class="content">

@@ -130,7 +130,7 @@ class AppointmentController extends Controller
             ->where('status', 'confirmed')
             ->firstOrFail();
 
-        /** @var \App\Models\Appointment $appt */
+        /** @var Appointment $appt */
 
         // ── Solo Parent: existing behavior ────────────────────────────────
         if ($appt->program_type === 'Solo_Parent') {

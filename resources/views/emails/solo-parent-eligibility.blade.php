@@ -33,12 +33,11 @@
 <body>
 <div class="wrapper">
     <div class="header">
-        <span class="emoji">🎉</span>
         <h1>Congratulations! You are Eligible for Solo Parent ID</h1>
         <p>Municipal Social Welfare and Development Office</p>
     </div>
 
-    <div class="badge-row">✅ Eligibility Confirmed — Next Step: Submit Your Requirements</div>
+    <div class="badge-row">Eligibility Confirmed — Next Step: Submit Your Requirements</div>
 
     <div class="body">
         <p class="greeting">Hello, {{ $appointment->user->full_name }}!</p>
@@ -48,12 +47,12 @@
         </p>
 
         <div class="congrats-box">
-            <h2>🏆 You Passed the Eligibility Assessment!</h2>
+            <h2>You Passed the Eligibility Assessment!</h2>
             <p>Your Solo Parent ID application has been officially started. Please submit all required documents as soon as possible to proceed.</p>
         </div>
 
         <div class="req-box">
-            <h3>📋 Required Documents to Submit</h3>
+            <h3>Required Documents to Submit</h3>
 
             <div class="req-item">
                 <span class="req-num">1</span>
@@ -82,11 +81,11 @@
         </div>
 
         <div class="warning-box">
-            ⚠️ <strong>Important:</strong> Please upload clear, readable scanned copies or photos of your documents. Blurry or incomplete submissions may be declined and will delay your ID processing.
+            <strong>Important:</strong> Please upload clear, readable scanned copies or photos of your documents. Blurry or incomplete submissions may be declined and will delay your ID processing.
         </div>
 
         <div style="text-align:center;margin-bottom:16px;">
-            <a href="{{ url('/applications/' . $application->id . '/requirements') }}" class="cta-btn">📁 Submit Requirements Now</a>
+            <a href="{{ url('/applications/' . $application->id . '/requirements') }}" class="cta-btn">Submit Requirements Now</a>
         </div>
 
         <p class="note">

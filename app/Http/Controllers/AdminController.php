@@ -756,7 +756,7 @@ class AdminController extends Controller
         // 2. Hostinger root deployment: {base_path}/storage/app/public/{filePath}
         // 3. Fallback: public/storage/{filePath} (if symlink was manually created)
         $candidates = [
-            \Illuminate\Support\Facades\Storage::disk('public')->path($filePath),
+            Storage::disk('public')->path($filePath),
             base_path('storage/app/public/' . $filePath),
             public_path('storage/' . $filePath),
         ];
@@ -1552,7 +1552,7 @@ class AdminController extends Controller
 
         $filePath = $user->valid_id_path;
         $candidates = [
-            \Illuminate\Support\Facades\Storage::disk('public')->path($filePath),
+            Storage::disk('public')->path($filePath),
             base_path('storage/app/public/' . $filePath),
             public_path('storage/' . $filePath),
         ];
