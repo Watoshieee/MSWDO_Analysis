@@ -649,11 +649,10 @@
         }
 
         .pwd-req {
-            padding: 12px 16px;
-            border-radius: 12px;
+            padding: 10px 14px;
+            border-radius: 10px;
             background: #f8fafc;
             border-left: 4px solid #dee2e6;
-            height: 100%;
         }
 
         .pwd-req.approved {
@@ -678,8 +677,9 @@
 
         .pwd-req-name {
             font-weight: 600;
-            font-size: .85rem;
+            font-size: .88rem;
             color: #1e293b;
+            line-height: 1.3;
         }
 
         .pwd-thumb {
@@ -720,25 +720,35 @@
             color: #dc3545;
             margin-top: 5px;
             padding: 5px 8px;
-            background: #fff0f0;
+            background: #fff5f5;
             border-radius: 6px;
         }
 
-        .toast-notice {
-            position: fixed;
-            top: 84px;
-            right: 18px;
-            z-index: 1081;
-            max-width: 420px;
-            background: linear-gradient(135deg, #2C3E8F, #1A2A5C);
-            color: white;
-            border: 1px solid rgba(255, 255, 255, .18);
-            border-radius: 12px;
-            padding: 12px 16px;
-            box-shadow: 0 10px 28px rgba(26, 42, 92, .35);
-            font-size: .84rem;
-            font-weight: 700;
+        .ui-loading-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,0.55);
+            backdrop-filter: blur(1.5px);
+            z-index: 12050; display: none;
+            align-items: center; justify-content: center;
         }
+        .ui-loading-box {
+            width: 100%; max-width: 340px; border-radius: 16px;
+            background: linear-gradient(135deg,#2C3E8F,#1A2A5C);
+            color: #fff; box-shadow: 0 16px 44px rgba(15,23,42,.35);
+            border: 1px solid rgba(255,255,255,.15);
+            padding: 20px 18px; text-align: center;
+        }
+        .ui-loading-spinner {
+            width: 44px; height: 44px; margin: 0 auto 10px;
+            border-radius: 50%; border: 3px solid rgba(255,255,255,.25);
+            border-top-color: #FDB913; animation: uiSpin .8s linear infinite;
+        }
+        @keyframes uiSpin { to { transform: rotate(360deg); } }
+        .ui-loading-title { font-weight: 800; font-size: .98rem; }
+        .ui-loading-sub   { margin-top: 4px; opacity: .85; font-size: .8rem; }
+        @keyframes slideInRight  { from { transform: translateX(400px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes slideOutRight { from { transform: translateX(0); opacity: 1; } to { transform: translateX(400px); opacity: 0; } }
+        @keyframes flashTimerShrink { from { width: 100%; } to { width: 0%; } }
 
         /* Monitor dashboard */
         .monitor-card {
@@ -1408,17 +1418,7 @@
                                         @endforeach
                                     </div>
 
-                                    @if($appStatus === 'rejected' && ($application->admin_remarks ?? null))
-                                        <div class="info-card yellow mb-3" style="margin-bottom:16px!important;">
-                                            <div class="ic-title" data-en="Admin Remarks" data-tl="Mga Paalala ng Admin">Admin
-                                                Remarks</div>
-                                            <div class="ic-body" style="font-size:.82rem;">{{ $application->admin_remarks }}
-                                            </div>
-                                        </div>
-                                    @endif
-
-                                    <div class="aside-label" data-en="Quick Actions" data-tl="Mabilis na Aksyon">Quick
-                                        Actions</div>
+<div class="aside-label" data-en="Quick Actions" data-tl="Mabilis na Aksyon">Quick Actions</div>
                                     <div class="monitor-actions">
                                         <button type="button" class="mon-btn mon-btn-outline" onclick="showWizardView()">
                                             <span data-en="View Application Guide" data-tl="Tingnan ang Gabay">View
@@ -1445,7 +1445,7 @@
                                         data-tl="Mag-upload o magpalit ng mga dokumento sa ibaba. Rerepasuhin ng admin ang bawat submission.">
                                         Upload or replace documents below. The admin will review each submission.</div>
 
-                                    @include('user.partials.pwd-upload-requirements', ['uploadPrefix' => 'mon', 'uploadCols' => 'col-md-6 col-lg-6 col-xl-3', 'hideProgress' => true])
+                                    @include('user.partials.pwd-upload-requirements', ['uploadPrefix' => 'mon', 'uploadCols' => 'col-md-6', 'hideProgress' => true])
                                 </div>
                             </div>
                         </div>
@@ -1780,7 +1780,7 @@
                                 <div class="panel-heading">Submit Your PWD Requirements Online</div>
                                 <div class="panel-sub">Upload digital copies of your documents. The admin will review each
                                     one.</div>
-                                @include('user.partials.pwd-upload-requirements', ['uploadPrefix' => 'wiz', 'uploadCols' => 'col-md-6 col-lg-6 col-xl-3'])
+                                @include('user.partials.pwd-upload-requirements', ['uploadPrefix' => 'wiz', 'uploadCols' => 'col-md-6'])
                             </div>
                         @endif
 
@@ -1919,6 +1919,14 @@
 
     <div class="footer-strip">
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
+    </div>
+
+    <div id="uiLoadingBackdrop" class="ui-loading-backdrop" aria-hidden="true">
+        <div class="ui-loading-box">
+            <div class="ui-loading-spinner"></div>
+            <div class="ui-loading-title">Uploading Document</div>
+            <div class="ui-loading-sub">Please wait while we process your file.</div>
+        </div>
     </div>
 
     <div class="modal fade" id="fileViewerModal" tabindex="-1" aria-hidden="true">
@@ -2168,65 +2176,94 @@
         const _CSRF2 = document.querySelector('meta[name="csrf-token"]')?.content ?? '';
         const _UPLOAD_URL2 = '{{ route("user.pwd-upload-requirement") }}';
 
-        function onFileChosen(prefix) {
-            if (_IS_PWD_BENEFICIARY) return;
-            const scope = prefix === 'mon'
-                ? document.getElementById('pwd-monitor-view')
-                : document.getElementById('pwd-wizard-view');
-            const selected = [...scope.querySelectorAll('.req-file')].filter(i => i.files[0]);
-            const wrap = document.getElementById('inline-upload-wrap-' + prefix);
-            const lbl = document.getElementById('inline-label-' + prefix);
-            if (selected.length > 0) {
-                lbl.textContent = `${selected.length} file${selected.length > 1 ? 's' : ''} selected — ready to upload`;
-                wrap.style.display = 'block';
-            } else {
-                wrap.style.display = 'none';
-            }
+        function showReqLoading() {
+            const el = document.getElementById('uiLoadingBackdrop');
+            if (el) { el.style.display = 'flex'; el.setAttribute('aria-hidden','false'); }
+        }
+        function hideReqLoading() {
+            const el = document.getElementById('uiLoadingBackdrop');
+            if (el) { el.style.display = 'none'; el.setAttribute('aria-hidden','true'); }
         }
 
-        async function uploadAll(prefix) {
-            if (_IS_PWD_BENEFICIARY) {
-                alert('Beneficiary ka na ng PWD program. Re-application is disabled.');
+        function showPwdUploadNotification(message) {
+            const existing = document.getElementById('pwdUploadNotif');
+            if (existing) existing.remove();
+            const notif = document.createElement('div');
+            notif.id = 'pwdUploadNotif';
+            notif.style.cssText = 'position:fixed;top:84px;right:18px;z-index:1081;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border-radius:12px;padding:12px 16px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;animation:slideInRight .4s ease;';
+            notif.innerHTML = `
+                <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+                    <span>${message}</span>
+                    <button onclick="this.closest('#pwdUploadNotif').remove()" style="background:transparent;border:none;color:rgba(255,255,255,.7);font-size:1.2rem;cursor:pointer;line-height:1;">&times;</button>
+                </div>
+                <div style="position:absolute;bottom:0;left:0;height:3px;background:rgba(253,185,19,.9);width:100%;border-radius:0 0 12px 12px;animation:flashTimerShrink 5s linear forwards;"></div>
+            `;
+            document.body.appendChild(notif);
+            setTimeout(() => { if (notif.parentNode) { notif.style.animation = 'slideOutRight .4s ease forwards'; setTimeout(() => notif.remove(), 400); } }, 5000);
+        }
+
+        // AJAX single-file upload for PWD requirements — no reload, no scroll jump
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (!form.classList.contains('js-pwd-ajax-upload')) return;
+            e.preventDefault();
+            var fileInput = form.querySelector('input[type="file"][name="file"]');
+            if (!fileInput || !fileInput.files.length) return;
+            var file = fileInput.files[0];
+            var isImage = ['image/jpeg','image/jpg','image/png'].includes(file.type);
+            var maxSize = isImage ? 5 * 1024 * 1024 : 25 * 1024 * 1024;
+            if (file.size > maxSize) {
+                alert('"' + file.name + '" exceeds the ' + (isImage ? '5MB' : '25MB') + ' limit.');
                 return;
             }
-            const scope = prefix === 'mon'
-                ? document.getElementById('pwd-monitor-view')
-                : document.getElementById('pwd-wizard-view');
-            const inputs = [...scope.querySelectorAll('.req-file')].filter(i => i.files[0]);
-            if (!inputs.length) return;
-
-            const btn = document.getElementById('inline-btn-' + prefix);
-            const bar = document.getElementById('inline-bar-' + prefix);
-            const status = document.getElementById('inline-status-' + prefix);
-            const lbl = document.getElementById('inline-label-' + prefix);
+            var btn = form.querySelector('button[type="submit"]');
             btn.disabled = true;
-            btn.style.opacity = '.6';
-
-            sessionStorage.setItem('pwdWizardComplete', '1');
-            sessionStorage.removeItem('pwdWizardStep');
-
-            let done = 0;
-            for (const inp of inputs) {
-                status.textContent = `Uploading ${done + 1} of ${inputs.length}: "${inp.dataset.req}"…`;
-                const fd = new FormData();
-                fd.append('_token', _CSRF2);
-                fd.append('requirement_name', inp.dataset.req);
-                fd.append('file', inp.files[0]);
-                try {
-                    await fetch(_UPLOAD_URL2, {
-                        method: 'POST',
-                        body: fd,
-                        headers: { 'X-Requested-With': 'XMLHttpRequest' }
-                    });
-                    done++;
-                    bar.style.width = Math.round((done / inputs.length) * 100) + '%';
-                } catch (e) {
-                    status.textContent = `Failed: "${inp.dataset.req}"`;
+            showReqLoading();
+            var scrollBefore = window.scrollY || window.pageYOffset;
+            var fd = new FormData(form);
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                body: fd
+            })
+            .then(function (r) {
+                hideReqLoading();
+                if (r.ok || r.redirected) {
+                    var reqName = form.dataset.reqName;
+                    var row = reqName
+                        ? document.querySelector('.pwd-req[data-req-name="' + CSS.escape(reqName) + '"]')
+                        : form.closest('.pwd-req');
+                    if (row) {
+                        // Remove upload box
+                        var box = row.querySelector('.pwd-upload-box');
+                        if (box) box.remove();
+                        // Remove thumbnail (no longer relevant after re-upload)
+                        var thumb = row.querySelector('.pwd-thumb');
+                        if (thumb) thumb.remove();
+                        // Keep remark visible — do NOT remove .pwd-remark
+                        // Update border/bg to pending
+                        row.className = row.className.replace(/\b(rejected|approved|in_review)\b/g, '').trim() + ' pending';
+                        // Update status badge
+                        var badgeSpan = row.querySelector('span[style*="border-radius:20px"]');
+                        if (badgeSpan) {
+                            badgeSpan.style.background = '#FFF3D6';
+                            badgeSpan.style.color = '#856404';
+                            badgeSpan.textContent = 'Pending';
+                        }
+                    }
+                    window.scrollTo(0, scrollBefore);
+                    showPwdUploadNotification('File uploaded successfully.');
+                } else {
+                    btn.disabled = false;
+                    showPwdUploadNotification('Upload failed. Please try again.');
                 }
-            }
-            lbl.textContent = `${done} of ${inputs.length} uploaded — refreshing…`;
-            setTimeout(() => location.reload(), 900);
-        }
+            })
+            .catch(function () {
+                hideReqLoading();
+                btn.disabled = false;
+                showPwdUploadNotification('Upload failed. Please try again.');
+            });
+        });
 
         function setLang(lang) {
             currentLang = lang;

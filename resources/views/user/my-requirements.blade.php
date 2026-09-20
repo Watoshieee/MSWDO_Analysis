@@ -91,16 +91,16 @@
 
         /* Requirement items */
         .req-item {
-            padding: 14px 16px; border-radius: 12px;
+            padding: 10px 14px; border-radius: 10px;
             background: var(--bg-light); border-left: 4px solid var(--border-light);
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
         .req-item.approved   { border-left-color: #28a745; background: #f0fff8; }
         .req-item.rejected   { border-left-color: #dc3545; background: #fff5f5; }
         .req-item.in_review  { border-left-color: #17a2b8; background: #f0faff; }
         .req-item.pending    { border-left-color: var(--secondary-yellow); }
-        .req-name { font-weight: 600; font-size: 0.9rem; color: var(--text-dark); }
-        .admin-remark { font-size: 0.82rem; color: #dc3545; margin-top: 6px; padding: 6px 10px; background: #fff5f5; border-radius: 8px; }
+        .req-name { font-weight: 600; font-size: 0.88rem; color: var(--text-dark); line-height: 1.3; }
+        .admin-remark { font-size: 0.78rem; color: #dc3545; margin-top: 5px; padding: 5px 8px; background: #fff5f5; border-radius: 6px; }
 
         /* File preview */
         .file-preview { width: 48px; height: 48px; object-fit: cover; border-radius: 8px; cursor: pointer; }
@@ -150,7 +150,7 @@
         .empty-state p { color: #94a3b8; margin-bottom: 18px; }
 
         /* Reupload */
-        .reupload-form { background: #FFF3D6; border-radius: 10px; padding: 14px 16px; margin-top: 12px; }
+        .reupload-form { background: #FFF3D6; border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
 
         /* Footer */
         .footer-strip { background: var(--primary-gradient); color: white; text-align: center; padding: 18px; font-size: 0.85rem; margin-top: 40px; }
@@ -160,11 +160,55 @@
             0%, 100% { box-shadow: 0 0 0 0 rgba(253, 185, 19, 0); }
             50% { box-shadow: 0 0 0 8px rgba(253, 185, 19, 0.4); }
         }
-        
         .scroll-highlight {
             animation: highlightPulse 1.5s ease-in-out 2;
             border: 2px solid var(--secondary-yellow) !important;
             background: var(--secondary-yellow-light) !important;
+        }
+
+        /* Loading overlay */
+        .ui-loading-backdrop {
+            position: fixed; inset: 0;
+            background: rgba(15,23,42,0.55);
+            backdrop-filter: blur(1.5px);
+            z-index: 12050; display: none;
+            align-items: center; justify-content: center;
+        }
+        .ui-loading-box {
+            width: 100%; max-width: 340px; border-radius: 16px;
+            background: linear-gradient(135deg,#2C3E8F,#1A2A5C);
+            color: #fff; box-shadow: 0 16px 44px rgba(15,23,42,.35);
+            border: 1px solid rgba(255,255,255,.15);
+            padding: 20px 18px; text-align: center;
+        }
+        .ui-loading-spinner {
+            width: 44px; height: 44px; margin: 0 auto 10px;
+            border-radius: 50%; border: 3px solid rgba(255,255,255,.25);
+            border-top-color: #FDB913; animation: uiSpin .8s linear infinite;
+        }
+        @keyframes uiSpin { to { transform: rotate(360deg); } }
+        .ui-loading-title { font-weight: 800; font-size: .98rem; }
+        .ui-loading-sub   { margin-top: 4px; opacity: .85; font-size: .8rem; }
+
+        /* Toast notification */
+        @keyframes slideInRight  { from { opacity:0; transform:translateX(60px); } to { opacity:1; transform:translateX(0); } }
+        @keyframes slideOutRight { from { opacity:1; transform:translateX(0); } to { opacity:0; transform:translateX(60px); } }
+        @keyframes flashTimerShrink { from { width:100%; } to { width:0%; } }
+        #reqToast {
+            position: fixed; top: 84px; right: 18px; z-index: 13000;
+            max-width: 380px; background: linear-gradient(135deg,#2C3E8F,#1A2A5C);
+            color: white; border: 1px solid rgba(255,255,255,.18);
+            border-radius: 12px; padding: 12px 16px;
+            box-shadow: 0 10px 28px rgba(26,42,92,.35);
+            font-size: .88rem; font-weight: 600;
+            display: none; align-items: center; gap: 10px; overflow: hidden;
+        }
+        #reqToast.show { display: flex; animation: slideInRight .35s cubic-bezier(.68,-.55,.265,1.55) forwards; }
+        #reqToast.hide { animation: slideOutRight .3s ease forwards; }
+        #reqToastTimer {
+            position: absolute; bottom: 0; left: 0; height: 3px;
+            background: rgba(253,185,19,.9); width: 100%;
+            transform-origin: left; border-radius: 0 0 12px 12px;
         }
 
         /* Scrollbar — same as Programs (/user/programs) */
@@ -283,68 +327,48 @@
 
                         <h6 style="font-weight:700;color:var(--primary-blue);margin-bottom:14px;font-size:0.88rem;text-transform:uppercase;letter-spacing:0.06em;">Submitted Documents</h6>
 
-                        <div class="row g-3">
+                        <div class="row g-2">
                         @foreach($data['fileUploads'] as $file)
                             @php $status = $file->status; $hasFile = $file->file_path; @endphp
                             <div class="col-md-6">
                                 <div class="req-item {{ $status }}" id="file-{{ $file->id }}" data-scroll-target>
-                                    <div class="row align-items-center g-2">
-                                        <div class="col-12">
-                                            <div class="d-flex justify-content-between align-items-start gap-2 mb-2">
-                                                <div class="req-name" style="flex:1;">{{ $file->requirement_name }}</div>
-                                                <span class="status-badge status-{{ $status }}">{{ ucfirst($status) }}</span>
-                                            </div>
+                                    {{-- Top row: name + status badge + view button --}}
+                                    <div class="d-flex align-items-start gap-2">
+                                        <div style="flex:1;min-width:0;">
+                                            <div class="req-name">{{ $file->requirement_name }}</div>
+                                            @if($file->admin_remarks)
+                                                <div class="admin-remark"><strong>Remark:</strong> {{ $file->admin_remarks }}</div>
+                                            @endif
                                         </div>
-                                        <div class="col-12">
-                                            <div class="d-flex justify-content-end align-items-center gap-2">
-                                                @if($hasFile)
-                                                    @php 
-                                                        $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION));
-                                                        $fileUrl = route('user.serve-file', $file->id);
-                                                    @endphp
-                                                    @if(in_array($ext, ['jpg','jpeg','png','gif','webp']))
-                                                        <img src="{{ $fileUrl }}" 
-                                                             class="file-preview" 
-                                                             onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}')"
-                                                             onerror="this.style.display='none'; this.nextElementSibling.style.display='inline';">
-                                                        <span style="font-size:1.6rem;color:#2C3E8F;cursor:pointer;display:none;" 
-                                                              onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}')">🖼️</span>
-                                                    @elseif($ext === 'pdf')
-                                                        <span style="font-size:1.8rem;color:#dc3545;cursor:pointer;" 
-                                                              onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}')" 
-                                                              title="PDF Document">📄</span>
-                                                    @else
-                                                        <span style="font-size:1.6rem;color:#6c757d;cursor:pointer;" 
-                                                              onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}')">📎</span>
-                                                    @endif
-                                                    <button onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}')" 
-                                                            class="btn-view">👁 View</button>
-                                                @else
-                                                    <span style="font-size:0.82rem;color:#94a3b8;">Not uploaded</span>
-                                                @endif
-                                            </div>
+                                        <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                            <span class="status-badge status-{{ $status }}" style="font-size:0.72rem;padding:3px 10px;">{{ ucfirst($status) }}</span>
+                                            @if($hasFile)
+                                                @php 
+                                                    $ext = strtolower(pathinfo($file->file_path, PATHINFO_EXTENSION));
+                                                    $fileUrl = route('user.serve-file', $file->id);
+                                                @endphp
+                                                <button onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}')" 
+                                                        class="btn-view" style="padding:3px 10px;font-size:0.75rem;">👁 View</button>
+                                            @endif
                                         </div>
                                     </div>
 
-                                    @if($file->admin_remarks)
-                                        <div class="admin-remark">
-                                            <strong>Remark:</strong> {{ $file->admin_remarks }}
-                                        </div>
-                                    @endif
-
                                     @if($status == 'rejected')
                                         <div class="reupload-form">
-                                            <p style="font-size:0.83rem;font-weight:600;margin-bottom:10px;color:#856404;">Re-upload Document</p>
-                                            <form action="{{ route('user.resubmit-requirement', $file->id) }}" method="POST" enctype="multipart/form-data">
+                                            <p style="font-size:0.78rem;font-weight:600;margin-bottom:8px;color:#856404;">Re-upload Document</p>
+                                            <form class="js-reupload"
+                                                  action="{{ route('user.resubmit-requirement', $file->id) }}"
+                                                  method="POST"
+                                                  enctype="multipart/form-data"
+                                                  data-file-id="{{ $file->id }}">
                                                 @csrf
-                                                <div class="row g-2 align-items-center">
-                                                    <div class="col-8">
+                                                @method('PUT')
+                                                <div class="d-flex gap-2 align-items-center flex-wrap">
+                                                    <div style="flex:1;min-width:0;">
                                                         <input type="file" name="file" class="form-control form-control-sm" accept=".jpg,.jpeg,.png,.pdf" required>
-                                                        <small class="text-muted">Images: 5MB, PDF: 25MB</small>
+                                                        <small class="text-muted" style="font-size:0.7rem;">Images: 5MB, PDF: 25MB</small>
                                                     </div>
-                                                    <div class="col-4">
-                                                        <button type="submit" class="btn btn-sm btn-warning w-100" style="font-weight:600;">Re-upload</button>
-                                                    </div>
+                                                    <button type="submit" class="btn btn-sm btn-warning" style="font-weight:600;white-space:nowrap;">Re-upload</button>
                                                 </div>
                                             </form>
                                         </div>
@@ -435,23 +459,40 @@
     <div class="footer-strip">
         <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
     </div>
+
+    {{-- Loading overlay --}}
+    <div id="uiLoadingBackdrop" class="ui-loading-backdrop" aria-hidden="true">
+        <div class="ui-loading-box">
+            <div class="ui-loading-spinner"></div>
+            <div class="ui-loading-title">Uploading Document</div>
+            <div class="ui-loading-sub">Please wait while we process your file.</div>
+        </div>
+    </div>
+
+    {{-- Toast notification --}}
+    <div id="reqToast" role="alert">
+        <span id="reqToastMsg" style="flex:1;line-height:1.4;"></span>
+        <button onclick="dismissReqToast()" style="background:rgba(255,255,255,0.15);border:none;color:white;border-radius:6px;width:24px;height:24px;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:1.1rem;line-height:1;padding:0;flex-shrink:0;">&times;</button>
+        <div id="reqToastTimer" style="animation:flashTimerShrink 5s linear forwards;"></div>
+    </div>
     
     @include('components.chat-modal')
     @include('components.chatbot-widget')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // Global variable for modal instances
+        // Prevent browser scroll restoration
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
         let fileViewerModal;
         let remarksModal;
+        let _toastTimer;
 
-        // Initialize modals when document is ready
         document.addEventListener('DOMContentLoaded', function() {
             const fileViewerEl = document.getElementById('fileViewerModal');
             const remarksEl = document.getElementById('remarksModal');
             if (fileViewerEl) fileViewerModal = new bootstrap.Modal(fileViewerEl);
             if (remarksEl) remarksModal = new bootstrap.Modal(remarksEl);
 
-            // Ensure body scroll is completely restored whenever any modal closes
             const restoreScroll = function() {
                 document.body.style.overflow = '';
                 document.body.style.paddingRight = '';
@@ -460,36 +501,140 @@
             remarksEl?.addEventListener('hidden.bs.modal', restoreScroll);
             document.getElementById('announcementsModal')?.addEventListener('hidden.bs.modal', restoreScroll);
             document.getElementById('chatModal')?.addEventListener('hidden.bs.modal', restoreScroll);
+
+            // AJAX re-upload handler
+            document.querySelectorAll('.js-reupload').forEach(function(form) {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault();
+                    const scrollBefore = window.scrollY || window.pageYOffset;
+                    const fileId = form.dataset.fileId;
+                    const fileInput = form.querySelector('input[type="file"]');
+
+                    if (!fileInput || !fileInput.files.length) return;
+
+                    const formData = new FormData(form);
+                    const submitBtn = form.querySelector('button[type="submit"]');
+
+                    // Disable button + show loading
+                    if (submitBtn) { submitBtn.disabled = true; submitBtn.style.opacity = '.65'; }
+                    showReqLoading();
+
+                    fetch(form.action, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'X-Requested-With': 'XMLHttpRequest'
+                        },
+                        body: formData
+                    })
+                    .then(function(r) { return r.json(); })
+                    .then(function(res) {
+                        hideReqLoading();
+                        if (!res.success) {
+                            showReqToast(res.message || 'Upload failed.', true);
+                            if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; }
+                            return;
+                        }
+                        // In-place DOM update
+                        const card = document.getElementById('file-' + fileId);
+                        if (card) {
+                            updateReqItemDOM(card, res);
+                        }
+                        window.scrollTo(0, scrollBefore);
+                        showReqToast('Document re-uploaded successfully! Waiting for admin review.');
+                    })
+                    .catch(function() {
+                        hideReqLoading();
+                        if (submitBtn) { submitBtn.disabled = false; submitBtn.style.opacity = ''; }
+                        showReqToast('Upload failed. Please try again.', true);
+                    });
+                });
+            });
         });
 
-        // Function to show rejection remarks modal
+        function updateReqItemDOM(card, res) {
+            // Update border class
+            card.classList.remove('approved', 'rejected', 'pending', 'in_review');
+            card.classList.add('pending');
+
+            // Update status badge
+            const badge = card.querySelector('.status-badge');
+            if (badge) {
+                badge.className = 'status-badge status-pending';
+                badge.style.fontSize = '0.72rem';
+                badge.style.padding = '3px 10px';
+                badge.textContent = 'Pending';
+            }
+
+            // Remove admin remark
+            const remark = card.querySelector('.admin-remark');
+            if (remark) remark.remove();
+
+            // Replace re-upload form with pending message
+            const reuploadDiv = card.querySelector('.reupload-form');
+            if (reuploadDiv) reuploadDiv.remove();
+
+            // Update View button href if file URL changed
+            const viewBtn = card.querySelector('.btn-view');
+            if (viewBtn && res.file_url && res.file_ext) {
+                viewBtn.setAttribute('onclick',
+                    `openFileModal('${res.file_url}', '${escapeHtml(res.requirement_name)}', '${res.file_ext}')`);
+            }
+        }
+
+        function showReqLoading() {
+            const el = document.getElementById('uiLoadingBackdrop');
+            if (el) { el.style.display = 'flex'; el.setAttribute('aria-hidden','false'); }
+        }
+        function hideReqLoading() {
+            const el = document.getElementById('uiLoadingBackdrop');
+            if (el) { el.style.display = 'none'; el.setAttribute('aria-hidden','true'); }
+        }
+
+        function showReqToast(message, isError) {
+            clearTimeout(_toastTimer);
+            const toast = document.getElementById('reqToast');
+            const msg   = document.getElementById('reqToastMsg');
+            const timer = document.getElementById('reqToastTimer');
+            if (!toast) return;
+            msg.textContent = message;
+            toast.classList.remove('hide');
+            // Reset timer bar animation
+            timer.style.animation = 'none';
+            void timer.offsetWidth; // reflow
+            timer.style.animation = 'flashTimerShrink 5s linear forwards';
+            toast.classList.add('show');
+            _toastTimer = setTimeout(dismissReqToast, 5000);
+        }
+        function dismissReqToast() {
+            clearTimeout(_toastTimer);
+            const toast = document.getElementById('reqToast');
+            if (!toast) return;
+            toast.classList.add('hide');
+            setTimeout(function() { toast.classList.remove('show','hide'); }, 320);
+        }
+
         function showRemarksModal(remarks, programType) {
             document.getElementById('remarksProgram').textContent = programType;
             document.getElementById('remarksContent').textContent = remarks;
             remarksModal.show();
         }
         
-        // Function to open modal and display file
         function openFileModal(fileUrl, fileName, fileExt) {
             const container = document.getElementById('fileViewerContainer');
             const fileInfo = document.getElementById('fileInfo');
             const downloadBtn = document.getElementById('downloadFileBtn');
             
-            // Set download link
             downloadBtn.href = fileUrl;
             downloadBtn.setAttribute('download', fileName + '.' + fileExt);
             
-            // Display file based on extension
             const ext = fileExt.toLowerCase();
             
             if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp'].includes(ext)) {
-                // Display image
                 container.innerHTML = `<img src="${fileUrl}" alt="${fileName}" class="img-fluid rounded">`;
             } else if (ext === 'pdf') {
-                // Display PDF using iframe
                 container.innerHTML = `<iframe src="${fileUrl}" title="${fileName}"></iframe>`;
             } else {
-                // For other file types, show message and download option
                 container.innerHTML = `
                     <div class="text-center">
                         <div style="font-size: 4rem; margin-bottom: 20px;">📄</div>
@@ -500,34 +645,26 @@
                 `;
             }
             
-            // Update file info
             fileInfo.innerHTML = `
                 <p><strong>Document Name:</strong> <span class="file-name">${escapeHtml(fileName)}</span></p>
                 <p><strong>File Type:</strong> ${ext.toUpperCase()}</p>
                 <p><strong>File Size:</strong> <span id="fileSize">Loading...</span></p>
             `;
             
-            // Try to get file size
             fetch(fileUrl, { method: 'HEAD' })
                 .then(response => {
                     const size = response.headers.get('Content-Length');
                     if (size) {
-                        const fileSizeBytes = parseInt(size);
-                        const fileSizeFormatted = formatFileSize(fileSizeBytes);
-                        document.getElementById('fileSize').textContent = fileSizeFormatted;
+                        document.getElementById('fileSize').textContent = formatFileSize(parseInt(size));
                     } else {
                         document.getElementById('fileSize').textContent = 'Unknown';
                     }
                 })
-                .catch(() => {
-                    document.getElementById('fileSize').textContent = 'Unknown';
-                });
+                .catch(() => { document.getElementById('fileSize').textContent = 'Unknown'; });
             
-            // Show modal
             fileViewerModal.show();
         }
         
-        // Helper function to format file size
         function formatFileSize(bytes) {
             if (bytes === 0) return '0 Bytes';
             const k = 1024;
@@ -536,14 +673,12 @@
             return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
         }
         
-        // Helper function to escape HTML to prevent XSS
         function escapeHtml(text) {
             const div = document.createElement('div');
             div.textContent = text;
             return div.innerHTML;
         }
 
-        // Mark notifications as viewed when modal is opened
         document.getElementById('announcementsModal').addEventListener('show.bs.modal', function () {
             fetch('{{ route('user.mark-notifications-viewed') }}', {
                 method: 'POST',
@@ -555,37 +690,21 @@
               .then(data => {
                   if (data.success) {
                       const badge = document.querySelector('.btn[data-bs-target="#announcementsModal"] span');
-                      if (badge) {
-                          badge.style.display = 'none';
-                      }
+                      if (badge) badge.style.display = 'none';
                   }
               });
         });
         
-        // Smooth scroll to target element on page load
         document.addEventListener('DOMContentLoaded', function() {
             const hash = window.location.hash;
             if (hash) {
                 const targetElement = document.querySelector(hash);
                 if (targetElement) {
-                    // Wait for page to fully load
                     setTimeout(() => {
-                        // Scroll to element with offset for navbar
-                        const elementPosition = targetElement.getBoundingClientRect().top + window.pageYOffset;
-                        const offsetPosition = elementPosition - 100; // 100px offset for navbar
-                        
-                        window.scrollTo({
-                            top: offsetPosition,
-                            behavior: 'smooth'
-                        });
-                        
-                        // Add highlight animation
+                        const offsetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - 100;
+                        window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
                         targetElement.classList.add('scroll-highlight');
-                        
-                        // Remove highlight after animation
-                        setTimeout(() => {
-                            targetElement.classList.remove('scroll-highlight');
-                        }, 3000);
+                        setTimeout(() => targetElement.classList.remove('scroll-highlight'), 3000);
                     }, 300);
                 }
             }

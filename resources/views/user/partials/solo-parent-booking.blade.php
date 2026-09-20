@@ -8,7 +8,7 @@
         May na-release na / beneficiary na ang iyong Solo Parent application, kaya disabled na ang new appointment at re-application.
     </div>
 </div>
-@elseif($appointment && in_array($appointment->status, ['pending','confirmed']))
+@elseif($appointment && in_array($appointment->status, ['pending','confirmed','validated']))
 <div class="sp-booking-card">
     <div class="sp-booking-header">
         <div style="flex:1;">
@@ -82,9 +82,11 @@
                 </div>
                 <div class="col-md-4">
                     <label class="sp-label">Select Time Slot <span class="text-danger">*</span></label>
-                    <select id="apptTime-{{ $bp }}" name="appointment_time" class="form-control sp-input" required disabled>
-                        <option value="">Select date first</option>
-                    </select>
+                    <input type="hidden" id="apptTime-{{ $bp }}" name="appointment_time" required>
+                    <button type="button" id="timePickerBtn-{{ $bp }}" class="sp-timepicker-btn" onclick="openClockModal('{{ $bp }}')" disabled>
+                        <span class="sp-timepicker-icon">🕐</span>
+                        <span id="timePickerLabel-{{ $bp }}">Select date first</span>
+                    </button>
                     <div id="slotMsg-{{ $bp }}" class="sp-hint"></div>
                 </div>
                 <div class="col-md-4">
@@ -96,8 +98,14 @@
                 </div>
                 <div class="col-12">
                     <label class="sp-label">Additional Notes (optional)</label>
-                    <textarea name="user_notes" rows="2" class="form-control sp-input"
-                              placeholder="Any concerns or special requests…" maxlength="500"></textarea>
+                    <textarea name="user_notes" id="userNotes-{{ $bp }}" rows="2" class="form-control sp-input"
+                              placeholder="Any concerns or special requests…"
+                              oninput="updateWordCount('{{ $bp }}', this)"></textarea>
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+                        <span id="wordCountError-{{ $bp }}" style="font-size:.7rem;color:#dc3545;display:none;">Word limit exceeded. Maximum is 200 words.</span>
+                        <span style="flex:1;"></span>
+                        <span id="wordCount-{{ $bp }}" style="font-size:.7rem;color:#94a3b8;font-weight:600;">0 / 200 words</span>
+                    </div>
                 </div>
                 <div class="col-12">
                     <button type="submit" id="apptSubmitBtn-{{ $bp }}" class="sp-btn sp-btn-primary">Book Appointment</button>

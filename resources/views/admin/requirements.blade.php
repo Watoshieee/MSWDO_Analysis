@@ -902,6 +902,23 @@
     </div>
 
 
+    {{-- Notes modal --}}
+    <div id="notesModal"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;"
+        onclick="if(event.target===this) this.style.display='none'">
+        <div style="background:white;border-radius:16px;padding:28px;max-width:480px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.2);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <h5 style="font-weight:800;color:#1e293b;margin:0;">Appointment Notes</h5>
+                <button onclick="document.getElementById('notesModal').style.display='none'" style="background:rgba(44,62,143,.08);border:none;color:#1e293b;border-radius:8px;width:32px;height:32px;font-size:1.1rem;cursor:pointer;line-height:1;">&times;</button>
+            </div>
+            <p id="notesModalApplicant" style="font-size:.8rem;color:#64748b;margin-bottom:12px;"></p>
+            <div id="notesModalBody" style="background:#f8faff;border:1px solid #c7d6f5;border-radius:10px;padding:14px 16px;font-size:.88rem;color:#1e293b;line-height:1.6;white-space:pre-wrap;min-height:60px;"></div>
+            <div style="text-align:right;margin-top:16px;">
+                <button onclick="document.getElementById('notesModal').style.display='none'" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:10px;padding:9px 22px;font-weight:700;cursor:pointer;font-size:.86rem;">Close</button>
+            </div>
+        </div>
+    </div>
+
     {{-- Reject modal --}}
     <div id="rejectModal"
         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
@@ -923,6 +940,12 @@
     </div>
 
     <script>
+        function openNotesModal(encodedName, encodedNotes) {
+            document.getElementById('notesModalApplicant').textContent = 'Applicant: ' + decodeURIComponent(encodedName);
+            document.getElementById('notesModalBody').textContent = decodeURIComponent(encodedNotes);
+            document.getElementById('notesModal').style.display = 'flex';
+        }
+
         var rejectTargetId = null;
         var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         var _allAppointments = [];
@@ -1038,38 +1061,27 @@
                     }
                 }
 
-                // Build notes/reason display - show only ONE note based on priority
-                let notesDisplay = '';
-                
-                // Priority 1: Show cancellation reason if pending cancellation
+                // Build notes data for modal
+                let notesModalContent = '';
+                let hasNotes = false;
+
                 if (a.cancellation_status === 'pending' && a.cancel_reason) {
-                    notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.35;background:#fff3cd;border:1px solid #ffc107;color:#856404;border-radius:10px;padding:8px 10px;font-size:.76rem;font-weight:600;">${a.cancel_reason}</div>`;
+                    notesModalContent = a.cancel_reason;
+                    hasNotes = true;
+                } else if (a.reschedule_status === 'pending' && a.reschedule_request_reason) {
+                    notesModalContent = (a.reschedule_request_date || '') + ' ' + (a.reschedule_request_time || '') + (a.reschedule_request_reason ? '\n' + a.reschedule_request_reason : '') + (a.reschedule_admin_notes ? '\nAdmin: ' + a.reschedule_admin_notes : '');
+                    hasNotes = true;
+                } else if (a.status === 'cancelled' && a.cancel_reason) {
+                    notesModalContent = 'Cancelled: ' + a.cancel_reason;
+                    hasNotes = true;
+                } else if ((a.user_notes || '').trim()) {
+                    notesModalContent = a.user_notes.trim();
+                    hasNotes = true;
                 }
-                // Priority 2: Show reschedule info if pending reschedule
-                else if (a.reschedule_status === 'pending' && a.reschedule_request_reason) {
-                    notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.4;font-size:.78rem;font-weight:600;color:#0c4a6e;">`;
-                    notesDisplay += `${a.reschedule_request_date || ''} ${a.reschedule_request_time || ''}`;
-                    if (a.reschedule_request_reason) {
-                        notesDisplay += `<br><span style="margin-top:4px;display:inline-block;">${a.reschedule_request_reason}</span>`;
-                    }
-                    if (a.reschedule_admin_notes) {
-                        notesDisplay += `<br><span style="margin-top:4px;display:inline-block;font-size:.72rem;">Admin: ${a.reschedule_admin_notes}</span>`;
-                    }
-                    notesDisplay += `</div>`;
-                }
-                // Priority 3: Show cancel reason if cancelled
-                else if (a.status === 'cancelled' && a.cancel_reason) {
-                    notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.35;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:8px 10px;font-size:.76rem;font-weight:600;"><strong>Cancelled:</strong><br>${a.cancel_reason}</div>`;
-                }
-                // Priority 4: Show user notes (default)
-                else {
-                    const noteText = (a.user_notes || '').trim();
-                    if (noteText) {
-                        notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.35;background:#eef3ff;border:1px solid #c7d6f5;color:#1e3a8a;border-radius:10px;padding:6px 9px;font-size:.76rem;font-weight:600;" title="${noteText}">${noteText}</div>`;
-                    }
-                }
-                
-                const notesCell = notesDisplay || '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
+
+                const notesCell = hasNotes
+                    ? `<button onclick="openNotesModal('${encodeURIComponent(a.user_name)}', '${encodeURIComponent(notesModalContent)}')" style="background:#eef3ff;color:#1e3a8a;border:1px solid #c7d6f5;border-radius:8px;padding:5px 13px;font-size:.76rem;font-weight:700;cursor:pointer;white-space:nowrap;">View Notes</button>`
+                    : '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
 
                 // Always show admin reschedule button
                 actions += `<button onclick="showAdminRescheduleModal(${a.id}, '${encodeURIComponent(a.user_name)}')" style="background:#e0e7ff;color:#3730a3;border:1px solid #a5b4fc;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-left:6px;">Reschedule</button>`;
@@ -1161,17 +1173,18 @@
         }
         function submitReject() {
             const notes = document.getElementById('rejectNotes').value.trim();
-            if (!notes) { alert('Please enter a reason for rejection.'); return; }
+            if (!notes) { uiToast('Please enter a reason for rejection.', 'Error'); return; }
+            const targetId = rejectTargetId;
+            closeRejectModal();
             showLoading('Rejecting Appointment', 'Sending rejection notification...');
-            fetch(`/admin/appointments/${rejectTargetId}/reject`, {
+            fetch(`/admin/appointments/${targetId}/reject`, {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({ admin_notes: notes })
             }).then(r => r.json()).then(d => {
-                closeRejectModal();
-                alert(d.message);
+                uiToast(d.message || 'Appointment rejected.');
                 loadAppointments();
-            }).catch(() => alert('Error rejecting appointment.'))
+            }).catch(() => uiToast('Error rejecting appointment.', 'Error'))
                 .finally(() => hideLoading());
         }
 

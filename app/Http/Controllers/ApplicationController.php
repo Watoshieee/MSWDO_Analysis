@@ -785,7 +785,11 @@ public function uploadBatch(Request $request)
             Log::error('Admin upload notification failed: ' . $e->getMessage());
         }
 
-        return redirect()->back()->with('success', '✅ File uploaded successfully.');
+        $scroll = (int) $request->input('scroll', 0);
+        $backUrl = url()->previous();
+        $separator = str_contains($backUrl, '?') ? '&' : '?';
+        return redirect($backUrl . ($scroll > 0 ? $separator . 'scroll=' . $scroll : ''))
+            ->with('success', '✅ File uploaded successfully.');
     }
 
     /**

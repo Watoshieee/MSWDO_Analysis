@@ -39,24 +39,38 @@ class ChatController extends Controller
     public function getUsers()
     {
         $admin = Auth::user();
-        
-        // Get all users from same municipality
+
         $users = User::where('role', 'user')
             ->where('municipality', $admin->municipality)
             ->where('id', '!=', $admin->id)
             ->select('id', 'full_name', 'municipality')
-            ->orderBy('full_name', 'asc')
             ->get();
-        
-        // Add unread count for each user
-        $users->each(function($user) use ($admin) {
+
+        $adminId = $admin->id;
+
+        $users->each(function ($user) use ($adminId) {
             $user->unread_count = Message::where('sender_id', $user->id)
-                ->where('receiver_id', $admin->id)
+                ->where('receiver_id', $adminId)
                 ->where('is_read', false)
                 ->count();
+
+            $latest = Message::where(function ($q) use ($user, $adminId) {
+                    $q->where('sender_id', $user->id)->where('receiver_id', $adminId);
+                })
+                ->orWhere(function ($q) use ($user, $adminId) {
+                    $q->where('sender_id', $adminId)->where('receiver_id', $user->id);
+                })
+                ->orderBy('created_at', 'desc')
+                ->value('created_at');
+
+            $user->latest_message_at = $latest;
         });
-        
-        return response()->json($users);
+
+        // Sort by latest message descending; users with no messages go to bottom
+        $sorted = $users->sortByDesc(fn ($u) => $u->latest_message_at ?? '0000-00-00 00:00:00')
+            ->values();
+
+        return response()->json($sorted);
     }
 
     public function getMessages($userId)

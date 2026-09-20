@@ -200,6 +200,42 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         @keyframes slideInRight{from{transform:translateX(400px);opacity:0;}to{transform:translateX(0);opacity:1;}}
         @keyframes slideOutRight{from{transform:translateX(0);opacity:1;}to{transform:translateX(400px);opacity:0;}}
         @keyframes flashTimerShrink{from{width:100%;}to{width:0%;}}
+
+        /* Clock Time Picker */
+        .sp-timepicker-btn{display:flex;align-items:center;gap:10px;width:100%;padding:10px 14px;border:1.5px solid #e2e8f0;border-radius:10px;background:#fff;cursor:pointer;font-size:.9rem;color:#64748b;transition:border-color .2s;}
+        .sp-timepicker-btn:hover:not(:disabled){border-color:#2C3E8F;}
+        .sp-timepicker-btn.has-value{color:#1e293b;font-weight:600;}
+        .sp-timepicker-btn:disabled{opacity:.5;cursor:not-allowed;}
+        .sp-timepicker-btn .btn-icon{font-size:1.1rem;}
+        .clock-modal-overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;}
+        .clock-modal-overlay.open{display:flex;}
+        .clock-modal{background:#fff;border-radius:20px;padding:24px 20px 20px;width:300px;box-shadow:0 8px 40px rgba(0,0,0,.22);}
+        .clock-header{background:#2C3E8F;border-radius:12px;padding:14px 18px;margin-bottom:16px;}
+        .clock-header-label{color:rgba(255,255,255,.7);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px;}
+        .clock-digital{display:flex;align-items:center;gap:4px;}
+        .clock-digit-hour,.clock-digit-min{font-size:2.4rem;font-weight:700;color:rgba(255,255,255,.6);cursor:pointer;padding:2px 6px;border-radius:6px;line-height:1;}
+        .clock-digit-hour.active,.clock-digit-min.active{color:#fff;background:rgba(255,255,255,.15);}
+        .clock-digit-sep{font-size:2.4rem;font-weight:700;color:rgba(255,255,255,.6);line-height:1;}
+        .clock-digit-ampm{font-size:1.1rem;font-weight:700;color:rgba(255,255,255,.85);margin-left:6px;align-self:flex-end;padding-bottom:4px;}
+        .clock-face-wrap{display:flex;justify-content:center;margin-bottom:12px;}
+        .clock-face{position:relative;width:240px;height:240px;border-radius:50%;background:#f1f5f9;}
+        .clock-center-dot{position:absolute;top:50%;left:50%;width:8px;height:8px;border-radius:50%;background:#2C3E8F;transform:translate(-50%,-50%);z-index:2;}
+        .clock-hand{position:absolute;bottom:50%;left:50%;width:2px;background:#2C3E8F;border-radius:2px;transform-origin:bottom center;transform:translateX(-50%) rotate(0deg);transition:transform .2s ease;z-index:1;}
+        .clock-num{position:absolute;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.82rem;font-weight:600;cursor:pointer;transform:translate(-50%,-50%);transition:background .15s,color .15s;color:#1e293b;}
+        .clock-num:hover:not(.disabled):not(.full-slot){background:#e0e7ff;}
+        .clock-num.selected{background:#2C3E8F;color:#fff;}
+        .clock-num.disabled{color:#cbd5e1;cursor:default;}
+        .clock-num.full-slot{color:#ef4444;cursor:default;}
+        .clock-slot-info{text-align:center;font-size:.8rem;min-height:18px;margin-bottom:12px;}
+        .clock-slot-info.avail{color:#16a34a;}
+        .clock-slot-info.full{color:#ef4444;}
+        .clock-slot-info.none{color:transparent;}
+        .clock-actions{display:flex;justify-content:flex-end;gap:10px;}
+        .clock-btn-cancel{background:none;border:none;color:#64748b;font-weight:600;cursor:pointer;padding:8px 14px;border-radius:8px;}
+        .clock-btn-cancel:hover{background:#f1f5f9;}
+        .clock-btn-ok{background:#2C3E8F;color:#fff;border:none;font-weight:700;cursor:pointer;padding:8px 20px;border-radius:8px;}
+        .clock-btn-ok:disabled{opacity:.4;cursor:not-allowed;}
+        .clock-btn-ok:not(:disabled):hover{background:#1A2A5C;}
     </style>
 </head>
 <body>
@@ -540,6 +576,32 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
 <div class="footer-strip"><strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}</div>
 
+{{-- Clock Time Picker Modal --}}
+<div id="clockModal" class="clock-modal-overlay" onclick="if(event.target===this)closeClockModal()">
+    <div class="clock-modal">
+        <div class="clock-header">
+            <div class="clock-header-label">Select appointment time</div>
+            <div class="clock-digital">
+                <span class="clock-digit-hour active" id="clockDigitHour" onclick="clockSetMode('hour')">08</span>
+                <span class="clock-digit-sep">:</span>
+                <span class="clock-digit-min" id="clockDigitMin" onclick="clockSetMode('min')">00</span>
+                <span class="clock-digit-ampm" id="clockDigitAmPm">AM</span>
+            </div>
+        </div>
+        <div class="clock-face-wrap">
+            <div class="clock-face" id="clockFace">
+                <div class="clock-center-dot"></div>
+                <div class="clock-hand" id="clockHand" style="height:80px;"></div>
+            </div>
+        </div>
+        <div class="clock-slot-info none" id="clockSlotInfo"></div>
+        <div class="clock-actions">
+            <button class="clock-btn-cancel" onclick="closeClockModal()">Cancel</button>
+            <button class="clock-btn-ok" id="clockOkBtn" onclick="confirmClockTime()" disabled>OK</button>
+        </div>
+    </div>
+</div>
+
 {{-- Cancel Modal --}}
 <div id="cancelModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
     <div style="background:white;border-radius:16px;max-width:500px;width:90%;padding:28px;">
@@ -663,44 +725,226 @@ function finishWizard() {
     showMonitorView();
 }
 
+const prefixSlots = {};
+let clockPrefix = null;
+let clockMode   = 'hour';
+let clockHour   = 8;
+let clockHour24 = 8;
+let clockMin    = 0;
+
+const OFFICE_HOURS_24 = [8, 9, 10, 11, 13, 14, 15, 16];
+const MIN_POSITIONS   = [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55];
+
+function autoAmPm(h24) { return h24 >= 12 ? 'PM' : 'AM'; }
+function to12(h24) { if (h24 === 0) return 12; if (h24 > 12) return h24 - 12; return h24; }
+
+function openClockModal(prefix) {
+    clockPrefix = prefix;
+    const slots = prefixSlots[prefix] || [];
+    if (!slots.length) return;
+    const firstAvail = slots.find(s => !s.full);
+    if (firstAvail) {
+        clockHour24 = firstAvail.hour;
+        clockHour   = to12(firstAvail.hour);
+        clockMin    = firstAvail.minute;
+    } else {
+        clockHour24 = 8; clockHour = 8; clockMin = 0;
+    }
+    clockMode = 'hour';
+    syncDigits();
+    renderClockFace();
+    updateSlotInfo();
+    document.getElementById('clockModal').classList.add('open');
+}
+
+function closeClockModal() {
+    document.getElementById('clockModal').classList.remove('open');
+}
+
+function clockSetMode(mode) {
+    clockMode = mode;
+    document.getElementById('clockDigitHour').classList.toggle('active', mode === 'hour');
+    document.getElementById('clockDigitMin').classList.toggle('active', mode === 'min');
+    renderClockFace();
+}
+
+function findSlot(h24, min) {
+    const slots = prefixSlots[clockPrefix] || [];
+    return slots.find(s => s.hour === h24 && s.minute === min) || null;
+}
+
+function syncDigits() {
+    document.getElementById('clockDigitHour').textContent = String(clockHour).padStart(2, '0');
+    document.getElementById('clockDigitMin').textContent  = String(clockMin).padStart(2, '0');
+    document.getElementById('clockDigitAmPm').textContent = autoAmPm(clockHour24);
+}
+
+function updateSlotInfo() {
+    const info  = document.getElementById('clockSlotInfo');
+    const okBtn = document.getElementById('clockOkBtn');
+    const slot  = findSlot(clockHour24, clockMin);
+    if (!slot) {
+        info.textContent = 'Not an available slot';
+        info.className   = 'clock-slot-info full';
+        okBtn.disabled   = true;
+        return;
+    }
+    if (slot.full) {
+        info.textContent = slot.past_time ? 'This time has already passed' : 'This slot is full';
+        info.className   = 'clock-slot-info full';
+        okBtn.disabled   = true;
+    } else {
+        info.textContent = slot.remaining + ' slot' + (slot.remaining !== 1 ? 's' : '') + ' available';
+        info.className   = 'clock-slot-info avail';
+        okBtn.disabled   = false;
+    }
+}
+
+function renderClockFace() {
+    const face   = document.getElementById('clockFace');
+    const hand   = document.getElementById('clockHand');
+    const radius = 88;
+    const cx = 120, cy = 120;
+    face.querySelectorAll('.clock-num').forEach(n => n.remove());
+
+    if (clockMode === 'hour') {
+        for (let h = 1; h <= 12; h++) {
+            let h24;
+            if (h >= 8 && h <= 11)     h24 = h;
+            else if (h >= 1 && h <= 4) h24 = h + 12;
+            else                        h24 = h;
+
+            const slots     = prefixSlots[clockPrefix] || [];
+            const hourSlots = slots.filter(s => s.hour === h24);
+            const anyAvail  = hourSlots.some(s => !s.full);
+            const isOffice  = OFFICE_HOURS_24.includes(h24);
+
+            const angle = (h / 12) * 360 - 90;
+            const rad   = angle * Math.PI / 180;
+            const x = cx + radius * Math.cos(rad);
+            const y = cy + radius * Math.sin(rad);
+
+            const el = document.createElement('div');
+            el.className   = 'clock-num';
+            el.textContent = h;
+            el.style.left  = x + 'px';
+            el.style.top   = y + 'px';
+
+            if (!isOffice) {
+                el.classList.add('disabled');
+            } else if (!anyAvail) {
+                el.classList.add('full-slot');
+            } else {
+                if (h === clockHour) el.classList.add('selected');
+                el.addEventListener('click', () => {
+                    clockHour24 = h24;
+                    clockHour   = h;
+                    const firstMin = hourSlots.find(s => !s.full);
+                    if (firstMin) clockMin = firstMin.minute;
+                    syncDigits();
+                    updateSlotInfo();
+                    renderClockFace();
+                    setTimeout(() => clockSetMode('min'), 280);
+                });
+            }
+            face.appendChild(el);
+        }
+        const deg = (clockHour / 12) * 360;
+        hand.style.height    = (radius - 10) + 'px';
+        hand.style.transform = 'translateX(-50%) rotate(' + deg + 'deg)';
+
+    } else {
+        const h24 = clockHour24;
+        MIN_POSITIONS.forEach(function(m, i) {
+            const angle = (i / 12) * 360 - 90;
+            const rad   = angle * Math.PI / 180;
+            const x = cx + radius * Math.cos(rad);
+            const y = cy + radius * Math.sin(rad);
+
+            const slot = findSlot(h24, m);
+            const el   = document.createElement('div');
+            el.className   = 'clock-num';
+            el.textContent = String(m).padStart(2, '0');
+            el.style.left  = x + 'px';
+            el.style.top   = y + 'px';
+
+            if (!slot || slot.full) {
+                el.classList.add(slot && slot.past_time ? 'disabled' : 'full-slot');
+                el.title = slot && slot.past_time ? 'Time has passed' : 'Slot full';
+            } else {
+                if (m === clockMin) el.classList.add('selected');
+                el.addEventListener('click', function() {
+                    clockMin = m;
+                    syncDigits();
+                    updateSlotInfo();
+                    renderClockFace();
+                });
+            }
+            face.appendChild(el);
+        });
+        const minIdx = MIN_POSITIONS.indexOf(clockMin);
+        const deg    = minIdx >= 0 ? (minIdx / 12) * 360 : 0;
+        hand.style.height    = (radius - 10) + 'px';
+        hand.style.transform = 'translateX(-50%) rotate(' + deg + 'deg)';
+    }
+}
+
+function confirmClockTime() {
+    const slot = findSlot(clockHour24, clockMin);
+    if (!slot || slot.full) return;
+    const timeVal = String(clockHour24).padStart(2, '0') + ':' + String(clockMin).padStart(2, '0');
+    document.getElementById('apptTime-' + clockPrefix).value = timeVal;
+    const btn = document.getElementById('timePickerBtn-' + clockPrefix);
+    btn.querySelector('span:last-child').textContent = slot.label;
+    btn.classList.add('has-value');
+    closeClockModal();
+}
+
 function initApptSlotLoader(prefix) {
     const dateInput = document.getElementById('apptDate-' + prefix);
-    const timeSelect = document.getElementById('apptTime-' + prefix);
-    const slotMsg = document.getElementById('slotMsg-' + prefix);
-    if (!dateInput || !timeSelect) return;
+    const btn       = document.getElementById('timePickerBtn-' + prefix);
+    const slotMsg   = document.getElementById('slotMsg-' + prefix);
+    if (!dateInput || !btn) return;
+
     dateInput.addEventListener('change', function() {
         const date = this.value;
+        document.getElementById('apptTime-' + prefix).value = '';
+        btn.querySelector('span:last-child').textContent = 'Select date first';
+        btn.classList.remove('has-value');
+        btn.disabled = true;
+        prefixSlots[prefix] = [];
+        if (slotMsg) slotMsg.textContent = '';
+
         if (!date) return;
+
         const d = new Date(date + 'T00:00:00');
         if (d.getDay() === 0 || d.getDay() === 6) {
-            timeSelect.innerHTML = '<option value="">Weekdays only</option>';
-            timeSelect.disabled = true;
-            if (slotMsg) { slotMsg.textContent = 'Please select a weekday (Mon–Fri).'; slotMsg.style.color = '#dc3545'; }
+            if (slotMsg) { slotMsg.textContent = 'Please select a weekday (Mon-Fri).'; slotMsg.style.color = '#dc3545'; }
+            btn.querySelector('span:last-child').textContent = 'Weekdays only';
             return;
         }
-        timeSelect.disabled = true;
-        timeSelect.innerHTML = '<option value="">Loading slots…</option>';
-        if (slotMsg) slotMsg.textContent = '';
-        fetch(`/user/appointments/slots?date=${date}`, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
-        .then(r => r.json())
-        .then(slots => {
-            timeSelect.innerHTML = '<option value="">Choose a time</option>';
-            let available = 0;
-            slots.forEach(s => {
-                const opt = document.createElement('option');
-                opt.value = s.time;
-                opt.textContent = s.full ? `${s.label} — FULL` : `${s.label} (${s.remaining} slot${s.remaining !== 1 ? 's' : ''} left)`;
-                if (s.full) opt.disabled = true;
-                else available++;
-                timeSelect.appendChild(opt);
+
+        btn.querySelector('span:last-child').textContent = 'Loading slots...';
+
+        fetch('/user/appointments/slots?date=' + date, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(slots) {
+                prefixSlots[prefix] = slots;
+                const available = slots.filter(function(s) { return !s.full; }).length;
+                if (available > 0) {
+                    btn.querySelector('span:last-child').textContent = 'Select Time Slot';
+                    btn.disabled = false;
+                    if (slotMsg) { slotMsg.textContent = available + ' slot' + (available !== 1 ? 's' : '') + ' available'; slotMsg.style.color = '#16a34a'; }
+                } else {
+                    btn.querySelector('span:last-child').textContent = 'No slots available';
+                    btn.disabled = true;
+                    if (slotMsg) { slotMsg.textContent = 'No slots available. Pick another day.'; slotMsg.style.color = '#dc3545'; }
+                }
+            })
+            .catch(function() {
+                btn.querySelector('span:last-child').textContent = 'Error loading slots';
+                if (slotMsg) { slotMsg.textContent = 'Could not load slots. Try again.'; slotMsg.style.color = '#dc3545'; }
             });
-            timeSelect.disabled = false;
-            if (slotMsg) {
-                slotMsg.textContent = available > 0 ? `${available} time slot${available > 1 ? 's' : ''} available` : 'No slots available. Pick another day.';
-                slotMsg.style.color = available > 0 ? '#16a34a' : '#dc3545';
-            }
-        })
-        .catch(() => { timeSelect.innerHTML = '<option value="">Error loading slots</option>'; });
     });
 }
 ['mon', 'wiz'].forEach(initApptSlotLoader);

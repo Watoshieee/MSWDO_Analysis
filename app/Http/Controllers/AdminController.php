@@ -271,6 +271,7 @@ class AdminController extends Controller
         }
 
         $applications = $applicationsQuery
+            ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
             ->orderBy('application_date', 'desc')
             ->paginate(20);
 
@@ -935,7 +936,24 @@ class AdminController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'File status updated successfully!');
+        $scroll = (int) $request->input('scroll', 0);
+
+        // Return JSON for AJAX requests (no page reload)
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'File status updated successfully!',
+                'new_status' => $request->status,
+                'admin_remarks' => $request->admin_remarks,
+                'overall_status' => $fileMonitoring->overall_status,
+                'application_status' => $fileMonitoring->application->status ?? null,
+            ]);
+        }
+
+        $backUrl = url()->previous();
+        $separator = str_contains($backUrl, '?') ? '&' : '?';
+        return redirect($backUrl . ($scroll > 0 ? $separator . 'scroll=' . $scroll : ''))
+            ->with('success', 'File status updated successfully!');
     }
 
     /**
