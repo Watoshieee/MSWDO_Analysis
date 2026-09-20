@@ -2060,7 +2060,7 @@
             return false;
         }
 
-        function showMonitorView() {
+        function showMonitorView(shouldScroll = false) {
             document.getElementById('pwd-wizard-view').style.display = 'none';
             document.getElementById('pwd-monitor-view').style.display = 'block';
             const heroTitle = document.getElementById('hero-title');
@@ -2071,7 +2071,9 @@
             heroSub.dataset.tl = 'Subaybayan ang status ng iyong aplikasyon, mag-upload ng dokumento, at i-track ang progress ng review ng admin.';
             heroTitle.textContent = currentLang === 'tl' ? heroTitle.dataset.tl : heroTitle.dataset.en;
             heroSub.textContent = currentLang === 'tl' ? heroSub.dataset.tl : heroSub.dataset.en;
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (shouldScroll && !sessionStorage.getItem('pwdScrollRestore')) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
 
         function showWizardView() {
@@ -2092,7 +2094,7 @@
         function finishWizard() {
             sessionStorage.setItem('pwdWizardComplete', '1');
             sessionStorage.removeItem('pwdWizardStep');
-            showMonitorView();
+            showMonitorView(true);
         }
 
         document.addEventListener('DOMContentLoaded', function () {
@@ -2106,7 +2108,7 @@
             });
 
             if (shouldShowMonitor()) {
-                showMonitorView();
+                showMonitorView(false);
             } else {
                 const saved = sessionStorage.getItem('pwdWizardStep');
                 if (saved !== null) {
@@ -2117,6 +2119,15 @@
                 } else {
                     goToStep(0, false);
                 }
+            }
+
+            var savedPwdScroll = parseInt(sessionStorage.getItem('pwdScrollRestore') || '0', 10);
+            if (savedPwdScroll > 0) {
+                sessionStorage.removeItem('pwdScrollRestore');
+                window.scrollTo(0, savedPwdScroll);
+                requestAnimationFrame(() => window.scrollTo(0, savedPwdScroll));
+                setTimeout(() => window.scrollTo(0, savedPwdScroll), 60);
+                setTimeout(() => window.scrollTo(0, savedPwdScroll), 250);
             }
         });
 
@@ -2206,6 +2217,8 @@
         document.addEventListener('submit', function (e) {
             var form = e.target;
             if (!form.classList.contains('js-pwd-ajax-upload')) return;
+            var scrollBefore = window.scrollY || window.pageYOffset;
+            sessionStorage.setItem('pwdScrollRestore', String(scrollBefore));
             e.preventDefault();
             var fileInput = form.querySelector('input[type="file"][name="file"]');
             if (!fileInput || !fileInput.files.length) return;
@@ -2219,7 +2232,6 @@
             var btn = form.querySelector('button[type="submit"]');
             btn.disabled = true;
             showReqLoading();
-            var scrollBefore = window.scrollY || window.pageYOffset;
             var fd = new FormData(form);
             fetch(form.action, {
                 method: 'POST',

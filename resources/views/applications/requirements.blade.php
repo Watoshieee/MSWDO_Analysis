@@ -329,7 +329,7 @@
                                 <input type="hidden" name="requirement_name" value="{{ $req->requirement_name }}">
                                 <input type="file" name="file" id="file-{{ $loop->index }}"
                                        accept=".jpg,.jpeg,.png,.pdf"
-                                       onchange="document.getElementById('form-{{ $loop->index }}').submit()">
+                                       onchange="sessionStorage.setItem('app_req_scroll', window.scrollY || window.pageYOffset); document.getElementById('form-{{ $loop->index }}').submit()">
                             </form>
                         @endif
                     </div>
@@ -357,6 +357,7 @@
     <script>
         function deleteFile(requirementName) {
             if (confirm('Remove this file? You will need to upload a new one.')) {
+                sessionStorage.setItem('app_req_scroll', window.scrollY || window.pageYOffset);
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = '{{ route('applications.requirement.delete', $application->id) }}';
@@ -369,6 +370,20 @@
                 form.submit();
             }
         }
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const savedScroll = sessionStorage.getItem('app_req_scroll');
+            if (savedScroll !== null) {
+                sessionStorage.removeItem('app_req_scroll');
+                const y = parseInt(savedScroll, 10);
+                if (y > 0) {
+                    window.scrollTo(0, y);
+                    requestAnimationFrame(() => window.scrollTo(0, y));
+                    setTimeout(() => window.scrollTo(0, y), 60);
+                    setTimeout(() => window.scrollTo(0, y), 200);
+                }
+            }
+        });
     </script>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 </body>

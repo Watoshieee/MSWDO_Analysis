@@ -703,14 +703,16 @@ function shouldShowMonitor() {
     if (APPT_NOTICE) return true;
     return false;
 }
-function showMonitorView() {
+function showMonitorView(shouldScroll = false) {
     document.getElementById('aics-wizard-view').style.display = 'none';
     document.getElementById('aics-monitor-view').style.display = 'block';
     document.getElementById('hero-title').textContent = currentLang === 'tl' ? ('Tracker ng ' + AICS_PROGRAM_LABEL) : (AICS_PROGRAM_LABEL + ' Tracker');
     document.getElementById('hero-sub').textContent = currentLang === 'tl'
         ? 'Subaybayan ang appointment, mag-upload ng dokumento, at i-monitor ang progress ng aplikasyon.'
         : 'Track your appointment, upload documents, and monitor your assistance application progress.';
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (shouldScroll && !sessionStorage.getItem('aics_scroll_restore')) {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 }
 function showWizardView() {
     document.getElementById('aics-monitor-view').style.display = 'none';
@@ -725,7 +727,7 @@ function showWizardView() {
 function finishWizard() {
     sessionStorage.setItem(AICS_STORAGE_KEY + 'WizardComplete', '1');
     sessionStorage.removeItem(AICS_STORAGE_KEY + 'WizardStep');
-    showMonitorView();
+    showMonitorView(true);
 }
 
 const prefixSlots = {};
@@ -1064,7 +1066,16 @@ function validateAicsFile(input) {
         inputs.forEach(i => { if (!i.files.length) i.disabled = true; });
         const btn = document.getElementById('aicsBatchBtn-' + prefix);
         if (btn) { btn.textContent = 'Uploading...'; btn.disabled = true; }
+        sessionStorage.setItem('aics_scroll_restore', String(window.scrollY || window.pageYOffset));
     });
+});
+
+document.addEventListener('submit', function(e) {
+    if (e.target && e.target.classList && e.target.classList.contains('aics-single-form')) {
+        sessionStorage.setItem('aics_scroll_restore', String(window.scrollY || window.pageYOffset));
+        const btn = e.target.querySelector('button[type="submit"]');
+        if (btn) { btn.textContent = 'Uploading...'; btn.disabled = true; }
+    }
 });
 
 function closeFlashNotification() {
@@ -1079,12 +1090,24 @@ document.addEventListener('DOMContentLoaded', function() {
     const timer = document.getElementById('flashTimer');
     if (timer) { timer.style.animation = 'flashTimerShrink 5s linear forwards'; setTimeout(closeFlashNotification, 5000); }
 
-    if (shouldShowMonitor()) showMonitorView();
+    if (shouldShowMonitor()) showMonitorView(false);
     else {
         const saved = sessionStorage.getItem(AICS_STORAGE_KEY + 'WizardStep');
         if (APPT_NOTICE && WIZARD_STEPS.includes('book')) goToStep(WIZARD_STEPS.indexOf('book'), false);
         else if (saved !== null) { const idx = parseInt(saved,10); if (!isNaN(idx) && idx < WIZARD_STEPS.length) goToStep(idx, false); }
         else goToStep(0, false);
+    }
+
+    const savedAicsScroll = sessionStorage.getItem('aics_scroll_restore');
+    if (savedAicsScroll !== null) {
+        sessionStorage.removeItem('aics_scroll_restore');
+        const scrollY = parseInt(savedAicsScroll, 10);
+        if (scrollY > 0) {
+            window.scrollTo(0, scrollY);
+            requestAnimationFrame(() => window.scrollTo(0, scrollY));
+            setTimeout(() => window.scrollTo(0, scrollY), 60);
+            setTimeout(() => window.scrollTo(0, scrollY), 250);
+        }
     }
 });
 

@@ -1877,12 +1877,14 @@
             if (APPT_NOTICE) return true;
             return false;
         }
-        function showMonitorView() {
+        function showMonitorView(shouldScroll = false) {
             document.getElementById('sp-wizard-view').style.display = 'none';
             document.getElementById('sp-monitor-view').style.display = 'block';
             document.getElementById('hero-title').textContent = currentLang === 'tl' ? 'Tracker ng Solo Parent Application' : 'Solo Parent Application Tracker';
             document.getElementById('hero-sub').textContent = currentLang === 'tl' ? 'Subaybayan ang appointment, mag-upload ng dokumento, at i-monitor ang progress.' : 'Track your appointment, upload documents, and monitor your application progress.';
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            if (shouldScroll && !sessionStorage.getItem('spScrollRestore')) {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
         }
         function showWizardView() {
             document.getElementById('sp-monitor-view').style.display = 'none';
@@ -1895,7 +1897,7 @@
         function finishWizard() {
             sessionStorage.setItem('spWizardComplete', '1');
             sessionStorage.removeItem('spWizardStep');
-            showMonitorView();
+            showMonitorView(true);
         }
 
         const prefixSlots = {};
@@ -2377,12 +2379,18 @@
                 document.getElementById('sp-monitor-view').style.display = 'block';
                 document.getElementById('hero-title').textContent = currentLang === 'tl' ? 'Tracker ng Solo Parent Application' : 'Solo Parent Application Tracker';
                 document.getElementById('hero-sub').textContent = currentLang === 'tl' ? 'Subaybayan ang appointment, mag-upload ng dokumento, at i-monitor ang progress.' : 'Track your appointment, upload documents, and monitor your application progress.';
-                if (savedScroll > 0) window.scrollTo(0, savedScroll);
             } else {
                 const saved = sessionStorage.getItem('spWizardStep');
                 if (APPT_NOTICE && WIZARD_STEPS.includes('book')) goToStep(WIZARD_STEPS.indexOf('book'), false);
                 else if (saved !== null) { const idx = parseInt(saved, 10); if (!isNaN(idx) && idx < WIZARD_STEPS.length) goToStep(idx, false); }
                 else goToStep(0, false);
+            }
+
+            if (savedScroll > 0) {
+                window.scrollTo(0, savedScroll);
+                requestAnimationFrame(() => window.scrollTo(0, savedScroll));
+                setTimeout(() => window.scrollTo(0, savedScroll), 60);
+                setTimeout(() => window.scrollTo(0, savedScroll), 250);
             }
 
             ['mon', 'wiz'].forEach(prefix => {
@@ -2398,6 +2406,14 @@
                     if (btn) { btn.disabled = true; btn.style.opacity = '.5'; }
                 }
             });
+        });
+
+        // Always preserve scroll before form submits
+        document.addEventListener('submit', function (e) {
+            var form = e.target;
+            if (form && (form.classList.contains('solo-upload-form') || form.classList.contains('js-ajax-upload') || form.getAttribute('data-upload-type') === 'single')) {
+                sessionStorage.setItem('spScrollRestore', String(window.scrollY || window.pageYOffset));
+            }
         });
 
         // AJAX single-file upload — in-place DOM update, no reload, no scroll jump

@@ -35,7 +35,7 @@
         $fStatus = $uf?->status ?? 'not_uploaded';
     @endphp
     <div class="{{ $uploadCols }}">
-        <div class="aics-req-card">
+        <div class="aics-req-card" data-req-name="{{ $reqName }}">
             <div class="aics-req-head">
                 <div>
                     <div class="aics-req-name">{{ $reqName }}</div>
@@ -100,7 +100,7 @@
 @endphp
 @if(!$uf2 || $fStatus2 === 'rejected')
 <div class="{{ $uploadCols }}">
-    <div class="aics-req-card {{ $fStatus2==='rejected' ? 'rejected-border' : '' }}">
+    <div class="aics-req-card {{ $fStatus2==='rejected' ? 'rejected-border' : '' }}" data-req-name="{{ $reqName }}">
         <div class="aics-req-head">
             <div class="aics-req-name">{{ $reqName }}</div>
             @if($fStatus2==='rejected')<span class="aics-badge rejected">✗ Rejected</span>
