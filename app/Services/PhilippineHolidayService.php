@@ -84,7 +84,7 @@ class PhilippineHolidayService
             ];
         }
 
-        // 2. Check Philippine Holiday
+        // 3. Check Philippine Holiday
         try {
             $holiday = $this->getHolidayDetails($carbon);
             if ($holiday !== null) {
@@ -135,7 +135,7 @@ class PhilippineHolidayService
             }
         }
 
-        // Fetch from Calendarific API
+        // Fetch from Nager.Date API
         $holidays = $this->fetchHolidaysFromApi($year);
 
         // Cache the processed holidays
@@ -154,31 +154,20 @@ class PhilippineHolidayService
     }
 
     /**
-     * Fetch and filter holidays from Calendarific API for the specified year.
+     * Fetch and filter holidays from Nager.Date API for the specified year.
      *
      * @param int $year
-     * @return array
+     * @return array Keyed by 'Y-m-d'
      * @throws \RuntimeException
      */
     protected function fetchHolidaysFromApi(int $year): array
     {
-        $apiKey = config('services.calendarific.key');
-
-        if (empty($apiKey)) {
-            Log::error('PhilippineHolidayService: Calendarific API key is missing from config/services.php or .env');
-            throw new \RuntimeException('Holiday verification service configuration error.');
-        }
-
-        $url = 'https://calendarific.com/api/v2/holidays';
+        $url = "https://date.nager.at/api/v3/PublicHolidays/{$year}/PH";
 
         try {
-            $response = Http::timeout(10)->get($url, [
-                'api_key' => $apiKey,
-                'country' => 'PH',
-                'year'    => $year,
-            ]);
+            $response = Http::timeout(10)->acceptJson()->get($url);
         } catch (\Throwable $e) {
-            Log::error('PhilippineHolidayService: Network timeout or error calling Calendarific', [
+            Log::error('PhilippineHolidayService: Network timeout or error calling Nager.Date', [
                 'year'  => $year,
                 'error' => $e->getMessage(),
             ]);
@@ -186,38 +175,28 @@ class PhilippineHolidayService
         }
 
         if (!$response->successful()) {
-            Log::error('PhilippineHolidayService: Calendarific returned non-200 HTTP code', [
+            Log::error('PhilippineHolidayService: Nager.Date returned non-200 HTTP code', [
                 'status' => $response->status(),
                 'year'   => $year,
-                'body'   => $response->json('meta') ?? $response->body(),
+                'body'   => $response->body(),
             ]);
             throw new \RuntimeException('Holiday verification service returned an error status.');
         }
 
-        $json = $response->json();
-        $statusCode = $json['meta']['code'] ?? null;
-
-        if ($statusCode !== 200) {
-            Log::error('PhilippineHolidayService: Calendarific meta code is not 200', [
-                'meta' => $json['meta'] ?? [],
+        $rawHolidays = $response->json();
+        if (!is_array($rawHolidays)) {
+            Log::error('PhilippineHolidayService: Nager.Date returned non-array JSON response', [
                 'year' => $year,
+                'body' => $response->body(),
             ]);
-            throw new \RuntimeException($json['meta']['error_detail'] ?? 'Holiday service rejected the request.');
+            throw new \RuntimeException('Holiday verification service returned an invalid response structure.');
         }
 
-        $rawHolidays = $json['response']['holidays'] ?? [];
         return $this->processAndFilterHolidays($rawHolidays, $year);
     }
 
     /**
-     * Filter official Philippine public/national non-working holidays:
-     * - Regular Holidays
-     * - Special Non-Working Holidays
-     * - Official National Holidays
-     * Excludes:
-     * - Special Working Days
-     * - Astronomical Seasons (Equinox, Solstice)
-     * - Observances without non-working status
+     * Process and filter official Philippine public/national holidays from Nager.Date:
      *
      * @param array $rawHolidays
      * @param int $year
@@ -228,39 +207,32 @@ class PhilippineHolidayService
         $filtered = [];
 
         foreach ($rawHolidays as $holiday) {
-            $iso = $holiday['date']['iso'] ?? null;
-            if (!$iso && isset($holiday['date']['datetime'])) {
-                $dt = $holiday['date']['datetime'];
-                $iso = sprintf('%04d-%02d-%02d', $dt['year'], $dt['month'], $dt['day']);
-            }
-
-            if (!$iso) {
+            $dateKey = $holiday['date'] ?? null;
+            if (!$dateKey || !is_string($dateKey)) {
                 continue;
             }
 
-            $dateKey = substr($iso, 0, 10);
-
-            $primaryType = strtolower($holiday['primary_type'] ?? '');
-            $types = array_map('strtolower', (array) ($holiday['type'] ?? []));
-
-            $isRegular           = str_contains($primaryType, 'regular holiday');
-            $isSpecialNonWorking = str_contains($primaryType, 'special non-working');
-            $isNational          = in_array('national holiday', $types, true);
-            $isSpecialWorking    = str_contains($primaryType, 'special working');
-            $isSeason            = str_contains($primaryType, 'season') || in_array('season', $types, true);
-
-            // Official non-working national/public holiday
-            if (($isRegular || $isSpecialNonWorking || $isNational) && !$isSpecialWorking && !$isSeason) {
-                // If multiple holidays land on same date, prefer Regular > Special Non-working
-                if (!isset($filtered[$dateKey]) || $isRegular) {
-                    $filtered[$dateKey] = [
-                        'name'         => $holiday['name'] ?? 'Philippine Holiday',
-                        'primary_type' => $holiday['primary_type'] ?? '',
-                        'type'         => $holiday['type'] ?? [],
-                        'date'         => $dateKey,
-                    ];
-                }
+            $dateKey = substr(trim($dateKey), 0, 10);
+            if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateKey)) {
+                continue;
             }
+
+            $types = (array) ($holiday['types'] ?? ['Public']);
+            $primaryType = $types[0] ?? 'Public';
+
+            // Filter out purely observational days if any
+            $typesLower = array_map('strtolower', $types);
+            if (in_array('observance', $typesLower, true) && !in_array('public', $typesLower, true)) {
+                continue;
+            }
+
+            $filtered[$dateKey] = [
+                'name'         => $holiday['name'] ?? 'Philippine Holiday',
+                'local_name'   => $holiday['localName'] ?? null,
+                'primary_type' => $primaryType,
+                'type'         => $types,
+                'date'         => $dateKey,
+            ];
         }
 
         return $filtered;

@@ -94,7 +94,7 @@ class PhilippineHolidayServiceTest extends TestCase
         Cache::forget('philippine_holidays_2099');
 
         Http::fake([
-            'https://calendarific.com/*' => Http::response('Server Error', 500),
+            'https://date.nager.at/*' => Http::response('Server Error', 500),
         ]);
 
         $check = $this->service->isAllowedBookingDate('2099-05-15');

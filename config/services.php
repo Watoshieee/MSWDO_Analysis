@@ -41,10 +41,6 @@ return [
         'model' => env('GROQ_MODEL') ?: 'openai/gpt-oss-120b',
     ],
 
-    'calendarific' => [
-        'key' => env('CALENDARIFIC_API_KEY'),
-    ],
-
     'onesignal' => [
         'app_id'  => env('ONESIGNAL_APP_ID', '3db6828d-49af-4f5a-8d89-ff0b90749aec'),
         'api_key' => env('ONESIGNAL_API_KEY', ''),
