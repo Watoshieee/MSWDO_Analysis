@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Announcement;
 use App\Models\FileUpload;
+use App\Models\ProgramRequirement;
 use App\Models\User;
 use App\Services\ApplicationService;
 use App\Services\AuthService;
@@ -17,6 +18,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -62,6 +64,11 @@ class MobileApiController extends Controller
             'municipality'  => 'required|string',
             'barangay'      => 'required|string',
             'gender'        => 'required|string|in:Male,Female',
+            'valid_id'      => 'required|file|mimes:jpeg,jpg,png,pdf|max:5120',
+        ], [
+            'valid_id.required' => 'Please upload a valid government-issued ID.',
+            'valid_id.mimes'    => 'Valid ID must be a JPG, PNG, or PDF file.',
+            'valid_id.max'      => 'Valid ID file must not exceed 5 MB.',
         ]);
 
         if ($validator->fails()) {
@@ -92,12 +99,27 @@ class MobileApiController extends Controller
             ], 422);
         }
 
+        DB::beginTransaction();
         try {
-            $user = $this->auth->register($request->all(), $age);
+            $user = $this->auth->register($request->all(), $age, $request->file('valid_id'));
+            DB::commit();
         } catch (\Exception $e) {
+            DB::rollBack();
+
+            // Clean up user-specific ID directory on disk if partially created
+            if (isset($user) && $user->id) {
+                try {
+                    Storage::disk('public')->deleteDirectory('valid-ids/' . $user->id);
+                } catch (\Exception $cleanupEx) {
+                    // Ignore cleanup error
+                }
+            }
+
+            Log::error('Mobile registration failed during user creation or ID storage: ' . $e->getMessage());
+
             return response()->json([
                 'success' => false,
-                'message' => 'Registration failed: ' . $e->getMessage(),
+                'message' => 'Registration failed: unable to process your valid ID. Please try again.',
             ], 500);
         }
 
@@ -1119,8 +1141,9 @@ class MobileApiController extends Controller
                 'rejection_reason' => $application->admin_remarks,
                     'can_resubmit'     => ($application->status ?? Application::STATUS_PENDING) === Application::STATUS_REJECTED,
                 'application_date' => $application->application_date ? $application->application_date->format('F d, Y') : null,
-                'stage'            => $application->stage,
-                'files'            => $files,
+                'stage'              => $application->stage,
+                'required_documents' => $this->getRequiredDocumentsForProgram($application->program_type ?? ''),
+                'files'              => $files,
             ],
         ]);
     }
@@ -1177,6 +1200,92 @@ class MobileApiController extends Controller
                 'message' => 'Failed to re-submit application: ' . $e->getMessage(),
             ], 500);
         }
+    }
+
+    /**
+     * Get the authoritative list of required documents for a program type.
+     */
+    private function getRequiredDocumentsForProgram(string $programType): array
+    {
+        // PWD program
+        if (in_array($programType, ['PWD_Assistance', 'PWD_New', 'PWD', 'PWD_Renewal'], true)) {
+            return [
+                'Completed PRPWD Application Form',
+                'Certificate of Disability (original + 1 photocopy)',
+                'Two (2) recent 1×1 ID pictures',
+                'Valid government-issued ID',
+            ];
+        }
+
+        // Solo Parent program
+        if (in_array($programType, ['Solo_Parent', 'Solo Parent'], true)) {
+            return [
+                'PSA Birth Certificate of Child/Children',
+                'Barangay Certificate (stating you are a solo parent)',
+                'Valid Government-Issued ID',
+                'CENOMAR or PSA Marriage Certificate',
+                'Death Certificate of Spouse (if widowed) / Police Report (if abandoned)',
+                '2x2 ID Photo (recent, white background)',
+            ];
+        }
+
+        // Map program type to program_requirements table key
+        $programTypeMap = [
+            'Senior_Citizen_Pension' => 'Senior_Citizen',
+            'Senior Citizen Pension' => 'Senior_Citizen',
+            'Senior_Citizen'         => 'Senior_Citizen',
+            'AICS'                   => 'AICS_Medical',
+            'AICS_Medical'           => 'AICS_Medical',
+            'AICS_Burial'            => 'AICS_Burial',
+            'SLP'                    => 'SLP',
+            'ESA'                    => 'ESA',
+            '4Ps'                    => '4Ps',
+        ];
+
+        $key = $programTypeMap[$programType] ?? $programType;
+        $dbReqs = ProgramRequirement::where('program_type', $key)
+            ->pluck('requirement_name')
+            ->toArray();
+
+        if (!empty($dbReqs)) {
+            return $dbReqs;
+        }
+
+        // Fallbacks matching AllProgramRequirementsSeeder if DB rows are missing
+        if ($programType === 'AICS_Burial') {
+            return [
+                'Certificate of Indigency',
+                'Death Certificate',
+                'Marriage Contract',
+                'Birth Certificate',
+                'Valid IDs',
+                'Authorization Letter',
+            ];
+        }
+
+        if ($programType === 'AICS_Medical' || $programType === 'AICS') {
+            return [
+                'Certificate of Indigency (Original)',
+                'Medical Certificate',
+                'Marriage Contract (if spouse)',
+                'Birth Certificate (if parent/children)',
+                'Photocopy of ID (patient & claimant)',
+                'Authorization Letter (if applicable)',
+            ];
+        }
+
+        if (str_contains($programType, 'Senior')) {
+            return [
+                'OSCA Application Form',
+                'ID Photos',
+                'Birth Certificate / Valid ID',
+                'Barangay Certificate (if needed)',
+                "Voter's Certification (if needed)",
+                'Authorization Letter (if applicable)',
+            ];
+        }
+
+        return [];
     }
 
     public function logout(Request $request): JsonResponse

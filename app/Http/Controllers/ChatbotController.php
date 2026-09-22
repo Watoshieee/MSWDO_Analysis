@@ -29,7 +29,7 @@ class ChatbotController extends Controller
         ]);
 
         $message = trim($request->input('message'));
-        $user    = Auth::user();
+        $user    = Auth::user() ?? auth('sanctum')->user();
         $lang    = $this->detectLanguage($message);
         $isPersonalAppQuestion = $this->isPersonalApplicationQuestion($message);
 
