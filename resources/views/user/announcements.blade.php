@@ -25,22 +25,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         body { background: #e2e8f0; font-family: 'Inter', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
         a { text-decoration: none; }
 
-        /* ── NAVBAR ── */
-        .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
-        .navbar-brand { font-weight: 800; font-size: 1.5rem; color: white !important; display: flex; align-items: center; gap: 10px; }
-        .navbar-toggler { order: -1; }
-        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
-        @media (min-width: 992px) {
-            .navbar-toggler { order: 0; }
-            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
-        }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; border-radius: 8px; padding: 10px 18px !important; font-size: 0.92rem; transition: all 0.2s; }
-        .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
-        .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-info { color: white; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1); padding: 9px 22px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; }
-        .logout-btn { background: transparent; border: 2px solid rgba(255,255,255,0.7); color: white; border-radius: 30px; padding: 6px 18px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.25s; }
-        .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
-
+        /* Shared navbar styles handled by components.user-navbar */
         /* ── HERO ── */
         .hero {
             background: var(--primary-gradient);
@@ -163,49 +148,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .pagination .page-item.active .page-link { background: var(--primary-blue); border-color: var(--primary-blue); }
 
         /* ── FOOTER ── */
-        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.83rem; }
+        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.83rem; margin-top: auto; }
         .footer-strip strong { color: white; }
-    </style>
+    
+    
+        html { background: #1A2A5C; }
+        body { padding-bottom: 0 !important; }
+</style>
 </head>
 <body>
 
     <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/user/dashboard">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/user/dashboard">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/user/programs">Programs</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('user.announcements') }}">Announcements</a></li>
-                </ul>
-                <div class="d-flex align-items-center gap-3">
-                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal"
-                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
-                        title="Notifications">
-                        <i class="bi bi-bell-fill"></i>
-                        @if(isset($notificationCount) && $notificationCount > 0)
-                        <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $notificationCount > 9 ? '9+' : $notificationCount }}</span>
-                        @endif
-                    </button>
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('components.user-navbar', ['active' => 'announcements'])
 
     <!-- HERO -->
     <section class="hero">
@@ -308,10 +262,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
-    <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
 
+
+    <div class="footer-strip"></div>
     @include('components.user-notification-modal')
     @include('components.chat-modal')
     @include('components.chatbot-widget')

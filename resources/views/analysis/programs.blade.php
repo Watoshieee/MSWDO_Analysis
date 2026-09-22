@@ -35,6 +35,9 @@
         body {
             background: #e2e8f0 !important;
             font-family: 'Inter', 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         /* ===== NAVBAR ===== */
@@ -606,6 +609,7 @@
             padding: 20px;
             font-size: 0.88rem;
             letter-spacing: 0.01em;
+            margin-top: auto;
         }
 
         .border-light {
@@ -842,7 +846,10 @@
         .aics-tab-content.active {
             display: block;
         }
-    </style>
+    
+        html { background: #1A2A5C; }
+        body { padding-bottom: 0 !important; }
+</style>
 </head>
 
 <body>
@@ -1230,9 +1237,7 @@
 
 
     <!-- ===== FOOTER ===== -->
-    <div class="footer-strip">
-        MSWDO &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
+    <div class="footer-strip"></div>
 
     <!-- Program Modal -->
     <div class="modal fade" id="programModal" tabindex="-1">
@@ -1892,7 +1897,8 @@
                         transform: translateY(0);
                     }
                 }
-            </style>
+            
+    </style>
             <a href="{{ route('admin.dashboard') }}" class="admin-back-btn" title="Return to Admin Dashboard">
                 <span class="abtn-arrow">&#8592;</span>
                 <span class="abtn-dot"></span>

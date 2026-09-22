@@ -153,7 +153,7 @@
         .reupload-form { background: #FFF3D6; border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
 
         /* Footer */
-        .footer-strip { background: var(--primary-gradient); color: white; text-align: center; padding: 18px; font-size: 0.85rem; margin-top: 40px; }
+        .footer-strip { background: var(--primary-gradient); color: white; text-align: center; padding: 18px; font-size: 0.85rem; margin-top: auto; }
         
         /* Scroll highlight animation */
         @keyframes highlightPulse {
@@ -216,45 +216,16 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-    </style>
+    
+    
+        html { background: #1A2A5C; }
+        body { padding-bottom: 0 !important; }
+</style>
 </head>
 <body>
 
     <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/user/dashboard">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/user/dashboard">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/user/programs">Programs</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
-                </ul>
-                <div class="d-flex align-items-center gap-3">
-                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal" style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;" title="Notifications">
-                        <i class="bi bi-bell-fill"></i>
-                        @if(isset($notificationCount) && $notificationCount > 0)
-                        <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $notificationCount > 9 ? '9+' : $notificationCount }}</span>
-                        @endif
-                    </button>
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('components.user-navbar', ['active' => 'my-requirements'])
 
     <!-- ===== HERO BANNER ===== -->
     <section class="hero-banner">
@@ -456,9 +427,7 @@
         </div>
     </div>
 
-    <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
+    <div class="footer-strip"></div>
 
     {{-- Loading overlay --}}
     <div id="uiLoadingBackdrop" class="ui-loading-backdrop" aria-hidden="true">

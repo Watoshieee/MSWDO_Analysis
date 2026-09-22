@@ -38,9 +38,9 @@
         .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.85rem; white-space: nowrap; }
         .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-info { color:white; display:flex; align-items:center; gap:8px; background:rgba(255,255,255,0.1); padding:9px 14px; border-radius:40px; font-size:0.9rem; font-weight:600; }
-        .user-info .name-text { display:inline-block; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:100px; vertical-align:middle; cursor:default; }
-        .logout-btn { background:transparent; border:2px solid rgba(255,255,255,0.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; transition:all 0.3s; font-size:0.88rem; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+        .user-info { color:white; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.1); padding:9px 22px; border-radius:40px; font-size:0.9rem; font-weight:600; max-width: 100%; }
+        .user-info span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
+        .logout-btn { background:transparent; border:2px solid rgba(255,255,255,0.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; transition:all 0.3s; font-size:0.88rem; cursor:pointer; }
         .logout-btn:hover { background:var(--secondary-yellow); color:var(--primary-blue); border-color:var(--secondary-yellow); }
 
         /* ── HERO BANNER ── */
@@ -133,59 +133,7 @@
 <body>
 
     <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/admin/dashboard">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link active" href="/admin/dashboard">Dashboard</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.requirements*') ? 'active' : '' }}"
-                           href="{{ route('admin.requirements') }}">Applications</a>
-                    </li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.data.*') ? 'active' : '' }}"
-                           href="{{ route('admin.data.dashboard') }}">Data Management</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}"
-                           href="{{ route('admin.announcements.index') }}">Announcements</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.detailed*') ? 'active' : '' }}"
-                           href="{{ route('admin.detailed-analysis') }}">Analysis</a>
-                    </li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
-                </ul>
-                <div class="d-flex align-items-center gap-3">
-                    @auth
-                    {{-- Admin notification bell --}}
-                    <button type="button" class="btn" onclick="openAdminNotifModal()"
-                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
-                        title="Application Notifications">
-                        <i class="bi bi-bell-fill"></i>
-                        @if(isset($adminNotifCount) && $adminNotifCount > 0)
-                        <span class="admin-bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $adminNotifCount > 9 ? '9+' : $adminNotifCount }}</span>
-                        @endif
-                    </button>
-                    <div class="user-info">
-                        <span class="name-text" title="{{ Auth::user()->full_name }}">{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                    @endauth
-                </div>
-            </div>
-        </div>
-    </nav>
+@include('components.admin-navbar')
 
     <!-- HERO BANNER -->
     <section class="hero-banner">
@@ -450,10 +398,9 @@
     </div>
     </div>
 
-    <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
 
+
+    <div class="footer-strip"></div>
     @include('components.admin-chat-modal')
     @include('components.admin-settings-modal')
     @include('components.admin-notification-modal')

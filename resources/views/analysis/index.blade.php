@@ -27,6 +27,9 @@
             background: #e2e8f0;
             font-family: 'Inter', sans-serif;
             margin: 0;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         .navbar {
@@ -389,6 +392,7 @@
             text-align: center;
             padding: 20px;
             font-size: .88rem;
+            margin-top: auto;
         }
 
         @media(max-width:768px) {
@@ -396,7 +400,10 @@
                 font-size: 1.8rem;
             }
         }
-    </style>
+    
+        html { background: #1A2A5C; }
+        body { padding-bottom: 0 !important; }
+</style>
 </head>
 
 <body>
@@ -449,6 +456,7 @@
                             <li class="nav-item"><a class="nav-link" href="/analysis">Programs</a></li>
                             <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
                             <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
+                              <li class="nav-item"><a class="nav-link" href="{{ route('user.dashboard') }}" style="color:var(--secondary-yellow, #FDB913)!important;"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a></li>
                         </ul>
                         <div class="d-flex">
                             <div class="user-info"><span>{{ Auth::user()->full_name }}</span>
@@ -1027,7 +1035,7 @@
                 <div class="col-lg-5">
                     <div class="card-base h-100">
                         <h6 style="font-weight:700;color:var(--blue);">Dependency Ratios</h6>
-                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">(Youth + Senior) / Working Age Ã—
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">(Youth + Senior) / Working Age ×
                             100</p>
                         @foreach($coreNames as $n)
                             <div style="margin-bottom:18px;">
@@ -1474,7 +1482,8 @@
             <style>.admin-back-btn{position:fixed;bottom:28px;left:28px;z-index:9999;display:flex;align-items:center;gap:10px;background:var(--grad);color:#fff;border:none;border-radius:50px;padding:12px 22px 12px 16px;font-family:'Inter',sans-serif;font-weight:800;font-size:.85rem;box-shadow:0 8px 28px rgba(44,62,143,.4);cursor:pointer;text-decoration:none;transition:all .3s;}.admin-back-btn:hover{transform:translateY(-4px);color:#fff;}</style>
             <a href="{{ route('superadmin.dashboard') }}" class="admin-back-btn">&#8592; Super Admin Dashboard</a>
         @elseif(Auth::user()->isAdmin())
-            <style>.admin-back-btn{position:fixed;bottom:28px;left:28px;z-index:9999;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#FDB913,#E5A500);color:#1A2A5C;border:none;border-radius:50px;padding:12px 22px 12px 16px;font-family:'Inter',sans-serif;font-weight:800;font-size:.85rem;box-shadow:0 8px 28px rgba(253,185,19,.45);cursor:pointer;text-decoration:none;transition:all .3s;}.admin-back-btn:hover{transform:translateY(-4px);color:#1A2A5C;}</style>
+            <style>.admin-back-btn{position:fixed;bottom:28px;left:28px;z-index:9999;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#FDB913,#E5A500);color:#1A2A5C;border:none;border-radius:50px;padding:12px 22px 12px 16px;font-family:'Inter',sans-serif;font-weight:800;font-size:.85rem;box-shadow:0 8px 28px rgba(253,185,19,.45);cursor:pointer;text-decoration:none;transition:all .3s;}.admin-back-btn:hover{transform:translateY(-4px);color:#1A2A5C;}
+    </style>
             <a href="{{ route('admin.dashboard') }}" class="admin-back-btn">&#8592; Admin Dashboard</a>
         @endif
     @endauth
@@ -1642,6 +1651,8 @@
             });
         });
     </script>
+
+    <div class="footer-strip"></div>
 </body>
 
 </html>

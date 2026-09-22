@@ -751,7 +751,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     </div>
 
     <footer class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
+        
     </footer>
 
     <!-- ==================== CREATE USER MODAL ==================== -->

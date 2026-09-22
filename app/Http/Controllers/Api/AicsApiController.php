@@ -148,11 +148,11 @@ class AicsApiController extends Controller
         ], 201);
     }
 
-    // ── Shared push notification helper (DB first, then OneSignal) ───────────
+        // ── Shared push notification helper (DB first, then OneSignal) ───────────
     private function sendPushNotification(int $userId, string $title, string $body, string $type = 'aics'): void
     {
         try {
-            \DB::table('notifications')->insert([
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $userId,
                 'type'       => $type,
                 'title'      => $title,
@@ -161,43 +161,9 @@ class AicsApiController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($userId, $title, $body, $type, $notifId);
         } catch (\Exception $e) {
-            Log::error('AICS: Failed to insert notification', ['error' => $e->getMessage()]);
-        }
-
-        try {
-            $oneSignalKey = env('ONESIGNAL_API_KEY', '');
-            if (!$oneSignalKey) return;
-
-            $payload = [
-                'app_id'          => env('ONESIGNAL_APP_ID', '3db6828d-49af-4f5a-8d89-ff0b90749aec'),
-                'target_channel'  => 'push',
-                'include_aliases' => ['external_id' => [(string) $userId]],
-                'headings'        => ['en' => $title],
-                'contents'        => ['en' => $body],
-                'data'            => ['type' => $type],
-                'priority'        => 10,
-            ];
-
-            $ch = curl_init('https://api.onesignal.com/notifications');
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST           => true,
-                CURLOPT_HTTPHEADER     => [
-                    'Content-Type: application/json; charset=utf-8',
-                    'Authorization: Key ' . $oneSignalKey,
-                ],
-                CURLOPT_POSTFIELDS     => json_encode($payload),
-                CURLOPT_TIMEOUT        => 10,
-            ]);
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-            if ($httpCode !== 200 && $httpCode !== 201) {
-                Log::warning('AICS: OneSignal push failed', ['http_code' => $httpCode]);
-            }
-        } catch (\Exception $e) {
-            Log::error('AICS: Push notification exception', ['error' => $e->getMessage()]);
+            Log::error('AICS: Failed to insert or push notification', ['error' => $e->getMessage()]);
         }
     }
 

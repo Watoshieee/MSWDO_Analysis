@@ -430,15 +430,18 @@ class AdminController extends Controller
         $label = $isPwd ? 'PWD ID' : ($isAics ? 'AICS grant' : 'Solo Parent ID');
         $programLabel = $isPwd ? 'pwd' : ($isAics ? 'aics' : 'solo_parent');
         try {
-            \DB::table('notifications')->insert([
+            $notifTitle = $label . ' Ready for Pickup';
+            $notifBody  = 'Your ' . $label . ' is now ready for pickup at the MSWDO office. Please bring a valid ID when claiming.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $application->user_id,
                 'type'       => $programLabel,
-                'title'      => $label . ' Ready for Pickup',
-                'body'       => 'Your ' . $label . ' is now ready for pickup at the MSWDO office. Please bring a valid ID when claiming.',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, $programLabel, $notifId);
         } catch (\Exception $e) {
             Log::error('markIdReady notification insert failed: ' . $e->getMessage());
         }
@@ -508,15 +511,18 @@ class AdminController extends Controller
 
         // ── Bell notification ────────────────────────────────────────────────
         try {
-            \DB::table('notifications')->insert([
+            $notifTitle = 'Solo Parent ID Claimed';
+            $notifBody  = 'Your Solo Parent ID has been successfully claimed and recorded. Congratulations!';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $application->user_id,
                 'type'       => 'solo_parent',
-                'title'      => '✅ Solo Parent ID Claimed',
-                'body'       => 'Your Solo Parent ID has been successfully claimed and recorded. Congratulations!',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'solo_parent', $notifId);
         } catch (\Exception $e) {
             Log::error('markClaimed notification insert failed: ' . $e->getMessage());
         }
@@ -582,15 +588,18 @@ class AdminController extends Controller
 
         // ── Bell notification ──────────────────────────────────────────────────
         try {
-            \DB::table('notifications')->insert([
+            $notifTitle = $programLabel . ' Grant Released';
+            $notifBody  = 'Your ' . $programLabel . ' grant has been successfully released. Thank you for availing MSWDO assistance.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $application->user_id,
                 'type'       => 'aics',
-                'title'      => '✅ ' . $programLabel . ' Grant Released',
-                'body'       => 'Your ' . $programLabel . ' grant has been successfully released. Thank you for availing MSWDO assistance.',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'aics', $notifId);
         } catch (\Exception $e) {
             Log::error('markReleased notification insert failed: ' . $e->getMessage());
         }
@@ -637,15 +646,18 @@ class AdminController extends Controller
 
         // ── Create in-app notification ───────────────────────────────────
         try {
-            \DB::table('notifications')->insert([
+            $notifTitle = 'PWD Application Validated';
+            $notifBody  = 'Your PWD application requirements have been validated. Your PWD ID is now being processed.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $application->user_id,
                 'type'       => 'pwd',
-                'title'      => 'PWD Application Validated',
-                'body'       => 'Your PWD application requirements have been validated. Your PWD ID is now being processed.',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'pwd', $notifId);
         } catch (\Exception $e) {
             Log::error('PWD validate notification insert failed: ' . $e->getMessage());
         }
@@ -901,7 +913,7 @@ class AdminController extends Controller
             }
 
             try {
-                \DB::table('notifications')->insert([
+                $notifId = \DB::table('notifications')->insertGetId([
                     'user_id'    => $fileMonitoring->application->user_id,
                     'type'       => $notifType,
                     'title'      => $notifTitle,
@@ -910,6 +922,7 @@ class AdminController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                \App\Services\OneSignalService::sendPush($fileMonitoring->application->user_id, $notifTitle, $notifBody, $notifType, $notifId);
             } catch (\Exception $e) {
                 Log::error('File status notification insert failed: ' . $e->getMessage());
             }
@@ -1375,7 +1388,7 @@ class AdminController extends Controller
             }
 
             try {
-                \DB::table('notifications')->insert([
+                $notifId = \DB::table('notifications')->insertGetId([
                     'user_id'    => $application->user_id,
                     'type'       => $notifType,
                     'title'      => $notifTitle,
@@ -1384,6 +1397,7 @@ class AdminController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, $notifType, $notifId);
             } catch (\Exception $e) {
                 Log::error('Application status notification insert failed: ' . $e->getMessage());
             }

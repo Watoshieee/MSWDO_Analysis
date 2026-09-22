@@ -32,23 +32,7 @@
         body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; }
         a { text-decoration: none; color: inherit; }
 
-        /* ── NAVBAR ── */
-        .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
-        .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display: flex; align-items: center; gap: 10px; }
-        .navbar-toggler { order: -1; }
-        .navbar-brand { order: 0; margin-left: auto; margin-right: 0; }
-        @media (min-width: 992px) {
-            .navbar-toggler { order: 0; }
-            .navbar-brand { order: 0; margin-left: 0; margin-right: auto; }
-        }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 8px 14px !important; font-size: 0.88rem; white-space: nowrap; }
-        .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
-        .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .navbar-nav { flex-wrap: nowrap; }
-        .user-info { color: white; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1); padding: 9px 22px; border-radius: 40px; font-size: 0.92rem; font-weight: 600; white-space: nowrap; }
-        .logout-btn { background: transparent; border: 2px solid rgba(255,255,255,0.8); color: white; border-radius: 30px; padding: 6px 18px; font-weight: 700; transition: all 0.3s; font-size: 0.88rem; cursor: pointer; }
-        .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
-
+        /* Shared navbar styles handled by components.user-navbar */
         /* ── HERO BANNER ── */
         .hero-banner {
             background: var(--primary-gradient);
@@ -219,54 +203,170 @@
         .btn-browse { background: var(--primary-gradient); color: white; border: none; border-radius: 10px; padding: 10px 24px; font-weight: 700; font-size: 0.88rem; display: inline-block; cursor: pointer; transition: all 0.25s; }
         .btn-browse:hover { color: white; box-shadow: 0 6px 20px rgba(44,62,143,0.3); transform: translateY(-1px); }
 
+        
+        /* Mobile App Promotion Card */
+        .app-promo-card {
+            background: white;
+            border-radius: 18px;
+            border: 1px solid var(--border-light);
+            box-shadow: 0 4px 18px rgba(44, 62, 143, 0.06);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.25s ease, box-shadow 0.25s ease;
+        }
+        .app-promo-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-blue) 0%, var(--secondary-yellow) 100%);
+        }
+        .app-promo-inner {
+            padding: 24px 28px;
+            background: linear-gradient(135deg, #FAFBFD 0%, #FFFFFF 50%, #F5F8FF 100%);
+        }
+        .app-promo-badge {
+            background: var(--bg-soft-blue);
+            color: var(--primary-blue);
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border-radius: 20px;
+            padding: 4px 12px;
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid rgba(44, 62, 143, 0.12);
+        }
+        .app-promo-pill-sub {
+            background: #E8F5E9;
+            color: #2E7D32;
+            font-size: 0.72rem;
+            font-weight: 800;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            border-radius: 20px;
+            padding: 4px 10px;
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid rgba(46, 125, 50, 0.15);
+        }
+        .app-promo-title {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            margin-bottom: 6px;
+            letter-spacing: -0.01em;
+        }
+        .app-promo-desc {
+            font-size: 0.92rem;
+            color: var(--text-mid);
+            line-height: 1.55;
+            margin-bottom: 14px;
+            max-width: 620px;
+        }
+        .app-promo-features {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+        }
+        .promo-feature {
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-mid);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .promo-feature i {
+            color: var(--primary-blue);
+            font-size: 0.9rem;
+        }
+        .app-promo-actions {
+            display: inline-flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+        .btn-app-promo {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: var(--primary-gradient);
+            color: white !important;
+            font-weight: 700;
+            font-size: 0.92rem;
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            text-decoration: none;
+            transition: all 0.25s ease;
+            box-shadow: 0 4px 14px rgba(44, 62, 143, 0.22);
+            white-space: nowrap;
+        }
+        .btn-app-promo:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 24px rgba(44, 62, 143, 0.32);
+            color: white !important;
+        }
+        .btn-app-promo i {
+            font-size: 1.1rem;
+            color: var(--secondary-yellow);
+        }
+        .app-promo-footnote {
+            font-size: 0.74rem;
+            color: var(--text-light);
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+        }
+        @media (max-width: 767px) {
+            .app-promo-inner {
+                padding: 18px 20px;
+            }
+            .app-promo-title {
+                font-size: 1.18rem;
+            }
+            .app-promo-desc {
+                font-size: 0.86rem;
+            }
+            .app-promo-actions {
+                align-items: stretch;
+                width: 100%;
+                margin-top: 6px;
+            }
+            .btn-app-promo {
+                width: 100%;
+                padding: 12px 18px;
+                font-size: 0.9rem;
+            }
+            .app-promo-footnote {
+                justify-content: center;
+            }
+        }
+
         /* Main content */
         .main-content { flex: 1; padding-bottom: 0; margin-bottom: 0; }
 
         /* Footer */
-        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.84rem; margin-top: 0; }
+        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.84rem; margin-top: auto; }
         .footer-strip strong { color: white; }
 
         /* Session alerts */
         .session-alert { border-radius: 14px; border: none; font-size: 0.9rem; }
-    </style>
+    
+    
+        html { background: #1A2A5C; }
+        body { padding-bottom: 0 !important; }
+</style>
 </head>
 <body>
 
     <!-- ===== NAVBAR ===== -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/user/dashboard">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link active" href="/user/dashboard">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/user/programs">Programs</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
-                </ul>
-                <div class="d-flex align-items-center gap-3">
-                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal" style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;" title="Notifications">
-                        <i class="bi bi-bell-fill"></i>
-                        @if(isset($notificationCount) && $notificationCount > 0)
-                        <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $notificationCount > 9 ? '9+' : $notificationCount }}</span>
-                        @endif
-                    </button>
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('components.user-navbar', ['active' => 'dashboard'])
 
     <!-- ===== HERO BANNER ===== -->
     <section class="hero-banner">
@@ -331,6 +431,43 @@
         </div>
 
 
+
+        
+        {{-- Dedicated Mobile App Promotion Section --}}
+        <div class="app-promo-card mb-4">
+            <div class="app-promo-inner">
+                <div class="row align-items-center g-3">
+                    <div class="col-lg-8 col-md-7">
+                        <div class="d-flex align-items-center gap-2 mb-2">
+                            <span class="app-promo-badge">
+                                <i class="bi bi-phone-fill me-1"></i> Official Mobile App
+                            </span>
+                            <span class="app-promo-pill-sub">
+                                <i class="bi bi-android2 me-1"></i> Android Only
+                            </span>
+                        </div>
+                        <h3 class="app-promo-title">Get the MSWDO Mobile App</h3>
+                        <p class="app-promo-desc">Access MSWDO services and keep track of your applications more conveniently using our mobile app.</p>
+                        <div class="app-promo-features">
+                            <span class="promo-feature"><i class="bi bi-check-circle-fill"></i> Track Applications</span>
+                            <span class="promo-feature"><i class="bi bi-check-circle-fill"></i> Manage Requirements</span>
+                            <span class="promo-feature"><i class="bi bi-check-circle-fill"></i> Real-time Updates</span>
+                        </div>
+                    </div>
+                    <div class="col-lg-4 col-md-5 text-md-end text-start">
+                        <div class="app-promo-actions">
+                            <a href="{{ route('user.download-app') }}" class="btn-app-promo">
+                                <i class="bi bi-download"></i>
+                                <span>Download Mobile App</span>
+                            </a>
+                            <div class="app-promo-footnote">
+                                <i class="bi bi-patch-check text-primary me-1"></i> Available for Android devices only
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
         {{-- Programs --}}
         <div class="section-header mb-3">
@@ -512,10 +649,9 @@
     </div>
     </div>
 
-    <footer class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </footer>
 
+
+    <footer class="footer-strip"></footer>
     @include('components.user-notification-modal')
 
     @include('components.chat-modal')

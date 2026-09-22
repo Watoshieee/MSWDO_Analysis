@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -214,35 +214,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     </style>
 </head>
 <body>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container-fluid px-4">
-            <a class="navbar-brand" href="{{ route('admin.dashboard') }}">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Detailed Analysis</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.applications') }}">Applications</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('admin.settings') }}">⚙️ Settings</a></li>
-                </ul>
-                <div class="d-flex">
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+@include('components.admin-navbar')
 
     <section class="hero-banner">
         <div class="container">
@@ -303,10 +275,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
-    <footer class="footer-strip">
-        <strong>MSWDO</strong> – Municipal Social Welfare & Development Office © {{ date('Y') }}
-    </footer>
 
+
+    <footer class="footer-strip"></footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const CSRF = document.querySelector('meta[name="csrf-token"]').content;

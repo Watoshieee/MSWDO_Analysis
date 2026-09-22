@@ -97,15 +97,19 @@ class AppointmentController extends Controller
 
         // Bell notification for user
         try {
-            \DB::table('notifications')->insert([
+            $notifType  = 'solo_parent';
+            $notifTitle = '✅ Appointment Confirmed';
+            $notifBody  = 'Your ' . str_replace('_', ' ', $appt->program_type) . ' appointment on ' . \Carbon\Carbon::parse($appt->appointment_date)->format('F d, Y') . ' has been confirmed by the admin.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $appt->user_id,
-                'type'       => 'solo_parent',
-                'title'      => '✅ Appointment Confirmed',
-                'body'       => 'Your ' . str_replace('_', ' ', $appt->program_type) . ' appointment on ' . \Carbon\Carbon::parse($appt->appointment_date)->format('F d, Y') . ' has been confirmed by the admin.',
+                'type'       => $notifType,
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($appt->user_id, $notifTitle, $notifBody, $notifType, $notifId);
         } catch (\Exception $e) {
             Log::error('Appointment confirm bell notification failed: ' . $e->getMessage());
         }
@@ -176,15 +180,19 @@ class AppointmentController extends Controller
 
             // Bell notification for user
             try {
-                \DB::table('notifications')->insert([
-                    'user_id'    => $appt->user_id,
-                    'type'       => 'solo_parent',
-                    'title'      => '🏆 You Are Eligible for Solo Parent ID',
-                    'body'       => 'Congratulations! You passed the eligibility check. Please log in and submit your requirements to proceed.',
-                    'is_read'    => false,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+                $notifType  = 'solo_parent';
+            $notifTitle = '🏆 You Are Eligible for Solo Parent ID';
+            $notifBody  = 'Congratulations! You passed the eligibility check. Please log in and submit your requirements to proceed.';
+            $notifId = \DB::table('notifications')->insertGetId([
+                'user_id'    => $appt->user_id,
+                'type'       => $notifType,
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            \App\Services\OneSignalService::sendPush($appt->user_id, $notifTitle, $notifBody, $notifType, $notifId);
             } catch (\Exception $e) {
                 Log::error('Solo Parent eligibility bell notification failed: ' . $e->getMessage());
             }
@@ -224,15 +232,19 @@ class AppointmentController extends Controller
 
         // Bell notification for user
         try {
-            \DB::table('notifications')->insert([
+            $notifType  = 'aics';
+            $notifTitle = '🏆 Eligible for ' . $aicsLabel;
+            $notifBody  = 'Congratulations! Your eligibility assessment is complete. Please log in and submit your requirements to proceed with your ' . $aicsLabel . ' application.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $appt->user_id,
-                'type'       => 'aics',
-                'title'      => '🏆 Eligible for ' . $aicsLabel,
-                'body'       => 'Congratulations! Your eligibility assessment is complete. Please log in and submit your requirements to proceed with your ' . $aicsLabel . ' application.',
+                'type'       => $notifType,
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($appt->user_id, $notifTitle, $notifBody, $notifType, $notifId);
         } catch (\Exception $e) {
             Log::error('AICS validated bell notification failed: ' . $e->getMessage());
         }
@@ -269,15 +281,19 @@ class AppointmentController extends Controller
 
         // Bell notification for user
         try {
-            \DB::table('notifications')->insert([
+            $notifType  = 'solo_parent';
+            $notifTitle = '❌ Appointment Rejected';
+            $notifBody  = 'Your ' . str_replace('_', ' ', $appt->program_type) . ' appointment has been rejected.' . ($appt->admin_notes ? ' Reason: ' . $appt->admin_notes : '');
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $appt->user_id,
-                'type'       => 'solo_parent',
-                'title'      => '❌ Appointment Rejected',
-                'body'       => 'Your ' . str_replace('_', ' ', $appt->program_type) . ' appointment has been rejected.' . ($appt->admin_notes ? ' Reason: ' . $appt->admin_notes : ''),
+                'type'       => $notifType,
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($appt->user_id, $notifTitle, $notifBody, $notifType, $notifId);
         } catch (\Exception $e) {
             Log::error('Appointment reject bell notification failed: ' . $e->getMessage());
         }
@@ -372,15 +388,19 @@ class AppointmentController extends Controller
 
         // Bell notification for user
         try {
-            \DB::table('notifications')->insert([
+            $notifType  = 'solo_parent';
+            $notifTitle = '🔄 Reschedule Request Approved';
+            $notifBody  = 'Your reschedule request has been approved. Your appointment is now on ' . \Carbon\Carbon::parse($appt->appointment_date)->format('F d, Y') . '.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $appt->user_id,
-                'type'       => 'solo_parent',
-                'title'      => '🔄 Reschedule Request Approved',
-                'body'       => 'Your reschedule request has been approved. Your appointment is now on ' . \Carbon\Carbon::parse($appt->appointment_date)->format('F d, Y') . '.',
+                'type'       => $notifType,
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($appt->user_id, $notifTitle, $notifBody, $notifType, $notifId);
         } catch (\Exception $e) {
             Log::error('Reschedule approval bell notification failed: ' . $e->getMessage());
         }
@@ -413,15 +433,19 @@ class AppointmentController extends Controller
 
         // Bell notification for user
         try {
-            \DB::table('notifications')->insert([
+            $notifType  = 'solo_parent';
+            $notifTitle = '🔄 Reschedule Request Rejected';
+            $notifBody  = 'Your reschedule request was not approved.' . ($appt->reschedule_admin_notes ? ' Reason: ' . $appt->reschedule_admin_notes : '') . ' Your original appointment remains.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $appt->user_id,
-                'type'       => 'solo_parent',
-                'title'      => '🔄 Reschedule Request Rejected',
-                'body'       => 'Your reschedule request was not approved.' . ($appt->reschedule_admin_notes ? ' Reason: ' . $appt->reschedule_admin_notes : '') . ' Your original appointment remains.',
+                'type'       => $notifType,
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($appt->user_id, $notifTitle, $notifBody, $notifType, $notifId);
         } catch (\Exception $e) {
             Log::error('Reschedule rejection bell notification failed: ' . $e->getMessage());
         }
@@ -486,15 +510,19 @@ class AppointmentController extends Controller
 
         // Bell notification for user
         try {
-            \DB::table('notifications')->insert([
+            $notifType  = 'solo_parent';
+            $notifTitle = '🔄 Appointment Rescheduled by Admin';
+            $notifBody  = 'The admin has rescheduled your appointment to ' . \Carbon\Carbon::parse($appt->appointment_date)->format('F d, Y') . '. Please check your updated appointment details.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $appt->user_id,
-                'type'       => 'solo_parent',
-                'title'      => '🔄 Appointment Rescheduled by Admin',
-                'body'       => 'The admin has rescheduled your appointment to ' . \Carbon\Carbon::parse($appt->appointment_date)->format('F d, Y') . '. Please check your updated appointment details.',
+                'type'       => $notifType,
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($appt->user_id, $notifTitle, $notifBody, $notifType, $notifId);
         } catch (\Exception $e) {
             Log::error('Admin reschedule bell notification failed: ' . $e->getMessage());
         }
@@ -524,15 +552,19 @@ class AppointmentController extends Controller
 
         // Bell notification for user
         try {
-            \DB::table('notifications')->insert([
+            $notifType  = 'solo_parent';
+            $notifTitle = '🚫 Cancellation Approved';
+            $notifBody  = 'Your appointment cancellation request has been approved. Your appointment has been cancelled.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $appt->user_id,
-                'type'       => 'solo_parent',
-                'title'      => '🚫 Cancellation Approved',
-                'body'       => 'Your appointment cancellation request has been approved. Your appointment has been cancelled.',
+                'type'       => $notifType,
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($appt->user_id, $notifTitle, $notifBody, $notifType, $notifId);
         } catch (\Exception $e) {
             Log::error('Cancellation approval bell notification failed: ' . $e->getMessage());
         }
@@ -564,15 +596,19 @@ class AppointmentController extends Controller
 
         // Bell notification for user
         try {
-            \DB::table('notifications')->insert([
+            $notifType  = 'solo_parent';
+            $notifTitle = '🚫 Cancellation Request Rejected';
+            $notifBody  = 'Your appointment cancellation request was not approved.' . ($appt->cancellation_admin_notes ? ' Reason: ' . $appt->cancellation_admin_notes : '') . ' Your appointment remains active.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $appt->user_id,
-                'type'       => 'solo_parent',
-                'title'      => '🚫 Cancellation Request Rejected',
-                'body'       => 'Your appointment cancellation request was not approved.' . ($appt->cancellation_admin_notes ? ' Reason: ' . $appt->cancellation_admin_notes : '') . ' Your appointment remains active.',
+                'type'       => $notifType,
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($appt->user_id, $notifTitle, $notifBody, $notifType, $notifId);
         } catch (\Exception $e) {
             Log::error('Cancellation rejection bell notification failed: ' . $e->getMessage());
         }

@@ -444,9 +444,8 @@ class SoloParentApiController extends Controller
 
     private function sendPushNotification(int $userId, string $title, string $body, string $type = 'solo_parent'): void
     {
-        // Always store in DB first — in-app notifications always work
         try {
-            \DB::table('notifications')->insert([
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $userId,
                 'type'       => $type,
                 'title'      => $title,
@@ -455,53 +454,9 @@ class SoloParentApiController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($userId, $title, $body, $type, $notifId);
         } catch (\Exception $e) {
-            Log::error('Failed to insert notification to DB', ['error' => $e->getMessage()]);
-        }
-
-        // Then attempt OneSignal push (non-blocking — failure won't break the response)
-        try {
-            $deviceToken = \DB::table('device_tokens')
-                ->where('user_id', $userId)
-                ->where('is_active', true)
-                ->value('token');
-
-            if (!$deviceToken) return;
-
-            $oneSignalAppId = env('ONESIGNAL_APP_ID', '3db6828d-49af-4f5a-8d89-ff0b90749aec');
-            $oneSignalKey   = env('ONESIGNAL_API_KEY', '');
-
-            if (!$oneSignalKey) return;
-
-            $payload = [
-                'app_id'          => $oneSignalAppId,
-                'target_channel'  => 'push',
-                'include_aliases' => ['external_id' => [(string) $userId]],
-                'headings'        => ['en' => $title],
-                'contents'        => ['en' => $body],
-                'data'            => ['type' => $type],
-                'priority'        => 10,
-            ];
-
-            $ch = curl_init('https://api.onesignal.com/notifications');
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST           => true,
-                CURLOPT_HTTPHEADER     => [
-                    'Content-Type: application/json; charset=utf-8',
-                    'Authorization: Key ' . $oneSignalKey,
-                ],
-                CURLOPT_POSTFIELDS     => json_encode($payload),
-                CURLOPT_TIMEOUT        => 10,
-            ]);
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-
-            if ($httpCode !== 200 && $httpCode !== 201) {
-                Log::warning('OneSignal push failed', ['http_code' => $httpCode, 'response' => $response]);
-            }
-        } catch (\Exception $e) {
-            Log::error('Push notification exception', ['error' => $e->getMessage()]);
+            Log::error('SoloParent: Failed to insert or push notification', ['error' => $e->getMessage()]);
         }
     }
 

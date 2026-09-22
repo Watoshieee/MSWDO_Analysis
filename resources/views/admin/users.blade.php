@@ -249,46 +249,7 @@
 <body>
 
     <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/admin/dashboard">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('admin.users') }}">Users Management</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
-                </ul>
-                <div class="d-flex align-items-center gap-3">
-                    @auth
-                    <button type="button" class="btn" onclick="openAdminNotifModal()"
-                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;position:relative;"
-                        title="Notifications">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16"><path d="M8 16a2 2 0 0 0 2-2H6a2 2 0 0 0 2 2zm.995-14.901a1 1 0 1 0-1.99 0A5.002 5.002 0 0 0 3 6c0 1.098-.5 6-2 7h14c-1.5-1-2-5.902-2-7 0-2.42-1.72-4.44-4.005-4.901z"/></svg>
-                        @if(isset($adminNotifCount) && $adminNotifCount > 0)
-                        <span style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $adminNotifCount > 9 ? '9+' : $adminNotifCount }}</span>
-                        @endif
-                    </button>
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                    @endauth
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('components.admin-navbar')
 
     <!-- HERO -->
     <div style="flex:1;">
@@ -531,9 +492,7 @@
         </div>
     </div>
 
-    <div class="footer-strip">
-        MSWDO &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
+    <div class="footer-strip"></div>
 
     @include('components.admin-notification-modal')
     @include('components.admin-chat-modal')

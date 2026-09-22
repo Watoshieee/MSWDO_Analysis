@@ -72,7 +72,7 @@ class AnnouncementController extends Controller
             $municipality = $admin->municipality;
         }
 
-        Announcement::create([
+        $ann = Announcement::create([
             'title'        => $request->title,
             'content'      => $request->input('content'),
             'type'         => $request->type,
@@ -81,6 +81,22 @@ class AnnouncementController extends Controller
             'created_by'   => $admin->id,
             'is_active'    => true,
         ]);
+
+        try {
+            \App\Services\OneSignalService::sendToAll(
+                title: $request->title ?: 'MSWDO Announcement',
+                body: mb_substr(strip_tags($request->input('content')), 0, 200),
+                type: 'announcement',
+                municipality: $municipality,
+                extraData: [
+                    'announcement_id' => $ann->id,
+                    'program_type'    => $request->program_type,
+                    'announcement_type' => $request->type,
+                ]
+            );
+        } catch (\Throwable $e) {
+            \Log::error('Announcement push notification failed: ' . $e->getMessage());
+        }
 
         return redirect()->route('admin.announcements.index')
             ->with('success', 'Announcement posted successfully.');

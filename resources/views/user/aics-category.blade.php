@@ -68,7 +68,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         /* FOOTER */
         .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.8); text-align: center; padding: 20px; font-size: 0.84rem; margin-top: auto; }
         .footer-strip strong { color: white; }
-    </style>
+    
+    
+        html { background: #1A2A5C; }
+        body { padding-bottom: 0 !important; }
+</style>
 </head>
 <body>
 
@@ -150,10 +154,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     </div>
     </div>
 
-    <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
 
+
+    <div class="footer-strip"></div>
     @include('components.chat-modal')
     @include('components.chatbot-widget')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

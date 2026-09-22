@@ -592,11 +592,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
-    <!-- ── FOOTER ── -->
-    <footer class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </footer>
 
+
+    <footer class="footer-strip"></footer>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         function calcTotal() {

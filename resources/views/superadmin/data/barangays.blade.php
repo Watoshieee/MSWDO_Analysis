@@ -674,10 +674,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
-    <footer class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </footer>
 
+
+    <footer class="footer-strip"></footer>
     <!-- Archived Barangays Modal -->
     <div class="modal fade" id="archivedBarangaysModal" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">

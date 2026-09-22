@@ -776,10 +776,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
-    <footer class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </footer>
 
+
+    <footer class="footer-strip"></footer>
     <!-- ========== EDIT MUNICIPALITY MODAL ========== -->
     <div class="modal fade" id="editMuniModal" tabindex="-1" aria-labelledby="editMuniModalLabel">
         <div class="modal-dialog modal-dialog-centered modal-lg modal-dialog-scrollable">

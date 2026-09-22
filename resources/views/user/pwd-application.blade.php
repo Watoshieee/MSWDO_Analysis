@@ -1205,7 +1205,11 @@
                 grid-template-columns: 1fr;
             }
         }
-    </style>
+    
+    
+        html { background: #1A2A5C; }
+        body { padding-bottom: 0 !important; }
+</style>
 </head>
 
 <body>
@@ -1917,9 +1921,7 @@
     </div>
     </div>
 
-    <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
+    <div class="footer-strip"></div>
 
     <div id="uiLoadingBackdrop" class="ui-loading-backdrop" aria-hidden="true">
         <div class="ui-loading-box">

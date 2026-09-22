@@ -94,20 +94,38 @@ class MobileApiController extends Controller
 
         try {
             $user = $this->auth->register($request->all(), $age);
-            $otpCode = $this->otp->generate($user);
-            $this->otp->sendVerificationEmail($user, $otpCode);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Registration successful! Check your Gmail for your password and OTP verification code.',
-                'data'    => ['email' => $user->email],
-            ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Registration failed: ' . $e->getMessage(),
             ], 500);
         }
+
+        // Generate OTP — always succeeds (stored in DB)
+        $otpCode = $this->otp->generate($user);
+
+        // Send verification email — if it fails, registration still succeeds.
+        // The user can request a resend from the OTP verification screen.
+        $emailSent = true;
+        try {
+            $this->otp->sendVerificationEmail($user, $otpCode);
+        } catch (\Exception $e) {
+            $emailSent = false;
+            Log::warning('Registration OTP email failed', [
+                'user_id' => $user->id,
+                'email'   => $user->email,
+                'error'   => $e->getMessage(),
+            ]);
+        }
+
+        return response()->json([
+            'success'     => true,
+            'email_sent'  => $emailSent,
+            'message'     => 'Registration successful! ' . ($emailSent
+                ? 'Check your Gmail for your password and OTP verification code.'
+                : 'Your account was created, but we could not send the verification email. Please tap "Resend OTP" on the next screen.' ),
+            'data'        => ['email' => $user->email],
+        ]);
     }
 
     public function verifyOtp(Request $request): JsonResponse
@@ -152,8 +170,9 @@ class MobileApiController extends Controller
             return response()->json(['success' => false, 'message' => 'User not found.']);
         }
 
+        $otpCode = $this->otp->generate($user);
+
         try {
-            $otpCode = $this->otp->generate($user);
             $this->otp->sendVerificationEmail($user, $otpCode);
 
             return response()->json([
@@ -161,10 +180,15 @@ class MobileApiController extends Controller
                 'message' => 'A new OTP has been sent to your email address.',
             ]);
         } catch (\Exception $e) {
+            Log::warning('Resend OTP email failed', [
+                'user_id' => $user->id,
+                'email'   => $user->email,
+                'error'   => $e->getMessage(),
+            ]);
             return response()->json([
                 'success' => false,
-                'message' => 'Failed to send OTP email. Please try again later.',
-            ], 500);
+                'message' => 'We could not send the OTP email. This is usually caused by a mail server issue. Please try again in a few minutes or contact MSWDO support.',
+            ], 503);
         }
     }
 

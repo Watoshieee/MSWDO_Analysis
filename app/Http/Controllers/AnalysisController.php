@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\DB;
 class AnalysisController extends Controller
 {
     /**
-     * Main public page at /analysis â€” About / Programs info.
+     * Main public page at /analysis — About / Programs info.
      * Labelled "Programs" in the navbar (1st nav item).
      */
     public function index(Request $request)

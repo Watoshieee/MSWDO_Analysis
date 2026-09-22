@@ -1060,6 +1060,57 @@ class UserController extends Controller
     }
 
     /**
+     * Show mobile app download page
+     */
+    public function downloadApp()
+    {
+        $user = Auth::user();
+        extract($this->notificationData($user));
+
+        // APK file metadata — update these when releasing a new version
+        $apkFileName = 'mswdo-app-v1.0.2.apk';
+        $apkPath = public_path('downloads/' . $apkFileName);
+        $apkExists = file_exists($apkPath);
+        $apkSize = $apkExists ? filesize($apkPath) : 0;
+        $apkSizeMB = $apkExists ? round($apkSize / (1024 * 1024), 1) : 0;
+
+        $appInfo = [
+            'version' => '1.0.2',
+            'versionCode' => 3,
+            'minAndroid' => 'Android 7.0 (Nougat) or higher',
+            'minSdk' => 24,
+            'package' => 'com.mswdo.app.mswdo_beneficiary_app',
+            'sha256' => '35A07004D99BDB97BC44BD1F53C90EEE4A50B1F2D4303F99F0BC36950BE416E5',
+            'fileName' => $apkFileName,
+            'fileExists' => $apkExists,
+            'fileSize' => $apkSize,
+            'fileSizeMB' => $apkSizeMB,
+            // Set to true when Google Play listing is approved
+            'googlePlayAvailable' => false,
+            'googlePlayUrl' => null,
+        ];
+
+        return view('user.download-app', compact(
+            'appInfo',
+            'documentNotifications',
+            'rejectedApplications',
+            'newAnnouncements',
+            'notificationCount',
+            'validatedAppointment',
+            'idReadyApplication',
+            'confirmedAicsAppointments',
+            'newAicsConfirmedCount',
+            'newAnnouncementCount',
+            'pwdValidatedApplication',
+            'pwdIdReadyApplication',
+            'approvedSoloParentAppointment',
+            'soloParentRequirementsValidated',
+            'aicsValidatedApplications',
+            'aicsReadyApplications'
+        ));
+    }
+
+    /**
      * Show user profile page
      */
     public function profile()

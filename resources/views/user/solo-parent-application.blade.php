@@ -1247,7 +1247,11 @@
         .clock-btn-ok { background: #2C3E8F; color: #fff; border: none; font-weight: 700; cursor: pointer; padding: 8px 20px; border-radius: 8px; }
         .clock-btn-ok:disabled { opacity: .4; cursor: not-allowed; }
         .clock-btn-ok:not(:disabled):hover { background: #1A2A5C; }
-    </style>
+    
+    
+        html { background: #1A2A5C; }
+        body { padding-bottom: 0 !important; }
+</style>
 </head>
 
 <body>
@@ -1731,9 +1735,7 @@
         </div>
     </div>
 
-    <div class="footer-strip"><strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy;
-        {{ date('Y') }}
-    </div>
+    <div class="footer-strip"></div>
 
     {{-- Loading overlay — same as /user/my-requirements --}}
     <div id="uiLoadingBackdrop" class="ui-loading-backdrop" aria-hidden="true">
