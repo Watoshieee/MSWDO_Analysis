@@ -615,7 +615,13 @@
             <div class="panel-card">
                 <div class="panel-header">
                     <span>Submitted Applications</span>
-                    <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <a href="{{ route('admin.solo-parent-requirements.index') }}"
+                            style="background:rgba(253,185,19,0.2);border:1.5px solid rgba(253,185,19,0.5);color:#FDB913;border-radius:20px;padding:5px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .2s;"
+                            onmouseover="this.style.background='rgba(253,185,19,0.35)'"
+                            onmouseout="this.style.background='rgba(253,185,19,0.2)'">
+                            ⚙️ Solo Parent Requirements
+                        </a>
                         <button type="button" onclick="document.getElementById('archiveModal').style.display='flex'"
                             style="background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.3);color:white;border-radius:20px;padding:5px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;"
                             onmouseover="this.style.background='rgba(255,255,255,0.22)'"
@@ -892,6 +898,61 @@
         </div>
     </div>
 
+
+    {{-- Validate Solo Parent Eligibility & Assign Category Modal --}}
+    <div id="validateSoloParentModal"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
+        <div style="background:white;border-radius:18px;padding:26px 28px;max-width:560px;width:92%;box-shadow:0 12px 48px rgba(0,0,0,.25);max-height:90vh;display:flex;flex-direction:column;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h5 style="font-weight:800;margin:0;color:#1e293b;font-size:1.15rem;">Validate Solo Parent Eligibility</h5>
+                <button type="button" onclick="closeValidateSoloParentModal()" style="background:none;border:none;font-size:1.4rem;color:#94a3b8;cursor:pointer;line-height:1;">&times;</button>
+            </div>
+
+            <div style="font-size:.88rem;color:#475569;margin-bottom:14px;background:#f1f5f9;padding:10px 14px;border-radius:10px;">
+                <strong>Applicant:</strong> <span id="vspApplicantName" style="color:#2C3E8F;font-weight:700;"></span>
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <label style="font-size:.78rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px;">
+                    Solo Parent Category <span style="color:#dc3545;">*</span>
+                </label>
+                <select id="vspCategorySelect" class="form-select" style="border-radius:10px;font-weight:600;font-size:.88rem;border:1.5px solid #cbd5e1;padding:9px 12px;" onchange="updateVspPreview()">
+                    @foreach(\App\Services\SoloParentCategoryService::getCategories() as $code => $title)
+                        <option value="{{ $code }}">{{ $title }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div style="margin-bottom:14px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px 14px;">
+                <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;">
+                    <input type="checkbox" id="vspAvailBenefit" value="CODE_1_2" style="margin-top:3px;accent-color:#2C3E8F;width:17px;height:17px;cursor:pointer;" onchange="updateVspPreview()">
+                    <div>
+                        <span style="font-size:.86rem;font-weight:700;color:#1e293b;display:block;">
+                            Applicant is availing of Solo Parent Subsidy &amp; Discount (Code 1,2)
+                        </span>
+                        <span style="font-size:.78rem;color:#64748b;display:block;margin-top:2px;line-height:1.4;">
+                            Separate benefit track under RA 11861. Adds the 4 proof of income requirements without altering the applicant's primary category.
+                        </span>
+                    </div>
+                </label>
+            </div>
+
+            <div style="flex:1;overflow-y:auto;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:18px;max-height:280px;">
+                <div style="font-size:.75rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px;">
+                    Requirements That Will Be Assigned (<span id="vspReqCount">0</span>):
+                </div>
+                <div id="vspReqPreviewList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            </div>
+
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" onclick="closeValidateSoloParentModal()"
+                    style="background:#f1f5f9;color:#374151;border:none;border-radius:10px;padding:10px 20px;font-weight:600;cursor:pointer;font-size:.88rem;">Cancel</button>
+                <button type="button" onclick="submitValidateSoloParent()" id="vspSubmitBtn"
+                    style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;font-size:.88rem;">
+                    Validate Eligibility
+                </button>
+            </div>
+        </div>
+    </div>
     <script>
         function openNotesModal(encodedName, encodedNotes) {
             document.getElementById('notesModalApplicant').textContent = 'Applicant: ' + decodeURIComponent(encodedName);
@@ -1082,15 +1143,124 @@
             });
         }
 
+        const _vspCategoryMap = @json(\App\Services\SoloParentCategoryService::getCategoryPreviewMap());
+        const _vspBenefitData = @json(\App\Services\SoloParentCategoryService::getBenefitPreviewList());
+        let _vspTargetId = null;
+
+        function openValidateSoloParentModal(id, appt) {
+            _vspTargetId = id;
+            document.getElementById('vspApplicantName').textContent = appt ? (appt.user_name || 'Applicant #' + id) : 'Applicant #' + id;
+            document.getElementById('vspCategorySelect').value = 'A1';
+            const _vspBenefitEl = document.getElementById('vspAvailBenefit');
+            if (_vspBenefitEl) _vspBenefitEl.checked = false;
+            updateVspPreview();
+            document.getElementById('validateSoloParentModal').style.display = 'flex';
+        }
+
+        function closeValidateSoloParentModal() {
+            document.getElementById('validateSoloParentModal').style.display = 'none';
+            _vspTargetId = null;
+        }
+
+        function updateVspPreview() {
+            const cat = document.getElementById('vspCategorySelect').value;
+            const data = _vspCategoryMap[cat];
+            const isBenefit = document.getElementById('vspAvailBenefit')?.checked;
+            const listEl = document.getElementById('vspReqPreviewList');
+            const countEl = document.getElementById('vspReqCount');
+            listEl.innerHTML = '';
+
+            const catReqs = (data && data.requirements) ? data.requirements : [];
+            const benefitReqs = (isBenefit && _vspBenefitData && _vspBenefitData.requirements) ? _vspBenefitData.requirements : [];
+            const totalCount = catReqs.length + benefitReqs.length;
+
+            countEl.textContent = totalCount;
+
+            if (totalCount === 0) {
+                listEl.innerHTML = '<div style="color:#94a3b8;font-size:.82rem;">No requirements configured.</div>';
+                return;
+            }
+
+            if (isBenefit && catReqs.length > 0) {
+                const head = document.createElement('div');
+                head.style.cssText = 'font-size:.75rem;font-weight:800;color:#2C3E8F;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;';
+                head.textContent = `Category ${cat} Requirements (${catReqs.length}):`;
+                listEl.appendChild(head);
+            }
+
+            catReqs.forEach((req, idx) => {
+                const item = document.createElement('div');
+                item.style.cssText = 'background:white;border:1px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:.82rem;line-height:1.4;';
+
+                if (req.is_or_group) {
+                    let orHtml = `<div style="font-weight:700;color:#2C3E8F;margin-bottom:4px;">${idx + 1}. ${req.title} <span style="background:#e0f2fe;color:#0369a1;font-size:.7rem;padding:2px 8px;border-radius:10px;margin-left:6px;">Submit 1 of ${req.options.length}</span></div>`;
+                    orHtml += '<div style="padding-left:12px;display:flex;flex-direction:column;gap:3px;margin-top:4px;">';
+                    req.options.forEach((opt, oIdx) => {
+                        const orBadge = oIdx > 0 ? '<span style="color:#d97706;font-weight:700;font-size:.72rem;margin-right:4px;">OR</span> ' : '';
+                        orHtml += `<div style="color:#475569;">${orBadge}• ${opt}</div>`;
+                    });
+                    orHtml += '</div>';
+                    item.innerHTML = orHtml;
+                } else {
+                    item.innerHTML = `<div style="color:#1e293b;"><strong style="color:#2C3E8F;">${idx + 1}.</strong> ${req.title}</div>`;
+                }
+
+                listEl.appendChild(item);
+            });
+
+            if (isBenefit && benefitReqs.length > 0) {
+                const bHead = document.createElement('div');
+                bHead.style.cssText = 'font-size:.75rem;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:.04em;margin-top:10px;margin-bottom:2px;';
+                bHead.textContent = `Code 1,2 Benefit Requirements (${benefitReqs.length}):`;
+                listEl.appendChild(bHead);
+
+                benefitReqs.forEach((bReq, bIdx) => {
+                    const bItem = document.createElement('div');
+                    bItem.style.cssText = 'background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:9px 12px;font-size:.82rem;line-height:1.4;';
+                    bItem.innerHTML = `<div style="color:#14532d;"><strong style="color:#15803d;">+${bIdx + 1}.</strong> ${bReq.title}</div>`;
+                    listEl.appendChild(bItem);
+                });
+            }
+        }
+
+        function submitValidateSoloParent() {
+            if (!_vspTargetId) return;
+            const cat = document.getElementById('vspCategorySelect').value;
+            const isAvailing = document.getElementById('vspAvailBenefit')?.checked;
+            const benefitCode = isAvailing ? 'CODE_1_2' : null;
+            const apptId = _vspTargetId;
+            closeValidateSoloParentModal();
+            showLoading('Validating Eligibility', 'Assigning category requirements and notifying applicant...');
+
+            fetch(`/admin/appointments/${apptId}/validate`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ category_code: cat, benefit_code: benefitCode })
+            }).then(r => r.json()).then(d => {
+                if (d.success) {
+                    uiToast(d.message || 'Validated and requirements assigned.');
+                    loadAppointments();
+                } else {
+                    uiToast(d.message || 'Error validating appointment.', 'Error');
+                }
+            }).catch(() => uiToast('Error validating appointment.', 'Error'))
+              .finally(() => hideLoading());
+        }
+
         function validateAppt(id) {
-            // Find the appointment data to get program type
             const appt = _allAppointments.find(a => a.id === id);
+            const isSoloParent = appt && appt.program_type === 'Solo_Parent';
+
+            if (isSoloParent) {
+                openValidateSoloParentModal(id, appt);
+                return;
+            }
+
             const programLabel = appt
                 ? (appt.program_type === 'AICS_Burial' ? 'AICS Burial Assistance'
                     : appt.program_type === 'AICS_Medical' ? 'AICS Medical Assistance'
                     : 'Solo Parent ID')
                 : 'program';
-            const isSoloParent = appt && appt.program_type === 'Solo_Parent';
 
             uiConfirm(
                 'Validate interview?',
@@ -1114,7 +1284,6 @@
                     .finally(() => hideLoading());
             });
         }
-
         function openRejectModal(id) {
             rejectTargetId = id;
             document.getElementById('rejectNotes').value = '';

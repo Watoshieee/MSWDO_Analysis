@@ -126,6 +126,16 @@ class AicsApiController extends Controller
             'user_notes' => $request->user_notes,
         ]);
 
+        // Send push notification to user
+        $label = $programType === 'AICS_Medical' ? 'AICS Medical Assistance' : 'AICS Burial Assistance';
+        $this->sendPushNotification(
+            $user->id,
+            'Appointment Booked',
+            'Your ' . $label . ' appointment has been submitted and is pending admin confirmation.',
+            'aics',
+            $programType
+        );
+
         // Notify admins
         $admins = User::where('role', 'admin')
             ->where('municipality', $user->municipality)
@@ -149,7 +159,7 @@ class AicsApiController extends Controller
     }
 
         // ── Shared push notification helper (DB first, then OneSignal) ───────────
-    private function sendPushNotification(int $userId, string $title, string $body, string $type = 'aics'): void
+    private function sendPushNotification(int $userId, string $title, string $body, string $type = 'aics', ?string $programType = null): void
     {
         try {
             $notifId = \DB::table('notifications')->insertGetId([
@@ -161,7 +171,8 @@ class AicsApiController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            \App\Services\OneSignalService::sendPush($userId, $title, $body, $type, $notifId);
+            $extraData = $programType ? ['program_type' => $programType] : [];
+            \App\Services\OneSignalService::sendPush($userId, $title, $body, $type, $notifId, $extraData);
         } catch (\Exception $e) {
             Log::error('AICS: Failed to insert or push notification', ['error' => $e->getMessage()]);
         }

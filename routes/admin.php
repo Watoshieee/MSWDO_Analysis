@@ -34,6 +34,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::delete('/appointments/{id}/force-delete', [App\Http\Controllers\Admin\AppointmentController::class, 'forceDelete'])->name('admin.appointments.force-delete');
     Route::get('/appointments/archived', [App\Http\Controllers\Admin\AppointmentController::class, 'archived'])->name('admin.appointments.archived');
 
+    // Solo Parent Category Requirements Management (Master definitions)
+    Route::get('/solo-parent-requirements', [App\Http\Controllers\Admin\SoloParentRequirementController::class, 'index'])->name('solo-parent-requirements.index');
+    Route::post('/solo-parent-requirements', [App\Http\Controllers\Admin\SoloParentRequirementController::class, 'store'])->name('solo-parent-requirements.store');
+    Route::post('/solo-parent-requirements/{id}/update', [App\Http\Controllers\Admin\SoloParentRequirementController::class, 'update'])->name('solo-parent-requirements.update');
+    Route::post('/solo-parent-requirements/{id}/toggle', [App\Http\Controllers\Admin\SoloParentRequirementController::class, 'toggleActive'])->name('solo-parent-requirements.toggle');
+    Route::post('/solo-parent-requirements/reset-defaults', [App\Http\Controllers\Admin\SoloParentRequirementController::class, 'resetDefaults'])->name('solo-parent-requirements.reset-defaults');
+
     // Chat routes for admin
     Route::get('/chat/users', [App\Http\Controllers\ChatController::class, 'getUsers'])->name('chat.users');
     Route::get('/chat/messages/{userId}', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.messages');

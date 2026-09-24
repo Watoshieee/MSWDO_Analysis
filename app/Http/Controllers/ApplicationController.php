@@ -668,6 +668,20 @@ public function uploadBatch(Request $request)
 
         $fileMonitoring = FileMonitoring::where('application_id', $applicationId)->firstOrFail();
 
+        // ------------------------------------------------------------------
+        // Solo Parent snapshot whitelist — build once, reuse for both paths.
+        // Null for non-Solo-Parent programs; all guards below are skipped.
+        // ------------------------------------------------------------------
+        $soloParentAllowedNames = null;
+        if ($application->program_type === 'Solo_Parent') {
+            $snapshotGroups = \App\Services\SoloParentCategoryService::getRequirementsForApplication($application);
+            if (!empty($snapshotGroups)) {
+                $soloParentAllowedNames = collect($snapshotGroups)
+                    ->flatMap(fn($g) => array_column($g['options'], 'requirement_name'))
+                    ->all();
+            }
+        }
+
         // ── BATCH UPLOAD (files[] from "Upload All" form) ─────────────────────
         if ($request->hasFile('files') && $request->input('requirement_name') === 'batch_upload') {
             $request->validate([
@@ -682,6 +696,15 @@ public function uploadBatch(Request $request)
                 $reqName = pathinfo($originalName, PATHINFO_FILENAME);
                 $reqName = preg_replace('/[_\-]+/', ' ', $reqName); // underscores/dashes -> spaces
                 $reqName = trim(preg_replace('/\s+/', ' ', $reqName));
+
+                // Solo Parent: skip batch files whose derived name is not in the snapshot.
+                if ($soloParentAllowedNames !== null && !in_array($reqName, $soloParentAllowedNames, true)) {
+                    \Illuminate\Support\Facades\Log::warning('Solo Parent batch upload rejected - requirement not in snapshot', [
+                        'application_id'   => $applicationId,
+                        'requirement_name' => $reqName,
+                    ]);
+                    continue; // skip this file; do not abort entire batch
+                }
 
                 $filename = time() . '_' . $uploadedCount . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
                 $path = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
@@ -738,6 +761,13 @@ public function uploadBatch(Request $request)
             'requirement_name' => 'required|string',
             'file'             => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
+
+        // Solo Parent: reject if requirement_name is not in the application's snapshot.
+        if ($soloParentAllowedNames !== null && !in_array($request->requirement_name, $soloParentAllowedNames, true)) {
+            return redirect()->back()->withErrors([
+                'requirement_name' => 'The submitted requirement is not valid for this Solo Parent application.',
+            ]);
+        }
 
         $file         = $request->file('file');
         $originalName = $file->getClientOriginalName();

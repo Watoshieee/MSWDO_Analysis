@@ -381,12 +381,16 @@ class AdminController extends Controller
             return redirect()->back()->with('error', $msg);
         }
 
-        if ($isSoloParent && !($application->status === 'approved' && $application->id_status === 'processing')) {
-            $msg = 'Solo Parent requirements must be fully approved before marking ID ready.';
-            if (request()->expectsJson() || request()->ajax()) {
-                return response()->json(['success' => false, 'message' => $msg], 422);
+        if ($isSoloParent) {
+            $fileMonitoring = $application->fileMonitoring;
+            $completion = \App\Services\SoloParentCategoryService::evaluateCompletion($application, $fileMonitoring);
+            if (!$completion['is_complete'] || !($application->status === 'approved' && $application->id_status === 'processing')) {
+                $msg = 'Solo Parent requirements must be fully satisfied and approved before marking ID ready.';
+                if (request()->expectsJson() || request()->ajax()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+                return redirect()->back()->with('error', $msg);
             }
-            return redirect()->back()->with('error', $msg);
         }
 
         if ($isAics && !($application->status === 'approved' && $application->id_status === 'processing')) {
@@ -441,7 +445,7 @@ class AdminController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, $programLabel, $notifId);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, $programLabel, $notifId, ['program_type' => $application->program_type]);
         } catch (\Exception $e) {
             Log::error('markIdReady notification insert failed: ' . $e->getMessage());
         }
@@ -522,7 +526,7 @@ class AdminController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'solo_parent', $notifId);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'solo_parent', $notifId, ['program_type' => $application->program_type]);
         } catch (\Exception $e) {
             Log::error('markClaimed notification insert failed: ' . $e->getMessage());
         }
@@ -599,7 +603,7 @@ class AdminController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'aics', $notifId);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'aics', $notifId, ['program_type' => $application->program_type]);
         } catch (\Exception $e) {
             Log::error('markReleased notification insert failed: ' . $e->getMessage());
         }
@@ -644,6 +648,32 @@ class AdminController extends Controller
             'completed_at' => now(),
         ]);
 
+        // Create in-app notification & OneSignal push
+        try {
+            $label = $application->program_type === 'AICS_Medical' ? 'AICS Medical Assistance' : 'AICS Burial Assistance';
+            $notifTitle = 'AICS Requirements Validated';
+            $notifBody  = 'Your ' . $label . ' requirements are validated. Please wait for grant release notice.';
+            $notifId = \DB::table('notifications')->insertGetId([
+                'user_id'    => $application->user_id,
+                'type'       => 'aics',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            \App\Services\OneSignalService::sendPush(
+                $application->user_id,
+                $notifTitle,
+                $notifBody,
+                'aics',
+                $notifId,
+                ['program_type' => $application->program_type]
+            );
+        } catch (\Exception $e) {
+            Log::error('AICS validate notification insert failed: ' . $e->getMessage());
+        }
+
         // ── Create in-app notification ───────────────────────────────────
         try {
             $notifTitle = 'PWD Application Validated';
@@ -657,7 +687,7 @@ class AdminController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'pwd', $notifId);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'pwd', $notifId, ['program_type' => $application->program_type]);
         } catch (\Exception $e) {
             Log::error('PWD validate notification insert failed: ' . $e->getMessage());
         }
@@ -695,6 +725,32 @@ class AdminController extends Controller
             'completed_at' => now(),
         ]);
 
+        // Create in-app notification & OneSignal push
+        try {
+            $label = $application->program_type === 'AICS_Medical' ? 'AICS Medical Assistance' : 'AICS Burial Assistance';
+            $notifTitle = 'AICS Requirements Validated';
+            $notifBody  = 'Your ' . $label . ' requirements are validated. Please wait for grant release notice.';
+            $notifId = \DB::table('notifications')->insertGetId([
+                'user_id'    => $application->user_id,
+                'type'       => 'aics',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            \App\Services\OneSignalService::sendPush(
+                $application->user_id,
+                $notifTitle,
+                $notifBody,
+                'aics',
+                $notifId,
+                ['program_type' => $application->program_type]
+            );
+        } catch (\Exception $e) {
+            Log::error('AICS validate notification insert failed: ' . $e->getMessage());
+        }
+
         $user = \App\Models\User::find($application->user_id);
         if ($user && $user->email) {
             try {
@@ -727,11 +783,24 @@ class AdminController extends Controller
         $allApproved = $fileMonitoring
             && $fileMonitoring->overall_status === 'approved';
 
+        $soloParentCategory = null;
+        $soloParentCompletion = null;
+        if ($application->program_type === 'Solo_Parent') {
+            $categories = \App\Services\SoloParentCategoryService::getCategories();
+            $soloParentCategory = $categories[$application->category_code] ?? null;
+            $soloParentCompletion = \App\Services\SoloParentCategoryService::evaluateCompletion($application, $fileMonitoring);
+            if ($application->category_code) {
+                $allApproved = ($soloParentCompletion['is_complete'] ?? false);
+            }
+        }
+
         return view('admin.view-requirement', compact(
             'fileMonitoring',
             'application',
             'hasDocuments',
-            'allApproved'
+            'allApproved',
+            'soloParentCategory',
+            'soloParentCompletion'
         ));
     }
 
@@ -845,6 +914,8 @@ class AdminController extends Controller
         $approvedFiles = $fileMonitoring->fileUploads()->where('status', 'approved')->count();
         $rejectedFiles = $fileMonitoring->fileUploads()->where('status', 'rejected')->count();
 
+        $isSoloParent = ($fileMonitoring->application && $fileMonitoring->application->program_type === 'Solo_Parent');
+
         if ($rejectedFiles > 0) {
             $fileMonitoring->overall_status = 'rejected';
 
@@ -856,6 +927,18 @@ class AdminController extends Controller
                     // Show the latest rejection note as the application-level reason.
                     'admin_remarks' => $request->admin_remarks ?? $fileMonitoring->application->admin_remarks,
                 ]);
+            }
+        } elseif ($isSoloParent && $fileMonitoring->application->category_code) {
+            $completion = \App\Services\SoloParentCategoryService::evaluateCompletion($fileMonitoring->application, $fileMonitoring);
+            if ($completion['is_complete']) {
+                $fileMonitoring->overall_status = 'approved';
+                $fileMonitoring->application->update([
+                    'status' => 'approved',
+                    'completed_at' => now(),
+                    'id_status' => 'processing',
+                ]);
+            } else {
+                $fileMonitoring->overall_status = 'in_review';
             }
         } elseif ($approvedFiles == $totalFiles && $totalFiles > 0) {
             $fileMonitoring->overall_status = 'approved';
@@ -922,7 +1005,7 @@ class AdminController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-                \App\Services\OneSignalService::sendPush($fileMonitoring->application->user_id, $notifTitle, $notifBody, $notifType, $notifId);
+                \App\Services\OneSignalService::sendPush($fileMonitoring->application->user_id, $notifTitle, $notifBody, $notifType, $notifId, ['program_type' => $programType]);
             } catch (\Exception $e) {
                 Log::error('File status notification insert failed: ' . $e->getMessage());
             }
@@ -1397,7 +1480,7 @@ class AdminController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-                \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, $notifType, $notifId);
+                \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, $notifType, $notifId, ['program_type' => $programType]);
             } catch (\Exception $e) {
                 Log::error('Application status notification insert failed: ' . $e->getMessage());
             }

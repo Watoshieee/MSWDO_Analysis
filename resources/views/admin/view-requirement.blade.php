@@ -401,7 +401,36 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <span class="s-badge s-{{ $st }}">{{ ucfirst($st) }}</span>
                 </div>
             </div>
+
+            @if($application->program_type === 'Solo_Parent')
+            <div class="mt-3 pt-3 border-top">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <div style="font-size:.75rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Assigned Category</div>
+                        @if($application->category_code && !empty($soloParentCategory))
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-primary" style="font-size:.85rem;">Category {{ $application->category_code }}</span>
+                                <span style="font-weight:700;color:#1e293b;font-size:.95rem;">
+                                    {{ is_array($soloParentCategory) ? ($soloParentCategory['title'] ?? '') : $soloParentCategory }}
+                                </span>
+                                @if(!empty($application->benefit_code) && $application->benefit_code === 'CODE_1_2')
+                                    <span class="badge bg-success" style="font-size:.8rem;background:#15803d !important;">Subsidy &amp; Discount (Code 1,2)</span>
+                                @endif
+                            </div>
+                            @if(is_array($soloParentCategory) && !empty($soloParentCategory['description']))
+                                <div class="text-muted small mt-1" style="max-width:850px;line-height:1.45;">
+                                    {{ $soloParentCategory['description'] }}
+                                </div>
+                            @endif
+                        @else
+                            <span class="text-muted small">No specific category assigned</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>{{-- end Applicant Info info-card --}}
+
 
         {{-- No-Documents Warning Banner --}}
         @if(!$hasDocuments)

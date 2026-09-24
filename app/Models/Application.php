@@ -14,7 +14,7 @@ class Application extends Model
     const STATUS_APPROVED = 'approved';
     const STATUS_REJECTED = 'rejected';
 
-    // timestamps disabled — table has no created_at/updated_at (but does have deleted_at)
+    // timestamps disabled – table has no created_at/updated_at (but does have deleted_at)
     public $timestamps = false;
 
     // Define the table name
@@ -27,6 +27,8 @@ class Application extends Model
     protected $fillable = [
         'user_id',
         'program_type',
+        'category_code',
+        'benefit_code',
         'municipality',
         'barangay',
         'full_name',
@@ -77,5 +79,10 @@ class Application extends Model
     public function pwdRequirementChecks()
     {
         return $this->hasMany(PwdRequirementCheck::class, 'application_id');
+    }
+
+    public function soloParentRequirements()
+    {
+        return $this->hasMany(SoloParentApplicationRequirement::class, 'application_id')->orderBy('order_num');
     }
 }

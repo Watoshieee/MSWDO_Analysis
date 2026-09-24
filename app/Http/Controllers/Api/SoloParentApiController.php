@@ -256,10 +256,25 @@ class SoloParentApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        // Enforce size limits: images ≤ 25 MB, PDFs ≤ 5 MB
+        // Validate requirement_name against the application's snapshot or category definitions.
+        // This prevents arbitrary requirement names from being uploaded.
+        if ($application->program_type === 'Solo_Parent' && $application->category_code) {
+            $allowedRequirements = collect(
+                \App\Services\SoloParentCategoryService::getRequirementsForApplication($application)
+            )->flatMap(fn($group) => array_column($group['options'], 'requirement_name'))->all();
+
+            if (!empty($allowedRequirements) && !in_array($request->requirement_name, $allowedRequirements, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'The submitted requirement name is not valid for this Solo Parent category.',
+                ], 422);
+            }
+        }
+
+        // Enforce size limits: PDFs ≤ 25 MB, images ≤ 5 MB
         $file  = $request->file('file');
         $ext   = strtolower($file->getClientOriginalExtension());
-        $maxMb = in_array($ext, ['jpg', 'jpeg', 'png']) ? 25 : 5;
+        $maxMb = ($ext === 'pdf') ? 25 : 5;
         if ($file->getSize() > $maxMb * 1024 * 1024) {
             return response()->json([
                 'success' => false,
@@ -406,8 +421,16 @@ class SoloParentApiController extends Controller
     private function formatApplication($app)
     {
         $fileMonitoring = $app->fileMonitoring;
+        $categoryInfo = null;
+        if (!empty($app->category_code)) {
+            $categories = \App\Services\SoloParentCategoryService::getCategories();
+            $categoryInfo = $categories[$app->category_code] ?? null;
+        }
+
         return [
             'id'               => $app->id,
+            'category_code'    => $app->category_code,
+            'category_title'   => $categoryInfo['title'] ?? null,
             'status'           => $app->status,
             'overall_status'   => $fileMonitoring?->overall_status ?? 'pending',
             'id_status'        => $app->id_status,
@@ -418,6 +441,30 @@ class SoloParentApiController extends Controller
 
     private function getRequirements($application)
     {
+        $fileMonitoring = $application->fileMonitoring;
+        $uploads = $fileMonitoring ? $fileMonitoring->fileUploads : collect();
+        $uploadedByName = $uploads->keyBy('requirement_name');
+
+        if (!empty($application->category_code)) {
+            $groups = \App\Services\SoloParentCategoryService::getRequirementsForApplication($application);
+            $result = [];
+            foreach ($groups as $group) {
+                foreach ($group['options'] as $opt) {
+                    $uploaded = $uploadedByName->get($opt['requirement_name']);
+                    $result[] = [
+                        'name'          => $opt['requirement_name'],
+                        'group_key'     => $group['group_key'],
+                        'group_title'   => $group['group_title'],
+                        'is_or_group'   => (bool)$group['is_or_group'],
+                        'status'        => $uploaded?->status ?? 'not_uploaded',
+                        'uploaded_at'   => $uploaded?->uploaded_at?->toIso8601String(),
+                        'admin_remarks' => $uploaded?->admin_remarks,
+                    ];
+                }
+            }
+            return $result;
+        }
+
         $requiredDocs = [
             'PSA Birth Certificate of Child/Children',
             'Barangay Certificate (stating you are a solo parent)',
@@ -427,16 +474,12 @@ class SoloParentApiController extends Controller
             '2x2 ID Photo (recent, white background)',
         ];
 
-        $fileMonitoring = $application->fileMonitoring;
-        $uploads = $fileMonitoring ? $fileMonitoring->fileUploads : collect();
-        $uploadedByName = $uploads->keyBy('requirement_name');
-
         return collect($requiredDocs)->map(function($req) use ($uploadedByName) {
             $uploaded = $uploadedByName->get($req);
             return [
-                'name' => $req,
-                'status' => $uploaded?->status ?? 'not_uploaded',
-                'uploaded_at' => $uploaded?->uploaded_at?->toIso8601String(),
+                'name'          => $req,
+                'status'        => $uploaded?->status ?? 'not_uploaded',
+                'uploaded_at'   => $uploaded?->uploaded_at?->toIso8601String(),
                 'admin_remarks' => $uploaded?->admin_remarks,
             ];
         })->values()->toArray();
@@ -454,7 +497,7 @@ class SoloParentApiController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            \App\Services\OneSignalService::sendPush($userId, $title, $body, $type, $notifId);
+            \App\Services\OneSignalService::sendPush($userId, $title, $body, $type, $notifId, ['program_type' => 'Solo_Parent']);
         } catch (\Exception $e) {
             Log::error('SoloParent: Failed to insert or push notification', ['error' => $e->getMessage()]);
         }
