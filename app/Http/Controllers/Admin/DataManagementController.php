@@ -355,7 +355,7 @@ class DataManagementController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:100',
-            'year' => 'required|integer|min:2000',
+            'year' => 'required|digits:4',
             'total_population' => 'required|integer|min:0',
             'pwd_count' => 'nullable|integer|min:0',
             'aics_count' => 'nullable|integer|min:0',
@@ -369,7 +369,7 @@ class DataManagementController extends Controller
             [
                 'municipality' => $user->municipality,
                 'name' => $request->name,
-                'year' => $request->year,
+                'year' => (int) $request->year,
             ],
             [
                 'total_population' => $request->total_population,
@@ -386,7 +386,7 @@ class DataManagementController extends Controller
         $this->updateYearlySummaryFromBarangays($user->municipality, (int) $request->year);
         $this->syncBarangayYearToPrograms($user->municipality, (int) $request->year);
 
-        return redirect()->route('admin.data.barangays')
+        return redirect()->to(route('admin.data.barangays') . '#return')
             ->with('success', "Barangay data for {$request->name} ({$request->year}) saved successfully!");
     }
 
@@ -672,7 +672,7 @@ class DataManagementController extends Controller
     {
         $user = Auth::user();
         $request->validate([
-            'year'      => 'required|integer',
+            'year'      => 'required|digits:4',
             'barangays' => 'required|array|min:1',
             'barangays.*' => 'required|string',
         ]);
@@ -719,7 +719,7 @@ class DataManagementController extends Controller
             $request->validate([
                 'name' => 'required|string',
                 'municipality' => 'required|string',
-                'year' => 'required|integer'
+                'year' => 'required|digits:4'
             ]);
 
             Log::info('Finding/Creating barangay: ' . $request->name . ' for year ' . $request->year);

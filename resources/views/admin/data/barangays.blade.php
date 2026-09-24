@@ -487,30 +487,38 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .toast-error   { background: #C41E24; }
         .toast-timer { height: 3px; width: 100%; background: var(--secondary-yellow); position: absolute; bottom: 0; left: 0; border-radius: 0 0 12px 12px; animation: timerShrink 3.5s linear; }
         @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes timerShrink { from { width: 100%; } to { width: 0%; } }
+        #return {
+            scroll-margin-top: 30px;
+        }
     </style>
 </head>
 
 <body>
     <script>
-        // Force scroll to top immediately
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-        window.scrollTo(0, 0);
-        
-        // Prevent scroll restoration
-        if ('scrollRestoration' in history) {
-            history.scrollRestoration = 'manual';
+        // Force scroll to top only when NOT targeting a hash like #return
+        if (window.location.hash !== '#return') {
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            window.scrollTo(0, 0);
+            
+            // Prevent scroll restoration
+            if ('scrollRestoration' in history) {
+                history.scrollRestoration = 'manual';
+            }
+            
+            // Lock scroll position during page load
+            window.addEventListener('DOMContentLoaded', function() {
+                if (window.location.hash !== '#return') {
+                    window.scrollTo(0, 0);
+                }
+            });
+            
+            window.addEventListener('load', function() {
+                if (window.location.hash !== '#return') {
+                    window.scrollTo(0, 0);
+                }
+            });
         }
-        
-        // Lock scroll position during page load
-        window.addEventListener('DOMContentLoaded', function() {
-            window.scrollTo(0, 0);
-        });
-        
-        window.addEventListener('load', function() {
-            window.scrollTo(0, 0);
-        });
     </script>
 @include('components.admin-navbar')
 
@@ -783,11 +791,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Year</label>
-                                <select name="year" class="form-select" required>
-                                    @foreach($yearsForAddModal as $yr)
-                                        <option value="{{ $yr }}" {{ $yr == (int) date('Y') ? 'selected' : '' }}>{{ $yr }}</option>
-                                    @endforeach
-                                </select>
+                                <input type="number" name="year" id="addBarangayYear" class="form-control" required
+                                       min="1000" max="9999" step="1"
+                                       value="{{ date('Y') }}" placeholder="YYYY (e.g. {{ date('Y') }})"
+                                       oninput="if(this.value.length > 4) this.value = this.value.slice(0, 4)">
+                                <small class="text-muted" style="font-size:0.75rem;">Enter any 4-digit year (e.g. 2024, 2027)</small>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Total Population</label>
@@ -1095,14 +1103,25 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             loadBarangayOptions(ADMIN_MUN);
         });
 
-        // Intercept Add form — if "All Barangays" selected, bulk-store via AJAX
+        // Intercept Add form — validate 4-digit year & handle "All Barangays" bulk-store
         document.getElementById('addBarangayForm').addEventListener('submit', function (e) {
+            const yearInput = document.querySelector('#addBarangayForm [name="year"]');
+            const yearVal = yearInput ? yearInput.value.trim() : '';
+
+            // Client-side 4-digit validation
+            if (!/^\d{4}$/.test(yearVal)) {
+                e.preventDefault();
+                showToast('Year must be exactly 4 digits (e.g. 2027).', 'warning');
+                if (yearInput) yearInput.focus();
+                return;
+            }
+
             const bgySelect = document.getElementById('addBarangayName');
             if (bgySelect.value !== '__ALL__') return;
             e.preventDefault();
 
             const municipality = ADMIN_MUN;
-            const year = parseInt(document.querySelector('#addBarangayForm select[name="year"]').value, 10);
+            const year = parseInt(yearVal, 10);
             const allBgys = barangayLists[municipality] || [];
 
             if (!municipality || !allBgys.length) {
@@ -1466,34 +1485,28 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 .catch(() => { showToast('Network error.', 'danger'); btn.textContent = orig; btn.disabled = false; });
         }
 
-        window.addEventListener('DOMContentLoaded', function () {
-            // Check if URL has #return hash
+        function scrollToReturn() {
             if (window.location.hash === '#return') {
-                // Wait for page to fully load
-                setTimeout(() => {
-                    const el = document.getElementById('return');
-                    if (el) {
-                        // Scroll to the table with smooth animation
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        // Add a small offset to account for any fixed headers
-                        window.scrollBy(0, -20);
-                    }
-                }, 300);
+                const el = document.getElementById('return');
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            if (window.location.hash === '#return') {
+                setTimeout(scrollToReturn, 100);
             }
         });
 
-        // Also handle when coming back from another page
         window.addEventListener('load', function() {
             if (window.location.hash === '#return') {
-                setTimeout(() => {
-                    const el = document.getElementById('return');
-                    if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        window.scrollBy(0, -20);
-                    }
-                }, 100);
+                setTimeout(scrollToReturn, 50);
             }
         });
+
+        window.addEventListener('hashchange', scrollToReturn);
 
         // ── Search function ──────────────────────────────────────────
         function searchTable() {
