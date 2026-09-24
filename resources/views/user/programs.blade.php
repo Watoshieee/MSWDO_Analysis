@@ -207,9 +207,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <h1>Available Programs</h1>
                 <div class="hero-divider"></div>
                 <p>Choose a program below to view its requirements and submit your application for MSWDO assistance.</p>
+                @php
+                    $programCount = 3 + (!empty($canAccessMta) ? 1 : 0) + (!empty($canAccessDayCare) ? 1 : 0);
+                @endphp
                 <div class="hero-stats">
                     <div class="hero-stat">
-                        <div class="stat-val">4</div>
+                        <div class="stat-val">{{ $programCount }}</div>
                         <div class="stat-lbl">Programs</div>
                     </div>
                     <div class="hero-stat">
@@ -239,7 +242,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="ftab" data-cat="social"     onclick="setCategory(this,'social')"> Social Support</div>
 
                 </div>
-                <div class="result-count" id="resultCount">4 programs</div>
+                <div class="result-count" id="resultCount">{{ $programCount }} programs</div>
             </div>
         </div>
     </div>
@@ -335,7 +338,55 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 </div>
 
+                @if(!empty($canAccessMta))
+                <!-- 4. Minor Traveling Abroad (MTA) — Liliw only -->
+                <div class="prog-card" data-cat="social" data-title="Minor Traveling Abroad MTA DSWD">
+                    <div class="accent acc-blue"></div>
+                    <div class="prog-body">
+                        <div class="prog-header">
+                            <div class="prog-meta">
+                                <div class="prog-cat cat-social">Social Support</div>
+                                <div class="prog-title">Minor Traveling Abroad (MTA)</div>
+                            </div>
+                        </div>
+                        <div class="prog-desc">Guided application for DSWD Minor Traveling Abroad clearance through the official MTS portal. Available to Liliw residents.</div>
+                        <div class="prog-elig">
+                            <div class="prog-elig-title">Key Eligibility</div>
+                            <ul>
+                                <li>Resident of Liliw</li>
+                                <li>Applying for a minor traveling abroad</li>
+                                <li>Must register and apply at mts.dswd.gov.ph</li>
+                            </ul>
+                        </div>
+                        <a href="{{ route('user.mta-application') }}" class="prog-btn">Apply Now →</a>
+                    </div>
+                </div>
+                @endif
 
+                @if(!empty($canAccessDayCare))
+                <!-- 5. Registration for Day Care Services — Liliw only -->
+                <div class="prog-card" data-cat="social" data-title="Registration for Day Care Services Child Development Center Liliw">
+                    <div class="accent acc-blue"></div>
+                    <div class="prog-body">
+                        <div class="prog-header">
+                            <div class="prog-meta">
+                                <div class="prog-cat cat-social">Early Childhood</div>
+                                <div class="prog-title">Registration for Day Care Services</div>
+                            </div>
+                        </div>
+                        <div class="prog-desc">Enroll your child in the Child Development Center in Liliw for early childhood care, learning, and nutrition.</div>
+                        <div class="prog-elig">
+                            <div class="prog-elig-title">Key Eligibility</div>
+                            <ul>
+                                <li>Resident of Liliw</li>
+                                <li>Children aged 2 to 5 years old</li>
+                                <li>Birth Certificate &amp; Babybook required</li>
+                            </ul>
+                        </div>
+                        <a href="{{ route('user.day-care-registration') }}" class="prog-btn">Register Now →</a>
+                    </div>
+                </div>
+                @endif
 
             </div><!-- /prog-grid -->
 

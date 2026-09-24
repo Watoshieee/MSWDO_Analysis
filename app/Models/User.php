@@ -109,6 +109,11 @@ class User extends Authenticatable
         return $this->role === self::ROLE_USER;
     }
 
+    public function isLiliwResident(): bool
+    {
+        return strcasecmp(trim((string) $this->municipality), 'Liliw') === 0;
+    }
+
     // Get all available roles
     public static function getRoles()
     {

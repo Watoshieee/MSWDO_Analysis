@@ -94,6 +94,24 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::get('/user/apply/AICS/burial', [UserController::class, 'aicsBurial'])->name('user.aics-burial');
     Route::get('/user/apply/{program}', [ApplicationController::class, 'create'])->name('user.apply');
     Route::get('/user/pwd-application', [UserController::class, 'pwdApplication'])->name('user.pwd-application');
+    Route::get('/user/mta-application', [UserController::class, 'mtaApplication'])
+        ->middleware('liliw_only')
+        ->name('user.mta-application');
+    Route::post('/user/mta-upload-requirement', [UserController::class, 'uploadMtaRequirement'])
+        ->middleware('liliw_only')
+        ->name('user.mta-upload-requirement');
+    Route::post('/user/mta-submit-application', [UserController::class, 'submitMtaApplication'])
+        ->middleware('liliw_only')
+        ->name('user.mta-submit-application');
+    Route::get('/user/day-care-registration', [UserController::class, 'dayCareRegistration'])
+        ->middleware('liliw_only')
+        ->name('user.day-care-registration');
+    Route::post('/user/day-care-upload-requirement', [UserController::class, 'uploadDayCareRequirement'])
+        ->middleware('liliw_only')
+        ->name('user.day-care-upload-requirement');
+    Route::post('/user/day-care-register', [UserController::class, 'submitDayCareRegistration'])
+        ->middleware('liliw_only')
+        ->name('user.day-care-register');
     Route::get('/user/pwd-fillable-form', [UserController::class, 'pwdFillableForm'])->name('user.pwd-form');
     Route::post('/user/pwd-fillable-form', [UserController::class, 'pwdFormSubmit'])->name('user.pwd-form.submit');
     Route::get('/user/solo-parent-application', [UserController::class, 'soloParentApplication'])->name('user.solo-parent-application');

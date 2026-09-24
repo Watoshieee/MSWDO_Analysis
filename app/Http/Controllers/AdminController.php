@@ -40,6 +40,7 @@ class AdminController extends Controller
         // ── All pending applications (keep list visible after view) ───────────
         $query = Application::where('municipality', $user->municipality)
             ->where('status', 'pending')
+            ->where('program_type', '!=', 'MTA')
             ->with('user')
             ->orderBy('application_date', 'desc');
 
@@ -251,7 +252,8 @@ class AdminController extends Controller
         $admin = Auth::user();
         $municipality = $admin->municipality;
 
-        $applicationsQuery = Application::where('municipality', $municipality);
+        $applicationsQuery = Application::where('municipality', $municipality)
+            ->where('program_type', '!=', 'MTA');
 
         if ($request->filled('app_search')) {
             $search = trim((string) $request->input('app_search'));
