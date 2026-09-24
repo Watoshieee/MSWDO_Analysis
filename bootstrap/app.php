@@ -53,6 +53,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role'        => \App\Http\Middleware\RoleMiddleware::class,
             'ensure_role' => \App\Http\Middleware\EnsureUserRole::class,
+            'liliw_only'  => \App\Http\Middleware\EnsureLiliwMunicipality::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

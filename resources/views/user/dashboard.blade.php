@@ -165,6 +165,8 @@
         /* Status badges */
         .status-badge { padding: 5px 14px; border-radius: 20px; font-size: 0.72rem; font-weight: 800; display: inline-block; letter-spacing: 0.03em; }
         .status-pending   { background: var(--secondary-yellow-light); color: #856404; }
+        .status-in_progress { background: var(--primary-blue-light); color: var(--primary-blue); }
+        .status-submitted { background: #d4edda; color: #155724; }
         .status-in_review { background: #E0F0FF; color: #0056b3; }
         .status-approved  { background: #d4edda; color: #155724; }
         .status-rejected  { background: var(--accent-red-light); color: #721c24; }
@@ -481,6 +483,12 @@
                 ['key' => 'Solo_Parent',             'num' => '02', 'title' => 'Solo Parent Support',        'sub' => 'Assistance for solo parents raising children alone.',       'url' => route('user.solo-parent-application')],
                 ['key' => 'AICS',                    'num' => '03', 'title' => 'Assistance in Crisis',       'sub' => 'Emergency financial aid for families in crisis situations.', 'url' => route('user.aics-category')],
             ];
+            if (!empty($canAccessMta)) {
+                $programs[] = ['key' => 'MTA', 'num' => '04', 'title' => 'Minor Traveling Abroad (MTA)', 'sub' => 'DSWD clearance guide for minors traveling abroad (Liliw).', 'url' => route('user.mta-application')];
+            }
+            if (!empty($canAccessDayCare)) {
+                $programs[] = ['key' => 'Day_Care', 'num' => '05', 'title' => 'Day Care Services', 'sub' => 'Registration for Child Development Center (Liliw).', 'url' => route('user.day-care-registration')];
+            }
         @endphp
 
         <div class="row g-3 mb-4 justify-content-center">
@@ -588,6 +596,26 @@
                                     </div>
                                     <span class="ql-arrow" style="color:var(--primary-blue);">&rsaquo;</span>
                                 </a>
+                                @if(!empty($canAccessMta))
+                                <a href="{{ route('user.mta-application') }}" class="quick-link" style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border:1px solid rgba(44,62,143,.15);">
+                                    <div class="ql-num">MTA</div>
+                                    <div class="ql-text">
+                                        <strong style="color:var(--primary-blue);">Minor Traveling Abroad (MTA)</strong>
+                                        <span>DSWD MTS application guide for Liliw</span>
+                                    </div>
+                                    <span class="ql-arrow" style="color:var(--primary-blue);">&rsaquo;</span>
+                                </a>
+                                @endif
+                                @if(!empty($canAccessDayCare))
+                                <a href="{{ route('user.day-care-registration') }}" class="quick-link" style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border:1px solid rgba(44,62,143,.15);">
+                                    <div class="ql-num">DC</div>
+                                    <div class="ql-text">
+                                        <strong style="color:var(--primary-blue);">Day Care Services (Register)</strong>
+                                        <span>Child Development Center registration for Liliw</span>
+                                    </div>
+                                    <span class="ql-arrow" style="color:var(--primary-blue);">&rsaquo;</span>
+                                </a>
+                                @endif
                                 <a href="{{ route('user.solo-parent-application') }}" class="quick-link" style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border:1px solid rgba(44,62,143,.15);">
                                     <div class="ql-num">04</div>
                                     <div class="ql-text">
