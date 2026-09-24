@@ -722,7 +722,7 @@ class DataManagementController extends Controller
     public function saveMonthlySummary(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'municipality' => 'required|in:Magdalena,Liliw,Majayjay',
+            'municipality' => ['required', 'string', Rule::in(Municipality::pluck('name')->toArray())],
             'year' => 'required|integer|min:2000|max:' . (date('Y') + 1),
             'month' => 'required|integer|min:1|max:12',
             'total_pwd' => 'nullable|integer|min:0',
@@ -879,7 +879,7 @@ class DataManagementController extends Controller
     public function bulkArchiveBarangays(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'municipality' => 'required|in:Magdalena,Liliw,Majayjay',
+            'municipality' => ['required', 'string', Rule::in(Municipality::pluck('name')->toArray())],
             'year' => 'required|integer|min:2000',
         ]);
 

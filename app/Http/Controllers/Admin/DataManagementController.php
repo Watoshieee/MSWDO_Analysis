@@ -8,7 +8,6 @@ use App\Models\Barangay;
 use App\Models\SocialWelfareProgram;
 use App\Models\MunicipalityYearlySummary;
 use App\Models\MunicipalityMonthlySummary;
-use App\Models\AdminMunicipalityData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
@@ -112,15 +111,7 @@ class DataManagementController extends Controller
         $autoTotalPopulation = $barangayData->sum('total_population');
         $autoTotalHouseholds = $barangayData->sum('total_households');
 
-        // Check if admin override exists
-        $adminData = AdminMunicipalityData::where('municipality', $user->municipality)
-            ->where('year', $currentYear)
-            ->first();
-
-        if ($adminData) {
-            $currentTotalPopulation = $adminData->total_population;
-            $currentTotalHouseholds = $adminData->total_households;
-        } elseif ($currentSummary) {
+        if ($currentSummary) {
             // Prefer the saved yearly summary value over the barangay auto-sum
             // (barangay data may be incomplete/partial)
             $currentTotalPopulation = $currentSummary->total_population;
@@ -215,6 +206,7 @@ class DataManagementController extends Controller
 
         // Update the municipalities table
         $municipality->update([
+            'total_population'    => $totalPopulation,
             'total_households'    => $request->total_households,
             'year'                => $request->year,
             'male_population'     => $request->male_population   ?? 0,
@@ -236,15 +228,6 @@ class DataManagementController extends Controller
                 'population_20_59'  => $request->population_20_59  ?? 0,
                 'population_60_100' => $request->population_60_100 ?? 0,
                 'created_at'        => now(),
-            ]
-        );
-
-        // Save admin override
-        AdminMunicipalityData::updateOrCreate(
-            ['municipality' => $municipality->name, 'year' => $request->year],
-            [
-                'total_population'  => $totalPopulation,
-                'total_households'  => $request->total_households,
             ]
         );
 
@@ -513,13 +496,13 @@ class DataManagementController extends Controller
             }
 
             $targetYear = intval($request->year ?? date('Y'));
-            $adminData = AdminMunicipalityData::where('municipality', $user->municipality)
+            $summaryLimit = MunicipalityYearlySummary::where('municipality', $user->municipality)
                 ->where('year', $targetYear)
                 ->first();
 
-            if ($adminData) {
-                $maxPop = $adminData->total_population;
-                $maxHouseholds = $adminData->total_households;
+            if ($summaryLimit && $summaryLimit->total_population > 0) {
+                $maxPop = $summaryLimit->total_population;
+                $maxHouseholds = $summaryLimit->total_households;
 
                 $otherPopSum = Barangay::where('municipality', $user->municipality)
                     ->where('year', $targetYear)
@@ -608,8 +591,8 @@ class DataManagementController extends Controller
         }
 
         foreach (array_keys($yearsToUpdate) as $yr) {
-            $adminData = AdminMunicipalityData::where('municipality', $user->municipality)->where('year', $yr)->first();
-            if ($adminData) {
+            $summaryLimit = MunicipalityYearlySummary::where('municipality', $user->municipality)->where('year', $yr)->first();
+            if ($summaryLimit && $summaryLimit->total_population > 0) {
                 $incomingIds = array_column($rows, 'id');
                 
                 $otherPopSum = Barangay::where('municipality', $user->municipality)
@@ -617,8 +600,8 @@ class DataManagementController extends Controller
                     ->whereNotIn('id', $incomingIds)
                     ->sum('total_population');
                 
-                if (($otherPopSum + $proposedPops[$yr]) > $adminData->total_population) {
-                    return response()->json(['success' => false, 'message' => "Total population for {$yr} exceeds municipality limit of {$adminData->total_population}."], 422);
+                if (($otherPopSum + $proposedPops[$yr]) > $summaryLimit->total_population) {
+                    return response()->json(['success' => false, 'message' => "Total population for {$yr} exceeds municipality limit of {$summaryLimit->total_population}."], 422);
                 }
 
                 $otherHouseholdsSum = Barangay::where('municipality', $user->municipality)
@@ -626,8 +609,8 @@ class DataManagementController extends Controller
                     ->whereNotIn('id', $incomingIds)
                     ->sum('total_households');
 
-                if (($otherHouseholdsSum + $proposedHouseholds[$yr]) > $adminData->total_households) {
-                    return response()->json(['success' => false, 'message' => "Total households for {$yr} exceeds municipality limit of {$adminData->total_households}."], 422);
+                if (($otherHouseholdsSum + $proposedHouseholds[$yr]) > $summaryLimit->total_households) {
+                    return response()->json(['success' => false, 'message' => "Total households for {$yr} exceeds municipality limit of {$summaryLimit->total_households}."], 422);
                 }
             }
         }
@@ -1041,6 +1024,7 @@ class DataManagementController extends Controller
         $municipality = Municipality::where('name', $muniName)->first();
         if ($municipality) {
             $municipality->update([
+                'total_population'  => $request->total_population,
                 'male_population'   => $request->male_population   ?? $municipality->male_population,
                 'female_population' => $request->female_population ?? $municipality->female_population,
                 'population_0_19'   => $request->population_0_19   ?? $municipality->population_0_19,

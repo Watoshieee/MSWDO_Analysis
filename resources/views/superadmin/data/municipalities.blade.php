@@ -479,21 +479,8 @@
             border-radius: 20px;
             font-size: .75rem;
             font-weight: 700;
-        }
-
-        .muni-Magdalena {
             background: #EFF6FF;
             color: #1D4ED8;
-        }
-
-        .muni-Liliw {
-            background: #F0FDF4;
-            color: #15803D;
-        }
-
-        .muni-Majayjay {
-            background: #FFF7ED;
-            color: #C2410C;
         }
 
         .footer-strip {
@@ -634,7 +621,7 @@
                     <div class="progress-bar-timer" style="position:absolute;bottom:0;left:0;height:3px;background:#FDB913;animation:timerBar 5s linear forwards;"></div>
                 </div>
             @endif
-            @if($errors->any())
+            @if(isset($errors) && $errors instanceof \Illuminate\Support\ViewErrorBag && $errors->any())
                 <div class="alert-danger-custom">
                     <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
                 </div>
