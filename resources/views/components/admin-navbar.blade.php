@@ -1,4 +1,4 @@
-﻿{{-- 
+{{-- 
 MSWDO Shared Admin Navigation Bar
 Included with: @include('components.admin-navbar', ['active' => 'dashboard'])
 Or simply: @include('components.admin-navbar') with automatic active-route detection.
@@ -39,6 +39,8 @@ Or simply: @include('components.admin-navbar') with automatic active-route detec
 @endphp
 
 <style>
+    /* Prevent flex-body gap from inline <style> elements */
+    body > style { display: none !important; }
     /* ===== SHARED ADMIN NAVBAR STYLES ===== */
     .navbar.admin-navbar {
         background: var(--primary-gradient, linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%)) !important;

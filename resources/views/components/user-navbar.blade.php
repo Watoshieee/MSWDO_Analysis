@@ -1,4 +1,4 @@
-﻿{{-- 
+{{-- 
 MSWDO Shared User Navigation Bar
 Included with: @include('components.user-navbar', ['active' => 'dashboard'])
 Or simply: @include('components.user-navbar') with automatic active-route detection.
@@ -26,6 +26,8 @@ Or simply: @include('components.user-navbar') with automatic active-route detect
 @endphp
 
 <style>
+    /* Prevent flex-body gap from inline <style> elements */
+    body > style { display: none !important; }
     /* ===== SHARED USER NAVBAR STYLES ===== */
     .user-navbar {
         background: var(--primary-gradient, linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%)) !important;
