@@ -1,4 +1,4 @@
-{{-- 
+﻿{{-- 
 MSWDO Shared Admin Navigation Bar
 Included with: @include('components.admin-navbar', ['active' => 'dashboard'])
 Or simply: @include('components.admin-navbar') with automatic active-route detection.
@@ -263,7 +263,7 @@ Or simply: @include('components.admin-navbar') with automatic active-route detec
 <nav class="navbar navbar-expand-lg navbar-dark admin-navbar">
     <div class="container">
         <a class="navbar-brand" href="{{ route('admin.dashboard') }}">
-            <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
+            <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbarNav" aria-controls="adminNavbarNav" aria-expanded="false" aria-label="Toggle navigation">
             <span class="navbar-toggler-icon"></span>

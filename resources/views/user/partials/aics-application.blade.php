@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -247,7 +247,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 <div class="top-bar">
     <div class="container-fluid px-3 px-lg-4">
         <div class="top-bar-inner">
-            <div class="brand"><img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD"><span>MSWDO</span></div>
+            <div class="brand"><img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWD"><span>MSWDO</span></div>
             <div class="d-flex align-items-center gap-3">
                 <div class="lang-toggle">
                     <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>

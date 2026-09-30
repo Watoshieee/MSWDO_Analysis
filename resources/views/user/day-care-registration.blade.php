@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -413,7 +413,7 @@
         <div class="container">
             <div class="top-bar-inner">
                 <div class="brand">
-                    <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD">
+                    <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWD">
                     <span>MSWDO</span>
                 </div>
                 <div class="d-flex align-items-center gap-3">

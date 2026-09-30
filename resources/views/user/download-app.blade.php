@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -444,7 +444,7 @@
 
                         <!-- App Icon -->
                         <div class="app-icon-wrapper">
-                            <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWDO App Icon">
+                            <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWDO App Icon">
                         </div>
                         <div class="app-name">MSWDO Beneficiary App</div>
                         <div class="app-subtitle">Municipal Social Welfare and Development Office</div>

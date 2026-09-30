@@ -194,7 +194,7 @@
     <!-- LEFT: Branding -->
     <div class="brand-panel">
         <div class="brand-logo">
-            <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD Logo" style="width:56px;height:56px;object-fit:contain;">
+            <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWD Logo" style="width:56px;height:56px;object-fit:contain;">
             <div>
                 <div class="logo-text">MSWDO</div>
                 <div class="logo-sub">Municipal Social Welfare &amp; Development</div>
