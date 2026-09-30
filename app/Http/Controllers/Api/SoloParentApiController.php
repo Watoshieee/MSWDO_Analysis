@@ -205,28 +205,27 @@ class SoloParentApiController extends Controller
         $application  = null;
         $requirements = [];
 
-        // 2. If there's an active appointment with a linked application, load it
-        if ($appointment && $appointment->solo_parent_app_id) {
-            $application = Application::with('fileMonitoring.fileUploads')
-                ->find($appointment->solo_parent_app_id);
+        // 2. Validate appointment integrity and load associated active application
+        if ($appointment) {
+            if ($appointment->solo_parent_app_id) {
+                // If appointment is linked to an application, that application MUST exist,
+                // have deleted_at IS NULL, and belong to the authenticated user.
+                $application = Application::with('fileMonitoring.fileUploads')
+                    ->where('id', $appointment->solo_parent_app_id)
+                    ->where('user_id', $user->id)
+                    ->first();
 
-            if ($application && $application->fileMonitoring) {
-                $requirements = $this->getRequirements($application);
-            }
-        }
-
-        // 3. If no active appointment, check if user already has an approved
-        //    Solo Parent application (ID ready / delivered)
-        if (!$application) {
-            $application = Application::with('fileMonitoring.fileUploads')
-                ->where('user_id', $user->id)
-                ->where('program_type', 'Solo_Parent')
-                ->where('status', 'approved')
-                ->latest('id')
-                ->first();
-
-            if ($application && $application->fileMonitoring) {
-                $requirements = $this->getRequirements($application);
+                // If linked application does not exist or was deleted/archived:
+                // treat appointment as inactive/orphaned — do NOT return as active workflow.
+                if (!$application) {
+                    $appointment = null;
+                } else if ($application->fileMonitoring) {
+                    $requirements = $this->getRequirements($application);
+                }
+            } elseif ($appointment->status === 'validated') {
+                // A validated eligibility appointment must have an active linked application.
+                // If it has no application, it is orphaned and inactive.
+                $appointment = null;
             }
         }
 
@@ -256,9 +255,15 @@ class SoloParentApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
         }
 
-        // Validate requirement_name against the application's snapshot or category definitions.
-        // This prevents arbitrary requirement names from being uploaded.
-        if ($application->program_type === 'Solo_Parent' && $application->category_code) {
+        // Validate that category has been assigned by admin before allowing requirement uploads
+        if ($application->program_type === 'Solo_Parent') {
+            if (empty($application->category_code)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Your Solo Parent category has not been assigned by the administrator yet. Requirements can only be uploaded after category assignment.',
+                ], 422);
+            }
+
             $allowedRequirements = collect(
                 \App\Services\SoloParentCategoryService::getRequirementsForApplication($application)
             )->flatMap(fn($group) => array_column($group['options'], 'requirement_name'))->all();
@@ -300,16 +305,24 @@ class SoloParentApiController extends Controller
         $fileMonitoring->fileUploads()->updateOrCreate(
             ['requirement_name' => $request->requirement_name],
             [
-                'user_id'     => $user->id,
-                'municipality' => $application->municipality ?? $user->municipality,
-                'file_name'   => $file->getClientOriginalName(),
-                'file_path'   => $path,
-                'status'      => 'pending',
-                'uploaded_at' => now(),
+                'user_id'       => $user->id,
+                'municipality'  => $application->municipality ?? $user->municipality,
+                'file_name'     => $file->getClientOriginalName(),
+                'file_path'     => $path,
+                'status'        => 'pending',
+                'admin_remarks' => null,
+                'uploaded_at'   => now(),
             ]
         );
 
-        $fileMonitoring->update(['overall_status' => 'in_review']);
+        $hasRemainingRejected = $fileMonitoring->fileUploads()->where('status', 'rejected')->exists();
+        $fileMonitoring->update([
+            'overall_status' => $hasRemainingRejected ? 'rejected' : 'in_review'
+        ]);
+
+        if (!$hasRemainingRejected && $application->status === 'rejected') {
+            $application->update(['status' => 'pending']);
+        }
 
         Log::info('Solo Parent document uploaded', [
             'user_id'        => $user->id,
@@ -422,20 +435,24 @@ class SoloParentApiController extends Controller
     {
         $fileMonitoring = $app->fileMonitoring;
         $categoryInfo = null;
+        $evaluation = null;
         if (!empty($app->category_code)) {
             $categories = \App\Services\SoloParentCategoryService::getCategories();
             $categoryInfo = $categories[$app->category_code] ?? null;
+            $evaluation = \App\Services\SoloParentCategoryService::evaluateCompletion($app, $fileMonitoring);
         }
 
         return [
-            'id'               => $app->id,
-            'category_code'    => $app->category_code,
-            'category_title'   => $categoryInfo['title'] ?? null,
-            'status'           => $app->status,
-            'overall_status'   => $fileMonitoring?->overall_status ?? 'pending',
-            'id_status'        => $app->id_status,
-            'id_ready_at'      => $app->id_ready_at?->toIso8601String(),
-            'application_date' => $app->application_date?->format('Y-m-d'),
+            'id'                   => $app->id,
+            'category_code'        => $app->category_code,
+            'category_title'       => $categoryInfo['title'] ?? null,
+            'is_category_assigned' => !empty($app->category_code),
+            'status'               => $app->status,
+            'overall_status'       => $fileMonitoring?->overall_status ?? 'pending',
+            'id_status'            => $app->id_status,
+            'id_ready_at'          => $app->id_ready_at?->toIso8601String(),
+            'application_date'     => $app->application_date?->format('Y-m-d'),
+            'evaluation'           => $evaluation,
         ];
     }
 
@@ -459,30 +476,16 @@ class SoloParentApiController extends Controller
                         'status'        => $uploaded?->status ?? 'not_uploaded',
                         'uploaded_at'   => $uploaded?->uploaded_at?->toIso8601String(),
                         'admin_remarks' => $uploaded?->admin_remarks,
+                        'file_name'     => $uploaded?->file_name,
+                        'file_url'      => $uploaded?->file_path ? asset('storage/' . $uploaded->file_path) : null,
                     ];
                 }
             }
             return $result;
         }
 
-        $requiredDocs = [
-            'PSA Birth Certificate of Child/Children',
-            'Barangay Certificate (stating you are a solo parent)',
-            'Valid Government-Issued ID',
-            'CENOMAR or PSA Marriage Certificate',
-            'Death Certificate of Spouse (if widowed) / Police Report (if abandoned)',
-            '2x2 ID Photo (recent, white background)',
-        ];
-
-        return collect($requiredDocs)->map(function($req) use ($uploadedByName) {
-            $uploaded = $uploadedByName->get($req);
-            return [
-                'name'          => $req,
-                'status'        => $uploaded?->status ?? 'not_uploaded',
-                'uploaded_at'   => $uploaded?->uploaded_at?->toIso8601String(),
-                'admin_remarks' => $uploaded?->admin_remarks,
-            ];
-        })->values()->toArray();
+        // When no category has been assigned by the admin yet, do not return premature requirements.
+        return [];
     }
 
     private function sendPushNotification(int $userId, string $title, string $body, string $type = 'solo_parent'): void

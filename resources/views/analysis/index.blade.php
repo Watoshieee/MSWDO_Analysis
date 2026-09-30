@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -27,9 +27,6 @@
             background: #e2e8f0;
             font-family: 'Inter', sans-serif;
             margin: 0;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
         }
 
         .navbar {
@@ -392,7 +389,6 @@
             text-align: center;
             padding: 20px;
             font-size: .88rem;
-            margin-top: auto;
         }
 
         @media(max-width:768px) {
@@ -400,10 +396,7 @@
                 font-size: 1.8rem;
             }
         }
-    
-        html { background: #1A2A5C; }
-        body { padding-bottom: 0 !important; }
-</style>
+    </style>
 </head>
 
 <body>
@@ -412,54 +405,65 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/analysis">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD"
-                    style="width:34px;height:34px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWDO"
+                    style="width:36px;height:36px;object-fit:contain;border-radius:4px;"> MSWDO
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
             </button>
-            <div class="collapse navbar-collapse" id="nav">
+            <div class="collapse navbar-collapse" id="navbarNav">
                 @auth
                     @if(Auth::user()->isSuperAdmin())
+                        {{-- Super Admin nav --}}
                         <ul class="navbar-nav me-auto">
                             <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.dashboard') }}">Dashboard</a>
+                            </li>
+                            <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a>
                             </li>
                             <li class="nav-item"><a class="nav-link"
                                     href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
                             <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.data.dashboard') }}">Data
                                     Management</a></li>
-                            <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
+                            <li class="nav-item"><a class="nav-link active" href="/analysis">Public View</a></li>
                         </ul>
                         <div class="d-flex">
-                            <div class="user-info"><span>{{ Auth::user()->full_name }}</span>
+                            <div class="user-info">
+                                <span>{{ Auth::user()->full_name }}</span>
                                 <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
                                     <button type="submit" class="logout-btn">Logout</button>
                                 </form>
                             </div>
                         </div>
                     @elseif(Auth::user()->isAdmin())
+                        {{-- Admin nav --}}
                         <ul class="navbar-nav me-auto">
                             <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ route('admin.requirements') }}">Applications</a>
+                            </li>
                             <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data
                                     Management</a></li>
-                            <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
+                            <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a>
+                            </li>
+                            <li class="nav-item"><a class="nav-link active" href="/analysis">Public View</a></li>
                         </ul>
                         <div class="d-flex">
-                            <div class="user-info"><span>{{ Auth::user()->full_name }}</span>
+                            <div class="user-info">
+                                <span>{{ Auth::user()->full_name }}</span>
                                 <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
                                     <button type="submit" class="logout-btn">Logout</button>
                                 </form>
                             </div>
                         </div>
                     @else
+                        {{-- Logged-in user nav --}}
                         <ul class="navbar-nav me-auto">
                             <li class="nav-item"><a class="nav-link" href="/analysis">Programs</a></li>
                             <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
                             <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
-                              <li class="nav-item"><a class="nav-link" href="{{ route('user.dashboard') }}" style="color:var(--secondary-yellow, #FDB913)!important;"><i class="bi bi-speedometer2 me-1"></i> Dashboard</a></li>
                         </ul>
                         <div class="d-flex">
-                            <div class="user-info"><span>{{ Auth::user()->full_name }}</span>
+                            <div class="user-info">
+                                <span>{{ Auth::user()->full_name }}</span>
                                 <form method="POST" action="{{ route('logout') }}" class="d-inline">@csrf
                                     <button type="submit" class="logout-btn">Logout</button>
                                 </form>
@@ -467,13 +471,14 @@
                         </div>
                     @endif
                 @else
+                    {{-- Guest nav --}}
                     <ul class="navbar-nav me-auto">
                         <li class="nav-item"><a class="nav-link" href="/analysis">Programs</a></li>
                         <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
                         <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
                     </ul>
-                    <div class="d-flex gap-2">
-                        <a href="{{ route('login') }}" class="btn-login">Login</a>
+                    <div class="d-flex">
+                        <a href="{{ route('login') }}" class="btn-login me-2">Login</a>
                         <a href="{{ route('register') }}" class="btn-register">Register</a>
                     </div>
                 @endauth
@@ -1035,7 +1040,7 @@
                 <div class="col-lg-5">
                     <div class="card-base h-100">
                         <h6 style="font-weight:700;color:var(--blue);">Dependency Ratios</h6>
-                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">(Youth + Senior) / Working Age ×
+                        <p style="color:#94a3b8;font-size:.8rem;margin-bottom:16px;">(Youth + Senior) / Working Age Ã—
                             100</p>
                         @foreach($coreNames as $n)
                             <div style="margin-bottom:18px;">
@@ -1482,8 +1487,7 @@
             <style>.admin-back-btn{position:fixed;bottom:28px;left:28px;z-index:9999;display:flex;align-items:center;gap:10px;background:var(--grad);color:#fff;border:none;border-radius:50px;padding:12px 22px 12px 16px;font-family:'Inter',sans-serif;font-weight:800;font-size:.85rem;box-shadow:0 8px 28px rgba(44,62,143,.4);cursor:pointer;text-decoration:none;transition:all .3s;}.admin-back-btn:hover{transform:translateY(-4px);color:#fff;}</style>
             <a href="{{ route('superadmin.dashboard') }}" class="admin-back-btn">&#8592; Super Admin Dashboard</a>
         @elseif(Auth::user()->isAdmin())
-            <style>.admin-back-btn{position:fixed;bottom:28px;left:28px;z-index:9999;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#FDB913,#E5A500);color:#1A2A5C;border:none;border-radius:50px;padding:12px 22px 12px 16px;font-family:'Inter',sans-serif;font-weight:800;font-size:.85rem;box-shadow:0 8px 28px rgba(253,185,19,.45);cursor:pointer;text-decoration:none;transition:all .3s;}.admin-back-btn:hover{transform:translateY(-4px);color:#1A2A5C;}
-    </style>
+            <style>.admin-back-btn{position:fixed;bottom:28px;left:28px;z-index:9999;display:flex;align-items:center;gap:10px;background:linear-gradient(135deg,#FDB913,#E5A500);color:#1A2A5C;border:none;border-radius:50px;padding:12px 22px 12px 16px;font-family:'Inter',sans-serif;font-weight:800;font-size:.85rem;box-shadow:0 8px 28px rgba(253,185,19,.45);cursor:pointer;text-decoration:none;transition:all .3s;}.admin-back-btn:hover{transform:translateY(-4px);color:#1A2A5C;}</style>
             <a href="{{ route('admin.dashboard') }}" class="admin-back-btn">&#8592; Admin Dashboard</a>
         @endif
     @endauth
@@ -1651,8 +1655,6 @@
             });
         });
     </script>
-
-    <div class="footer-strip"></div>
 </body>
 
 </html>

@@ -205,19 +205,31 @@ class AppointmentController extends Controller
 
             // Bell notification for user
             try {
+                $categories = SoloParentCategoryService::getCategories();
+                $categoryTitle = $categories[$categoryCode]['title'] ?? $categoryCode;
                 $notifType  = 'solo_parent';
-            $notifTitle = '🏆 You Are Eligible for Solo Parent ID';
-            $notifBody  = 'Congratulations! You passed the eligibility check. Please log in and submit your requirements to proceed.';
-            $notifId = \DB::table('notifications')->insertGetId([
-                'user_id'    => $appt->user_id,
-                'type'       => $notifType,
-                'title'      => $notifTitle,
-                'body'       => $notifBody,
-                'is_read'    => false,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-            \App\Services\OneSignalService::sendPush($appt->user_id, $notifTitle, $notifBody, $notifType, $notifId, ['program_type' => $appt->program_type]);
+                $notifTitle = 'Solo Parent Category Assigned';
+                $notifBody  = "You have been assigned to Category {$categoryCode} ({$categoryTitle}). Your required documents are now available for upload.";
+                $notifData  = json_encode([
+                    'program_type'   => 'Solo_Parent',
+                    'application_id' => $application->id,
+                    'category_code'  => $categoryCode,
+                ]);
+                $notifId = \DB::table('notifications')->insertGetId([
+                    'user_id'    => $appt->user_id,
+                    'type'       => $notifType,
+                    'title'      => $notifTitle,
+                    'body'       => $notifBody,
+                    'data'       => $notifData,
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                \App\Services\OneSignalService::sendPush($appt->user_id, $notifTitle, $notifBody, $notifType, $notifId, [
+                    'program_type'   => $appt->program_type,
+                    'application_id' => $application->id,
+                    'category_code'  => $categoryCode,
+                ]);
             } catch (\Exception $e) {
                 Log::error('Solo Parent eligibility bell notification failed: ' . $e->getMessage());
             }

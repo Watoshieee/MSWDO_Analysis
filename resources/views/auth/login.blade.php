@@ -3,7 +3,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login � MSWDO Analysis</title>
+    <title>Login | MSWDO Analysis</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -49,7 +50,7 @@
             position: relative; z-index: 1;
         }
 
-        /* -- LEFT SIDE � Branding Panel -- */
+        /* -- LEFT SIDE: Branding Panel -- */
         .brand-panel {
             flex: 1;
             background: linear-gradient(160deg, rgba(255,255,255,0.10) 0%, rgba(255,255,255,0.04) 100%);
@@ -61,6 +62,18 @@
             justify-content: center;
             color: white;
         }
+
+        /* Back to Programs — sits at the top of the brand panel */
+        .brand-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            color: rgba(255,255,255,0.75); font-size: 0.85rem;
+            text-decoration: none;
+            margin-bottom: 32px;
+            align-self: flex-start;
+            transition: color 0.2s ease;
+        }
+        .brand-back:hover { color: #FDB913; }
+
         .brand-logo {
             display: flex; align-items: center; gap: 14px;
             margin-bottom: 38px;
@@ -71,6 +84,12 @@
             border: 2px solid rgba(253,185,19,0.35);
             display: flex; align-items: center; justify-content: center;
             font-size: 1.7rem; color: #FDB913;
+        }
+        .brand-logo img {
+            width: 64px; height: 64px;
+            object-fit: contain;
+            border-radius: 12px;
+            background: rgba(255,255,255,0.08);
         }
         .brand-logo .logo-text {
             font-size: 1.3rem; font-weight: 800; line-height: 1.2;
@@ -99,15 +118,8 @@
         .brand-features li i {
             color: #FDB913; font-size: 1rem; flex-shrink: 0;
         }
-        .brand-back {
-            display: inline-flex; align-items: center; gap: 6px;
-            color: rgba(255,255,255,0.75); font-size: 0.85rem;
-            text-decoration: none; margin-top: 36px;
-            transition: color 0.2s ease;
-        }
-        .brand-back:hover { color: #FDB913; }
 
-        /* -- RIGHT SIDE � Form Panel -- */
+        /* -- RIGHT SIDE: Form Panel -- */
         .form-panel {
             flex: 1;
             background: white;
@@ -171,12 +183,15 @@
         }
         .toggle-pw:hover { color: #2C3E8F; }
 
-        /* Remember me */
-        .form-check-input:checked {
-            background-color: #2C3E8F;
-            border-color: #2C3E8F;
+        /* Forgot password row */
+        .forgot-row {
+            text-align: right;
+            margin-bottom: 24px;
         }
-        .form-check-label { font-size: 0.88rem; color: #475569; }
+        .forgot-row a {
+            font-size: 0.85rem; color: #2C3E8F; font-weight: 600; text-decoration: none;
+        }
+        .forgot-row a:hover { color: #FDB913; text-decoration: underline; }
 
         /* Submit button */
         .btn-submit {
@@ -228,13 +243,19 @@
 
 <div class="login-wrapper">
 
-    <!-- -- LEFT: BRANDING -- -->
+    <!-- LEFT: BRANDING -->
     <div class="brand-panel">
+
+        {{-- Back to Programs sits at the top, before the logo --}}
+        <a href="/analysis" class="brand-back">
+            <i class="bi bi-arrow-left"></i> Back to Programs
+        </a>
+
         <div class="brand-logo">
-            <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD Logo" style="width:64px;height:64px;object-fit:contain;margin-bottom:4px;">
+            <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWDO Logo">
             <div>
                 <div class="logo-text">MSWDO</div>
-                <div class="logo-sub">Municipal Social Welfare & Development</div>
+                <div class="logo-sub">Municipal Social Welfare &amp; Development</div>
             </div>
         </div>
 
@@ -242,16 +263,12 @@
         <div class="brand-divider"></div>
         <p>
             Access population data, demographic insights, and program reports for
-            Magdalena, Liliw, and Majayjay � all in one place.
+            Magdalena, Liliw, and Majayjay — all in one place.
         </p>
 
-
-        <a href="/analysis" class="brand-back">
-            <i class="bi bi-arrow-left"></i> Back to Programs
-        </a>
     </div>
 
-    <!-- -- RIGHT: FORM -- -->
+    <!-- RIGHT: FORM -->
     <div class="form-panel">
         <h3>Sign In</h3>
         <p class="form-sub">Enter your credentials to access the dashboard.</p>
@@ -312,14 +329,8 @@
                 </div>
             </div>
 
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div class="form-check">
-                    <input type="checkbox" class="form-check-input" id="remember" name="remember">
-                    <label class="form-check-label" for="remember">Remember me</label>
-                </div>
-                <a href="{{ route('password.request') }}" style="font-size:0.85rem;color:#2C3E8F;font-weight:600;text-decoration:none;">
-                    Forgot password?
-                </a>
+            <div class="forgot-row">
+                <a href="{{ route('password.request') }}">Forgot password?</a>
             </div>
 
             <button type="submit" class="btn-submit">

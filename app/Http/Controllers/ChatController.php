@@ -2,11 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Application;
 use App\Models\Message;
 use App\Models\User;
+use App\Services\OneSignalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class ChatController extends Controller
 {
@@ -100,18 +102,65 @@ class ChatController extends Controller
     {
         $request->validate([
             'receiver_id' => 'required|exists:users,id',
-            'message' => 'required|string|max:1000'
+            'message'     => 'required|string|max:1000',
         ]);
-        
+
         $message = Message::create([
-            'sender_id' => Auth::id(),
+            'sender_id'   => Auth::id(),
             'receiver_id' => $request->receiver_id,
-            'message' => $request->message,
-            'is_read' => false
+            'message'     => $request->message,
+            'is_read'     => false,
         ]);
-        
-        $message->load(['sender:id,full_name', 'receiver:id,full_name']);
-        
+
+        $message->load(['sender:id,full_name,role', 'receiver:id,full_name,role']);
+
+        // ── Push notification to recipient ────────────────────────────────────
+        // Sender is NEVER notified about their own message.
+        // Payload includes sender_id + admin_id so Flutter can open the correct
+        // conversation screen on tap.
+        try {
+            $sender   = $message->sender;
+            $receiver = $message->receiver;
+
+            if ($sender && $receiver) {
+                $isAdminSending = in_array($sender->role, ['admin', 'super_admin']);
+                $preview        = Str::limit($message->message, 80);
+
+                if ($isAdminSending) {
+                    // Staff → User
+                    OneSignalService::sendPush(
+                        userId:         $receiver->id,
+                        title:          'New message from MSWDO',
+                        body:           $sender->full_name . ': ' . $preview,
+                        type:           'chat_message',
+                        notificationId: null,
+                        extraData:      [
+                            'sender_id'   => $sender->id,
+                            'sender_name' => $sender->full_name,
+                            'admin_id'    => $sender->id,
+                        ]
+                    );
+                } else {
+                    // User → Staff
+                    OneSignalService::sendPush(
+                        userId:         $receiver->id,
+                        title:          'New message from ' . $sender->full_name,
+                        body:           $preview,
+                        type:           'chat_message',
+                        notificationId: null,
+                        extraData:      [
+                            'sender_id'   => $sender->id,
+                            'sender_name' => $sender->full_name,
+                            'admin_id'    => $receiver->id,
+                        ]
+                    );
+                }
+            }
+        } catch (\Throwable $e) {
+            Log::warning('ChatController: push notification failed: ' . $e->getMessage());
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
         return response()->json($message);
     }
 

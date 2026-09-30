@@ -5,15 +5,16 @@ namespace App\Services;
 use App\Mail\RegistrationPasswordMail;
 use App\Models\User;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class AuthService
 {
     /**
      * Register a new user and return the created model.
+     * If valid ID file is provided, stores it before sending password email.
      * Does NOT send OTP — that is OtpService's responsibility.
      */
     public function register(array $data, int $age, ?UploadedFile $validIdFile = null): User
@@ -49,7 +50,7 @@ class AuthService
             $this->storeValidId($user, $validIdFile);
         }
 
-        // Send the generated password to the user's email
+        // Send the generated password to the user's email ONLY after user and ID are confirmed
         try {
             Mail::to($user->email)->send(
                 new RegistrationPasswordMail($fullName, $generatedPassword, $user->email)
@@ -64,10 +65,6 @@ class AuthService
         return $user;
     }
 
-    /**
-     * Attempt to find a user by email or username and verify their password.
-     * Throws a descriptive exception on failure so the controller can return the right HTTP status.
-     */
     /**
      * Store the uploaded valid ID file and associate it with the given user.
      *
@@ -85,6 +82,7 @@ class AuthService
     {
         $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg');
 
+        // Server-generated safe filename — never trust client filename
         $safeFilename = 'valid-id.' . $extension;
         $directory = 'valid-ids/' . $user->id;
 
@@ -102,6 +100,10 @@ class AuthService
         ]);
     }
 
+    /**
+     * Attempt to find a user by email or username and verify their password.
+     * Throws a descriptive exception on failure so the controller can return the right HTTP status.
+     */
     public function attemptLogin(string $login, string $password): User
     {
         $loginType = filter_var($login, FILTER_VALIDATE_EMAIL) ? 'email' : 'username';

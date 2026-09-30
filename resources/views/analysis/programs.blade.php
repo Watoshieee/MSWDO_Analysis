@@ -35,9 +35,6 @@
         body {
             background: #e2e8f0 !important;
             font-family: 'Inter', 'Segoe UI', sans-serif;
-            display: flex;
-            flex-direction: column;
-            min-height: 100vh;
         }
 
         /* ===== NAVBAR ===== */
@@ -609,7 +606,6 @@
             padding: 20px;
             font-size: 0.88rem;
             letter-spacing: 0.01em;
-            margin-top: auto;
         }
 
         .border-light {
@@ -846,10 +842,7 @@
         .aics-tab-content.active {
             display: block;
         }
-    
-        html { background: #1A2A5C; }
-        body { padding-bottom: 0 !important; }
-</style>
+    </style>
 </head>
 
 <body>
@@ -858,8 +851,8 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/analysis">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD"
-                    style="width:36px;height:36px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWDO"
+                    style="width:36px;height:36px;object-fit:contain;border-radius:4px;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -1897,8 +1890,7 @@
                         transform: translateY(0);
                     }
                 }
-            
-    </style>
+            </style>
             <a href="{{ route('admin.dashboard') }}" class="admin-back-btn" title="Return to Admin Dashboard">
                 <span class="abtn-arrow">&#8592;</span>
                 <span class="abtn-dot"></span>

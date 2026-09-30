@@ -40,7 +40,6 @@ class AdminController extends Controller
         // ── All pending applications (keep list visible after view) ───────────
         $query = Application::where('municipality', $user->municipality)
             ->where('status', 'pending')
-            ->where('program_type', '!=', 'MTA')
             ->with('user')
             ->orderBy('application_date', 'desc');
 
@@ -252,8 +251,7 @@ class AdminController extends Controller
         $admin = Auth::user();
         $municipality = $admin->municipality;
 
-        $applicationsQuery = Application::where('municipality', $municipality)
-            ->where('program_type', '!=', 'MTA');
+        $applicationsQuery = Application::where('municipality', $municipality);
 
         if ($request->filled('app_search')) {
             $search = trim((string) $request->input('app_search'));
@@ -304,7 +302,20 @@ class AdminController extends Controller
             ->where('municipality', $admin->municipality)
             ->firstOrFail();
 
-        $application->delete(); // soft delete
+        \DB::transaction(function () use ($application) {
+            $application->delete(); // soft delete
+
+            // Soft-delete associated appointment(s)
+            Appointment::where('solo_parent_app_id', $application->id)->delete();
+        });
+
+        if (class_exists(\App\Services\DashboardService::class)) {
+            try {
+                app(\App\Services\DashboardService::class)->invalidateStats($application->user_id);
+            } catch (\Throwable $e) {
+                Log::warning("Failed to invalidate dashboard stats for user {$application->user_id}: " . $e->getMessage());
+            }
+        }
 
         return redirect()->route('admin.requirements')
             ->with('success', "Application of \"{$application->full_name}\" has been archived.");
@@ -319,7 +330,52 @@ class AdminController extends Controller
             ->where('municipality', $admin->municipality)
             ->firstOrFail();
 
-        $application->restore();
+        \DB::transaction(function () use ($application) {
+            $application->restore();
+
+            // Find associated trashed appointments
+            $trashedAppts = Appointment::onlyTrashed()
+                ->where('solo_parent_app_id', $application->id)
+                ->get();
+
+            foreach ($trashedAppts as $appt) {
+                // If it was validated (eligibility check passed) and application is active, restore it
+                if ($appt->status === 'validated') {
+                    $appt->restore();
+                    continue;
+                }
+
+                // If pending or confirmed, check if appointment date/time is already in the past
+                if (in_array($appt->status, ['pending', 'confirmed'])) {
+                    $isPast = false;
+                    try {
+                        if ($appt->appointment_date) {
+                            $dateStr = $appt->appointment_date->format('Y-m-d');
+                            $timeStr = $appt->appointment_time ? substr(trim($appt->appointment_time), 0, 5) : '00:00';
+                            $isPast = Carbon::parse("$dateStr $timeStr")->isPast();
+                        }
+                    } catch (\Throwable $e) {
+                        $isPast = true;
+                    }
+
+                    if ($isPast) {
+                        // Stale past appointment: mark cancelled so user is not trapped on an expired schedule
+                        $appt->update(['status' => 'cancelled']);
+                    } else {
+                        // Future pending/confirmed slot may be restored
+                        $appt->restore();
+                    }
+                }
+            }
+        });
+
+        if (class_exists(\App\Services\DashboardService::class)) {
+            try {
+                app(\App\Services\DashboardService::class)->invalidateStats($application->user_id);
+            } catch (\Throwable $e) {
+                Log::warning("Failed to invalidate dashboard stats for user {$application->user_id}: " . $e->getMessage());
+            }
+        }
 
         return redirect()->route('admin.requirements')
             ->with('success', "Application of \"{$application->full_name}\" has been restored.");
@@ -335,7 +391,24 @@ class AdminController extends Controller
             ->firstOrFail();
 
         $name = $application->full_name;
-        $application->forceDelete();
+        $userId = $application->user_id;
+
+        \DB::transaction(function () use ($application) {
+            // Permanently delete associated appointment(s)
+            Appointment::withTrashed()
+                ->where('solo_parent_app_id', $application->id)
+                ->forceDelete();
+
+            $application->forceDelete();
+        });
+
+        if (class_exists(\App\Services\DashboardService::class)) {
+            try {
+                app(\App\Services\DashboardService::class)->invalidateStats($userId);
+            } catch (\Throwable $e) {
+                Log::warning("Failed to invalidate dashboard stats for user {$userId}: " . $e->getMessage());
+            }
+        }
 
         return redirect()->route('admin.requirements')
             ->with('success', "Application of \"{$name}\" has been permanently deleted.");
@@ -350,7 +423,24 @@ class AdminController extends Controller
             ->firstOrFail();
 
         $name = $application->full_name;
-        $application->forceDelete(); // bypasses soft delete entirely
+        $userId = $application->user_id;
+
+        \DB::transaction(function () use ($application) {
+            // Permanently delete associated appointment(s)
+            Appointment::withTrashed()
+                ->where('solo_parent_app_id', $application->id)
+                ->forceDelete();
+
+            $application->forceDelete(); // bypasses soft delete entirely
+        });
+
+        if (class_exists(\App\Services\DashboardService::class)) {
+            try {
+                app(\App\Services\DashboardService::class)->invalidateStats($userId);
+            } catch (\Throwable $e) {
+                Log::warning("Failed to invalidate dashboard stats for user {$userId}: " . $e->getMessage());
+            }
+        }
 
         return redirect()->route('admin.requirements')
             ->with('success', "Application of \"{$name}\" has been permanently deleted.");
@@ -998,16 +1088,29 @@ class AdminController extends Controller
             }
 
             try {
+                $notifData = json_encode([
+                    'requirement_name' => $docName,
+                    'status'           => $request->status,
+                    'admin_remarks'    => $request->admin_remarks,
+                    'program_type'     => $programType,
+                    'application_id'   => $fileMonitoring->application_id,
+                ]);
                 $notifId = \DB::table('notifications')->insertGetId([
                     'user_id'    => $fileMonitoring->application->user_id,
                     'type'       => $notifType,
                     'title'      => $notifTitle,
                     'body'       => $notifBody,
+                    'data'       => $notifData,
                     'is_read'    => false,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-                \App\Services\OneSignalService::sendPush($fileMonitoring->application->user_id, $notifTitle, $notifBody, $notifType, $notifId, ['program_type' => $programType]);
+                \App\Services\OneSignalService::sendPush($fileMonitoring->application->user_id, $notifTitle, $notifBody, $notifType, $notifId, [
+                    'program_type'     => $programType,
+                    'requirement_name' => $docName,
+                    'status'           => $request->status,
+                    'application_id'   => $fileMonitoring->application_id,
+                ]);
             } catch (\Exception $e) {
                 Log::error('File status notification insert failed: ' . $e->getMessage());
             }
