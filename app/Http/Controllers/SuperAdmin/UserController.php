@@ -39,7 +39,10 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::withoutTrashed()->orderBy('created_at', 'desc')->get();
+        $users = User::withoutTrashed()
+            ->orderByRaw("FIELD(role, 'user', 'admin', 'super_admin')")
+            ->orderBy('created_at', 'desc')
+            ->get();
         $roles = User::getRoles();
         $municipalities = $this->municipalityOptions();
 

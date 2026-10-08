@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -594,6 +594,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .notification-toast.fade-out {
             animation: slideOutRight 0.4s ease-in forwards;
         }
+
+        /* ── FILTER BAR (admin-style) ── */
+        .filter-bar { background: white; border-radius: 16px; border: 1px solid var(--border-light); padding: 18px 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+        .search-input { border: 2px solid #e2e8f0; border-radius: 10px; padding: 10px 16px 10px 40px; font-size: 0.88rem; font-family: 'Inter', sans-serif; width: 100%; transition: border-color .2s; background: #f8fafc; }
+        .search-input:focus { outline: none; border-color: var(--primary-blue); background: white; box-shadow: 0 0 0 4px rgba(44,62,143,.08); }
+        .search-wrap { position: relative; }
+        .search-icon-abs { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }
+        .no-results-row td { padding: 40px 20px !important; }
     </style>
 </head>
 
@@ -681,13 +689,51 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     User</a>
             </div>
 
+            {{-- ── FILTER BAR (admin-style) ── --}}
+            <div class="filter-bar mb-4">
+                <div class="row g-3 align-items-center">
+                    <div class="col-md-4">
+                        <div class="search-wrap">
+                            <svg class="search-icon-abs" xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+                            <input type="text" id="filterSearch" class="search-input" placeholder="Search by username, name, or email…" oninput="applyFilters()">
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="filterRole" class="search-input" style="padding-left:14px;cursor:pointer;" onchange="applyFilters()">
+                            <option value="">All roles</option>
+                            <option value="user">User</option>
+                            <option value="admin">Admin</option>
+                            <option value="super_admin">Super Admin</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="filterStatus" class="search-input" style="padding-left:14px;cursor:pointer;" onchange="applyFilters()">
+                            <option value="">All statuses</option>
+                            <option value="active">Active</option>
+                            <option value="inactive">Inactive</option>
+                        </select>
+                    </div>
+                    <div class="col-md-2">
+                        <select id="filterMunicipality" class="search-input" style="padding-left:14px;cursor:pointer;" onchange="applyFilters()">
+                            <option value="">All municipalities</option>
+                            @foreach($municipalities as $m)
+                                <option value="{{ strtolower($m) }}">{{ $m }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-2 text-end">
+                        <span id="visibleCount" style="font-size:.82rem;font-weight:700;color:#64748b;">{{ $users->count() }} users</span>
+                    </div>
+                </div>
+            </div>
+
             <div class="panel-card">
                 <div class="panel-header">
                     <h5>All Active Users</h5>
-                    <span class="count-badge">{{ $users->count() }} users</span>
+                    <span class="count-badge" id="visibleCount">{{ $users->count() }} users</span>
                 </div>
                 <div class="table-responsive">
-                    <table class="premium-table">
+                    <table class="premium-table" id="usersTable">
                         <thead>
                             <tr>
                                 <th>Username</th>
@@ -700,9 +746,16 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                 <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody id="usersTableBody">
                             @forelse($users as $user)
-                                <tr>
+                                <tr
+                                    data-username="{{ strtolower($user->username) }}"
+                                    data-fullname="{{ strtolower($user->full_name) }}"
+                                    data-email="{{ strtolower($user->email) }}"
+                                    data-role="{{ $user->role }}"
+                                    data-status="{{ $user->status }}"
+                                    data-municipality="{{ strtolower($user->municipality ?? '') }}"
+                                >
                                     <td style="font-weight:600;">{{ $user->username }}</td>
                                     <td>{{ $user->full_name }}</td>
                                     <td style="color:#64748b;">{{ $user->email }}</td>
@@ -716,9 +769,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                                         @endif
                                     </td>
                                     <td>{{ $user->municipality ?? 'N/A' }}</td>
-                                    <td><span
-                                            class="status-pill {{ $user->status == 'active' ? 'active' : 'inactive' }}">{{ ucfirst($user->status) }}</span>
-                                    </td>
+                                    <td><span class="status-pill {{ $user->status == 'active' ? 'active' : 'inactive' }}">{{ ucfirst($user->status) }}</span></td>
                                     <td>
                                         @if($user->email_verified_at)
                                             <span class="verified-pill yes">Verified</span>
@@ -1047,7 +1098,68 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
         }
 
-      
+        // -- Filter & Search -------------------------------------------
+        function applyFilters() {
+            const search      = (document.getElementById('filterSearch')?.value || '').toLowerCase().trim();
+            const role        = (document.getElementById('filterRole')?.value || '').toLowerCase();
+            const status      = (document.getElementById('filterStatus')?.value || '').toLowerCase();
+            const municipality= (document.getElementById('filterMunicipality')?.value || '').toLowerCase();
+
+            const tbody = document.getElementById('usersTableBody');
+            if (!tbody) return;
+
+            // Remove any existing no-results placeholder
+            const existingEmpty = tbody.querySelector('.js-no-results');
+            if (existingEmpty) existingEmpty.remove();
+
+            const rows = Array.from(tbody.querySelectorAll('tr[data-role]'));
+            let visible = 0;
+            const isFiltered = search || role || status || municipality;
+
+            rows.forEach(row => {
+                const matchSearch = !search || (
+                    (row.dataset.username   || '').includes(search) ||
+                    (row.dataset.fullname   || '').includes(search) ||
+                    (row.dataset.email      || '').includes(search)
+                );
+                const matchRole   = !role   || row.dataset.role   === role;
+                const matchStatus = !status || row.dataset.status === status;
+                const matchMuni   = !municipality || (row.dataset.municipality || '').includes(municipality);
+
+                const show = matchSearch && matchRole && matchStatus && matchMuni;
+                row.style.display = show ? '' : 'none';
+                if (show) visible++;
+            });
+
+            // Show "no results" row when nothing matches
+            if (visible === 0 && rows.length > 0) {
+                const emptyRow = document.createElement('tr');
+                emptyRow.className = 'js-no-results no-results-row';
+                emptyRow.innerHTML = `<td colspan="8" class="text-center text-muted">
+                    <div style="padding:30px 0;">
+                        <i class="bi bi-search" style="font-size:2rem;opacity:.35;display:block;margin-bottom:8px;"></i>
+                        No users match the current filters.
+                    </div>
+                </td>`;
+                tbody.appendChild(emptyRow);
+            }
+
+            // Update badge & count
+            const countBadge   = document.getElementById('visibleCount');
+            const activeBadge  = document.getElementById('filterActiveBadge');
+            if (countBadge)  countBadge.textContent = visible + ' user' + (visible !== 1 ? 's' : '');
+            if (activeBadge) activeBadge.style.display = isFiltered ? 'inline-flex' : 'none';
+        }
+
+        function resetFilters() {
+            const ids = ['filterSearch', 'filterRole', 'filterStatus', 'filterMunicipality'];
+            ids.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.value = '';
+            });
+            applyFilters();
+        }
+
                         // -- UI Confirm (lalabas sa harap ng kahit anong modal) ----------------------
         function uiConfirm(title, message, okText, cancelText) {
             return new Promise((resolve) => {

@@ -699,7 +699,7 @@ public function uploadBatch(Request $request)
 
                 // Solo Parent: skip batch files whose derived name is not in the snapshot.
                 if ($soloParentAllowedNames !== null && !in_array($reqName, $soloParentAllowedNames, true)) {
-                    \Illuminate\Support\Facades\Log::warning('Solo Parent batch upload rejected - requirement not in snapshot', [
+                    Log::warning('Solo Parent batch upload rejected - requirement not in snapshot', [
                         'application_id'   => $applicationId,
                         'requirement_name' => $reqName,
                     ]);
