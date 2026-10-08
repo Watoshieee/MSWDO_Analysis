@@ -16,13 +16,13 @@ use Illuminate\Support\Facades\DB;
 class AnalysisController extends Controller
 {
     /**
-     * Main public page at /analysis â€” About / Programs info.
+     * Main public page at /analysis - About / Programs info.
      * Labelled "Programs" in the navbar (1st nav item).
      */
     public function index(Request $request)
     {
         // Only show data for these three municipalities
-        $coreNames = ['Liliw', 'Magdalena', 'Majayjay'];
+        $coreNames = Municipality::orderBy('name')->pluck('name')->toArray();
 
         $allYears = SocialWelfareProgram::whereIn('municipality', $coreNames)
             ->distinct()->orderBy('year')->pluck('year')->toArray();
@@ -54,7 +54,7 @@ class AnalysisController extends Controller
             $yearlyPopulation[$muni] = [];
             foreach ($summaryYears as $yr) {
                 $row = MunicipalityYearlySummary::where('municipality', $muni)->where('year', $yr)->first();
-                $yearlyPopulation[$muni][$yr] = $row ? $row->total_population : 0;
+                $yearlyPopulation[$muni][$yr] = $row ? $row->total_population : null;
             }
         }
 
@@ -71,9 +71,9 @@ class AnalysisController extends Controller
         foreach ($coreNames as $n) {
             $row = $visionRows[$n] ?? null;
             $visionData[$n] = [
-                'vision'          => $row?->vision ?? '',
-                'mission'         => $row?->mission ?? '',
-                'goals'           => $row?->goals ?? '',
+                'vision' => $row?->vision ?? '',
+                'mission' => $row?->mission ?? '',
+                'goals' => $row?->goals ?? '',
                 'strategic_goals' => $row?->strategic_goals ?? [],
             ];
         }
@@ -336,20 +336,23 @@ class AnalysisController extends Controller
     public function demographic(Request $request)
     {
         // Only show data for these three municipalities
-        $coreNames = ['Liliw', 'Magdalena', 'Majayjay'];
-        $palette   = ['#2C3E8F','#FDB913','#6366f1','#16a34a','#9333ea','#0891b2','#ea580c','#db2777','#65a30d','#d97706'];
-        $colors    = [];
-        foreach ($coreNames as $i => $n) { $colors[$n] = $palette[$i % count($palette)]; }
+        $coreNames = Municipality::orderBy('name')->pluck('name')->toArray();
+        $palette = ['#2C3E8F', '#FDB913', '#6366f1', '#16a34a', '#9333ea', '#0891b2', '#ea580c', '#db2777', '#65a30d', '#d97706'];
+        $colors = [];
+        foreach ($coreNames as $i => $n) {
+            $colors[$n] = $palette[$i % count($palette)];
+        }
 
-        // â”€â”€ All unique years across summaries â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ All unique years across summaries Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         $allYears = MunicipalityYearlySummary::whereIn('municipality', $coreNames)
             ->distinct()->orderBy('year')->pluck('year')->toArray();
-        if (empty($allYears)) $allYears = [(int) date('Y')];
+        if (empty($allYears))
+            $allYears = [(int) date('Y')];
 
         $latestYear = end($allYears);
         $selectedYear = (int) $request->input('year', $latestYear);
 
-        // â”€â”€ Per-year, per-municipality data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ Per-year, per-municipality data Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         $summariesByMuni = [];
         foreach ($coreNames as $name) {
             $rows = MunicipalityYearlySummary::where('municipality', $name)
@@ -357,97 +360,102 @@ class AnalysisController extends Controller
             $summariesByMuni[$name] = $rows->keyBy('year');
         }
 
-        // â”€â”€ Trend arrays (indexed by $allYears) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-        $populationTrend  = [];  // [muni => [yr => pop]]
-        $householdsTrend  = [];  // [muni => [yr => hh]]
-        $benefTrend       = [];  // [muni => [yr => total_benef]]
+        // Ã¢â€â‚¬Ã¢â€â‚¬ Trend arrays (indexed by $allYears) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+        $populationTrend = [];  // [muni => [yr => pop]]
+        $householdsTrend = [];  // [muni => [yr => hh]]
+        $benefTrend = [];  // [muni => [yr => total_benef]]
         foreach ($coreNames as $name) {
-            $populationTrend[$name]  = [];
-            $householdsTrend[$name]  = [];
-            $benefTrend[$name]       = [];
+            $populationTrend[$name] = [];
+            $householdsTrend[$name] = [];
+            $benefTrend[$name] = [];
             foreach ($allYears as $yr) {
                 $row = $summariesByMuni[$name][$yr] ?? null;
-                $populationTrend[$name][$yr]  = $row ? (int)$row->total_population : 0;
-                $householdsTrend[$name][$yr]  = $row ? (int)$row->total_households : 0;
+                $populationTrend[$name][$yr] = $row ? (int) $row->total_population : 0;
+                $householdsTrend[$name][$yr] = $row ? (int) $row->total_households : 0;
                 $benefTrend[$name][$yr] = $row
-                    ? ((int)$row->total_pwd + (int)$row->total_aics + (int)$row->total_solo_parent
-                        + (int)$row->total_4ps + (int)$row->total_senior)
+                    ? ((int) $row->total_pwd + (int) $row->total_aics + (int) $row->total_solo_parent
+                        + (int) $row->total_4ps + (int) $row->total_senior)
                     : 0;
             }
         }
 
-        // â”€â”€ Selected-year demographic data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ Selected-year demographic data Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         $demographicData = [];
         foreach ($coreNames as $name) {
             $row = $summariesByMuni[$name][$selectedYear] ?? null;
-            $pop  = $row ? (int)$row->total_population : 0;
-            $male = $row ? (int)$row->male_population  : 0;
-            $female = $row ? (int)$row->female_population : 0;
-            $hh   = $row ? (int)$row->total_households : 0;
-            $pwd  = $row ? (int)$row->total_pwd    : 0;
-            $aics = $row ? (int)$row->total_aics   : 0;
-            $solo = $row ? (int)$row->total_solo_parent : 0;
-            $fps  = $row ? (int)$row->total_4ps    : 0;
-            $sen  = $row ? (int)$row->total_senior  : 0;
-            $age0  = $row ? (int)$row->population_0_19   : 0;
-            $age20 = $row ? (int)$row->population_20_59  : 0;
-            $age60 = $row ? (int)$row->population_60_100 : 0;
+            $pop = $row ? (int) $row->total_population : 0;
+            $male = $row ? (int) $row->male_population : 0;
+            $female = $row ? (int) $row->female_population : 0;
+            $hh = $row ? (int) $row->total_households : 0;
+            $pwd = $row ? (int) $row->total_pwd : 0;
+            $aics = $row ? (int) $row->total_aics : 0;
+            $solo = $row ? (int) $row->total_solo_parent : 0;
+            $fps = $row ? (int) $row->total_4ps : 0;
+            $sen = $row ? (int) $row->total_senior : 0;
+            $age0 = $row ? (int) $row->population_0_19 : 0;
+            $age20 = $row ? (int) $row->population_20_59 : 0;
+            $age60 = $row ? (int) $row->population_60_100 : 0;
             $totalBenef = $pwd + $aics + $solo + $fps + $sen;
 
             $demographicData[$name] = [
-                'total'           => $pop,
-                'male'            => $male,
-                'female'          => $female,
-                'households'      => $hh,
-                'avg_hh_size'     => ($hh > 0 && $pop > 0) ? round($pop / $hh, 1) : 0,
-                'beneficiaries'   => $totalBenef,
-                'pwd'             => $pwd,
-                'aics'            => $aics,
-                'solo_parent'     => $solo,
-                'four_ps'         => $fps,
-                'senior'          => $sen,
-                'age_0_19'        => $age0,
-                'age_20_59'       => $age20,
-                'age_60_100'      => $age60,
-                'age_0_19_pct'    => $pop > 0 ? round($age0  / $pop * 100, 1) : 0,
-                'age_20_59_pct'   => $pop > 0 ? round($age20 / $pop * 100, 1) : 0,
-                'age_60_100_pct'  => $pop > 0 ? round($age60 / $pop * 100, 1) : 0,
+                'total' => $pop,
+                'male' => $male,
+                'female' => $female,
+                'households' => $hh,
+                'avg_hh_size' => ($hh > 0 && $pop > 0) ? round($pop / $hh, 1) : 0,
+                'beneficiaries' => $totalBenef,
+                'pwd' => $pwd,
+                'aics' => $aics,
+                'solo_parent' => $solo,
+                'four_ps' => $fps,
+                'senior' => $sen,
+                'age_0_19' => $age0,
+                'age_20_59' => $age20,
+                'age_60_100' => $age60,
+                'age_0_19_pct' => $pop > 0 ? round($age0 / $pop * 100, 1) : 0,
+                'age_20_59_pct' => $pop > 0 ? round($age20 / $pop * 100, 1) : 0,
+                'age_60_100_pct' => $pop > 0 ? round($age60 / $pop * 100, 1) : 0,
                 'beneficiaries_pct' => $pop > 0 ? round($totalBenef / $pop * 100, 1) : 0,
-                'households_pct'  => $pop > 0 ? round($hh / $pop * 100, 1) : 0,
+                'households_pct' => $pop > 0 ? round($hh / $pop * 100, 1) : 0,
             ];
         }
 
-        // â”€â”€ Auto-generated key insights â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        // Ã¢â€â‚¬Ã¢â€â‚¬ Auto-generated key insights Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
         // Use array_map (not array_column) to preserve municipality name keys
-        $pops = array_map(fn($d) => $d['total'],         $demographicData);
+        $pops = array_map(fn($d) => $d['total'], $demographicData);
         $bens = array_map(fn($d) => $d['beneficiaries'], $demographicData);
 
         // Highest population
-        arsort($pops);  $highPop = key($pops);
+        arsort($pops);
+        $highPop = key($pops);
         // Fastest growing (biggest absolute increase last 2 years)
         $growthMap = [];
         foreach ($coreNames as $n) {
             $yrs = array_keys($populationTrend[$n]);
             if (count($yrs) >= 2) {
-                $last  = $populationTrend[$n][end($yrs)];
-                $prev  = $populationTrend[$n][$yrs[count($yrs)-2]];
+                $last = $populationTrend[$n][end($yrs)];
+                $prev = $populationTrend[$n][$yrs[count($yrs) - 2]];
                 $growthMap[$n] = $last - $prev;
-            } else { $growthMap[$n] = 0; }
+            } else {
+                $growthMap[$n] = 0;
+            }
         }
-        arsort($growthMap); $fastestGrowing = key($growthMap);
+        arsort($growthMap);
+        $fastestGrowing = key($growthMap);
         // Highest beneficiaries
-        arsort($bens); $highBen = key($bens);
+        arsort($bens);
+        $highBen = key($bens);
         // Dominant age group (across all 3)
-        $totAge0  = array_sum(array_map(fn($d) => $d['age_0_19'],   $demographicData));
-        $totAge20 = array_sum(array_map(fn($d) => $d['age_20_59'],  $demographicData));
+        $totAge0 = array_sum(array_map(fn($d) => $d['age_0_19'], $demographicData));
+        $totAge20 = array_sum(array_map(fn($d) => $d['age_20_59'], $demographicData));
         $totAge60 = array_sum(array_map(fn($d) => $d['age_60_100'], $demographicData));
         $domAgeGroup = $totAge0 >= $totAge20 && $totAge0 >= $totAge60
             ? 'Youth (0-19)'
             : ($totAge20 >= $totAge0 && $totAge20 >= $totAge60 ? 'Working Age (20-59)' : 'Senior (60+)');
         // Gender imbalance
-        $totalMale   = array_sum(array_map(fn($d) => $d['male'],   $demographicData));
+        $totalMale = array_sum(array_map(fn($d) => $d['male'], $demographicData));
         $totalFemale = array_sum(array_map(fn($d) => $d['female'], $demographicData));
-        $genderNote  = ($totalMale + $totalFemale) > 0
+        $genderNote = ($totalMale + $totalFemale) > 0
             ? ($totalMale > $totalFemale ? 'Male-dominant' : ($totalFemale > $totalMale ? 'Female-dominant' : 'Balanced'))
             : 'No gender data';
 
@@ -475,18 +483,20 @@ class AnalysisController extends Controller
 
     /**
      * Comprehensive Statistical Analysis page at /analysis/programs.
-     * Demographic data  → municipality_yearly_summary  (same source as /superadmin/data/municipalities)
-     * Program data      → social_welfare_programs       (same source as /superadmin/data/programs)
+     * Demographic data  â†’ municipality_yearly_summary  (same source as /superadmin/data/municipalities)
+     * Program data      â†’ social_welfare_programs       (same source as /superadmin/data/programs)
      */
     public function programs(Request $request)
     {
         // Only show data for these three municipalities
-        $coreNames = ['Liliw', 'Magdalena', 'Majayjay'];
-        $palette   = ['#2C3E8F','#FDB913','#6366f1','#16a34a','#9333ea','#0891b2','#ea580c','#db2777','#65a30d','#d97706'];
-        $colors    = [];
-        foreach ($coreNames as $i => $n) { $colors[$n] = $palette[$i % count($palette)]; }
+        $coreNames = Municipality::orderBy('name')->pluck('name')->toArray();
+        $palette = ['#2C3E8F', '#FDB913', '#6366f1', '#16a34a', '#9333ea', '#0891b2', '#ea580c', '#db2777', '#65a30d', '#d97706'];
+        $colors = [];
+        foreach ($coreNames as $i => $n) {
+            $colors[$n] = $palette[$i % count($palette)];
+        }
 
-        // ── Demographic data: municipality_yearly_summary ────────────────────
+        // â”€â”€ Demographic data: municipality_yearly_summary â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $allSummaries = MunicipalityYearlySummary::whereIn('municipality', $coreNames)
             ->orderBy('year')->get();
 
@@ -495,230 +505,322 @@ class AnalysisController extends Controller
             $this->summariesByMuni[$name] = $allSummaries->where('municipality', $name)->keyBy('year');
         }
 
-        // ── Program data: social_welfare_programs ────────────────────────────
+        // â”€â”€ Program data: social_welfare_programs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $allPrograms = SocialWelfareProgram::whereIn('municipality', $coreNames)->get();
         $this->programLookup = [];
         foreach ($allPrograms as $p) {
             $this->programLookup[$p->getRawOriginal('municipality')][$p->year][$p->program_type]
-                = (int) $p->beneficiary_count;
+                = $p->beneficiary_count === null ? null : (int) $p->beneficiary_count;
         }
 
-        // ── All unique years: union of both sources ──────────────────────────
+        // Program types are discovered from the data itself (no fixed list)
+        $this->programTypes = $allPrograms->pluck('program_type')->filter()->unique()->sort()->values()->toArray();
+        $programLabels = [];
+        foreach ($this->programTypes as $type) {
+            $programLabels[$type] = $this->programLabel($type);
+        }
+        $programTypes = $this->programTypes;
+
+        // â”€â”€ All unique years: union of both sources â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $summaryYears = $allSummaries->pluck('year')->unique()->sort()->values()->toArray();
         $programYears = $allPrograms->pluck('year')->unique()->sort()->values()->toArray();
         $allYears = collect(array_merge($summaryYears, $programYears))
             ->unique()->sort()->values()->toArray();
-        if (empty($allYears)) $allYears = [(int) date('Y')];
+        if (empty($allYears))
+            $allYears = [(int) date('Y')];
 
-        $latestYear   = end($allYears);
-        $selectedYear = (int) $request->input('year', $latestYear);
+        // --- Category filter ---
+        $selectedCategory = $request->input('category', 'demography');
+        if (!in_array($selectedCategory, ['demography', 'programs', 'all'])) {
+            $selectedCategory = 'demography';
+        }
+        if ($selectedCategory === 'programs') {
+            $categoryYears = $programYears;
+        } elseif ($selectedCategory === 'all') {
+            $categoryYears = $allYears;
+        } else {
+            $categoryYears = $summaryYears;
+        }
+        if (empty($categoryYears)) {
+            $categoryYears = $allYears; // fallback if one source has no records yet
+        }
+
+        $latestCategoryYear = !empty($categoryYears) ? end($categoryYears) : (int) date('Y');
+        $selectedYear = (int) $request->input('year', $latestCategoryYear);
+        // Clamp: if the requested year is not valid for the active category, use latest
+        if (!in_array($selectedYear, $categoryYears)) {
+            $selectedYear = $latestCategoryYear;
+        }
 
         $snapshot = $this->buildSnapshot($coreNames, $selectedYear);
 
-        [$populationTrend, $maleTrend, $femaleTrend, $householdsTrend, $benefTrend,
-         $pwdTrend, $aicsTrend, $soloTrend, $fpsTrend, $seniorTrend, $growthRates]
+        [
+            $populationTrend,
+            $maleTrend,
+            $femaleTrend,
+            $householdsTrend,
+            $benefTrend,
+            $programTrend,
+            $growthRates
+        ]
             = $this->buildTrends($coreNames, $allYears);
 
-        // ── Section 7: ANOVA ─────────────────────────────────────────────────
-        $anovaPopGroups   = array_map(fn($n) => array_values($populationTrend[$n]), $coreNames);
-        $anovaBenefGroups = array_map(fn($n) => array_values($benefTrend[$n]),      $coreNames);
-        $anovaPopResult   = $this->oneWayAnova($anovaPopGroups);
-        $anovaBenefResult = $this->oneWayAnova($anovaBenefGroups);
+        // â”€â”€ ANOVA: removed (statistically invalid with n=3 time-series) â”€â”€
+        $anovaPopResult = null;
+        $anovaBenefResult = null;
 
-        if ($anovaPopResult) {
-            $anovaPopResult['means']  = array_combine($coreNames, $anovaPopResult['groupMeans']);
-        }
-        if ($anovaBenefResult) {
-            $anovaBenefResult['means'] = array_combine($coreNames, $anovaBenefResult['groupMeans']);
-        }
+        // â”€â”€ Correlation: removed (ecological fallacy, nâ‰ˆ9 too small) â”€â”€â”€â”€â”€
+        $corrPopBenef = null;
+        $corrAge60Senior = null;
+        $corrHhAics = null;
+        $correlations = [];
 
-        // ── Section 8: Correlation ───────────────────────────────────────────
-        $allPop   = []; $allBenef = [];
-        $allAge60 = []; $allSen   = [];
-        $allHH    = []; $allAics  = [];
+        // â”€â”€ Determine which municipalities have program data for the selected year â”€â”€
+        $programDataAvailable = [];
         foreach ($coreNames as $name) {
-            foreach ($allYears as $yr) {
-                $allPop[]   = $populationTrend[$name][$yr];
-                $allBenef[] = $benefTrend[$name][$yr];
-                $allAge60[] = $this->getDemog($name, $yr, 'population_60_100');
-                $allSen[]   = $seniorTrend[$name][$yr];   // from social_welfare_programs
-                $allHH[]    = $householdsTrend[$name][$yr];
-                $allAics[]  = $aicsTrend[$name][$yr];     // from social_welfare_programs
-            }
+            $programDataAvailable[$name] = isset($this->programLookup[$name][$selectedYear]);
         }
-        $corrPopBenef    = $this->pearsonCorr($allPop,   $allBenef);
-        $corrAge60Senior = $this->pearsonCorr($allAge60, $allSen);
-        $corrHhAics      = $this->pearsonCorr($allHH,    $allAics);
 
-        $corrLabel = fn($r) => $r === null ? 'N/A'
-            : (abs($r) >= 0.7 ? 'Strong' : (abs($r) >= 0.4 ? 'Moderate' : 'Weak'))
-              . ' ' . ($r >= 0 ? 'Positive' : 'Negative');
-
-        $correlations = [
-            [
-                'label'    => 'Population vs Total Beneficiaries',
-                'r'        => $corrPopBenef,
-                'strength' => $corrLabel($corrPopBenef),
-                'xData'    => $allPop,
-                'yData'    => $allBenef,
-                'xLabel'   => 'Population',
-                'yLabel'   => 'Beneficiaries',
-            ],
-            [
-                'label'    => 'Age 60+ vs Senior Assistance',
-                'r'        => $corrAge60Senior,
-                'strength' => $corrLabel($corrAge60Senior),
-                'xData'    => $allAge60,
-                'yData'    => $allSen,
-                'xLabel'   => 'Age 60+ Population',
-                'yLabel'   => 'Senior Beneficiaries',
-            ],
-            [
-                'label'    => 'Households vs AICS',
-                'r'        => $corrHhAics,
-                'strength' => $corrLabel($corrHhAics),
-                'xData'    => $allHH,
-                'yData'    => $allAics,
-                'xLabel'   => 'Households',
-                'yLabel'   => 'AICS Beneficiaries',
-            ],
-        ];
-
-        // ── Section 9: Key Insights ──────────────────────────────────────────
-        $popMap   = array_map(fn($n) => $snapshot[$n]['population'],    $coreNames);
+        // â”€â”€ Key Insights (population/household/program only) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+        $popMap = array_map(fn($n) => $snapshot[$n]['population'], $coreNames);
         $benefMap = array_map(fn($n) => $snapshot[$n]['beneficiaries'], $coreNames);
-        arsort($popMap);   $highestPop   = $coreNames[key($popMap)];
-        asort($popMap);    $lowestPop    = $coreNames[key($popMap)];
-        arsort($benefMap); $highestBenef = $coreNames[key($benefMap)];
+        // Only municipalities with a KNOWN beneficiary total are considered (null = no data, not 0).
+        // An actual 0 is a known value and stays in the list.
+        $benefKnown = array_filter($benefMap, fn($v) => $v !== null);
+        if (count($benefKnown) > 0) {
+            arsort($benefKnown);
+            $highestBenef = $coreNames[key($benefKnown)];
+        } else {
+            $highestBenef = null;
+        }
+
+        $popKnown = array_filter($popMap, fn($v) => $v !== null);
+        $hasDemogData = count($popKnown) > 0;
+        if ($hasDemogData) {
+            arsort($popKnown);
+            $highestPop = $coreNames[key($popKnown)];
+            asort($popKnown);
+            $lowestPop = $coreNames[key($popKnown)];
+        } else {
+            $highestPop = null;
+            $lowestPop = null;
+        }
 
         $avgGrowth = [];
         foreach ($coreNames as $i => $name) {
             $rates = array_filter($growthRates[$name], fn($v) => $v !== null);
-            $avgGrowth[$i] = count($rates) > 0 ? array_sum($rates) / count($rates) : 0;
+            if (count($rates) > 0) {
+                $avgGrowth[$i] = array_sum($rates) / count($rates);
+            }
         }
-        arsort($avgGrowth); $fastestIdx = key($avgGrowth); $fastest = $coreNames[$fastestIdx];
-
-        $totAge0  = array_sum(array_map(fn($n) => $snapshot[$n]['age_0_19'],   $coreNames));
-        $totAge20 = array_sum(array_map(fn($n) => $snapshot[$n]['age_20_59'],  $coreNames));
-        $totAge60 = array_sum(array_map(fn($n) => $snapshot[$n]['age_60_100'], $coreNames));
-        $domAge   = $totAge0 >= $totAge20 && $totAge0 >= $totAge60 ? 'Youth (0-19)'
-                  : ($totAge20 >= $totAge60 ? 'Working Age (20-59)' : 'Senior (60+)');
-
-        $totalMale   = array_sum(array_map(fn($n) => $snapshot[$n]['male'],   $coreNames));
-        $totalFemale = array_sum(array_map(fn($n) => $snapshot[$n]['female'], $coreNames));
-        $genderGap   = abs($totalMale - $totalFemale);
-
-        $progTotals = ['PWD' => 0, 'AICS' => 0, 'Solo Parent' => 0, '4Ps' => 0, 'Senior' => 0];
-        foreach ($coreNames as $n) {
-            $progTotals['PWD']         += $snapshot[$n]['pwd'];
-            $progTotals['AICS']        += $snapshot[$n]['aics'];
-            $progTotals['Solo Parent'] += $snapshot[$n]['solo_parent'];
-            $progTotals['4Ps']         += $snapshot[$n]['four_ps'];
-            $progTotals['Senior']      += $snapshot[$n]['senior'];
+        if (count($avgGrowth) > 0) {
+            arsort($avgGrowth);
+            $fastestIdx = key($avgGrowth);
+            $fastest = $coreNames[$fastestIdx];
+            $fastestGrowth = round($avgGrowth[$fastestIdx], 2);
+        } else {
+            $fastest = null;
+            $fastestGrowth = null;
         }
-        arsort($progTotals); $topProgram = key($progTotals);
 
-        $insights = [
-            "$highestPop has the highest population (" . number_format($snapshot[$highestPop]['population']) . ") while $lowestPop has the lowest.",
-            "$fastest shows the highest average population growth rate among the municipalities.",
-            "$highestBenef has the most registered beneficiaries (" . number_format($snapshot[$highestBenef]['beneficiaries']) . ") — " . $snapshot[$highestBenef]['benef_pct'] . "% of its population.",
-            "The dominant age group across all municipalities is $domAge — indicating a " . ($domAge === 'Youth (0-19)' ? 'young, growing' : ($domAge === 'Working Age (20-59)' ? 'productive' : 'aging')) . " population.",
-            $genderGap > 0 ? "A gender gap of " . number_format($genderGap) . " exists: " . ($totalMale > $totalFemale ? "Male-dominant ($totalMale M vs $totalFemale F)." : "Female-dominant ($totalFemale F vs $totalMale M).") : "Gender distribution is balanced.",
-            "The $topProgram program has the highest total beneficiaries (" . number_format($progTotals[$topProgram]) . ") across all municipalities.",
-            "Dependency ratios: " . implode(', ', array_map(fn($n) => "$n: {$snapshot[$n]['dependency_ratio']}%", $coreNames)) . " — higher ratio means more dependents per working-age person.",
-        ];
+        // Program totals for the selected year (only from municipalities that have data)
+        $progTotals = [];
+        foreach ($this->programTypes as $type) {
+            $typeTotal = null;
+            foreach ($coreNames as $n) {
+                $v = $snapshot[$n]['programs'][$type] ?? null;
+                if ($programDataAvailable[$n] && $v !== null) {
+                    $typeTotal = ($typeTotal ?? 0) + $v;
+                }
+            }
+            if ($typeTotal !== null) {
+                $progTotals[$programLabels[$type]] = $typeTotal;
+            }
+        }
+        // Actual 0 totals are kept as 0. A program only gets an entry when at least one
+        // municipality has a known value for it, so missing data never becomes 0 here.
+        arsort($progTotals);
+        // Highest-demand program: only when at least one known total is greater than 0.
+        // If all known totals are 0, or no totals are known at all => null.
+        // ($progTotals itself is untouched, so actual 0 totals remain 0.)
+        $topProgram = (count($progTotals) > 0 && max($progTotals) > 0) ? array_key_first($progTotals) : null;
 
-        // ── Section 10: Recommendations ─────────────────────────────────────
-        $recommendations = [
-            ['label' => 'Priority Support',   'text' => "$lowestPop has the smallest population base; ensure equitable distribution of welfare resources and avoid underserving this municipality."],
-            ['label' => 'Program Expansion',  'text' => "Expand the $topProgram program — it has the highest demand. Consider increasing budget allocation and outreach in all municipalities."],
-            ['label' => 'Age Intervention',   'text' => $totAge60 > $totAge0 ? "The senior population is growing — prioritize health care, pension programs, and elder care services." : "Youth programs (education, livelihood) should be reinforced to empower the dominant 0–19 age bracket."],
-            ['label' => 'Gender Programs',    'text' => $totalFemale > $totalMale ? "Female beneficiaries outpace males — strengthen Solo Parent and women-focused livelihood programs." : "Consider targeted programs for male residents who may be underrepresented in welfare enrollment."],
-            ['label' => 'Fastest Grower',     'text' => "$fastest is growing fastest — proactively scale up social welfare infrastructure and staffing to meet rising demand."],
-            ['label' => 'AICS & Households',  'text' => "High AICS uptake correlates with household density. Increase crisis assistance (AICS) funding proportionally with household growth."],
-        ];
+        // Age/gender variables - set to null/safe defaults (removed from analysis)
+        $domAge = null;
+        $totalMale = null;
+        $totalFemale = null;
+        $genderGap = null;
 
-        // ── Vision / Mission / Goals per municipality ────────────────────────
+        // -- Dynamic year descriptors (derived from DB, never hardcoded) --
+        $censusYearList = !empty($summaryYears) ? implode(', ', $summaryYears) : 'N/A';
+        $censusYearRange = !empty($summaryYears) ? (count($summaryYears) > 1 ? min($summaryYears) . ' - ' . max($summaryYears) : (string) reset($summaryYears)) : 'available census years';
+        $progYearRange = !empty($programYears) ? (count($programYears) > 1 ? min($programYears) . ' - ' . max($programYears) : (string) reset($programYears)) : 'N/A';
+
+        // Check if any municipality has program data for the selected year
+        $anyProgramData = in_array(true, $programDataAvailable, true);
+
+        $insights = [];
+        if ($hasDemogData) {
+            $insights[] = "$highestPop has the highest population (" . number_format($snapshot[$highestPop]['population']) . ") while $lowestPop has the lowest.";
+            if ($fastest !== null) {
+                $insights[] = "$fastest shows the highest average population growth rate among the municipalities.";
+            }
+        } else {
+            $insights[] = "No official census population or household data is available for year $selectedYear. Census records are available for: $censusYearList.";
+            if ($fastest !== null) {
+                $insights[] = "$fastest shows the highest average population growth rate across historical census years ($censusYearRange).";
+            }
+        }
+
+        // Only add beneficiary insight if program data exists for the selected year
+        $highestBenefVal = $highestBenef !== null ? $snapshot[$highestBenef]['beneficiaries'] : null;
+        if ($anyProgramData && $highestBenefVal !== null && $highestBenefVal > 0) {
+            $pctNote = $snapshot[$highestBenef]['benef_pct'] > 0 ? " - " . $snapshot[$highestBenef]['benef_pct'] . "% of its population" : "";
+            $insights[] = "$highestBenef has the most registered beneficiaries (" . number_format($highestBenefVal) . ")$pctNote.";
+        } elseif ($anyProgramData && $highestBenefVal === 0) {
+            $insights[] = "Program records for year $selectedYear report 0 beneficiaries for the municipalities with data.";
+        } else {
+            $insights[] = "No program beneficiary data is available for year $selectedYear. Program beneficiary records cover: $progYearRange.";
+        }
+
+        if ($topProgram !== null) {
+            $insights[] = "The $topProgram program has the highest total beneficiaries (" . number_format($progTotals[$topProgram]) . ") across municipalities with data for $selectedYear.";
+        }
+
+        if ($hasDemogData) {
+            $insights[] = "Average household sizes: " . implode(', ', array_map(fn($n) => "$n: " . ($snapshot[$n]['avg_hh_size'] ?? 'N/A'), $coreNames)) . " persons per household.";
+        }
+
+        // â”€â”€ Vision / Mission / Goals per municipality â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $visionRows = MunicipalityVision::whereIn('municipality_name', $coreNames)->get()->keyBy('municipality_name');
         $visionData = [];
         foreach ($coreNames as $n) {
             $row = $visionRows[$n] ?? null;
             $visionData[$n] = [
-                'vision'          => $row?->vision ?? '',
-                'mission'         => $row?->mission ?? '',
-                'goals'           => $row?->goals ?? '',
+                'vision' => $row?->vision ?? '',
+                'mission' => $row?->mission ?? '',
+                'goals' => $row?->goals ?? '',
                 'strategic_goals' => $row?->strategic_goals ?? [],
             ];
         }
 
         return view('analysis.index', compact(
-            'coreNames', 'colors', 'allYears', 'selectedYear',
-            'snapshot', 'populationTrend', 'maleTrend', 'femaleTrend',
-            'householdsTrend', 'benefTrend', 'growthRates',
-            'pwdTrend', 'aicsTrend', 'soloTrend', 'fpsTrend', 'seniorTrend',
-            'anovaPopResult', 'anovaBenefResult',
-            'correlations', 'corrPopBenef', 'corrAge60Senior', 'corrHhAics',
-            'insights', 'recommendations',
-            'highestPop', 'lowestPop', 'highestBenef', 'fastest',
-            'domAge', 'topProgram', 'progTotals',
+            'coreNames',
+            'colors',
+            'allYears',
+            'selectedYear',
+            'summaryYears',
+            'programYears',
+            'selectedCategory',
+            'categoryYears',
+            'snapshot',
+            'populationTrend',
+            'maleTrend',
+            'femaleTrend',
+            'householdsTrend',
+            'benefTrend',
+            'growthRates',
+            'programTrend',
+            'programTypes',
+            'programLabels',
+            'anovaPopResult',
+            'anovaBenefResult',
+            'correlations',
+            'corrPopBenef',
+            'corrAge60Senior',
+            'corrHhAics',
+            'insights',
+            'highestPop',
+            'lowestPop',
+            'highestBenef',
+            'fastest',
+            'fastestGrowth',
+            'domAge',
+            'topProgram',
+            'progTotals',
             'visionData'
         ));
     }
 
 
-    // ── Statistical Helpers ──────────────────────────────────────────────────
+    // â”€â”€ Statistical Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
     /** Keyed summary rows: [name][year] => MunicipalityYearlySummary */
     private array $summariesByMuni = [];
 
-    /** Program lookup: [municipality][year][program_type] => count */
+    /** Program lookup: [municipality][year][program_type] => count (null = record exists but count is null) */
     private array $programLookup = [];
 
-    private function getDemog(string $name, int $yr, string $field): int
+    /** Distinct program_type values discovered from the data (set in programs()) */
+    private array $programTypes = [];
+
+    /**
+     * Existing record value (including 0) => int; no record / null value => null (N/A).
+     */
+    private function getDemog(string $name, int $yr, string $field): ?int
     {
-        return (int) ($this->summariesByMuni[$name][$yr]?->$field ?? 0);
+        $row = $this->summariesByMuni[$name][$yr] ?? null;
+        if ($row === null) {
+            return null;
+        }
+        $value = $row->$field ?? null;
+        return $value === null ? null : (int) $value;
     }
 
-    private function getProg(string $name, int $yr, string $type): int
+    /**
+     * Existing record value (including 0) => int; no record => null (N/A).
+     */
+    private function getProg(string $name, int $yr, string $type): ?int
     {
-        return (int) ($this->programLookup[$name][$yr][$type] ?? 0);
+        $value = $this->programLookup[$name][$yr][$type] ?? null;
+        return $value === null ? null : (int) $value;
+    }
+
+    /** Sum of the non-null values; null when no value is known (so "no data" never becomes 0). */
+    private function sumKnown(array $values): ?int
+    {
+        $known = array_filter($values, fn($v) => $v !== null);
+        return count($known) > 0 ? (int) array_sum($known) : null;
+    }
+
+    /** Display label derived from the raw program_type value (no fixed program list). */
+    private function programLabel(string $type): string
+    {
+        return trim(str_replace('_', ' ', $type));
     }
 
     private function buildSnapshot(array $coreNames, int $selectedYear): array
     {
         $snapshot = [];
         foreach ($coreNames as $name) {
-            $pop    = $this->getDemog($name, $selectedYear, 'total_population');
-            $hh     = $this->getDemog($name, $selectedYear, 'total_households');
-            $male   = $this->getDemog($name, $selectedYear, 'male_population');
+            $pop = $this->getDemog($name, $selectedYear, 'total_population');
+            $hh = $this->getDemog($name, $selectedYear, 'total_households');
+            $male = $this->getDemog($name, $selectedYear, 'male_population');
             $female = $this->getDemog($name, $selectedYear, 'female_population');
-            $a0     = $this->getDemog($name, $selectedYear, 'population_0_19');
-            $a20    = $this->getDemog($name, $selectedYear, 'population_20_59');
-            $a60    = $this->getDemog($name, $selectedYear, 'population_60_100');
-            $pwd    = $this->getProg($name, $selectedYear, 'PWD_Assistance');
-            $aics   = $this->getProg($name, $selectedYear, 'AICS');
-            $solo   = $this->getProg($name, $selectedYear, 'Solo_Parent');
-            $fps    = $this->getProg($name, $selectedYear, '4Ps');
-            $sen    = $this->getProg($name, $selectedYear, 'Senior_Citizen_Pension');
-            $benef  = $pwd + $aics + $solo + $fps + $sen;
+            $a0 = $this->getDemog($name, $selectedYear, 'population_0_19');
+            $a20 = $this->getDemog($name, $selectedYear, 'population_20_59');
+            $a60 = $this->getDemog($name, $selectedYear, 'population_60_100');
+
+            // One entry per program_type found in the data
+            $programs = [];
+            foreach ($this->programTypes as $type) {
+                $programs[$type] = $this->getProg($name, $selectedYear, $type);
+            }
+            $benef = $this->sumKnown($programs);
 
             $snapshot[$name] = [
-                'population'       => $pop,
-                'households'       => $hh,
-                'beneficiaries'    => $benef,
-                'pwd'              => $pwd,
-                'aics'             => $aics,
-                'solo_parent'      => $solo,
-                'four_ps'          => $fps,
-                'senior'           => $sen,
-                'male'             => $male,
-                'female'           => $female,
-                'age_0_19'         => $a0,
-                'age_20_59'        => $a20,
-                'age_60_100'       => $a60,
-                'avg_hh_size'      => ($hh > 0 && $pop > 0) ? round($pop / $hh, 2) : 0,
-                'dependency_ratio' => $a20 > 0 ? round(($a0 + $a60) / $a20 * 100, 1) : 0,
-                'benef_pct'        => $pop > 0 ? round($benef / $pop * 100, 1) : 0,
+                'population' => $pop,
+                'households' => $hh,
+                'beneficiaries' => $benef,
+                'programs' => $programs,
+                'male' => $male,
+                'female' => $female,
+                'age_0_19' => $a0,
+                'age_20_59' => $a20,
+                'age_60_100' => $a60,
+                'avg_hh_size' => ($hh !== null && $pop !== null && $hh > 0 && $pop > 0) ? round($pop / $hh, 2) : null,
+                'dependency_ratio' => ($a0 !== null && $a20 !== null && $a60 !== null && $a20 > 0) ? round(($a0 + $a60) / $a20 * 100, 1) : null,
+                'benef_pct' => ($benef !== null && $pop !== null && $pop > 0) ? round($benef / $pop * 100, 1) : null,
             ];
         }
         return $snapshot;
@@ -726,36 +828,40 @@ class AnalysisController extends Controller
 
     private function buildTrends(array $coreNames, array $allYears): array
     {
-        $populationTrend = []; $maleTrend = []; $femaleTrend = [];
-        $householdsTrend = []; $benefTrend = [];
-        $pwdTrend = []; $aicsTrend = []; $soloTrend = []; $fpsTrend = []; $seniorTrend = [];
+        $populationTrend = [];
+        $maleTrend = [];
+        $femaleTrend = [];
+        $householdsTrend = [];
+        $benefTrend = [];
+        $programTrend = [];   // [program_type][municipality][year] => count|null
         $growthRates = [];
+
+        foreach ($this->programTypes as $type) {
+            $programTrend[$type] = [];
+        }
 
         foreach ($coreNames as $name) {
             $prevPop = null;
             foreach ($allYears as $yr) {
-                $pop    = $this->getDemog($name, $yr, 'total_population');
-                $hh     = $this->getDemog($name, $yr, 'total_households');
-                $male   = $this->getDemog($name, $yr, 'male_population');
+                $pop = $this->getDemog($name, $yr, 'total_population');
+                $hh = $this->getDemog($name, $yr, 'total_households');
+                $male = $this->getDemog($name, $yr, 'male_population');
                 $female = $this->getDemog($name, $yr, 'female_population');
-                $pwd    = $this->getProg($name, $yr, 'PWD_Assistance');
-                $aics   = $this->getProg($name, $yr, 'AICS');
-                $solo   = $this->getProg($name, $yr, 'Solo_Parent');
-                $fps    = $this->getProg($name, $yr, '4Ps');
-                $sen    = $this->getProg($name, $yr, 'Senior_Citizen_Pension');
+
+                $progVals = [];
+                foreach ($this->programTypes as $type) {
+                    $progVals[$type] = $this->getProg($name, $yr, $type);
+                    $programTrend[$type][$name][$yr] = $progVals[$type];
+                }
 
                 $populationTrend[$name][$yr] = $pop;
                 $householdsTrend[$name][$yr] = $hh;
-                $maleTrend[$name][$yr]       = $male;
-                $femaleTrend[$name][$yr]     = $female;
-                $benefTrend[$name][$yr]      = $pwd + $aics + $solo + $fps + $sen;
-                $pwdTrend[$name][$yr]        = $pwd;
-                $aicsTrend[$name][$yr]       = $aics;
-                $soloTrend[$name][$yr]       = $solo;
-                $fpsTrend[$name][$yr]        = $fps;
-                $seniorTrend[$name][$yr]     = $sen;
+                $maleTrend[$name][$yr] = $male;
+                $femaleTrend[$name][$yr] = $female;
+                $benefTrend[$name][$yr] = $this->sumKnown($progVals);
 
-                if ($prevPop !== null && $prevPop > 0) {
+                // Growth formula unchanged; only computed when both years have actual records
+                if ($prevPop !== null && $prevPop > 0 && $pop !== null) {
                     $growthRates[$name][$yr] = round(($pop - $prevPop) / $prevPop * 100, 2);
                 } else {
                     $growthRates[$name][$yr] = null;
@@ -765,30 +871,37 @@ class AnalysisController extends Controller
         }
 
         return [
-            $populationTrend, $maleTrend, $femaleTrend, $householdsTrend, $benefTrend,
-            $pwdTrend, $aicsTrend, $soloTrend, $fpsTrend, $seniorTrend, $growthRates
+            $populationTrend,
+            $maleTrend,
+            $femaleTrend,
+            $householdsTrend,
+            $benefTrend,
+            $programTrend,
+            $growthRates
         ];
     }
 
     private function oneWayAnova(array $groups): ?array
     {
-        $groups     = array_values($groups);
-        $k          = count($groups);
-        $allValues  = array_merge(...$groups);
-        $n_total    = count($allValues);
+        $groups = array_values($groups);
+        $k = count($groups);
+        $allValues = array_merge(...$groups);
+        $n_total = count($allValues);
 
-        if ($n_total < $k + 1 || $k < 2) return null;
+        if ($n_total < $k + 1 || $k < 2)
+            return null;
 
-        $grandMean   = array_sum($allValues) / $n_total;
-        $ssBetween   = 0;
-        $groupMeans  = [];
+        $grandMean = array_sum($allValues) / $n_total;
+        $ssBetween = 0;
+        $groupMeans = [];
 
         foreach ($groups as $group) {
             $n = count($group);
-            if ($n === 0) return null;
-            $mean          = array_sum($group) / $n;
-            $groupMeans[]  = round($mean, 2);
-            $ssBetween    += $n * (($mean - $grandMean) ** 2);
+            if ($n === 0)
+                return null;
+            $mean = array_sum($group) / $n;
+            $groupMeans[] = round($mean, 2);
+            $ssBetween += $n * (($mean - $grandMean) ** 2);
         }
 
         $ssWithin = 0;
@@ -799,7 +912,7 @@ class AnalysisController extends Controller
         }
 
         $dfBetween = $k - 1;
-        $dfWithin  = $n_total - $k;
+        $dfWithin = $n_total - $k;
 
         if ($dfWithin <= 0 || $ssWithin == 0) {
             return ['F' => 0, 'significant' => false, 'dfBetween' => $dfBetween, 'dfWithin' => $dfWithin, 'groupMeans' => $groupMeans];
@@ -811,21 +924,22 @@ class AnalysisController extends Controller
         $criticalF = $dfWithin >= 20 ? 3.49 : ($dfWithin >= 10 ? 4.10 : ($dfWithin >= 6 ? 5.14 : ($dfWithin >= 3 ? 9.55 : 19.0)));
 
         return [
-            'F'           => $F,
+            'F' => $F,
             'significant' => $F > $criticalF,
-            'dfBetween'   => $dfBetween,
-            'dfWithin'    => $dfWithin,
-            'groupMeans'  => $groupMeans,
+            'dfBetween' => $dfBetween,
+            'dfWithin' => $dfWithin,
+            'groupMeans' => $groupMeans,
         ];
     }
 
     private function pearsonCorr(array $x, array $y): ?float
     {
         $n = count($x);
-        if ($n < 2 || count($y) !== $n) return null;
+        if ($n < 2 || count($y) !== $n)
+            return null;
 
-        $sumX  = array_sum($x);
-        $sumY  = array_sum($y);
+        $sumX = array_sum($x);
+        $sumY = array_sum($y);
         $sumXY = $sumX2 = $sumY2 = 0;
 
         for ($i = 0; $i < $n; $i++) {
