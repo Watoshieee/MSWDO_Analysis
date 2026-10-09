@@ -704,6 +704,23 @@ class AnalysisController extends Controller
             ];
         }
 
+        // -- Programs report: modal view in the page, plus download via ?download=report&format=docx|csv|html --
+        $programsReport = $this->buildProgramsReport(
+            $coreNames,
+            $snapshot,
+            $programTypes,
+            $programLabels,
+            $benefTrend,
+            $programYears,
+            $summaryYears,
+            $selectedYear,
+            $selectedCategory
+        );
+        if ($request->query('download') === 'report' && in_array($selectedCategory, ['programs', 'all'], true)) {
+            return $this->downloadProgramsReport($programsReport, strtolower((string) $request->query('format', 'html')));
+        }
+        $reportHtml = $this->renderProgramsReportHtml($programsReport);
+
         return view('analysis.index', compact(
             'coreNames',
             'colors',
@@ -738,7 +755,9 @@ class AnalysisController extends Controller
             'domAge',
             'topProgram',
             'progTotals',
-            'visionData'
+            'visionData',
+            'programsReport',
+            'reportHtml'
         ));
     }
 
@@ -787,6 +806,844 @@ class AnalysisController extends Controller
     private function programLabel(string $type): string
     {
         return trim(str_replace('_', ' ', $type));
+    }
+
+    // -- Programs report: page panel + HTML download -------------------------------
+
+    /**
+     * Builds the programs report from data already computed in programs().
+     * Descriptive figures only. AHP and WSM are reported as "not computed" and the
+     * exact missing inputs are listed; no criteria, weights or scores are invented.
+     */
+    private function buildProgramsReport(
+        array $coreNames,
+        array $snapshot,
+        array $programTypes,
+        array $programLabels,
+        array $benefTrend,
+        array $programYears,
+        array $summaryYears,
+        int $selectedYear,
+        string $selectedCategory
+    ): array {
+        $categoryLabel = $selectedCategory === 'all' ? 'All Data (programs report)' : 'Social Welfare Programs';
+
+        // Per-municipality rows (null = no data, never 0)
+        $muniRows = [];
+        $withData = [];
+        foreach ($coreNames as $name) {
+            $row = $snapshot[$name] ?? [];
+            $programs = $row['programs'] ?? [];
+            $benef = $row['beneficiaries'] ?? null;
+            $missingTypes = [];
+            foreach ($programTypes as $type) {
+                if (($programs[$type] ?? null) === null) {
+                    $missingTypes[] = $programLabels[$type] ?? $type;
+                }
+            }
+            if ($benef !== null) {
+                $withData[] = $name;
+            }
+            $muniRows[] = [
+                'name' => $name,
+                'population' => $row['population'] ?? null,
+                'households' => $row['households'] ?? null,
+                'beneficiaries' => $benef,
+                'benef_pct' => $row['benef_pct'] ?? null,
+                'missing_types' => $benef !== null ? $missingTypes : [],
+            ];
+        }
+
+        // Program x municipality rows
+        $programRows = [];
+        $grandTotal = null;
+        foreach ($programTypes as $type) {
+            $values = [];
+            foreach ($coreNames as $name) {
+                $values[$name] = $snapshot[$name]['programs'][$type] ?? null;
+            }
+            $known = array_filter($values, fn($v) => $v !== null);
+            $total = count($known) > 0 ? (int) array_sum($known) : null;
+            if ($total !== null) {
+                $grandTotal = ($grandTotal ?? 0) + $total;
+            }
+            $programRows[] = [
+                'label' => $programLabels[$type] ?? $type,
+                'values' => $values,
+                'total' => $total,
+                'share' => null,
+            ];
+        }
+        $maxTotal = 0;
+        foreach ($programRows as $i => $pr) {
+            if ($grandTotal !== null && $grandTotal > 0 && $pr['total'] !== null) {
+                $programRows[$i]['share'] = round($pr['total'] / $grandTotal * 100, 1);
+            }
+            if ($pr['total'] !== null && $pr['total'] > $maxTotal) {
+                $maxTotal = $pr['total'];
+            }
+        }
+        $largest = [];
+        if ($maxTotal > 0) {
+            foreach ($programRows as $pr) {
+                if ($pr['total'] === $maxTotal) {
+                    $largest[] = $pr['label'];
+                }
+            }
+        }
+
+        // Yearly beneficiary totals (all years that have program records)
+        $trendRows = [];
+        foreach ($programYears as $yr) {
+            $vals = [];
+            foreach ($coreNames as $name) {
+                $vals[$name] = $benefTrend[$name][$yr] ?? null;
+            }
+            $known = array_filter($vals, fn($v) => $v !== null);
+            $trendRows[] = [
+                'year' => $yr,
+                'values' => $vals,
+                'total' => count($known) > 0 ? (int) array_sum($known) : null,
+            ];
+        }
+
+        // Data limitations that apply to this selection
+        $notes = [];
+        $notes[] = 'Figures are beneficiary counts as recorded in the program records. No budget, unit cost, eligibility, need or outcome data are used, so the counts describe recorded reach only and do not measure program effectiveness.';
+        $notes[] = 'The records do not state whether a person who receives more than one program is counted once or once per program, so the total across programs may not equal the number of unique persons.';
+        if ($grandTotal === null) {
+            $notes[] = 'No program beneficiary records exist for ' . $selectedYear . '; every program figure is N/A.';
+        }
+        $censusNote = !empty($summaryYears) ? ' Census records exist for: ' . implode(', ', $summaryYears) . '.' : '';
+        foreach ($muniRows as $m) {
+            if ($m['beneficiaries'] === null) {
+                if ($grandTotal !== null) {
+                    $notes[] = $m['name'] . ': no program records for ' . $selectedYear . ' (shown as N/A, not 0).';
+                }
+                continue;
+            }
+            if (!empty($m['missing_types'])) {
+                $notes[] = $m['name'] . ': no recorded count for ' . implode(', ', $m['missing_types']) . ' in ' . $selectedYear . '; the total covers recorded programs only and may be understated.';
+            }
+            if ($m['population'] === null) {
+                $notes[] = $m['name'] . ': no census population for ' . $selectedYear . ', so beneficiaries as a share of population is not calculated.' . $censusNote;
+            }
+        }
+        if (!empty($programYears)) {
+            $notes[] = 'Years without records appear as N/A. Yearly totals may cover different municipalities and program types, so compare years with care.';
+        }
+        $notes[] = 'This page has no municipality filter; the report covers every municipality listed in the system.';
+
+        $mcdm = [
+            'status' => 'Not computed',
+            'reason' => 'AHP and WSM need decision criteria, approved weights and a value for every criterion for each option being ranked. The data this page reads hold beneficiary counts by program, municipality and year, plus census population and household figures. Beneficiary counts alone do not show program effectiveness, need or eligibility, so ranking on them and labelling the result AHP or WSM would not be valid. No AHP or WSM score, weight or ranking is shown for that reason.',
+            'available' => [
+                'Program beneficiary counts by municipality, program type and year.',
+                'Census population, household, sex and age-group figures by municipality and census year.',
+            ],
+            'missing' => [
+                'What is being ranked and for what decision (for example programs, municipalities or program-municipality pairs).',
+                'The criteria MSWDO approves for that decision, each with the data field that measures it and whether a higher or a lower value is better. This page reads no need, poverty, budget, cost, target-population or outcome field.',
+                'For AHP: pairwise comparison judgments between every pair of criteria from MSWDO decision-makers on the 1 to 9 scale (n x (n-1) / 2 judgments for n criteria). A consistency check needs at least 3 criteria.',
+                'For WSM: the criterion weights (derived from the AHP result or officially adopted), the value of every criterion for every option in the same reporting year, the normalization method to use, and how missing values are handled.',
+                'Written approval of the criteria and weights by the responsible MSWDO officer or committee.',
+            ],
+            'ahp_steps' => [
+                'Build the reciprocal pairwise comparison matrix from the approved judgments.',
+                'Normalize each column and average each row to obtain the criterion weights (or use the principal eigenvector).',
+                'Compute lambda_max, the consistency index CI = (lambda_max - n) / (n - 1) and the consistency ratio CR = CI / RI, using Saaty random index (RI) values.',
+                'Accept the weights only if CR < 0.10; otherwise return the judgments for review.',
+            ],
+            'wsm_steps' => [
+                'Normalize each criterion with the approved method (for example benefit: x / max; cost: min / x).',
+                'Score each option as the sum of weight x normalized value across all criteria.',
+                'Rank the options by score and publish the weights, normalized values and scores in the report tables.',
+            ],
+        ];
+
+        $periodText = 'Reporting year ' . $selectedYear;
+        if (!empty($programYears)) {
+            $periodText .= '; program records available ' . (count($programYears) > 1 ? min($programYears) . ' to ' . max($programYears) : (string) reset($programYears));
+        }
+
+        return [
+            'meta' => [
+                'title' => 'Social Welfare Programs Analysis Report',
+                'year' => $selectedYear,
+                'category' => $categoryLabel,
+                'period' => $periodText,
+                'municipalities' => $coreNames,
+                'generated' => date('F j, Y, g:i A'),
+            ],
+            'summary' => [
+                'total_beneficiaries' => $grandTotal,
+                'municipalities_total' => count($coreNames),
+                'municipalities_with_data' => count($withData),
+                'program_type_count' => count($programTypes),
+                'largest_programs' => $largest,
+            ],
+            'municipalities' => $muniRows,
+            'programs' => $programRows,
+            'trend' => $trendRows,
+            'notes' => $notes,
+            'methodology' => [
+                'Beneficiary counts come from the program records (one count per program type, municipality and year).',
+                'A municipality total is the sum of its recorded program counts. A program with no record is treated as N/A and is never counted as 0; an actual recorded 0 stays 0.',
+                'Beneficiaries as % of population = municipality beneficiaries / census population of the same year x 100. It is calculated only when both values exist.',
+                'Share of total = program total / all-program total x 100, using recorded values only.',
+                'Population and household figures come from census records, which exist only for certain years.',
+                'This report is descriptive. It does not rank, score or recommend programs or municipalities.',
+            ],
+            'mcdm' => $mcdm,
+        ];
+    }
+
+    /** Sends the report as a real file download: html (default), csv or docx. */
+    private function downloadProgramsReport(array $report, string $format = 'html')
+    {
+        $base = 'MSWDO_Programs_Report_' . (int) $report['meta']['year'] . '_' . date('Ymd');
+
+        if ($format === 'csv') {
+            $body = $this->renderProgramsReportCsv($report);
+            $type = 'text/csv; charset=UTF-8';
+            $ext = 'csv';
+        } elseif ($format === 'docx') {
+            $body = $this->renderProgramsReportDocx($report);
+            if ($body === null) {
+                abort(501, 'Word export needs the PHP zip extension (php_zip). Enable it in php.ini, or use the CSV or HTML download.');
+            }
+            $type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+            $ext = 'docx';
+        } elseif ($format === 'html') {
+            $body = $this->renderProgramsReportHtml($report);
+            $type = 'text/html; charset=UTF-8';
+            $ext = 'html';
+        } else {
+            abort(400, 'Unsupported report format. Use docx, csv or html.');
+        }
+
+        return response($body, 200, [
+            'Content-Type' => $type,
+            'Content-Disposition' => 'attachment; filename="' . $base . '.' . $ext . '"',
+            'Content-Length' => (string) strlen($body),
+            'X-Content-Type-Options' => 'nosniff',
+        ]);
+    }
+
+    /** Renders the report array as one self-contained, print-friendly HTML document. */
+    private function renderProgramsReportHtml(array $r): string
+    {
+        $h = function ($v) {
+            return htmlspecialchars((string) $v, ENT_QUOTES, 'UTF-8');
+        };
+        $num = function ($v) use ($h) {
+            return $v === null ? '<span class="na">N/A</span>' : $h(number_format($v));
+        };
+        $pct = function ($v) use ($h) {
+            return $v === null ? '<span class="na">N/A</span>' : $h(number_format($v, 1)) . '%';
+        };
+        $list = function (array $items, string $tag = 'ul') use ($h) {
+            $out = '<' . $tag . '>';
+            foreach ($items as $item) {
+                $out .= '<li>' . $h($item) . '</li>';
+            }
+            return $out . '</' . $tag . '>';
+        };
+
+        $meta = $r['meta'];
+        $sum = $r['summary'];
+        $mcdm = $r['mcdm'];
+        $names = $meta['municipalities'];
+
+        $css = implode('', [
+            'body{margin:0;background:#f0f4f8;color:#1e293b;font:15px/1.6 "Segoe UI",Arial,Helvetica,sans-serif;}',
+            'main{max-width:960px;margin:0 auto;padding:24px 16px 48px;}',
+            'header.rep-head{background:#2C3E8F;color:#fff;border-radius:12px;padding:24px 28px;border-bottom:5px solid #FDB913;}',
+            'header.rep-head h1{margin:0 0 6px;font-size:1.6rem;}',
+            'header.rep-head p{margin:0;opacity:.9;}',
+            'section{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:20px 24px;margin-top:20px;}',
+            'h2{margin:0 0 12px;font-size:1.15rem;color:#2C3E8F;}',
+            'dl.meta{display:grid;grid-template-columns:max-content 1fr;gap:6px 18px;margin:0;}',
+            'dl.meta dt{font-weight:700;}dl.meta dd{margin:0;}',
+            '.table-wrap{overflow-x:auto;}',
+            'table{border-collapse:collapse;width:100%;font-size:.9rem;}',
+            'caption{text-align:left;font-weight:700;padding:0 0 8px;}',
+            'th,td{border:1px solid #e2e8f0;padding:8px 10px;text-align:right;}',
+            'th:first-child,td:first-child{text-align:left;}',
+            'thead th{background:#E5EEFF;color:#1A2A5C;}',
+            'tfoot th,tfoot td{font-weight:700;background:#f8fafc;}',
+            '.na{color:#64748b;font-style:italic;}',
+            '.badge{display:inline-block;border:1px solid #cbd5e1;background:#f1f5f9;border-radius:999px;padding:2px 12px;font-weight:700;font-size:.82rem;margin-right:8px;}',
+            'h3{margin:16px 0 4px;font-size:1rem;}',
+            'ul,ol{margin:8px 0 0;padding-left:22px;}li{margin-bottom:6px;}',
+            'footer{margin-top:20px;font-size:.8rem;color:#64748b;text-align:center;}',
+            '@media print{body{background:#fff;}section{break-inside:avoid;}}',
+        ]);
+
+        $o = '<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8">';
+        $o .= '<meta name="viewport" content="width=device-width, initial-scale=1">';
+        $o .= '<title>' . $h($meta['title'] . ' - ' . $meta['year']) . '</title>';
+        $o .= '<style>' . $css . '</style></head><body><main>';
+
+        // Title block
+        $o .= '<header class="rep-head"><h1>' . $h($meta['title']) . '</h1>';
+        $o .= '<p>Municipal Social Welfare and Development Office (MSWDO) &middot; ' . $h($meta['period']) . '</p></header>';
+
+        // Report details
+        $o .= '<section aria-labelledby="s-details"><h2 id="s-details">Report Details</h2><dl class="meta">';
+        $o .= '<dt>Reporting period</dt><dd>' . $h($meta['period']) . '</dd>';
+        $o .= '<dt>Dataset</dt><dd>' . $h($meta['category']) . '</dd>';
+        $o .= '<dt>Municipalities</dt><dd>' . $h(implode(', ', $names)) . '</dd>';
+        $o .= '<dt>Date generated</dt><dd>' . $h($meta['generated']) . '</dd></dl></section>';
+
+        // Data summary
+        $o .= '<section aria-labelledby="s-summary"><h2 id="s-summary">Data Summary</h2><ul>';
+        $o .= '<li>Total recorded beneficiaries in ' . $h($meta['year']) . ': <strong>' . $num($sum['total_beneficiaries']) . '</strong></li>';
+        $o .= '<li>Municipalities with program records: <strong>' . $h($sum['municipalities_with_data']) . ' of ' . $h($sum['municipalities_total']) . '</strong></li>';
+        $o .= '<li>Program types in the records: <strong>' . $h($sum['program_type_count']) . '</strong></li>';
+        if (!empty($sum['largest_programs'])) {
+            $o .= '<li>Largest recorded beneficiary count: <strong>' . $h(implode(', ', $sum['largest_programs'])) . '</strong> (a count of recorded beneficiaries, not a measure of need or effectiveness)</li>';
+        }
+        $o .= '</ul></section>';
+
+        // Table A: programs x municipalities
+        $o .= '<section aria-labelledby="s-programs"><h2 id="s-programs">Beneficiaries by Program, ' . $h($meta['year']) . '</h2>';
+        if (empty($r['programs'])) {
+            $o .= '<p class="na">No program types are recorded.</p>';
+        } else {
+            $o .= '<div class="table-wrap"><table><caption>Recorded beneficiaries per program and municipality (N/A = no record, not zero)</caption><thead><tr><th scope="col">Program</th>';
+            foreach ($names as $n) {
+                $o .= '<th scope="col">' . $h($n) . '</th>';
+            }
+            $o .= '<th scope="col">Total</th><th scope="col">Share of total</th></tr></thead><tbody>';
+            foreach ($r['programs'] as $pr) {
+                $o .= '<tr><th scope="row">' . $h($pr['label']) . '</th>';
+                foreach ($names as $n) {
+                    $o .= '<td>' . $num($pr['values'][$n] ?? null) . '</td>';
+                }
+                $o .= '<td><strong>' . $num($pr['total']) . '</strong></td><td>' . $pct($pr['share']) . '</td></tr>';
+            }
+            $o .= '</tbody><tfoot><tr><th scope="row">All programs</th>';
+            foreach ($r['municipalities'] as $m) {
+                $o .= '<td>' . $num($m['beneficiaries']) . '</td>';
+            }
+            $o .= '<td>' . $num($sum['total_beneficiaries']) . '</td><td>' . ($sum['total_beneficiaries'] !== null && $sum['total_beneficiaries'] > 0 ? '100.0%' : '<span class="na">N/A</span>') . '</td></tr></tfoot></table></div>';
+        }
+        $o .= '</section>';
+
+        // Table B: municipality summary
+        $o .= '<section aria-labelledby="s-munis"><h2 id="s-munis">Municipality Summary, ' . $h($meta['year']) . '</h2>';
+        $o .= '<div class="table-wrap"><table><caption>Beneficiaries relative to census population (N/A = not available for this year)</caption><thead><tr>';
+        $o .= '<th scope="col">Municipality</th><th scope="col">Population</th><th scope="col">Households</th><th scope="col">Beneficiaries</th><th scope="col">Beneficiaries as % of population</th></tr></thead><tbody>';
+        foreach ($r['municipalities'] as $m) {
+            $o .= '<tr><th scope="row">' . $h($m['name']) . '</th><td>' . $num($m['population']) . '</td><td>' . $num($m['households']) . '</td><td>' . $num($m['beneficiaries']) . '</td><td>' . $pct($m['benef_pct']) . '</td></tr>';
+        }
+        $o .= '</tbody></table></div></section>';
+
+        // Table C: yearly totals
+        $o .= '<section aria-labelledby="s-trend"><h2 id="s-trend">Yearly Beneficiary Totals</h2>';
+        if (empty($r['trend'])) {
+            $o .= '<p class="na">No program records are available for any year.</p>';
+        } else {
+            $o .= '<div class="table-wrap"><table><caption>Total recorded beneficiaries per year (N/A = no record, not zero)</caption><thead><tr><th scope="col">Year</th>';
+            foreach ($names as $n) {
+                $o .= '<th scope="col">' . $h($n) . '</th>';
+            }
+            $o .= '<th scope="col">All municipalities</th></tr></thead><tbody>';
+            foreach ($r['trend'] as $t) {
+                $o .= '<tr><th scope="row">' . $h($t['year']) . '</th>';
+                foreach ($names as $n) {
+                    $o .= '<td>' . $num($t['values'][$n] ?? null) . '</td>';
+                }
+                $o .= '<td><strong>' . $num($t['total']) . '</strong></td></tr>';
+            }
+            $o .= '</tbody></table></div>';
+        }
+        $o .= '</section>';
+
+        // Methodology
+        $o .= '<section aria-labelledby="s-method"><h2 id="s-method">Methodology</h2>';
+        $o .= $list($r['methodology']);
+        $o .= '</section>';
+
+        // AHP and WSM
+        $o .= '<section aria-labelledby="s-mcdm"><h2 id="s-mcdm">AHP and WSM Results</h2>';
+        $o .= '<p><span class="badge">AHP: ' . $h($mcdm['status']) . '</span><span class="badge">WSM: ' . $h($mcdm['status']) . '</span></p>';
+        $o .= '<p>' . $h($mcdm['reason']) . '</p>';
+        $o .= '<h3>Data available now</h3>' . $list($mcdm['available']);
+        $o .= '<h3>Inputs required before AHP and WSM can be calculated</h3>' . $list($mcdm['missing'], 'ol');
+        $o .= '<h3>How AHP will be calculated once inputs are supplied</h3>' . $list($mcdm['ahp_steps'], 'ol');
+        $o .= '<h3>How WSM will be calculated once inputs are supplied</h3>' . $list($mcdm['wsm_steps'], 'ol');
+        $o .= '</section>';
+
+        // Limitations
+        $o .= '<section aria-labelledby="s-limits"><h2 id="s-limits">Limitations and Missing-Data Notes</h2>' . $list($r['notes']) . '</section>';
+
+        $o .= '<footer>Generated ' . $h($meta['generated']) . ' from the MSWDO Statistical Analysis page.</footer>';
+        $o .= '</main></body></html>';
+
+        return $o;
+    }
+
+    /**
+     * CSV export: UTF-8 with BOM (opens correctly in Excel) and CRLF line endings.
+     *
+     * Layout: a title block, a contents list and a reading guide, then eight numbered sections.
+     * Every section has a title row, a one-line description, a header row and the data rows,
+     * and sections are separated by a blank row.
+     *
+     * Number formatting (the same everywhere):
+     *  - counts are whole numbers without thousands separators, so spreadsheets can sort and sum them;
+     *  - percentages have exactly one decimal place and the column heading says "(%)";
+     *  - missing data is the text N/A and is never written as 0.
+     */
+    private function renderProgramsReportCsv(array $r): string
+    {
+        $meta = $r['meta'];
+        $sum = $r['summary'];
+        $names = $meta['municipalities'];
+        $mcdm = $r['mcdm'];
+        $year = $meta['year'];
+
+        $fh = fopen('php://temp', 'r+');
+        // Text that starts with = + - @ could run as a spreadsheet formula, so it is prefixed with an apostrophe.
+        $safe = function ($v) {
+            if (is_string($v) && $v !== '' && strpos("=+-@\t\r", $v[0]) !== false) {
+                return "'" . $v;
+            }
+            return $v;
+        };
+        $put = function (array $cells) use ($fh, $safe) {
+            fputcsv($fh, array_map($safe, $cells), ',', '"', '', "\r\n");
+        };
+        $blank = function () use ($fh) {
+            fwrite($fh, "\r\n");
+        };
+        $int = function ($v) {
+            return $v === null ? 'N/A' : (int) $v;
+        };
+        $dec = function ($v) {
+            return $v === null ? 'N/A' : number_format((float) $v, 1, '.', '');
+        };
+        // Section banner: blank row, "N. TITLE", then a one-line description of what the section shows.
+        $section = function ($no, $title, $desc) use ($put, $blank) {
+            $blank();
+            $put([$no . '. ' . strtoupper($title)]);
+            $put([$desc]);
+        };
+        // Numbered list as a two-column table (No. + text).
+        $numbered = function ($heading, array $items) use ($put) {
+            $put([$heading]);
+            $put(['No.', 'Description']);
+            foreach (array_values($items) as $i => $line) {
+                $put([$i + 1, $line]);
+            }
+        };
+        // Name(s) of the municipality with the largest known value.
+        $highest = function (array $values) {
+            $known = array_filter($values, function ($v) {
+                return $v !== null;
+            });
+            if (count($known) === 0) {
+                return 'N/A';
+            }
+            $max = max($known);
+            if ($max <= 0) {
+                return 'None (all recorded values are 0)';
+            }
+            $top = array_keys(array_filter($known, function ($v) use ($max) {
+                return $v === $max;
+            }));
+            return implode(' / ', $top);
+        };
+
+        // ---- Title block, contents and reading guide ----
+        $put([$meta['title']]);
+        $put(['Municipal Social Welfare and Development Office (MSWDO)']);
+        $put(['Reporting year ' . $year . ' | Dataset: ' . $meta['category']]);
+
+        $blank();
+        $put(['CONTENTS']);
+        $put(['Section', 'What it shows']);
+        $put(['1. Report details', 'Reporting period, dataset, municipalities covered and date generated']);
+        $put(['2. Data summary', 'Headline totals for the selected year']);
+        $put(['3. Beneficiaries by program', 'Recorded beneficiaries for each program and municipality, with totals and share of total']);
+        $put(['4. Municipality summary', 'Population, households and beneficiaries per municipality, with a data-status check']);
+        $put(['5. Yearly beneficiary totals', 'Total recorded beneficiaries for every year that has program records']);
+        $put(['6. Methodology', 'How the figures in this report are calculated']);
+        $put(['7. AHP and WSM results', 'Why AHP and WSM are not computed, and the inputs needed to compute them']);
+        $put(['8. Limitations and missing-data notes', 'Data gaps and cautions that apply to the selected year']);
+
+        $blank();
+        $put(['HOW TO READ THIS FILE']);
+        $put(['Item', 'Meaning']);
+        $put(['N/A', 'No record exists for that item, or the value cannot be calculated (for example a share of a total of 0). It is never a zero; an actual recorded 0 is shown as 0.']);
+        $put(['Counts', 'Whole numbers of recorded beneficiaries, households or persons, written without thousands separators so spreadsheets can sort and add them.']);
+        $put(['Percentages', 'Numbers with one decimal place; the column heading ends in (%). A value of 12.5 means 12.5 percent.']);
+        $put(['Layout', 'Each numbered section has a title, a one-line description, a header row and then the data rows. Blank rows separate sections.']);
+
+        // ---- 1. Report details ----
+        $section(1, 'Report details', 'Basic information about this report.');
+        $put(['Field', 'Value']);
+        $put(['Report title', $meta['title']]);
+        $put(['Office', 'Municipal Social Welfare and Development Office (MSWDO)']);
+        $put(['Reporting year', $year]);
+        $put(['Reporting period', $meta['period']]);
+        $put(['Dataset', $meta['category']]);
+        $put(['Municipalities covered', implode(', ', $names)]);
+        $put(['Date generated', $meta['generated']]);
+
+        // ---- 2. Data summary ----
+        $section(2, 'Data summary', 'Headline totals for reporting year ' . $year . '.');
+        $put(['Measure', 'Value', 'Notes']);
+        $put(['Total recorded beneficiaries', $int($sum['total_beneficiaries']), 'Sum of recorded program counts. N/A means there are no program records for ' . $year . '.']);
+        $put(['Municipalities with program records', (int) $sum['municipalities_with_data'], 'Out of ' . (int) $sum['municipalities_total'] . ' municipalities in the system.']);
+        $put(['Program types in the records', (int) $sum['program_type_count'], 'Distinct program types found in the program records.']);
+        if (!empty($sum['largest_programs'])) {
+            $put(['Program with the largest recorded count', implode(' / ', $sum['largest_programs']), 'A count of recorded beneficiaries, not a measure of need or effectiveness.']);
+        }
+
+        // ---- 3. Beneficiaries by program ----
+        $section(3, 'Beneficiaries by program, ' . $year, 'Recorded beneficiaries (number of persons) for each program and municipality. N/A = no record, not zero.');
+        if (empty($r['programs'])) {
+            $put(['No program types are recorded.']);
+        } else {
+            $put(array_merge(['Program'], $names, ['Total, all municipalities', 'Share of total (%)', 'Highest municipality']));
+            foreach ($r['programs'] as $pr) {
+                $row = [$pr['label']];
+                $vals = [];
+                foreach ($names as $n) {
+                    $v = $pr['values'][$n] ?? null;
+                    $vals[$n] = $v;
+                    $row[] = $int($v);
+                }
+                $row[] = $int($pr['total']);
+                $row[] = $dec($pr['share']);
+                $row[] = $highest($vals);
+                $put($row);
+            }
+            $totalRow = ['TOTAL, ALL PROGRAMS'];
+            $totVals = [];
+            foreach ($r['municipalities'] as $m) {
+                $totalRow[] = $int($m['beneficiaries']);
+                $totVals[$m['name']] = $m['beneficiaries'];
+            }
+            $totalRow[] = $int($sum['total_beneficiaries']);
+            $totalRow[] = ($sum['total_beneficiaries'] !== null && $sum['total_beneficiaries'] > 0) ? $dec(100) : 'N/A';
+            $totalRow[] = $highest($totVals);
+            $put($totalRow);
+        }
+
+        // ---- 4. Municipality summary ----
+        $section(4, 'Municipality summary, ' . $year, 'Census population and households next to recorded beneficiaries. N/A = not available for this year.');
+        $put(['Municipality', 'Population', 'Households', 'Total beneficiaries', 'Beneficiaries as share of population (%)', 'Data status']);
+        foreach ($r['municipalities'] as $m) {
+            if ($m['beneficiaries'] === null) {
+                $status = 'No program records for ' . $year;
+            } elseif (!empty($m['missing_types'])) {
+                $status = 'Partial program data (no count for: ' . implode(', ', $m['missing_types']) . ')';
+            } else {
+                $status = 'Complete program data';
+            }
+            if ($m['population'] === null) {
+                $status .= '; no census population for ' . $year;
+            }
+            $put([$m['name'], $int($m['population']), $int($m['households']), $int($m['beneficiaries']), $dec($m['benef_pct']), $status]);
+        }
+
+        // ---- 5. Yearly beneficiary totals ----
+        $section(5, 'Yearly beneficiary totals', 'Total recorded beneficiaries per year, for every year that has program records. N/A = no record, not zero.');
+        if (empty($r['trend'])) {
+            $put(['No program records are available for any year.']);
+        } else {
+            $put(array_merge(['Year'], $names, ['All municipalities', 'Municipalities with records']));
+            foreach ($r['trend'] as $t) {
+                $row = [(int) $t['year']];
+                $reporting = 0;
+                foreach ($names as $n) {
+                    $v = $t['values'][$n] ?? null;
+                    if ($v !== null) {
+                        $reporting++;
+                    }
+                    $row[] = $int($v);
+                }
+                $row[] = $int($t['total']);
+                $row[] = $reporting . ' of ' . count($names);
+                $put($row);
+            }
+        }
+
+        // ---- 6. Methodology ----
+        $section(6, 'Methodology', 'How the figures in this report are calculated.');
+        $put(['No.', 'Description']);
+        foreach (array_values($r['methodology']) as $i => $line) {
+            $put([$i + 1, $line]);
+        }
+
+        // ---- 7. AHP and WSM results ----
+        $section(7, 'AHP and WSM results', 'Status of the AHP and WSM analyses and what is needed before they can be calculated.');
+        $put(['Item', 'Detail']);
+        $put(['AHP status', $mcdm['status']]);
+        $put(['WSM status', $mcdm['status']]);
+        $put(['Reason', $mcdm['reason']]);
+        $blank();
+        $numbered('7a. Data available now', $mcdm['available']);
+        $blank();
+        $numbered('7b. Inputs required before AHP and WSM can be calculated', $mcdm['missing']);
+        $blank();
+        $numbered('7c. How AHP will be calculated once inputs are supplied', $mcdm['ahp_steps']);
+        $blank();
+        $numbered('7d. How WSM will be calculated once inputs are supplied', $mcdm['wsm_steps']);
+
+        // ---- 8. Limitations ----
+        $section(8, 'Limitations and missing-data notes', 'Data gaps and cautions that apply to reporting year ' . $year . '.');
+        $put(['No.', 'Note']);
+        foreach (array_values($r['notes']) as $i => $line) {
+            $put([$i + 1, $line]);
+        }
+
+        // ---- End ----
+        $blank();
+        $put(['END OF REPORT']);
+        $put(['Generated ' . $meta['generated'] . ' from the MSWDO Statistical Analysis page.']);
+
+        rewind($fh);
+        $csv = stream_get_contents($fh);
+        fclose($fh);
+
+        return "\xEF\xBB\xBF" . $csv;
+    }
+
+    /**
+     * Word (.docx) export built directly as an Office Open XML package (no extra library).
+     * Returns null when the PHP zip extension is not available.
+     */
+    private function renderProgramsReportDocx(array $r): ?string
+    {
+        if (!class_exists('ZipArchive')) {
+            return null;
+        }
+
+        $esc = function ($v) {
+            $s = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F]/', '', (string) $v);
+            return htmlspecialchars((string) $s, ENT_XML1 | ENT_QUOTES, 'UTF-8');
+        };
+        $run = function ($text, $bold = false, $color = null, $size = null) use ($esc) {
+            $pr = '';
+            if ($bold) {
+                $pr .= '<w:b/>';
+            }
+            if ($color !== null) {
+                $pr .= '<w:color w:val="' . $color . '"/>';
+            }
+            if ($size !== null) {
+                $pr .= '<w:sz w:val="' . (int) $size . '"/><w:szCs w:val="' . (int) $size . '"/>';
+            }
+            return '<w:r>' . ($pr !== '' ? '<w:rPr>' . $pr . '</w:rPr>' : '') . '<w:t xml:space="preserve">' . $esc($text) . '</w:t></w:r>';
+        };
+        $para = function ($runs, $style = null, $ppr = '') {
+            $p = ($style !== null ? '<w:pStyle w:val="' . $style . '"/>' : '') . $ppr;
+            return '<w:p>' . ($p !== '' ? '<w:pPr>' . $p . '</w:pPr>' : '') . $runs . '</w:p>';
+        };
+        $bullet = function ($text, $label) use ($run, $para) {
+            return $para($run($label . ' ' . $text), null, '<w:spacing w:after="60"/><w:ind w:left="360" w:hanging="260"/>');
+        };
+        $labelled = function ($label, $value) use ($run, $para) {
+            return $para($run($label . ': ', true) . $run($value), null, '<w:spacing w:after="40"/>');
+        };
+        $table = function (array $headers, array $rows) use ($run, $para) {
+            $tw = 9638;
+            $n = count($headers);
+            $first = $n > 1 ? 2400 : $tw;
+            $other = $n > 1 ? (int) floor(($tw - $first) / ($n - 1)) : 0;
+            $grid = '<w:tblGrid><w:gridCol w:w="' . $first . '"/>';
+            for ($i = 1; $i < $n; $i++) {
+                $grid .= '<w:gridCol w:w="' . $other . '"/>';
+            }
+            $grid .= '</w:tblGrid>';
+            $border = '';
+            foreach (['top', 'left', 'bottom', 'right', 'insideH', 'insideV'] as $side) {
+                $border .= '<w:' . $side . ' w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>';
+            }
+            $cell = function ($t, $w, $isFirst, $head) use ($run, $para) {
+                $tcpr = '<w:tcW w:w="' . $w . '" w:type="dxa"/>' . ($head ? '<w:shd w:val="clear" w:color="auto" w:fill="E5EEFF"/>' : '');
+                $ppr = '<w:spacing w:before="0" w:after="0"/>' . ($isFirst ? '' : '<w:jc w:val="right"/>');
+                return '<w:tc><w:tcPr>' . $tcpr . '</w:tcPr>' . $para($run($t, $head, $head ? '1A2A5C' : null, 18), null, $ppr) . '</w:tc>';
+            };
+            $x = '<w:tbl><w:tblPr><w:tblW w:w="' . $tw . '" w:type="dxa"/><w:tblBorders>' . $border . '</w:tblBorders>'
+                . '<w:tblLayout w:type="fixed"/><w:tblCellMar><w:top w:w="40" w:type="dxa"/><w:left w:w="80" w:type="dxa"/><w:bottom w:w="40" w:type="dxa"/><w:right w:w="80" w:type="dxa"/></w:tblCellMar></w:tblPr>'
+                . $grid;
+            $x .= '<w:tr><w:trPr><w:cantSplit/><w:tblHeader/></w:trPr>';
+            foreach ($headers as $i => $hd) {
+                $x .= $cell($hd, $i === 0 ? $first : $other, $i === 0, true);
+            }
+            $x .= '</w:tr>';
+            foreach ($rows as $row) {
+                $x .= '<w:tr><w:trPr><w:cantSplit/></w:trPr>';
+                foreach ($row as $i => $val) {
+                    $x .= $cell($val, $i === 0 ? $first : $other, $i === 0, false);
+                }
+                $x .= '</w:tr>';
+            }
+            $x .= '</w:tbl>';
+            return $x . $para('', null, '<w:spacing w:after="120"/>');
+        };
+        $n = function ($v) {
+            return $v === null ? 'N/A' : number_format($v);
+        };
+        $p = function ($v) {
+            return $v === null ? 'N/A' : number_format($v, 1) . '%';
+        };
+
+        $meta = $r['meta'];
+        $sum = $r['summary'];
+        $mcdm = $r['mcdm'];
+        $names = $meta['municipalities'];
+        $year = $meta['year'];
+
+        $body = $para($run($meta['title']), 'Title');
+        $body .= $para($run('Municipal Social Welfare and Development Office (MSWDO) - ' . $meta['period']), 'Subtitle');
+
+        $body .= $para($run('Report Details'), 'Heading1');
+        $body .= $labelled('Reporting period', $meta['period']);
+        $body .= $labelled('Dataset', $meta['category']);
+        $body .= $labelled('Municipalities', implode(', ', $names));
+        $body .= $labelled('Date generated', $meta['generated']);
+
+        $body .= $para($run('Data Summary'), 'Heading1');
+        $body .= $bullet('Total recorded beneficiaries in ' . $year . ': ' . $n($sum['total_beneficiaries']), "\u{2022}");
+        $body .= $bullet('Municipalities with program records: ' . $sum['municipalities_with_data'] . ' of ' . $sum['municipalities_total'], "\u{2022}");
+        $body .= $bullet('Program types in the records: ' . $sum['program_type_count'], "\u{2022}");
+        if (!empty($sum['largest_programs'])) {
+            $body .= $bullet('Largest recorded beneficiary count: ' . implode(', ', $sum['largest_programs']) . ' (a count of recorded beneficiaries, not a measure of need or effectiveness)', "\u{2022}");
+        }
+
+        $body .= $para($run('Beneficiaries by Program, ' . $year), 'Heading1');
+        if (empty($r['programs'])) {
+            $body .= $para($run('No program types are recorded.'));
+        } else {
+            $rows = [];
+            foreach ($r['programs'] as $pr) {
+                $row = [$pr['label']];
+                foreach ($names as $nm) {
+                    $row[] = $n($pr['values'][$nm] ?? null);
+                }
+                $row[] = $n($pr['total']);
+                $row[] = $p($pr['share']);
+                $rows[] = $row;
+            }
+            $allRow = ['All programs'];
+            foreach ($r['municipalities'] as $m) {
+                $allRow[] = $n($m['beneficiaries']);
+            }
+            $allRow[] = $n($sum['total_beneficiaries']);
+            $allRow[] = ($sum['total_beneficiaries'] !== null && $sum['total_beneficiaries'] > 0) ? '100.0%' : 'N/A';
+            $rows[] = $allRow;
+            $body .= $para($run('Recorded beneficiaries per program and municipality (N/A = no record, not zero)', false, '64748B', 18));
+            $body .= $table(array_merge(['Program'], $names, ['Total', 'Share of total']), $rows);
+        }
+
+        $body .= $para($run('Municipality Summary, ' . $year), 'Heading1');
+        $rows = [];
+        foreach ($r['municipalities'] as $m) {
+            $rows[] = [$m['name'], $n($m['population']), $n($m['households']), $n($m['beneficiaries']), $p($m['benef_pct'])];
+        }
+        $body .= $para($run('Beneficiaries relative to census population (N/A = not available for this year)', false, '64748B', 18));
+        $body .= $table(['Municipality', 'Population', 'Households', 'Beneficiaries', '% of population'], $rows);
+
+        $body .= $para($run('Yearly Beneficiary Totals'), 'Heading1');
+        if (empty($r['trend'])) {
+            $body .= $para($run('No program records are available for any year.'));
+        } else {
+            $rows = [];
+            foreach ($r['trend'] as $t) {
+                $row = [(string) $t['year']];
+                foreach ($names as $nm) {
+                    $row[] = $n($t['values'][$nm] ?? null);
+                }
+                $row[] = $n($t['total']);
+                $rows[] = $row;
+            }
+            $body .= $para($run('Total recorded beneficiaries per year (N/A = no record, not zero)', false, '64748B', 18));
+            $body .= $table(array_merge(['Year'], $names, ['All municipalities']), $rows);
+        }
+
+        $body .= $para($run('Methodology'), 'Heading1');
+        foreach ($r['methodology'] as $line) {
+            $body .= $bullet($line, "\u{2022}");
+        }
+
+        $body .= $para($run('AHP and WSM Results'), 'Heading1');
+        $body .= $para($run('AHP: ' . $mcdm['status'] . '     WSM: ' . $mcdm['status'], true));
+        $body .= $para($run($mcdm['reason']));
+        $body .= $para($run('Data available now'), 'Heading2');
+        foreach ($mcdm['available'] as $line) {
+            $body .= $bullet($line, "\u{2022}");
+        }
+        $body .= $para($run('Inputs required before AHP and WSM can be calculated'), 'Heading2');
+        foreach ($mcdm['missing'] as $i => $line) {
+            $body .= $bullet($line, ($i + 1) . '.');
+        }
+        $body .= $para($run('How AHP will be calculated once inputs are supplied'), 'Heading2');
+        foreach ($mcdm['ahp_steps'] as $i => $line) {
+            $body .= $bullet($line, ($i + 1) . '.');
+        }
+        $body .= $para($run('How WSM will be calculated once inputs are supplied'), 'Heading2');
+        foreach ($mcdm['wsm_steps'] as $i => $line) {
+            $body .= $bullet($line, ($i + 1) . '.');
+        }
+
+        $body .= $para($run('Limitations and Missing-Data Notes'), 'Heading1');
+        foreach ($r['notes'] as $line) {
+            $body .= $bullet($line, "\u{2022}");
+        }
+        $body .= $para($run('Generated ' . $meta['generated'] . ' from the MSWDO Statistical Analysis page.', false, '64748B', 18), null, '<w:spacing w:before="240"/>');
+
+        $ns = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';
+        $head = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>';
+        $document = $head . '<w:document ' . $ns . '><w:body>' . $body
+            . '<w:sectPr><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr></w:body></w:document>';
+
+        $styles = $head . '<w:styles ' . $ns . '>'
+            . '<w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Calibri" w:hAnsi="Calibri" w:eastAsia="Calibri" w:cs="Calibri"/><w:sz w:val="21"/><w:szCs w:val="21"/><w:lang w:val="en-US"/></w:rPr></w:rPrDefault>'
+            . '<w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults>'
+            . '<w:style w:type="paragraph" w:default="1" w:styleId="Normal"><w:name w:val="Normal"/><w:qFormat/></w:style>'
+            . '<w:style w:type="paragraph" w:styleId="Title"><w:name w:val="Title"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="60"/></w:pPr><w:rPr><w:b/><w:color w:val="2C3E8F"/><w:sz w:val="44"/><w:szCs w:val="44"/></w:rPr></w:style>'
+            . '<w:style w:type="paragraph" w:styleId="Subtitle"><w:name w:val="Subtitle"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:spacing w:after="240"/></w:pPr><w:rPr><w:color w:val="64748B"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr></w:style>'
+            . '<w:style w:type="paragraph" w:styleId="Heading1"><w:name w:val="heading 1"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="320" w:after="120"/><w:outlineLvl w:val="0"/></w:pPr><w:rPr><w:b/><w:color w:val="2C3E8F"/><w:sz w:val="30"/><w:szCs w:val="30"/></w:rPr></w:style>'
+            . '<w:style w:type="paragraph" w:styleId="Heading2"><w:name w:val="heading 2"/><w:basedOn w:val="Normal"/><w:next w:val="Normal"/><w:qFormat/><w:pPr><w:keepNext/><w:spacing w:before="200" w:after="80"/><w:outlineLvl w:val="1"/></w:pPr><w:rPr><w:b/><w:color w:val="1A2A5C"/><w:sz w:val="24"/><w:szCs w:val="24"/></w:rPr></w:style>'
+            . '</w:styles>';
+
+        $contentTypes = $head . '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+            . '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+            . '<Default Extension="xml" ContentType="application/xml"/>'
+            . '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>'
+            . '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>';
+        $rootRels = $head . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>';
+        $docRels = $head . '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+            . '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>';
+
+        $tmp = tempnam(sys_get_temp_dir(), 'mswdo');
+        if ($tmp === false) {
+            return null;
+        }
+        $zip = new \ZipArchive();
+        if ($zip->open($tmp, \ZipArchive::CREATE | \ZipArchive::OVERWRITE) !== true) {
+            @unlink($tmp);
+            return null;
+        }
+        $zip->addFromString('[Content_Types].xml', $contentTypes);
+        $zip->addFromString('_rels/.rels', $rootRels);
+        $zip->addFromString('word/document.xml', $document);
+        $zip->addFromString('word/_rels/document.xml.rels', $docRels);
+        $zip->addFromString('word/styles.xml', $styles);
+        $zip->close();
+
+        $bin = file_get_contents($tmp);
+        @unlink($tmp);
+
+        return $bin === false ? null : $bin;
     }
 
     private function buildSnapshot(array $coreNames, int $selectedYear): array

@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Statistical Analysis - MSWDO</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -987,6 +989,10 @@
                         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
                         Program Beneficiaries
                     </a>
+                    <a href="#program-report-analysis" class="nav-pill-link jump-link">
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Report &amp; Download
+                    </a>
                 @endif
                 <a href="#key-insights-analysis" class="nav-pill-link jump-link">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -1589,6 +1595,276 @@
     </section>
 
     @endif {{-- end programs section --}}
+
+    @if($selectedCategory === 'programs' || $selectedCategory === 'all')
+    {{-- SECTION: ANALYSIS REPORT, MODAL VIEW & DOWNLOADS --}}
+    <style>
+        .rep-meta { display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; margin: 0; font-size: .88rem; }
+        .rep-meta dt { font-weight: 700; color: #1e293b; }
+        .rep-meta dd { margin: 0; color: #334155; }
+        .rep-list { margin: 8px 0 0; padding-left: 20px; font-size: .86rem; color: #334155; line-height: 1.6; }
+        .rep-list li { margin-bottom: 6px; }
+        .rep-badge { display: inline-block; border: 1px solid #cbd5e1; background: #f1f5f9; color: #334155; border-radius: 999px; padding: 3px 12px; font-weight: 700; font-size: .78rem; margin: 0 8px 8px 0; }
+        .rep-sub { font-weight: 700; font-size: .86rem; color: var(--blue); margin: 16px 0 0; }
+        .rep-details summary { cursor: pointer; font-weight: 700; font-size: .86rem; color: var(--blue); margin-top: 14px; }
+
+        /* Action card: overflow must be visible so the format menu is not clipped by .card-base */
+        .card-base.rep-actions { overflow: visible; }
+        .rep-actions::before { border-radius: 14px 14px 0 0; }
+        .rep-actions-title { font-weight: 800; font-size: 1rem; color: var(--blue); margin: 0 0 4px; }
+        .rep-actions-sub { font-size: .8rem; color: #64748b; line-height: 1.5; margin: 0 0 16px; }
+
+        .rep-btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; padding: 12px 20px; border-radius: 12px; border: 2px solid transparent; font-weight: 800; font-size: .92rem; line-height: 1.2; text-decoration: none; cursor: pointer; transition: transform .2s, box-shadow .2s, background .2s, color .2s; }
+        .rep-btn-primary { background: var(--grad); color: #fff; box-shadow: 0 8px 22px rgba(44, 62, 143, .28); }
+        .rep-btn-primary:hover { color: #fff; transform: translateY(-2px); box-shadow: 0 12px 28px rgba(44, 62, 143, .36); }
+        .rep-btn-outline { background: #fff; color: var(--blue); border-color: var(--blue); }
+        .rep-btn-outline:hover { background: var(--blue-lt); color: var(--blue); transform: translateY(-2px); }
+        .rep-btn-ghost { background: #fff; color: #334155; border-color: #cbd5e1; padding: 10px 16px; }
+        .rep-btn-ghost:hover { background: #f1f5f9; color: #1e293b; }
+        .rep-btn:focus-visible { outline: 3px solid var(--yellow); outline-offset: 3px; }
+        .rep-btn .rep-caret { margin-left: auto; transition: transform .2s; }
+        .rep-btn[aria-expanded="true"] .rep-caret { transform: rotate(180deg); }
+
+        .rep-menu { min-width: 100%; width: 330px; max-width: 92vw; padding: 8px; border: 1px solid #e2e8f0; border-radius: 14px; box-shadow: 0 16px 40px rgba(26, 42, 92, .18); }
+        .rep-menu-head { font-size: .7rem; font-weight: 800; letter-spacing: .08em; text-transform: uppercase; color: #94a3b8; padding: 6px 10px 8px; }
+        .rep-menu .dropdown-item { display: flex; align-items: flex-start; gap: 12px; padding: 10px; border-radius: 10px; white-space: normal; }
+        .rep-menu .dropdown-item:hover, .rep-menu .dropdown-item:focus { background: var(--blue-lt); }
+        .rep-fmt-icon { flex: 0 0 38px; width: 38px; height: 38px; border-radius: 10px; display: flex; align-items: center; justify-content: center; color: #fff; }
+        .rep-fmt-docx { background: #2B579A; }
+        .rep-fmt-csv { background: #217346; }
+        .rep-fmt-html { background: #C2410C; }
+        .rep-fmt-name { display: block; font-weight: 700; font-size: .9rem; color: #1e293b; }
+        .rep-fmt-ext { display: inline-block; margin-left: 6px; padding: 0 7px; border-radius: 6px; background: #f1f5f9; color: #475569; font-size: .68rem; font-weight: 800; letter-spacing: .04em; vertical-align: 1px; }
+        .rep-fmt-desc { display: block; font-size: .76rem; color: #64748b; line-height: 1.4; margin-top: 2px; }
+
+        /* Modal */
+        body.rep-modal-open .modal-backdrop { z-index: 1000000; }
+        body.rep-modal-open .admin-back-btn { display: none !important; }
+        #reportModal { z-index: 1000001; }
+        .rep-modal .modal-content { border: 0; border-radius: 18px; overflow: hidden; box-shadow: 0 30px 80px rgba(13, 27, 62, .35); }
+        .rep-modal-head { background: var(--grad); color: #fff; border-bottom: 4px solid var(--yellow); align-items: center; gap: 14px; padding: 16px 22px; }
+        .rep-modal-icon { flex: 0 0 44px; width: 44px; height: 44px; border-radius: 12px; background: rgba(255, 255, 255, .15); display: flex; align-items: center; justify-content: center; }
+        .rep-modal-head .modal-title { font-weight: 800; font-size: 1.1rem; margin: 0; }
+        .rep-modal-sub { font-size: .8rem; opacity: .85; margin-top: 2px; }
+        .rep-modal .modal-body { padding: 0; background: #f0f4f8; }
+        .rep-frame { display: block; width: 100%; height: calc(100vh - 250px); min-height: 340px; border: 0; background: #f0f4f8; }
+        .rep-modal-foot { background: #f8fafc; border-top: 1px solid #e2e8f0; gap: 10px; flex-wrap: wrap; padding: 12px 22px; }
+        .rep-foot-note { margin-right: auto; font-size: .76rem; color: #64748b; }
+        .rep-modal-foot .rep-btn { padding: 10px 18px; font-size: .86rem; }
+        @media (max-width: 575.98px) {
+            .rep-modal-foot .rep-btn, .rep-modal-foot .dropup { flex: 1 1 100%; }
+            .rep-modal-foot .dropup .rep-btn { width: 100%; }
+            .rep-foot-note { flex: 1 0 100%; }
+            .rep-frame { height: calc(100vh - 330px); }
+        }
+        @media (prefers-reduced-motion: reduce) { .rep-btn, .rep-btn .rep-caret { transition: none; } }
+    </style>
+    @php
+        $rep = $programsReport;
+        $repMeta = $rep['meta'];
+        $repSum = $rep['summary'];
+        $repMcdm = $rep['mcdm'];
+        $repFileIcon = '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>';
+        $repFormats = [
+            ['key' => 'docx', 'label' => 'Word document', 'ext' => '.docx', 'desc' => 'Editable report with tables, methodology and notes'],
+            ['key' => 'csv', 'label' => 'CSV spreadsheet', 'ext' => '.csv', 'desc' => 'Raw tables for Excel or Google Sheets'],
+            ['key' => 'html', 'label' => 'Web page', 'ext' => '.html', 'desc' => 'Formatted report that opens in any browser'],
+        ];
+        foreach ($repFormats as $fi => $fmt) {
+            $repFormats[$fi]['url'] = request()->fullUrlWithQuery(['download' => 'report', 'format' => $fmt['key'], 'category' => $selectedCategory, 'year' => $selectedYear]);
+        }
+    @endphp
+    <section class="section-wrap" id="program-report-analysis" style="scroll-margin-top:110px;">
+        <div class="container">
+            <h2 class="sec-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg> Analysis Report &amp; Download</h2>
+            <div class="row g-4 mb-4">
+                <div class="col-lg-8">
+                    <div class="card-base h-100">
+                        <h6 style="font-weight:700;color:var(--blue);">{{ $repMeta['title'] }}</h6>
+                        <dl class="rep-meta mt-3">
+                            <dt>Reporting period</dt><dd>{{ $repMeta['period'] }}</dd>
+                            <dt>Dataset</dt><dd>{{ $repMeta['category'] }}</dd>
+                            <dt>Municipalities</dt><dd>{{ implode(', ', $repMeta['municipalities']) }}</dd>
+                            <dt>Recorded beneficiaries</dt>
+                            <dd>
+                                @if($repSum['total_beneficiaries'] !== null)
+                                    {{ number_format($repSum['total_beneficiaries']) }}
+                                    ({{ $repSum['municipalities_with_data'] }} of {{ $repSum['municipalities_total'] }} municipalities have records)
+                                @else
+                                    N/A &mdash; no program records for {{ $selectedYear }}
+                                @endif
+                            </dd>
+                        </dl>
+                        <div class="rep-sub">The report contains</div>
+                        <ul class="rep-list">
+                            <li>Title, reporting period, dataset, municipalities and date generated</li>
+                            <li>Data summary and tables: beneficiaries by program, municipality summary, yearly totals</li>
+                            <li>Methodology, AHP and WSM status, and limitations / missing-data notes</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-4">
+                    <div class="card-base rep-actions">
+                        <p class="rep-actions-title">Report for {{ $selectedYear }}</p>
+                        <p class="rep-actions-sub">Read it here, or download a copy. Every format matches the selected dataset and year.</p>
+                        <div class="d-grid gap-3">
+                            <button type="button" class="rep-btn rep-btn-outline" data-bs-toggle="modal" data-bs-target="#reportModal"
+                                aria-label="View the programs analysis report for {{ $selectedYear }}">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                                View Report
+                            </button>
+                            <div class="dropdown">
+                                <button type="button" class="rep-btn rep-btn-primary w-100" id="reportDownloadToggle" data-bs-toggle="dropdown" aria-expanded="false"
+                                    aria-label="Download the programs analysis report for {{ $selectedYear }}. Choose a format: Word, CSV or HTML">
+                                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                                    Download Report
+                                    <svg class="rep-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                                </button>
+                                <ul class="dropdown-menu rep-menu" aria-labelledby="reportDownloadToggle">
+                                    <li class="rep-menu-head" aria-hidden="true">Choose a format</li>
+                                    @foreach($repFormats as $fmt)
+                                        <li>
+                                            <a class="dropdown-item" href="{{ $fmt['url'] }}" rel="nofollow"
+                                                aria-label="Download as {{ $fmt['label'] }} ({{ $fmt['ext'] }})">
+                                                <span class="rep-fmt-icon rep-fmt-{{ $fmt['key'] }}">{!! $repFileIcon !!}</span>
+                                                <span>
+                                                    <span class="rep-fmt-name">{{ $fmt['label'] }}<span class="rep-fmt-ext">{{ $fmt['ext'] }}</span></span>
+                                                    <span class="rep-fmt-desc">{{ $fmt['desc'] }}</span>
+                                                </span>
+                                            </a>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-lg-6">
+                    <div class="card-base h-100">
+                        <h6 style="font-weight:700;color:var(--blue);">Data Notes &amp; Limitations</h6>
+                        <ul class="rep-list">
+                            @foreach($rep['notes'] as $note)
+                                <li>{{ $note }}</li>
+                            @endforeach
+                        </ul>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="card-base h-100" style="border-top:4px solid #FDB913;">
+                        <h6 style="font-weight:700;color:var(--blue);">AHP &amp; WSM Results</h6>
+                        <div>
+                            <span class="rep-badge">AHP: {{ $repMcdm['status'] }}</span>
+                            <span class="rep-badge">WSM: {{ $repMcdm['status'] }}</span>
+                        </div>
+                        <p style="font-size:.86rem;color:#334155;line-height:1.6;margin:0;">{{ $repMcdm['reason'] }}</p>
+                        <div class="rep-sub">Data available now</div>
+                        <ul class="rep-list">
+                            @foreach($repMcdm['available'] as $item)
+                                <li>{{ $item }}</li>
+                            @endforeach
+                        </ul>
+                        <div class="rep-sub">Needed before AHP and WSM can be calculated</div>
+                        <ol class="rep-list">
+                            @foreach($repMcdm['missing'] as $item)
+                                <li>{{ $item }}</li>
+                            @endforeach
+                        </ol>
+                        <details class="rep-details">
+                            <summary>How the calculations will work once inputs are supplied</summary>
+                            <div class="rep-sub">AHP</div>
+                            <ol class="rep-list">
+                                @foreach($repMcdm['ahp_steps'] as $item)
+                                    <li>{{ $item }}</li>
+                                @endforeach
+                            </ol>
+                            <div class="rep-sub">WSM</div>
+                            <ol class="rep-list">
+                                @foreach($repMcdm['wsm_steps'] as $item)
+                                    <li>{{ $item }}</li>
+                                @endforeach
+                            </ol>
+                        </details>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    {{-- Report modal: the report HTML is the same document as the HTML download --}}
+    <div class="modal fade rep-modal" id="reportModal" tabindex="-1" aria-labelledby="reportModalTitle" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-lg-down">
+            <div class="modal-content">
+                <div class="modal-header rep-modal-head">
+                    <div class="rep-modal-icon">{!! str_replace('width="18" height="18"', 'width="22" height="22"', $repFileIcon) !!}</div>
+                    <div class="flex-grow-1">
+                        <h5 class="modal-title" id="reportModalTitle">{{ $repMeta['title'] }}</h5>
+                        <div class="rep-modal-sub">{{ $repMeta['period'] }} &middot; {{ $repMeta['category'] }}</div>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close report"></button>
+                </div>
+                <div class="modal-body">
+                    <iframe id="reportFrame" class="rep-frame" title="Programs analysis report preview"
+                        sandbox="allow-same-origin allow-modals" srcdoc="{{ $reportHtml }}"></iframe>
+                </div>
+                <div class="modal-footer rep-modal-foot">
+                    <span class="rep-foot-note">Generated {{ $repMeta['generated'] }}</span>
+                    <button type="button" class="rep-btn rep-btn-ghost" id="reportPrintBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+                        Print
+                    </button>
+                    <div class="dropup">
+                        <button type="button" class="rep-btn rep-btn-primary" id="reportModalDownloadToggle" data-bs-toggle="dropdown" aria-expanded="false">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                            Download
+                            <svg class="rep-caret" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+                        </button>
+                        <ul class="dropdown-menu dropdown-menu-end rep-menu" aria-labelledby="reportModalDownloadToggle">
+                            <li class="rep-menu-head" aria-hidden="true">Choose a format</li>
+                            @foreach($repFormats as $fmt)
+                                <li>
+                                    <a class="dropdown-item" href="{{ $fmt['url'] }}" rel="nofollow"
+                                        aria-label="Download as {{ $fmt['label'] }} ({{ $fmt['ext'] }})">
+                                        <span class="rep-fmt-icon rep-fmt-{{ $fmt['key'] }}">{!! $repFileIcon !!}</span>
+                                        <span>
+                                            <span class="rep-fmt-name">{{ $fmt['label'] }}<span class="rep-fmt-ext">{{ $fmt['ext'] }}</span></span>
+                                            <span class="rep-fmt-desc">{{ $fmt['desc'] }}</span>
+                                        </span>
+                                    </a>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </div>
+                    <button type="button" class="rep-btn rep-btn-ghost" data-bs-dismiss="modal">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            var modal = document.getElementById('reportModal');
+            if (!modal) { return; }
+            // Move to <body> so no ancestor can affect the fixed positioning, and lift it above fixed page widgets.
+            document.body.appendChild(modal);
+            modal.addEventListener('show.bs.modal', function () { document.body.classList.add('rep-modal-open'); });
+            modal.addEventListener('hidden.bs.modal', function () { document.body.classList.remove('rep-modal-open'); });
+            var printBtn = document.getElementById('reportPrintBtn');
+            if (printBtn) {
+                printBtn.addEventListener('click', function () {
+                    var frame = document.getElementById('reportFrame');
+                    try {
+                        frame.contentWindow.focus();
+                        frame.contentWindow.print();
+                    } catch (e) {
+                        alert('Printing is not available here. Use Download and print the file instead.');
+                    }
+                });
+            }
+        })();
+    </script>
+    @endif {{-- end report section --}}
 
     {{-- SECTION 5: KEY INSIGHTS --}}
     <section class="section-wrap dark" id="key-insights-analysis" style="scroll-margin-top:110px;">
