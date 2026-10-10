@@ -538,12 +538,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
             <!-- Action Buttons Row -->
             <div class="d-flex justify-content-end gap-2 mb-3">
-                <button class="btn btn-sm" onclick="openCsvModal('import')" style="background:var(--primary-blue);color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:0.85rem;">
-                    <i class="bi bi-upload"></i> Import CSV
-                </button>
-                <button class="btn btn-sm" onclick="openCsvModal('export')" style="background:var(--secondary-yellow);color:#333;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:0.85rem;">
-                    <i class="bi bi-download"></i> Export CSV
-                </button>
                 <button onclick="bulkArchiveByYear()" style="background:rgba(196,30,36,0.1);border:1px solid rgba(196,30,36,0.25);color:#C41E24;border-radius:10px;padding:10px 20px;font-size:0.85rem;font-weight:700;cursor:pointer;white-space:nowrap;transition:all 0.25s;">
                      Archive by Year
                 </button>

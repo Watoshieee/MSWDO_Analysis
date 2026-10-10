@@ -521,15 +521,7 @@
                     <button class="tab-pill" onclick="switchTab('analysis', this)">📊 Analysis</button>
                 </div>
                 
-                <!-- Import/Export Buttons -->
-                <div class="d-flex gap-2">
-                    <button class="btn btn-sm" onclick="openCsvModal('import')" style="background:var(--primary-blue);color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:0.85rem;">
-                        <i class="bi bi-upload"></i> Import CSV
-                    </button>
-                    <button class="btn btn-sm" onclick="openCsvModal('export')" style="background:var(--secondary-yellow);color:#333;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:0.85rem;">
-                        <i class="bi bi-download"></i> Export CSV
-                    </button>
-                </div>
+
             </div>
 
             <!-- ===== RECORDS TAB ===== -->

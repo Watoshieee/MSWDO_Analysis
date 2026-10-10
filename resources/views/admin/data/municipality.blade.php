@@ -155,14 +155,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <button class="tab-btn active" onclick="switchTab('current')">Current Year</button>
                 <button class="tab-btn" onclick="switchTab('yearly')">Yearly History</button>
             </div>
-            <div class="d-flex gap-2">
-                <button class="btn btn-sm" onclick="openCsvModal('import')" style="background:var(--primary-blue);color:white;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:0.85rem;">
-                    <i class="bi bi-upload"></i> Import CSV
-                </button>
-                <button class="btn btn-sm" onclick="openCsvModal('export')" style="background:var(--secondary-yellow);color:#333;border:none;border-radius:8px;padding:8px 16px;font-weight:700;font-size:0.85rem;">
-                    <i class="bi bi-download"></i> Export CSV
-                </button>
-            </div>
+
         </div>
 
         <!-- ════════════════════════════════════
