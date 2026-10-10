@@ -1,4 +1,4 @@
-﻿{{--
+{{--
 MSWDO System Chatbot Widget
 System-restricted AI assistant. Conversation persists across page navigation (localStorage).
 Include with: @include('components.chatbot-widget')

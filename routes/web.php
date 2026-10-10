@@ -351,10 +351,17 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::post('/yearly/{id}/restore', [App\Http\Controllers\Admin\DataManagementController::class, 'restoreYearlySummary'])->name('yearly.restore');
             Route::delete('/yearly/{id}/force-delete', [App\Http\Controllers\Admin\DataManagementController::class, 'forceDeleteYearlySummary'])->name('yearly.forceDelete');
 
-            // Data Export & Analysis Report Routes
+            // Data Export & Analysis Report Routes (legacy — kept for existing sub-pages)
             Route::match(['get', 'post'], '/export/csv', [App\Http\Controllers\Admin\ExportDataController::class, 'exportCsv'])->name('export.csv');
             Route::match(['get', 'post'], '/export/report', [App\Http\Controllers\Admin\ExportDataController::class, 'exportAnalysisReport'])->name('export.report');
             Route::match(['get', 'post'], '/export/comparative', [App\Http\Controllers\Admin\ExportDataController::class, 'exportComparative'])->name('export.comparative');
+
+            // ── New municipality-scoped import/export (same UX as super admin) ──
+            Route::get('/export/data-csv',   [App\Http\Controllers\Admin\AdminDataImportExportController::class, 'exportCsv'])->name('export.data-csv');
+            Route::get('/export/data-excel', [App\Http\Controllers\Admin\AdminDataImportExportController::class, 'exportExcel'])->name('export.data-excel');
+            Route::post('/import',           [App\Http\Controllers\Admin\AdminDataImportExportController::class, 'import'])->name('import');
+            Route::post('/import/preview',   [App\Http\Controllers\Admin\AdminDataImportExportController::class, 'previewImport'])->name('import.preview');
+            Route::get('/import/template/{type}', [App\Http\Controllers\Admin\AdminDataImportExportController::class, 'downloadTemplate'])->name('import.template');
         }
     );
 

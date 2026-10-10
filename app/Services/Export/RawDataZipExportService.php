@@ -70,9 +70,7 @@ class RawDataZipExportService
             }
         }
 
-        // 6. README.txt
-        $readmeContent = $this->buildReadmeContent($municipality, $year, $muniSlug);
-        $zip->addFromString("README.txt", $readmeContent);
+
 
         $zip->close();
 

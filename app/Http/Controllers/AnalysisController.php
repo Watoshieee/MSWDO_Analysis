@@ -564,11 +564,6 @@ class AnalysisController extends Controller
             $growthRates
         ]
             = $this->buildTrends($coreNames, $allYears);
-
-        // â”€â”€ ANOVA: removed (statistically invalid with n=3 time-series) â”€â”€
-        $anovaPopResult = null;
-        $anovaBenefResult = null;
-
         // â”€â”€ Correlation: removed (ecological fallacy, nâ‰ˆ9 too small) â”€â”€â”€â”€â”€
         $corrPopBenef = null;
         $corrAge60Senior = null;
@@ -740,8 +735,6 @@ class AnalysisController extends Controller
             'programTrend',
             'programTypes',
             'programLabels',
-            'anovaPopResult',
-            'anovaBenefResult',
             'correlations',
             'corrPopBenef',
             'corrAge60Senior',
@@ -1735,57 +1728,6 @@ class AnalysisController extends Controller
             $benefTrend,
             $programTrend,
             $growthRates
-        ];
-    }
-
-    private function oneWayAnova(array $groups): ?array
-    {
-        $groups = array_values($groups);
-        $k = count($groups);
-        $allValues = array_merge(...$groups);
-        $n_total = count($allValues);
-
-        if ($n_total < $k + 1 || $k < 2)
-            return null;
-
-        $grandMean = array_sum($allValues) / $n_total;
-        $ssBetween = 0;
-        $groupMeans = [];
-
-        foreach ($groups as $group) {
-            $n = count($group);
-            if ($n === 0)
-                return null;
-            $mean = array_sum($group) / $n;
-            $groupMeans[] = round($mean, 2);
-            $ssBetween += $n * (($mean - $grandMean) ** 2);
-        }
-
-        $ssWithin = 0;
-        foreach ($groups as $i => $group) {
-            foreach ($group as $val) {
-                $ssWithin += ($val - $groupMeans[$i]) ** 2;
-            }
-        }
-
-        $dfBetween = $k - 1;
-        $dfWithin = $n_total - $k;
-
-        if ($dfWithin <= 0 || $ssWithin == 0) {
-            return ['F' => 0, 'significant' => false, 'dfBetween' => $dfBetween, 'dfWithin' => $dfWithin, 'groupMeans' => $groupMeans];
-        }
-
-        $F = round(($ssBetween / $dfBetween) / ($ssWithin / $dfWithin), 4);
-
-        // Critical F (alpha=0.05, df1=2) by df2 lookup
-        $criticalF = $dfWithin >= 20 ? 3.49 : ($dfWithin >= 10 ? 4.10 : ($dfWithin >= 6 ? 5.14 : ($dfWithin >= 3 ? 9.55 : 19.0)));
-
-        return [
-            'F' => $F,
-            'significant' => $F > $criticalF,
-            'dfBetween' => $dfBetween,
-            'dfWithin' => $dfWithin,
-            'groupMeans' => $groupMeans,
         ];
     }
 

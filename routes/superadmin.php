@@ -1,4 +1,4 @@
-<?php
+﻿<?php
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SuperAdminController;
@@ -65,6 +65,15 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('superadmin')->name('sup
         Route::delete('/programs/{id}/force-delete', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'forceDeleteProgram'])->name('programs.force-delete');
         Route::post('/programs/{id}', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'updateProgram'])->name('programs.update');
         Route::delete('/programs/{id}', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'deleteProgram'])->name('programs.delete');
+
+        // -- Export Routes ------------------------------------------------
+        Route::match(['get', 'post'], '/export/csv',   [App\Http\Controllers\SuperAdmin\DataImportExportController::class, 'exportCsv'])->name('export.csv');
+        Route::match(['get', 'post'], '/export/excel', [App\Http\Controllers\SuperAdmin\DataImportExportController::class, 'exportExcel'])->name('export.excel');
+
+        // -- Import Routes ------------------------------------------------
+        Route::post('/import',                [App\Http\Controllers\SuperAdmin\DataImportExportController::class, 'import'])->name('import');
+        Route::post('/import/preview',        [App\Http\Controllers\SuperAdmin\DataImportExportController::class, 'previewImport'])->name('import.preview');
+        Route::get('/import/template/{type}', [App\Http\Controllers\SuperAdmin\DataImportExportController::class, 'downloadTemplate'])->name('import.template');
     });
 
     // MUNICIPALITY MANAGEMENT ROUTES

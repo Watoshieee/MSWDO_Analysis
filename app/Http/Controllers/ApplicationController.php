@@ -654,116 +654,106 @@ public function uploadBatch(Request $request)
     }
 
     /**
-     * Upload requirement file — supports both single (file) and batch (files[]) uploads
+     * Upload requirement file — dispatches to batch or single upload handler.
      */
     public function uploadRequirement(Request $request, $applicationId)
     {
         $application = Application::findOrFail($applicationId);
-        $user = Auth::user();
+        $user        = Auth::user();
 
-        // Check authorization
         if ($user->isUser() && $application->user_id !== $user->id) {
             abort(403);
         }
 
         $fileMonitoring = FileMonitoring::where('application_id', $applicationId)->firstOrFail();
 
-        // ------------------------------------------------------------------
-        // Solo Parent snapshot whitelist — build once, reuse for both paths.
-        // Null for non-Solo-Parent programs; all guards below are skipped.
-        // ------------------------------------------------------------------
-        $soloParentAllowedNames = null;
-        if ($application->program_type === 'Solo_Parent') {
-            $snapshotGroups = \App\Services\SoloParentCategoryService::getRequirementsForApplication($application);
-            if (!empty($snapshotGroups)) {
-                $soloParentAllowedNames = collect($snapshotGroups)
-                    ->flatMap(fn($g) => array_column($g['options'], 'requirement_name'))
-                    ->all();
-            }
-        }
+        // Build Solo Parent snapshot whitelist once (null = not a Solo Parent application).
+        $soloParentAllowedNames = $this->buildSoloParentAllowedNames($application);
 
-        // ── BATCH UPLOAD (files[] from "Upload All" form) ─────────────────────
         if ($request->hasFile('files') && $request->input('requirement_name') === 'batch_upload') {
-            $request->validate([
-                'files'   => 'required|array|min:1',
-                'files.*' => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
-            ]);
-
-            $uploadedCount = 0;
-            foreach ($request->file('files') as $file) {
-                $originalName  = $file->getClientOriginalName();
-                // Use cleaned filename (without extension) as requirement_name
-                $reqName = pathinfo($originalName, PATHINFO_FILENAME);
-                $reqName = preg_replace('/[_\-]+/', ' ', $reqName); // underscores/dashes -> spaces
-                $reqName = trim(preg_replace('/\s+/', ' ', $reqName));
-
-                // Solo Parent: skip batch files whose derived name is not in the snapshot.
-                if ($soloParentAllowedNames !== null && !in_array($reqName, $soloParentAllowedNames, true)) {
-                    Log::warning('Solo Parent batch upload rejected - requirement not in snapshot', [
-                        'application_id'   => $applicationId,
-                        'requirement_name' => $reqName,
-                    ]);
-                    continue; // skip this file; do not abort entire batch
-                }
-
-                $filename = time() . '_' . $uploadedCount . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
-                $path = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
-
-                // Update existing record or create new one
-                $existing = FileUpload::where('file_monitoring_id', $fileMonitoring->id)
-                    ->where('requirement_name', $reqName)
-                    ->first();
-
-                if ($existing) {
-                    if ($existing->file_path && Storage::disk('public')->exists($existing->file_path)) {
-                        Storage::disk('public')->delete($existing->file_path);
-                    }
-                    $existing->update([
-                        'file_name'   => $originalName,
-                        'file_path'   => $path,
-                        'status'      => 'pending',
-                        'remarks'     => null,
-                        'uploaded_at' => now(),
-                    ]);
-                } else {
-                    FileUpload::create([
-                        'file_monitoring_id' => $fileMonitoring->id,
-                        'file_name'          => $originalName,
-                        'file_path'          => $path,
-                        'requirement_name'   => $reqName,
-                        'status'             => 'pending',
-                        'uploaded_at'        => now(),
-                    ]);
-                }
-                $uploadedCount++;
-            }
-
-            $fileMonitoring->updateOverallStatus();
-
-            // Notify admin about new uploads
-            try {
-                $fileMonitoring->load('application.user', 'fileUploads');
-                $admins = User::where('municipality', $fileMonitoring->municipality)
-                    ->where('role', 'admin')->get();
-                foreach ($admins as $adminUser) {
-                    Mail::to($adminUser->email)
-                        ->send(new \App\Mail\SoloParentFilesUploadedMail($fileMonitoring));
-                }
-            } catch (\Exception $e) {
-                Log::error('Admin upload notification failed: ' . $e->getMessage());
-            }
-
-            return redirect()->back()->with('success', "✅ {$uploadedCount} file(s) uploaded successfully.");
+            return $this->handleBatchUpload($request, $applicationId, $fileMonitoring, $soloParentAllowedNames);
         }
 
-        // ── SINGLE FILE UPLOAD (per-requirement row) ───────────────────────────
+        return $this->handleSingleUpload($request, $applicationId, $fileMonitoring, $soloParentAllowedNames);
+    }
+
+    /**
+     * Build the allowed requirement-name list for Solo Parent applications.
+     * Returns null for any other program type (no restriction applies).
+     */
+    private function buildSoloParentAllowedNames($application): ?array
+    {
+        if ($application->program_type !== 'Solo_Parent') {
+            return null;
+        }
+
+        $snapshotGroups = \App\Services\SoloParentCategoryService::getRequirementsForApplication($application);
+
+        if (empty($snapshotGroups)) {
+            return null;
+        }
+
+        return collect($snapshotGroups)
+            ->flatMap(fn($g) => array_column($g['options'], 'requirement_name'))
+            ->all();
+    }
+
+    /**
+     * Handle batch upload ("Upload All" form with files[] input).
+     */
+    private function handleBatchUpload(Request $request, $applicationId, FileMonitoring $fileMonitoring, ?array $allowedNames)
+    {
+        $request->validate([
+            'files'   => 'required|array|min:1',
+            'files.*' => 'file|mimes:jpg,jpeg,png,pdf|max:5120',
+        ]);
+
+        $uploadedCount = 0;
+
+        foreach ($request->file('files') as $file) {
+            $originalName = $file->getClientOriginalName();
+            $reqName      = trim(preg_replace('/\s+/', ' ', preg_replace('/[_\-]+/', ' ', pathinfo($originalName, PATHINFO_FILENAME))));
+
+            if ($allowedNames !== null && !in_array($reqName, $allowedNames, true)) {
+                Log::warning('Solo Parent batch upload rejected', ['application_id' => $applicationId, 'requirement_name' => $reqName]);
+                continue;
+            }
+
+            $filename = time() . '_' . $uploadedCount . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
+            $path     = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
+
+            $existing = FileUpload::where('file_monitoring_id', $fileMonitoring->id)
+                ->where('requirement_name', $reqName)->first();
+
+            if ($existing) {
+                if ($existing->file_path && Storage::disk('public')->exists($existing->file_path)) {
+                    Storage::disk('public')->delete($existing->file_path);
+                }
+                $existing->update(['file_name' => $originalName, 'file_path' => $path, 'status' => 'pending', 'remarks' => null, 'uploaded_at' => now()]);
+            } else {
+                FileUpload::create(['file_monitoring_id' => $fileMonitoring->id, 'file_name' => $originalName, 'file_path' => $path, 'requirement_name' => $reqName, 'status' => 'pending', 'uploaded_at' => now()]);
+            }
+
+            $uploadedCount++;
+        }
+
+        $fileMonitoring->updateOverallStatus();
+        $this->notifyAdminsOfUpload($fileMonitoring);
+
+        return redirect()->back()->with('success', "\u2705 {$uploadedCount} file(s) uploaded successfully.");
+    }
+
+    /**
+     * Handle single file upload (per-requirement row).
+     */
+    private function handleSingleUpload(Request $request, $applicationId, FileMonitoring $fileMonitoring, ?array $allowedNames)
+    {
         $request->validate([
             'requirement_name' => 'required|string',
             'file'             => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
         ]);
 
-        // Solo Parent: reject if requirement_name is not in the application's snapshot.
-        if ($soloParentAllowedNames !== null && !in_array($request->requirement_name, $soloParentAllowedNames, true)) {
+        if ($allowedNames !== null && !in_array($request->requirement_name, $allowedNames, true)) {
             return redirect()->back()->withErrors([
                 'requirement_name' => 'The submitted requirement is not valid for this Solo Parent application.',
             ]);
@@ -771,55 +761,50 @@ public function uploadBatch(Request $request)
 
         $file         = $request->file('file');
         $originalName = $file->getClientOriginalName();
-        $filename     = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName);
-        $path         = $file->storeAs("applications/{$applicationId}/requirements", $filename, 'public');
+        $path         = $file->storeAs(
+            "applications/{$applicationId}/requirements",
+            time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $originalName),
+            'public'
+        );
 
         $fileUpload = FileUpload::where('file_monitoring_id', $fileMonitoring->id)
-            ->where('requirement_name', $request->requirement_name)
-            ->first();
+            ->where('requirement_name', $request->requirement_name)->first();
 
         if ($fileUpload) {
             if ($fileUpload->file_path && Storage::disk('public')->exists($fileUpload->file_path)) {
                 Storage::disk('public')->delete($fileUpload->file_path);
             }
-            $fileUpload->update([
-                'file_name'   => $originalName,
-                'file_path'   => $path,
-                'status'      => 'pending',
-                'remarks'     => null,
-                'uploaded_at' => now(),
-            ]);
+            $fileUpload->update(['file_name' => $originalName, 'file_path' => $path, 'status' => 'pending', 'remarks' => null, 'uploaded_at' => now()]);
         } else {
-            FileUpload::create([
-                'file_monitoring_id' => $fileMonitoring->id,
-                'file_name'          => $originalName,
-                'file_path'          => $path,
-                'requirement_name'   => $request->requirement_name,
-                'status'             => 'pending',
-                'uploaded_at'        => now(),
-            ]);
+            FileUpload::create(['file_monitoring_id' => $fileMonitoring->id, 'file_name' => $originalName, 'file_path' => $path, 'requirement_name' => $request->requirement_name, 'status' => 'pending', 'uploaded_at' => now()]);
         }
 
         $fileMonitoring->updateOverallStatus();
+        $this->notifyAdminsOfUpload($fileMonitoring);
 
-        // Notify admin about new upload
+        $scroll    = (int) $request->input('scroll', 0);
+        $backUrl   = url()->previous();
+        $separator = str_contains($backUrl, '?') ? '&' : '?';
+
+        return redirect($backUrl . ($scroll > 0 ? $separator . 'scroll=' . $scroll : ''))
+            ->with('success', "\u2705 File uploaded successfully.");
+    }
+
+    /**
+     * Send upload notification emails to all admins of the relevant municipality.
+     */
+    private function notifyAdminsOfUpload(FileMonitoring $fileMonitoring): void
+    {
         try {
             $fileMonitoring->load('application.user', 'fileUploads');
             $admins = User::where('municipality', $fileMonitoring->municipality)
                 ->where('role', 'admin')->get();
             foreach ($admins as $adminUser) {
-                Mail::to($adminUser->email)
-                    ->send(new \App\Mail\SoloParentFilesUploadedMail($fileMonitoring));
+                Mail::to($adminUser->email)->send(new \App\Mail\SoloParentFilesUploadedMail($fileMonitoring));
             }
         } catch (\Exception $e) {
             Log::error('Admin upload notification failed: ' . $e->getMessage());
         }
-
-        $scroll = (int) $request->input('scroll', 0);
-        $backUrl = url()->previous();
-        $separator = str_contains($backUrl, '?') ? '&' : '?';
-        return redirect($backUrl . ($scroll > 0 ? $separator . 'scroll=' . $scroll : ''))
-            ->with('success', '✅ File uploaded successfully.');
     }
 
     /**

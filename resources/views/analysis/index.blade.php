@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -1014,8 +1014,6 @@
         /** @var array<string,array<int,int>> $femaleTrend */
         /** @var array<string,array<int,int>> $benefTrend */
         /** @var array<string,array<int,float|null>> $growthRates */
-        /** @var array|null $anovaPopResult */
-        /** @var array|null $anovaBenefResult */
         /** @var array $correlations */
         /** @var array $insights */
         /** @var string|null $fastest */

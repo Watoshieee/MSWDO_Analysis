@@ -184,7 +184,7 @@ Rules for personal application questions:
 === SYSTEM STRUCTURE & NAVIGATION ===
 NAVBAR sections:
 1. HOME — Dashboard / landing page
-2. ANALYSIS — Programs Analysis (descriptive stats, trends, ANOVA, correlation, insights) and Demographic Analysis (population, map, gender, age, households, beneficiaries)
+2. ANALYSIS — Programs Analysis (descriptive stats, trends, insights) and Demographic Analysis (population, map, gender, age, households, beneficiaries)
 3. PROGRAMS — 4Ps, PWD, AICS (Medical, Burial, Emergency Shelter), Solo Parent, Senior Citizen, SLP
 4. APPLY — Program applications
 5. ABOUT / CONTACT
