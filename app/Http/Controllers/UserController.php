@@ -18,6 +18,10 @@ use App\Mail\NewApplicationNotification;
 use App\Mail\AppointmentStatusMail;
 use App\Models\Appointment;
 use Illuminate\Support\Facades\Mail;
+use App\Models\MunicipalitySettings;
+use App\Models\MunicipalityProgram;
+use App\Models\MunicipalityVision;
+use App\Models\Municipality;
 
 class UserController extends Controller
 {
@@ -359,10 +363,13 @@ class UserController extends Controller
         $user = Auth::user();
         $notifData = $this->notificationData($user);
         $hasPwdBeneficiary = $this->hasPwdBeneficiaryStatus($user);
-        $canAccessMta = $user?->isLiliwResident() ?? false;
-        $canAccessDayCare = $user?->isLiliwResident() ?? false;
 
-        return view('user.programs', array_merge($notifData, compact('hasPwdBeneficiary', 'canAccessMta', 'canAccessDayCare')));
+        // Municipality-driven program visibility
+        $municipalityPrograms = MunicipalityProgram::forMunicipality($user->municipality);
+        $canAccessMta = $municipalityPrograms->contains('program_key', 'MTA');
+        $canAccessDayCare = $municipalityPrograms->contains('program_key', 'Day_Care');
+
+        return view('user.programs', array_merge($notifData, compact('hasPwdBeneficiary', 'canAccessMta', 'canAccessDayCare', 'municipalityPrograms')));
     }
 
     public function announcements(Request $request)

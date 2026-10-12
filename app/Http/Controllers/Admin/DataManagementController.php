@@ -52,13 +52,67 @@ class DataManagementController extends Controller
             ->where('year', $currentYear)
             ->sum('beneficiary_count');
 
+        // Total households from current year summary
+        $totalHouseholds = $currentSummary->total_households ?? 0;
+
+        // Yearly summaries map for stats & trends
+        $yearlySummaries = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->orderBy('year', 'desc')
+            ->get()
+            ->keyBy('year');
+
+        // Barangays for current year or fallback to latest available year
+        $barangays = Barangay::where('municipality', $user->municipality)
+            ->where('year', $currentYear)
+            ->orderBy('name')
+            ->get();
+        if ($barangays->isEmpty()) {
+            $latestBarangayYear = Barangay::where('municipality', $user->municipality)
+                ->orderBy('year', 'desc')
+                ->value('year');
+            if ($latestBarangayYear) {
+                $barangays = Barangay::where('municipality', $user->municipality)
+                    ->where('year', $latestBarangayYear)
+                    ->orderBy('name')
+                    ->get();
+            }
+        }
+
+        $barangaysCount = Barangay::where('municipality', $user->municipality)
+            ->distinct('name')
+            ->count('name');
+        if ($barangaysCount === 0) {
+            $barangaysCount = $barangays->count();
+        }
+
+        // Program breakdown for current year
+        $programBreakdown = SocialWelfareProgram::where('municipality', $user->municipality)
+            ->where('year', $currentYear)
+            ->selectRaw('program_type, SUM(beneficiary_count) as total')
+            ->groupBy('program_type')
+            ->pluck('total', 'program_type')
+            ->toArray();
+
+        // Recent activity / import logs
+        $importLogs = \App\Models\CsvImportLog::where('user_id', $user->id)
+            ->orderBy('created_at', 'desc')
+            ->limit(6)
+            ->get();
+
         return view('admin.data.dashboard', compact(
             'municipality',
             'programs',
             'beneficiaries',
             'totalPopulation',
+            'totalHouseholds',
             'allYears',
-            'currentYear'
+            'currentYear',
+            'currentSummary',
+            'yearlySummaries',
+            'barangaysCount',
+            'barangays',
+            'programBreakdown',
+            'importLogs'
         ));
     }
 
@@ -496,6 +550,9 @@ class DataManagementController extends Controller
             }
 
             $targetYear = intval($request->year ?? date('Y'));
+            $newPop = intval($request->total_population ?? $request->population ?? 0);
+            $newHouseholds = intval($request->total_households ?? $request->households ?? 0);
+
             $summaryLimit = MunicipalityYearlySummary::where('municipality', $user->municipality)
                 ->where('year', $targetYear)
                 ->first();
@@ -509,7 +566,7 @@ class DataManagementController extends Controller
                     ->where('id', '!=', $id)
                     ->sum('total_population');
 
-                if (($otherPopSum + intval($request->total_population ?? 0)) > $maxPop) {
+                if (($otherPopSum + $newPop) > $maxPop) {
                     return response()->json(['success' => false, 'message' => "Total barangay population cannot exceed municipality limit of {$maxPop}."], 422);
                 }
 
@@ -518,13 +575,10 @@ class DataManagementController extends Controller
                     ->where('id', '!=', $id)
                     ->sum('total_households');
 
-                if (($otherHouseholdsSum + intval($request->total_households ?? 0)) > $maxHouseholds) {
+                if (($otherHouseholdsSum + $newHouseholds) > $maxHouseholds) {
                     return response()->json(['success' => false, 'message' => "Total barangay households cannot exceed municipality limit of {$maxHouseholds}."], 422);
                 }
             }
-
-            $newPop = intval($request->total_population ?? 0);
-            $newHouseholds = intval($request->total_households ?? 0);
             
             if ($newHouseholds > $newPop) {
                 return response()->json(['success' => false, 'message' => "Total barangay households ({$newHouseholds}) cannot exceed barangay total population ({$newPop})."], 422);
@@ -545,13 +599,13 @@ class DataManagementController extends Controller
             }
 
             $barangay->update([
-                'total_population'    => intval($request->total_population ?? 0),
+                'total_population'    => $newPop,
                 'single_parent_count' => intval($request->single_parent_count ?? 0),
                 'pwd_count'           => intval($request->pwd_count ?? 0),
                 'aics_count'          => intval($request->aics_count ?? 0),
                 'four_ps_count'       => intval($request->four_ps_count ?? 0),
                 'senior_count'        => intval($request->senior_count ?? 0),
-                'total_households'    => intval($request->total_households ?? 0),
+                'total_households'    => $newHouseholds,
                 'year'                => intval($request->year ?? date('Y')),
             ]);
 

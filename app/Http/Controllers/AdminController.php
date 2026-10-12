@@ -178,9 +178,30 @@ class AdminController extends Controller
             'strategic_goals' => $visionRow?->strategic_goals ?? [],
         ];
 
+        // Municipality Snapshot: fetch 2024 (or latest year) from MunicipalityYearlySummary
+        $snapshotYear = 2024;
+        $yearlySummary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->where('year', $snapshotYear)
+            ->first();
+
+        // If no 2024 data, fall back to the latest available year
+        if (!$yearlySummary) {
+            $yearlySummary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+                ->orderBy('year', 'desc')
+                ->first();
+            $snapshotYear = $yearlySummary?->year ?? $snapshotYear;
+        }
+
+        $snapshotPopulation = $yearlySummary?->total_population ?? 0;
+        $snapshotHouseholds = $yearlySummary?->total_households ?? 0;
+
+        // Recent applications (last 5) for dashboard feed
+        $recentApplications = $applications->sortByDesc('application_date')->take(5);
+
         return view('admin.dashboard', compact(
             'municipality',
             'applications',
+            'recentApplications',
             'totalApplications',
             'pendingApplications',
             'approvedApplications',
@@ -193,7 +214,10 @@ class AdminController extends Controller
             'adminNewAppointments',
             'adminNewUploads',
             'adminNotifCount',
-            'visionData'
+            'visionData',
+            'snapshotHouseholds',
+            'snapshotPopulation',
+            'snapshotYear'
         ));
     }
 
@@ -1186,7 +1210,15 @@ class AdminController extends Controller
             ->map(fn ($y) => (int) $y)
             ->toArray();
 
-        $availableAnalysisYears = array_values(array_unique(array_merge($yearsFromBarangays, $yearsFromSummary)));
+        // Also include years with application records (e.g. 2026) so they always appear as filter chips
+        $yearsFromApplications = Application::where('municipality', $user->municipality)
+            ->whereNotNull('application_date')
+            ->selectRaw('DISTINCT YEAR(application_date) as yr')
+            ->pluck('yr')
+            ->map(fn ($y) => (int) $y)
+            ->toArray();
+
+        $availableAnalysisYears = array_values(array_unique(array_merge($yearsFromBarangays, $yearsFromSummary, $yearsFromApplications)));
         rsort($availableAnalysisYears, SORT_NUMERIC);
 
         if ($request->filled('year') && $availableAnalysisYears !== []) {
@@ -1273,6 +1305,23 @@ class AdminController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Multi-year population & household trend (for Trend panel)
+        $yearlyTrendData = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->whereNotNull('year')
+            ->orderBy('year')
+            ->get(['year', 'total_population', 'total_households', 'male_population', 'female_population'])
+            ->keyBy('year');
+
+        // Unique applicants (distinct user_id) in the selected year
+        $uniqueApplicants = Application::where('municipality', $user->municipality)
+            ->whereNotNull('application_date')
+            ->whereYear('application_date', $analysisYear)
+            ->distinct('user_id')
+            ->count('user_id');
+
+        // Total beneficiaries across all programs for the year
+        $totalBeneficiaries = (int) collect($programBeneficiaries)->sum();
+
         extract($this->adminNotifData($user));
 
         return view('admin.detailed-analysis', compact(
@@ -1291,8 +1340,793 @@ class AdminController extends Controller
             'genderData',
             'ageGroupData',
             'programBeneficiaries',
-            'barangayRowsForAnalysis'
+            'barangayRowsForAnalysis',
+            'yearlyTrendData',
+            'uniqueApplicants',
+            'totalBeneficiaries'
         ));
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // ANALYSIS EXPORTS  (CSV + Excel) — scoped to authenticated admin municipality
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Shared data-gathering helper for both export methods. */
+    private function buildAnalysisData(Request $request): array
+    {
+        $user         = \Illuminate\Support\Facades\Auth::user();
+        $municipality = Municipality::where('name', $user->municipality)->first();
+        $muniYear     = (int) ($municipality->year ?? date('Y'));
+
+        // Resolve selected year (same logic as detailedAnalysis)
+        $yearsFromBarangays = Barangay::where('municipality', $user->municipality)
+            ->whereNotNull('year')->distinct()->pluck('year')->map(fn($y)=>(int)$y)->toArray();
+        $yearsFromSummary   = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->whereNotNull('year')->distinct()->pluck('year')->map(fn($y)=>(int)$y)->toArray();
+        $yearsFromApps      = Application::where('municipality', $user->municipality)
+            ->whereNotNull('application_date')->selectRaw('DISTINCT YEAR(application_date) as yr')
+            ->pluck('yr')->map(fn($y)=>(int)$y)->toArray();
+        $available = array_values(array_unique(array_merge($yearsFromBarangays, $yearsFromSummary, $yearsFromApps)));
+        rsort($available, SORT_NUMERIC);
+
+        $analysisYear = $muniYear;
+        if ($request->filled('year')) {
+            $reqYear = (int) $request->year;
+            $analysisYear = in_array($reqYear, $available, true) ? $reqYear : ($available[0] ?? $muniYear);
+        } elseif ($available) {
+            $analysisYear = in_array($muniYear, $available, true) ? $muniYear : $available[0];
+        }
+
+        // Applications for the year — municipality scoped
+        $apps = $this->loadApplications($user->municipality)->filter(function ($app) use ($analysisYear) {
+            return $app->application_date && (int) $app->application_date->year === (int) $analysisYear;
+        });
+
+        [$totalApps, $pendingApps, $approvedApps, $rejectedApps, $appsByProgram] = $this->buildApplicationStats($apps);
+
+        $programOverview = $this->buildProgramOverview($user->municipality, $analysisYear);
+
+        // Population / household summary
+        $summary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->where('year', $analysisYear)->first();
+
+        if ($summary && ($summary->total_population > 0 || $summary->total_households > 0)) {
+            $totalPop  = (int) $summary->total_population;
+            $totalHH   = (int) $summary->total_households;
+            $malePop   = (int) $summary->male_population;
+            $femalePop = (int) $summary->female_population;
+        } else {
+            $totalPop  = $municipality->male_population + $municipality->female_population;
+            $totalHH   = $municipality->total_households;
+            $malePop   = $municipality->male_population;
+            $femalePop = $municipality->female_population;
+        }
+
+        // Trend data
+        $trend = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->whereNotNull('year')->orderBy('year')
+            ->get(['year','total_population','total_households','male_population','female_population']);
+
+        // Barangay rows
+        $barangays = Barangay::where('municipality', $user->municipality)
+            ->where('year', $analysisYear)->orderBy('name')->get();
+
+        $uniqueApplicants   = Application::where('municipality', $user->municipality)
+            ->whereNotNull('application_date')->whereYear('application_date', $analysisYear)
+            ->distinct('user_id')->count('user_id');
+        $totalBeneficiaries = (int) $programOverview->sum();
+        $approvalRate       = $totalApps > 0 ? round($approvedApps / $totalApps * 100, 1) : null;
+
+        return compact(
+            'municipality', 'analysisYear', 'totalApps', 'pendingApps', 'approvedApps', 'rejectedApps',
+            'appsByProgram', 'programOverview', 'totalPop', 'totalHH', 'malePop', 'femalePop',
+            'trend', 'barangays', 'uniqueApplicants', 'totalBeneficiaries', 'approvalRate'
+        );
+    }
+
+    /** CSV export — well-organized sections with UTF-8 BOM, visual ASCII chart representations, and clean alignment. */
+    public function exportAnalysisCsv(Request $request)
+    {
+        $d  = $this->buildAnalysisData($request);
+        extract($d);
+
+        $bar = function($val, $max, $len = 16) {
+            if ($max <= 0 || $val <= 0) return '[' . str_repeat(' ', $len) . ']';
+            $filled = (int) round(($val / $max) * $len);
+            $filled = max(1, min($len, $filled));
+            return '[' . str_repeat('=', $filled) . str_repeat(' ', $len - $filled) . ']';
+        };
+
+        $ts  = fn($n) => ($n !== null && $n !== '') ? number_format((float)$n, 0, '.', ',') : 'N/A';
+        $pct = fn($v, $t) => ($t > 0 && $v !== null) ? number_format(($v / $t) * 100, 1) . '%' : '0.0%';
+
+        $rows = [];
+        $rows[] = ["MSWDO DETAILED ANALYSIS REPORT"];
+        $rows[] = ["Municipality", $municipality->name];
+        $rows[] = ["Analysis Year", $analysisYear];
+        $rows[] = ["Generated Date", now()->format('Y-m-d H:i:s')];
+        $rows[] = [""];
+
+        // SECTION 1: KEY PERFORMANCE INDICATORS
+        $rows[] = ["1. KEY PERFORMANCE INDICATORS (KPIs)"];
+        $rows[] = ["Metric", "Value", "Notes"];
+        $rows[] = ["Total Population", $totalPop > 0 ? $ts($totalPop) : "N/A", $totalPop > 0 ? "Official record for $analysisYear" : "No population record recorded for $analysisYear"];
+        $rows[] = ["Total Households", $totalHH > 0 ? $ts($totalHH) : "N/A", $totalHH > 0 ? "Registered households" : "No household record recorded for $analysisYear"];
+        $rows[] = ["Total Applications", $ts($totalApps), "Total submitted cases in $analysisYear"];
+        $rows[] = ["Unique Applicants", $ts($uniqueApplicants), "Distinct applicant individuals"];
+        $rows[] = ["Approved Applications", $ts($approvedApps), ($approvalRate !== null ? $approvalRate . "% approval rate" : "N/A")];
+        $rows[] = ["Pending Applications", $ts($pendingApps), ($totalApps > 0 ? $pct($pendingApps, $totalApps) . " of total" : "N/A")];
+        $rows[] = ["Rejected Applications", $ts($rejectedApps), ($totalApps > 0 ? $pct($rejectedApps, $totalApps) . " of total" : "N/A")];
+        $rows[] = ["Total Program Beneficiaries", $totalBeneficiaries > 0 ? $ts($totalBeneficiaries) : "N/A", "Across all welfare programs"];
+        $rows[] = [""];
+
+        // SECTION 2: APPLICATION STATUS (WITH VISUAL CHART)
+        $rows[] = ["2. APPLICATION STATUS DISTRIBUTION (VISUAL CHART)"];
+        $rows[] = ["Status", "Count", "Percentage", "Visual Graph"];
+        $maxStatus = max(1, $pendingApps, $approvedApps, $rejectedApps);
+        $rows[] = ["Approved", $ts($approvedApps), $pct($approvedApps, $totalApps), $bar($approvedApps, $maxStatus)];
+        $rows[] = ["Pending",  $ts($pendingApps),  $pct($pendingApps,  $totalApps), $bar($pendingApps,  $maxStatus)];
+        $rows[] = ["Rejected", $ts($rejectedApps), $pct($rejectedApps, $totalApps), $bar($rejectedApps, $maxStatus)];
+        $rows[] = ["Total",    $ts($totalApps),    "100.0%", ""];
+        $rows[] = [""];
+
+        // SECTION 3: APPLICATIONS BY PROGRAM (WITH VISUAL CHART)
+        $rows[] = ["3. APPLICATIONS BY WELFARE PROGRAM (VISUAL CHART)"];
+        if ($appsByProgram->isNotEmpty()) {
+            $rows[] = ["Program", "Total Applications", "Pending", "Approved", "Rejected", "Visual Share"];
+            $maxProgApps = 1;
+            foreach ($appsByProgram as $p => $data) {
+                $tot = ($data['pending'] ?? 0) + ($data['approved'] ?? 0) + ($data['rejected'] ?? 0);
+                if ($tot > $maxProgApps) $maxProgApps = $tot;
+            }
+            foreach ($appsByProgram as $prog => $data) {
+                $tot = ($data['pending'] ?? 0) + ($data['approved'] ?? 0) + ($data['rejected'] ?? 0);
+                $rows[] = [
+                    str_replace('_', ' ', $prog),
+                    $ts($tot),
+                    $ts($data['pending'] ?? 0),
+                    $ts($data['approved'] ?? 0),
+                    $ts($data['rejected'] ?? 0),
+                    $bar($tot, $maxProgApps)
+                ];
+            }
+            $rows[] = ["Total", $ts($totalApps), $ts($pendingApps), $ts($approvedApps), $ts($rejectedApps), ""];
+        } else {
+            $rows[] = ["Program", "Applications", "Note"];
+            $rows[] = ["N/A", "0", "No program application records for $analysisYear"];
+        }
+        $rows[] = [""];
+
+        // SECTION 4: SOCIAL WELFARE PROGRAMS & BENEFICIARIES (WITH VISUAL CHART)
+        $rows[] = ["4. SOCIAL WELFARE PROGRAMS BENEFICIARIES (VISUAL CHART)"];
+        if ($programOverview->isNotEmpty()) {
+            $rows[] = ["Program", "Beneficiaries", "Share of Total", "Visual Graph"];
+            $sumBenef = $programOverview->sum() ?: 1;
+            $maxBenef = $programOverview->max() ?: 1;
+            foreach ($programOverview as $prog => $count) {
+                $rows[] = [
+                    str_replace('_', ' ', $prog),
+                    $ts($count),
+                    $pct($count, $sumBenef),
+                    $bar($count, $maxBenef)
+                ];
+            }
+            $rows[] = ["Total Beneficiaries", $ts($sumBenef), "100.0%", ""];
+        } else {
+            $rows[] = ["Program", "Beneficiaries", "Note"];
+            $rows[] = ["N/A", "0", "No welfare beneficiary records for $analysisYear"];
+        }
+        $rows[] = [""];
+
+        // SECTION 5: GENDER DISTRIBUTION (WITH VISUAL CHART)
+        $rows[] = ["5. GENDER DISTRIBUTION (VISUAL CHART)"];
+        $rows[] = ["Gender", "Population", "Percentage", "Visual Graph"];
+        $totGender = ($malePop ?? 0) + ($femalePop ?? 0);
+        if ($totGender > 0) {
+            $maxG = max(1, $malePop, $femalePop);
+            $rows[] = ["Male",   $ts($malePop),   $pct($malePop, $totGender),   $bar($malePop, $maxG)];
+            $rows[] = ["Female", $ts($femalePop), $pct($femalePop, $totGender), $bar($femalePop, $maxG)];
+            $rows[] = ["Total",  $ts($totGender), "100.0%", ""];
+        } else {
+            $rows[] = ["Male",   "N/A", "-", ""];
+            $rows[] = ["Female", "N/A", "-", ""];
+            $rows[] = ["Note", "No gender breakdown recorded for $analysisYear", "", ""];
+        }
+        $rows[] = [""];
+
+        // SECTION 6: POPULATION & HOUSEHOLD TREND
+        $rows[] = ["6. HISTORICAL POPULATION & HOUSEHOLD TREND"];
+        $rows[] = ["Year", "Total Population", "Households", "Male Population", "Female Population"];
+        if ($trend->isNotEmpty()) {
+            foreach ($trend as $row) {
+                $rows[] = [
+                    $row->year,
+                    $row->total_population > 0 ? $ts($row->total_population) : "N/A",
+                    $row->total_households  > 0 ? $ts($row->total_households)  : "N/A",
+                    $row->male_population   > 0 ? $ts($row->male_population)   : "N/A",
+                    $row->female_population > 0 ? $ts($row->female_population) : "N/A",
+                ];
+            }
+        } else {
+            $rows[] = ["N/A", "No historical trend records found", "", "", ""];
+        }
+        $rows[] = [""];
+
+        // SECTION 7: BARANGAY BREAKDOWN
+        $rows[] = ["7. BARANGAY DEMOGRAPHICS & WELFARE BREAKDOWN"];
+        if ($barangays->isNotEmpty()) {
+            $rows[] = ["Barangay", "Population", "Male", "Female", "PWD", "AICS", "Solo Parent", "4Ps", "Senior"];
+            foreach ($barangays as $b) {
+                $pop = ($b->male_population ?? 0) + ($b->female_population ?? 0);
+                $rows[] = [
+                    $b->name,
+                    $pop > 0 ? $ts($pop) : "N/A",
+                    ($b->male_population   ?? 0) > 0 ? $ts($b->male_population)   : "N/A",
+                    ($b->female_population ?? 0) > 0 ? $ts($b->female_population) : "N/A",
+                    ($b->pwd_count         ?? 0) > 0 ? $ts($b->pwd_count)         : "N/A",
+                    ($b->aics_count        ?? 0) > 0 ? $ts($b->aics_count)        : "N/A",
+                    ($b->solo_parent_count ?? 0) > 0 ? $ts($b->solo_parent_count) : "N/A",
+                    ($b->four_ps_count     ?? 0) > 0 ? $ts($b->four_ps_count)     : "N/A",
+                    ($b->senior_count      ?? 0) > 0 ? $ts($b->senior_count)      : "N/A",
+                ];
+            }
+        } else {
+            $rows[] = ["Barangay", "Population", "Status"];
+            $rows[] = ["N/A", "0", "No barangay records recorded for $analysisYear"];
+        }
+        $rows[] = [""];
+        $rows[] = ["Note: 'N/A' indicates no record exists for that specific period or barangay."];
+
+        // Build CSV output with UTF-8 BOM
+        $output = "\xEF\xBB\xBF";
+        foreach ($rows as $row) {
+            $output .= implode(',', array_map(function ($cell) {
+                $cell = (string) $cell;
+                if (str_contains($cell, ',') || str_contains($cell, '"') || str_contains($cell, "\n")) {
+                    return '"' . str_replace('"', '""', $cell) . '"';
+                }
+                return $cell;
+            }, $row)) . "\r\n";
+        }
+
+        $filename = 'analysis-' . $municipality->name . '-' . $analysisYear . '.csv';
+        return response($output, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /** Excel workbook export — professional multi-sheet report with non-overlapping native charts. */
+    public function exportAnalysisExcel(Request $request)
+    {
+        $d = $this->buildAnalysisData($request);
+        extract($d);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet->getProperties()
+            ->setTitle("MSWDO Analysis {$municipality->name} {$analysisYear}")
+            ->setCreator('MSWDO System')
+            ->setSubject("Detailed Analysis Report");
+
+        // Palette & formatting constants
+        $navy   = '1E2A78';
+        $gold   = 'F5B82E';
+        $bg     = 'F4F6FB';
+        $white  = 'FFFFFF';
+
+        $headerFill = function(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws, $range) use ($navy, $white) {
+            $ws->getStyle($range)->applyFromArray([
+                'font'      => ['bold' => true, 'color' => ['rgb' => $white], 'size' => 11],
+                'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => $navy]],
+                'alignment' => ['vertical' => 'center'],
+            ]);
+        };
+
+        // ══════════════════════════════════════════════════════════════════════
+        // SHEET 1: Summary (Executive Dashboard with Clean Side-by-Side Layout)
+        // ══════════════════════════════════════════════════════════════════════
+        $ws1 = $spreadsheet->getActiveSheet()->setTitle('Summary');
+
+        // Title banner
+        $ws1->mergeCells('A1:C1');
+        $ws1->setCellValue('A1', "MSWDO Detailed Analysis Report");
+        $ws1->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 16, 'color' => ['rgb' => $navy]]]);
+        $ws1->setCellValue('A2', "Municipality"); $ws1->setCellValue('B2', $municipality->name);
+        $ws1->setCellValue('A3', "Analysis Year"); $ws1->setCellValue('B3', $analysisYear);
+        $ws1->setCellValue('A4', "Generated Date"); $ws1->setCellValue('B4', now()->format('Y-m-d H:i:s'));
+        $ws1->getStyle('A2:A4')->getFont()->setBold(true);
+
+        // KPI Table (A6:C13)
+        $ws1->setCellValue('A6', 'KEY PERFORMANCE INDICATORS');
+        $ws1->getStyle('A6')->applyFromArray(['font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => $navy]]]);
+        $ws1->mergeCells('A6:C6');
+
+        $ws1->fromArray([['Metric', 'Value', 'Notes']], null, 'A7');
+        $headerFill($ws1, 'A7:C7');
+
+        $kpiData = [
+            ['Total Population',   $totalPop > 0 ? $totalPop : null, "Official count for $analysisYear"],
+            ['Total Households',   $totalHH  > 0 ? $totalHH  : null, "Registered households"],
+            ['Applications',       $totalApps,                       "Submitted in $analysisYear"],
+            ['Unique Applicants',  $uniqueApplicants,                "Distinct applicants"],
+            ['Approved Cases',     $approvedApps,                    $approvalRate !== null ? $approvalRate . '% approval rate' : ''],
+            ['Beneficiaries',      $totalBeneficiaries > 0 ? $totalBeneficiaries : null, "Across all programs"],
+        ];
+
+        $r = 8;
+        foreach ($kpiData as $i => $row) {
+            $ws1->setCellValue("A$r", $row[0]);
+            if ($row[1] !== null) {
+                $ws1->setCellValueExplicit("B$r", $row[1], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+                $ws1->getStyle("B$r")->getNumberFormat()->setFormatCode('#,##0');
+            } else {
+                $ws1->setCellValue("B$r", 'N/A');
+                $ws1->getStyle("B$r")->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF7A84A8'));
+            }
+            $ws1->setCellValue("C$r", $row[2]);
+            if ($i % 2 === 0) {
+                $ws1->getStyle("A$r:C$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
+            }
+            $r++;
+        }
+
+        // Summary Application Status table (A15:C19)
+        $ws1->setCellValue('A15', 'APPLICATION STATUS OVERVIEW');
+        $ws1->getStyle('A15')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
+        $ws1->fromArray([['Status', 'Count', 'Share']], null, 'A16');
+        $headerFill($ws1, 'A16:C16');
+        $ws1->setCellValue('A17', 'Approved'); $ws1->setCellValueExplicit('B17', $approvedApps, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC); $ws1->setCellValueExplicit('C17', $totalApps > 0 ? round($approvedApps / $totalApps * 100, 1) : 0, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+        $ws1->setCellValue('A18', 'Pending');  $ws1->setCellValueExplicit('B18', $pendingApps,  \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC); $ws1->setCellValueExplicit('C18', $totalApps > 0 ? round($pendingApps  / $totalApps * 100, 1) : 0, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+        $ws1->setCellValue('A19', 'Rejected'); $ws1->setCellValueExplicit('B19', $rejectedApps, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC); $ws1->setCellValueExplicit('C19', $totalApps > 0 ? round($rejectedApps / $totalApps * 100, 1) : 0, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+        $ws1->getStyle('B17:B19')->getNumberFormat()->setFormatCode('#,##0');
+        $ws1->getStyle('C17:C19')->getNumberFormat()->setFormatCode('0.0"%"');
+
+        // Chart 1 on Summary: Application Status Pie Chart (Positioned at E6:L18)
+        $statusPieChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
+            'summary_status_chart',
+            new \PhpOffice\PhpSpreadsheet\Chart\Title("Application Status · $analysisYear"),
+            new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
+            new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
+                new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
+                    \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART,
+                    null,
+                    range(0, 2),
+                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Status'])],
+                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', 'Summary!$A$17:$A$19', null, 3)],
+                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', 'Summary!$B$17:$B$19', null, 3)]
+                )
+            ])
+        );
+        $statusPieChart->setTopLeftPosition('E6');
+        $statusPieChart->setBottomRightPosition('L18');
+        $ws1->addChart($statusPieChart);
+
+        // Summary Gender Table (A21:C24) and Gender Chart (E20:L32)
+        $totG = ($malePop ?? 0) + ($femalePop ?? 0);
+        if ($totG > 0) {
+            $ws1->setCellValue('A21', 'GENDER DISTRIBUTION');
+            $ws1->getStyle('A21')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
+            $ws1->fromArray([['Gender', 'Population', 'Share']], null, 'A22');
+            $headerFill($ws1, 'A22:C22');
+            $ws1->setCellValue('A23', 'Male');   $ws1->setCellValueExplicit('B23', $malePop, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);   $ws1->setCellValueExplicit('C23', round($malePop / $totG * 100, 1), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+            $ws1->setCellValue('A24', 'Female'); $ws1->setCellValueExplicit('B24', $femalePop, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC); $ws1->setCellValueExplicit('C24', round($femalePop / $totG * 100, 1), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+            $ws1->getStyle('B23:B24')->getNumberFormat()->setFormatCode('#,##0');
+            $ws1->getStyle('C23:C24')->getNumberFormat()->setFormatCode('0.0"%"');
+
+            $genderSummaryChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
+                'summary_gender_chart',
+                new \PhpOffice\PhpSpreadsheet\Chart\Title("Gender Distribution · $analysisYear"),
+                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
+                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
+                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
+                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART,
+                        null,
+                        range(0, 1),
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Gender'])],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', 'Summary!$A$23:$A$24', null, 2)],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', 'Summary!$B$23:$B$24', null, 2)]
+                    )
+                ])
+            );
+            $genderSummaryChart->setTopLeftPosition('E20');
+            $genderSummaryChart->setBottomRightPosition('L32');
+            $ws1->addChart($genderSummaryChart);
+        }
+
+        $ws1->getColumnDimension('A')->setWidth(26);
+        $ws1->getColumnDimension('B')->setWidth(18);
+        $ws1->getColumnDimension('C')->setWidth(30);
+        $ws1->getColumnDimension('D')->setWidth(4); // spacer column
+        foreach (['E','F','G','H','I','J','K','L'] as $col) {
+            $ws1->getColumnDimension($col)->setWidth(11);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // SHEET 2: Applications (Clean, Vertically Stacked Non-Overlapping Charts)
+        // ══════════════════════════════════════════════════════════════════════
+        $ws2 = $spreadsheet->createSheet()->setTitle('Applications');
+
+        $ws2->mergeCells('A1:E1');
+        $ws2->setCellValue('A1', "Application Analysis · $analysisYear · {$municipality->name}");
+        $ws2->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]]]);
+
+        // Status table (A3:C8)
+        $ws2->setCellValue('A3', 'APPLICATION STATUS OVERVIEW');
+        $ws2->getStyle('A3')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
+        $ws2->fromArray([['Status', 'Count', 'Percentage']], null, 'A4');
+        $headerFill($ws2, 'A4:C4');
+
+        $statusData = [
+            ['Approved', $approvedApps, $totalApps > 0 ? round($approvedApps / $totalApps * 100, 1) : 0],
+            ['Pending',  $pendingApps,  $totalApps > 0 ? round($pendingApps  / $totalApps * 100, 1) : 0],
+            ['Rejected', $rejectedApps, $totalApps > 0 ? round($rejectedApps / $totalApps * 100, 1) : 0],
+        ];
+        foreach ($statusData as $i => $row) {
+            $r = $i + 5;
+            $ws2->setCellValue("A$r", $row[0]);
+            $ws2->setCellValueExplicit("B$r", $row[1], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+            $ws2->getStyle("B$r")->getNumberFormat()->setFormatCode('#,##0');
+            $ws2->setCellValueExplicit("C$r", $row[2], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+            $ws2->getStyle("C$r")->getNumberFormat()->setFormatCode('0.0"%"');
+            if ($i % 2 === 0) $ws2->getStyle("A$r:C$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
+        }
+        $ws2->fromArray([['Total', $totalApps, '100.0%']], null, 'A8');
+        $ws2->getStyle('A8:C8')->applyFromArray(['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => $bg]]]);
+        $ws2->getStyle('B8')->getNumberFormat()->setFormatCode('#,##0');
+
+        // Chart 1: Application Status Pie Chart (Positioned at G4:N17)
+        $statusChart2 = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
+            'app_status_chart_sheet2',
+            new \PhpOffice\PhpSpreadsheet\Chart\Title("Application Status · $analysisYear"),
+            new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
+            new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
+                new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
+                    \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART,
+                    null,
+                    range(0, 2),
+                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Status'])],
+                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', 'Applications!$A$5:$A$7', null, 3)],
+                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', 'Applications!$B$5:$B$7', null, 3)]
+                )
+            ])
+        );
+        $statusChart2->setTopLeftPosition('G4');
+        $statusChart2->setBottomRightPosition('N17');
+        $ws2->addChart($statusChart2);
+
+        // By-program table (A10:E...)
+        if ($appsByProgram->isNotEmpty()) {
+            $ws2->setCellValue('A10', 'APPLICATIONS BY WELFARE PROGRAM');
+            $ws2->getStyle('A10')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
+            $ws2->fromArray([['Program', 'Applications', 'Pending', 'Approved', 'Rejected']], null, 'A11');
+            $headerFill($ws2, 'A11:E11');
+
+            $progStartRow = 12;
+            $r = $progStartRow;
+            foreach ($appsByProgram as $prog => $data) {
+                $rowTotal = ($data['pending'] ?? 0) + ($data['approved'] ?? 0) + ($data['rejected'] ?? 0);
+                $ws2->fromArray([[
+                    str_replace('_', ' ', $prog), $rowTotal,
+                    $data['pending'] ?? 0, $data['approved'] ?? 0, $data['rejected'] ?? 0,
+                ]], null, "A$r");
+                $ws2->getStyle("B$r:E$r")->getNumberFormat()->setFormatCode('#,##0');
+                if (($r - $progStartRow) % 2 === 0) $ws2->getStyle("A$r:E$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
+                $r++;
+            }
+            $ws2->fromArray([['Total', $totalApps, $pendingApps, $approvedApps, $rejectedApps]], null, "A$r");
+            $ws2->getStyle("A$r:E$r")->applyFromArray(['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => $bg]]]);
+            $ws2->getStyle("B$r:E$r")->getNumberFormat()->setFormatCode('#,##0');
+
+            // Chart 2: Applications by Program Clustered Column Chart (Positioned at G19:N32 - strictly BELOW Chart 1!)
+            $progEndRow = $r - 1;
+            $progChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
+                'prog_chart',
+                new \PhpOffice\PhpSpreadsheet\Chart\Title("Applications by Program · $analysisYear"),
+                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
+                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
+                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
+                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART,
+                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED,
+                        range(0, 3),
+                        [
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Total Applications']),
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Pending']),
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Approved']),
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Rejected']),
+                        ],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', "Applications!\$A\$$progStartRow:\$A\$$progEndRow", null, $appsByProgram->count())],
+                        [
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Applications!\$B\$$progStartRow:\$B\$$progEndRow", null, $appsByProgram->count()),
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Applications!\$C\$$progStartRow:\$C\$$progEndRow", null, $appsByProgram->count()),
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Applications!\$D\$$progStartRow:\$D\$$progEndRow", null, $appsByProgram->count()),
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Applications!\$E\$$progStartRow:\$E\$$progEndRow", null, $appsByProgram->count()),
+                        ]
+                    )
+                ])
+            );
+            $progChart->setTopLeftPosition('G19');
+            $progChart->setBottomRightPosition('N32');
+            $ws2->addChart($progChart);
+        }
+
+        $ws2->getColumnDimension('A')->setWidth(26);
+        $ws2->getColumnDimension('B')->setWidth(16);
+        $ws2->getColumnDimension('C')->setWidth(14);
+        $ws2->getColumnDimension('D')->setWidth(14);
+        $ws2->getColumnDimension('E')->setWidth(14);
+        $ws2->getColumnDimension('F')->setWidth(4); // spacer column
+        foreach (['G','H','I','J','K','L','M','N'] as $col) {
+            $ws2->getColumnDimension($col)->setWidth(11);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // SHEET 3: Programs (Social Welfare Beneficiaries & Side Chart)
+        // ══════════════════════════════════════════════════════════════════════
+        $ws3 = $spreadsheet->createSheet()->setTitle('Programs');
+
+        $ws3->mergeCells('A1:C1');
+        $ws3->setCellValue('A1', "Social Welfare Programs · $analysisYear · {$municipality->name}");
+        $ws3->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]]]);
+
+        $ws3->fromArray([['Program', 'Beneficiaries', '% of Largest']], null, 'A3');
+        $headerFill($ws3, 'A3:C3');
+
+        if ($programOverview->isEmpty()) {
+            $ws3->setCellValue('A4', 'No beneficiary records for ' . $analysisYear);
+            $ws3->getStyle('A4')->getFont()->setItalic(true)->getColor()->setRGB('7A84A8');
+        } else {
+            $maxB = $programOverview->max() ?: 1;
+            $r = 4;
+            foreach ($programOverview as $prog => $count) {
+                $pctVal = round($count / $maxB * 100, 1);
+                $ws3->setCellValue("A$r", str_replace('_', ' ', $prog));
+                $ws3->setCellValueExplicit("B$r", $count, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+                $ws3->getStyle("B$r")->getNumberFormat()->setFormatCode('#,##0');
+                $ws3->setCellValueExplicit("C$r", $pctVal, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+                $ws3->getStyle("C$r")->getNumberFormat()->setFormatCode('0.0"%"');
+                if (($r - 4) % 2 === 0) $ws3->getStyle("A$r:C$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
+                $r++;
+            }
+
+            // Horizontal Bar chart for program beneficiaries (Positioned at E3:L18)
+            $progBenefChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
+                'prog_benef_chart',
+                new \PhpOffice\PhpSpreadsheet\Chart\Title("Beneficiaries by Program · $analysisYear"),
+                null,
+                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
+                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
+                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART,
+                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED,
+                        [0],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Beneficiaries'])],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', "Programs!\$A\$4:\$A\$" . ($r-1), null, $programOverview->count())],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Programs!\$B\$4:\$B\$" . ($r-1), null, $programOverview->count())]
+                    )
+                ])
+            );
+            $progBenefChart->setTopLeftPosition('E3');
+            $progBenefChart->setBottomRightPosition('L18');
+            $ws3->addChart($progBenefChart);
+        }
+
+        $ws3->getColumnDimension('A')->setWidth(26);
+        $ws3->getColumnDimension('B')->setWidth(18);
+        $ws3->getColumnDimension('C')->setWidth(16);
+        $ws3->getColumnDimension('D')->setWidth(4); // spacer
+        foreach (['E','F','G','H','I','J','K','L'] as $col) {
+            $ws3->getColumnDimension($col)->setWidth(11);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // SHEET 4: Demographics (Clean, Vertically Stacked Non-Overlapping Charts)
+        // ══════════════════════════════════════════════════════════════════════
+        $ws4 = $spreadsheet->createSheet()->setTitle('Demographics');
+
+        $ws4->mergeCells('A1:E1');
+        $ws4->setCellValue('A1', "Demographics & Population Trend · {$municipality->name}");
+        $ws4->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]]]);
+
+        // Gender Distribution Table (A3:C7)
+        $ws4->setCellValue('A3', "GENDER DISTRIBUTION · $analysisYear");
+        $ws4->getStyle('A3')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
+        $ws4->fromArray([['Gender', 'Count', 'Percentage']], null, 'A4');
+        $headerFill($ws4, 'A4:C4');
+
+        if ($malePop + $femalePop > 0) {
+            $gT = $malePop + $femalePop;
+            $ws4->fromArray([
+                ['Male',   $malePop,   round($malePop   / $gT * 100, 1)],
+                ['Female', $femalePop, round($femalePop / $gT * 100, 1)],
+                ['Total',  $gT,        100],
+            ], null, 'A5');
+            $ws4->getStyle('B5:B7')->getNumberFormat()->setFormatCode('#,##0');
+            $ws4->getStyle('C5:C6')->getNumberFormat()->setFormatCode('0.0"%"');
+            $ws4->getStyle('A7:C7')->applyFromArray(['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => $bg]]]);
+
+            // Chart 1: Gender Distribution (Positioned at G4:N17)
+            $genderChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
+                'gender_chart',
+                new \PhpOffice\PhpSpreadsheet\Chart\Title("Gender Distribution · $analysisYear"),
+                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
+                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
+                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
+                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART,
+                        null,
+                        range(0, 1),
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Gender'])],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', 'Demographics!$A$5:$A$6', null, 2)],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', 'Demographics!$B$5:$B$6', null, 2)]
+                    )
+                ])
+            );
+            $genderChart->setTopLeftPosition('G4');
+            $genderChart->setBottomRightPosition('N17');
+            $ws4->addChart($genderChart);
+        } else {
+            $ws4->setCellValue('A5', 'No gender data for ' . $analysisYear);
+            $ws4->getStyle('A5')->getFont()->setItalic(true)->getColor()->setRGB('7A84A8');
+        }
+
+        // Historical Population & Household Trend Table (A10:E...)
+        $ws4->setCellValue('A10', 'HISTORICAL POPULATION & HOUSEHOLD TREND');
+        $ws4->getStyle('A10')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
+        $ws4->fromArray([['Year', 'Population', 'Households', 'Male', 'Female']], null, 'A11');
+        $headerFill($ws4, 'A11:E11');
+
+        $trendStartRow = 12;
+        $r = $trendStartRow;
+        foreach ($trend as $row) {
+            $ws4->setCellValue("A$r", $row->year);
+            foreach (['total_population' => 'B', 'total_households' => 'C', 'male_population' => 'D', 'female_population' => 'E'] as $field => $col) {
+                if ($row->$field > 0) {
+                    $ws4->setCellValueExplicit("{$col}{$r}", $row->$field, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+                    $ws4->getStyle("{$col}{$r}")->getNumberFormat()->setFormatCode('#,##0');
+                } else {
+                    $ws4->setCellValue("{$col}{$r}", 'N/A');
+                }
+            }
+            if (($r - $trendStartRow) % 2 === 0) $ws4->getStyle("A$r:E$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
+            $r++;
+        }
+
+        // Chart 2: Trend Chart (Positioned at G19:N33 - strictly BELOW Chart 1!)
+        if ($trend->count() > 0) {
+            $trendEndRow = $r - 1;
+            $trendChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
+                'trend_chart',
+                new \PhpOffice\PhpSpreadsheet\Chart\Title("Historical Population & Households Trend"),
+                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
+                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
+                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
+                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART,
+                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED,
+                        [0, 1],
+                        [
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Population']),
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Households']),
+                        ],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', "Demographics!\$A\$$trendStartRow:\$A\$$trendEndRow", null, $trend->count())],
+                        [
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Demographics!\$B\$$trendStartRow:\$B\$$trendEndRow", null, $trend->count()),
+                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Demographics!\$C\$$trendStartRow:\$C\$$trendEndRow", null, $trend->count()),
+                        ]
+                    )
+                ])
+            );
+            $trendChart->setTopLeftPosition('G19');
+            $trendChart->setBottomRightPosition('N33');
+            $ws4->addChart($trendChart);
+        }
+
+        $ws4->getColumnDimension('A')->setWidth(20);
+        $ws4->getColumnDimension('B')->setWidth(16);
+        $ws4->getColumnDimension('C')->setWidth(16);
+        $ws4->getColumnDimension('D')->setWidth(16);
+        $ws4->getColumnDimension('E')->setWidth(16);
+        $ws4->getColumnDimension('F')->setWidth(4); // spacer column
+        foreach (['G','H','I','J','K','L','M','N'] as $col) {
+            $ws4->getColumnDimension($col)->setWidth(11);
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // SHEET 5: Barangay Data (with Clean Bottom Bar Chart)
+        // ══════════════════════════════════════════════════════════════════════
+        $ws5 = $spreadsheet->createSheet()->setTitle('Barangay Data');
+
+        $ws5->mergeCells('A1:I1');
+        $ws5->setCellValue('A1', "Barangay Data · $analysisYear · {$municipality->name}");
+        $ws5->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]]]);
+
+        if ($barangays->isEmpty()) {
+            $ws5->setCellValue('A3', 'No barangay records for ' . $analysisYear);
+            $ws5->getStyle('A3')->getFont()->setItalic(true)->getColor()->setRGB('7A84A8');
+        } else {
+            $ws5->fromArray([['Barangay', 'Population', 'Male', 'Female', 'PWD', 'AICS', 'Solo Parent', '4Ps', 'Senior']], null, 'A3');
+            $headerFill($ws5, 'A3:I3');
+
+            $bgyStart = 4;
+            $r = $bgyStart;
+            foreach ($barangays as $b) {
+                $pop = ($b->male_population ?? 0) + ($b->female_population ?? 0);
+                $fields = [
+                    $b->name,
+                    $pop > 0 ? $pop : null,
+                    ($b->male_population   ?? 0) > 0 ? $b->male_population   : null,
+                    ($b->female_population ?? 0) > 0 ? $b->female_population : null,
+                    ($b->pwd_count         ?? 0) > 0 ? $b->pwd_count         : null,
+                    ($b->aics_count        ?? 0) > 0 ? $b->aics_count        : null,
+                    ($b->solo_parent_count ?? 0) > 0 ? $b->solo_parent_count : null,
+                    ($b->four_ps_count     ?? 0) > 0 ? $b->four_ps_count     : null,
+                    ($b->senior_count      ?? 0) > 0 ? $b->senior_count      : null,
+                ];
+                $ws5->setCellValue("A$r", $b->name);
+                $cols = ['B','C','D','E','F','G','H','I'];
+                foreach (array_slice($fields, 1) as $k => $val) {
+                    $col = $cols[$k];
+                    if ($val !== null) {
+                        $ws5->setCellValueExplicit("{$col}{$r}", $val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
+                        $ws5->getStyle("{$col}{$r}")->getNumberFormat()->setFormatCode('#,##0');
+                    } else {
+                        $ws5->setCellValue("{$col}{$r}", 'N/A');
+                        $ws5->getStyle("{$col}{$r}")->getFont()->getColor()->setRGB('7A84A8');
+                    }
+                }
+                if (($r - $bgyStart) % 2 === 0) $ws5->getStyle("A$r:I$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
+                $r++;
+            }
+
+            // Population by barangay bar chart (Positioned cleanly below table)
+            $bgyEndRow = $r - 1;
+            $bgyChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
+                'bgy_chart',
+                new \PhpOffice\PhpSpreadsheet\Chart\Title("Population by Barangay · $analysisYear"),
+                null,
+                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
+                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
+                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART,
+                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED,
+                        [0],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Population'])],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', "Barangay Data!\$A\$$bgyStart:\$A\$$bgyEndRow", null, $barangays->count())],
+                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Barangay Data!\$B\$$bgyStart:\$B\$$bgyEndRow", null, $barangays->count())]
+                    )
+                ])
+            );
+            $bgyChart->setTopLeftPosition('A' . ($r + 3));
+            $bgyChart->setBottomRightPosition('I' . ($r + 20));
+            $ws5->addChart($bgyChart);
+        }
+
+        $ws5->getColumnDimension('A')->setWidth(24);
+        foreach (['B','C','D','E','F','G','H','I'] as $col) {
+            $ws5->getColumnDimension($col)->setWidth(16);
+        }
+
+        // ── Footnote on each sheet ──────────────────────────────────────────
+        $footnote = "Note: 'N/A' indicates no record exists for that specific year or barangay.";
+        foreach ([$ws1, $ws2, $ws3, $ws4, $ws5] as $ws) {
+            $lastRow = max(10, $ws->getHighestRow()) + 2;
+            $ws->setCellValue("A$lastRow", $footnote);
+            $ws->getStyle("A$lastRow")->applyFromArray(['font' => ['italic' => true, 'color' => ['rgb' => '7A84A8'], 'size' => 10]]);
+        }
+
+        // ── Set first sheet active ──────────────────────────────────────────
+        $spreadsheet->setActiveSheetIndex(0);
+
+        // ── Stream response ─────────────────────────────────────────────────
+        $filename = 'analysis-' . $municipality->name . '-' . $analysisYear . '.xlsx';
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->setIncludeCharts(true);
+
+        ob_start();
+        $writer->save('php://output');
+        $content2 = ob_get_clean();
+
+        return response($content2, 200, [
+            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+            'Cache-Control'       => 'max-age=0',
+        ]);
     }
 
     /** Load and date-parse applications for a given municipality. */

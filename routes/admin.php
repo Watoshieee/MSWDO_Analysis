@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Route;
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [App\Http\Controllers\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/detailed-analysis', [App\Http\Controllers\AdminController::class, 'detailedAnalysis'])->name('detailed-analysis');
+    Route::get('/detailed-analysis/export/csv', [App\Http\Controllers\AdminController::class, 'exportAnalysisCsv'])->name('detailed-analysis.export.csv');
+    Route::get('/detailed-analysis/export/excel', [App\Http\Controllers\AdminController::class, 'exportAnalysisExcel'])->name('detailed-analysis.export.excel');
     Route::get('/applications', [App\Http\Controllers\AdminController::class, 'applications'])->name('applications');
     Route::post('/applications/{id}/status', [App\Http\Controllers\AdminController::class, 'updateApplicationStatus'])->name('applications.status');
     Route::get('/barangay/{name}', [App\Http\Controllers\AdminController::class, 'barangay'])->name('barangay');
@@ -52,6 +54,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/settings/get', [App\Http\Controllers\AdminSettingsController::class, 'get'])->name('settings.get');
     Route::post('/settings/update', [App\Http\Controllers\AdminSettingsController::class, 'update'])->name('settings.update');
     Route::post('/settings/reset', [App\Http\Controllers\AdminSettingsController::class, 'reset'])->name('settings.reset');
+    Route::post('/settings/municipality', [App\Http\Controllers\AdminSettingsController::class, 'updateMunicipalitySettings'])->name('settings.municipality');
+    Route::post('/settings/programs/{id}/update', [App\Http\Controllers\AdminSettingsController::class, 'updateProgram'])->name('settings.programs.update');
+    Route::post('/settings/programs/{id}/toggle', [App\Http\Controllers\AdminSettingsController::class, 'toggleProgram'])->name('settings.programs.toggle');
 
     // Admin Data Management Routes
     Route::prefix('data')->name('data.')->group(function () {

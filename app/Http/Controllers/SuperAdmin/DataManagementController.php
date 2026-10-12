@@ -471,6 +471,8 @@ class DataManagementController extends Controller
             'SLP' => 'SLP',
             'ESA' => 'ESA',
             'Solo_Parent' => 'Solo Parent',
+            'ECCD' => 'ECCD',
+            'Kababaihan' => 'Kababaihan',
         ];
 
         $years = array_merge([2015, 2020], range(date('Y') - 3, date('Y') + 1));
@@ -582,7 +584,7 @@ class DataManagementController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'municipality'      => 'required|exists:municipalities,name',
-            'program_type'      => 'required|in:4Ps,Senior_Citizen_Pension,PWD_Assistance,AICS,SLP,ESA,Solo_Parent',
+            'program_type'      => 'required|in:4Ps,Senior_Citizen_Pension,PWD_Assistance,AICS,SLP,ESA,Solo_Parent,ECCD,Kababaihan',
             'beneficiary_count' => 'required|integer|min:0',
             'year'              => 'required|integer|min:2000|max:' . (date('Y') + 1),
         ]);

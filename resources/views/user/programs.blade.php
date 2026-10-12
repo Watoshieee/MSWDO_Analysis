@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Available Programs – MSWDO Member Portal</title>
+    <title>Available Programs – MSWDO {{ Auth::user()->municipality }}</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -203,12 +205,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <section class="hero">
         <div class="container">
             <div class="hero-inner">
-                <div class="hero-badge">Member Portal</div>
+                <div class="hero-badge">{{ Auth::user()->municipality }} · Member Portal</div>
                 <h1>Available Programs</h1>
                 <div class="hero-divider"></div>
-                <p>Choose a program below to view its requirements and submit your application for MSWDO assistance.</p>
+                <p>Choose a program below to view its requirements and submit your application for {{ Auth::user()->municipality }} MSWDO assistance.</p>
                 @php
-                    $programCount = 3 + (!empty($canAccessMta) ? 1 : 0) + (!empty($canAccessDayCare) ? 1 : 0);
+                    $programCount = isset($municipalityPrograms) ? $municipalityPrograms->count() : (3 + (!empty($canAccessMta) ? 1 : 0) + (!empty($canAccessDayCare) ? 1 : 0));
                 @endphp
                 <div class="hero-stats">
                     <div class="hero-stat">
@@ -262,6 +264,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
             <div class="prog-grid" id="progGrid">
 
+                @if(!isset($municipalityPrograms) || $municipalityPrograms->contains(fn($p) => $p->program_key === 'PWD_Assistance' && $p->is_active))
                 <!-- 1. PWD Assistance -->
                 <div class="prog-card" data-cat="social" data-title="PWD Assistance Persons with Disability">
                     <div class="accent acc-blue"></div>
@@ -290,6 +293,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 </div>
 
+                @endif
+
+                @if(!isset($municipalityPrograms) || $municipalityPrograms->contains(fn($p) => $p->program_key === 'Solo_Parent' && $p->is_active))
                 <!-- 2. Solo Parent Support -->
                 <div class="prog-card" data-cat="social" data-title="Solo Parent Support Single Parent">
                     <div class="accent acc-blue"></div>
@@ -314,6 +320,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 </div>
 
+                @endif
+
+                @if(!isset($municipalityPrograms) || $municipalityPrograms->contains(fn($p) => in_array($p->program_key, ['AICS_Medical', 'AICS_Burial']) && $p->is_active))
                 <!-- 3. AICS -->
                 <div class="prog-card" data-cat="financial" data-title="AICS Assistance in Crisis Situations Emergency Aid">
                     <div class="accent acc-blue"></div>
@@ -338,6 +347,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 </div>
 
+                @endif
                 @if(!empty($canAccessMta))
                 <!-- 4. Minor Traveling Abroad (MTA) — Liliw only -->
                 <div class="prog-card" data-cat="social" data-title="Minor Traveling Abroad MTA DSWD">
@@ -407,6 +417,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         </div>
     </div>
+
 
 
 
