@@ -38,7 +38,7 @@ class AdminDataImportExportController extends Controller
     public function exportCsv(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'year'     => 'nullable|integer|min:1990|max:2099',
+            'year'     => 'nullable|string',  // accepts: empty, 'all', or '2024'
             'category' => 'nullable|string|in:all,municipality,barangay,programs',
         ]);
 
@@ -48,8 +48,11 @@ class AdminDataImportExportController extends Controller
 
         try {
             $municipality = Auth::user()->municipality;
-            $year         = $request->filled('year') ? (int) $request->year : null;
-            $category     = $request->input('category', 'all');
+            // 'all', empty string, or missing → null means export all years
+            $rawYear  = $request->input('year');
+            $year     = ($rawYear && $rawYear !== 'all') ? (int) $rawYear : null;
+            $category = $request->input('category', 'all');
+
 
             $filters    = compact('municipality', 'year', 'category');
             $csvContent = $this->csvExporter->buildCombinedCsv($filters);
@@ -75,7 +78,7 @@ class AdminDataImportExportController extends Controller
     public function exportExcel(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'year'     => 'nullable|integer|min:1990|max:2099',
+            'year'     => 'nullable|string',  // accepts: empty, 'all', or '2024'
             'category' => 'nullable|string|in:all,municipality,barangay,programs',
         ]);
 
@@ -85,8 +88,10 @@ class AdminDataImportExportController extends Controller
 
         try {
             $municipality = Auth::user()->municipality;
-            $year         = $request->filled('year') ? (int) $request->year : null;
-            $category     = $request->input('category', 'all');
+            // 'all', empty string, or missing → null means export all years
+            $rawYear = $request->input('year');
+            $year    = ($rawYear && $rawYear !== 'all') ? (int) $rawYear : null;
+            $category = $request->input('category', 'all');
 
             $filters  = compact('municipality', 'year', 'category');
             $xlsxPath = $this->excelExporter->generateWorkbook($filters);
@@ -129,7 +134,7 @@ class AdminDataImportExportController extends Controller
             'csv_file'    => 'required|file|max:10240',
             'import_type' => 'required|in:municipality_data,barangay_data,program_data',
             'import_mode' => 'nullable|in:skip,update',
-            'year'        => 'nullable|integer|min:1990|max:2099',
+            'year'     => 'nullable|string',  // accepts: empty, 'all', or '2024'
         ]);
 
         if ($validator->fails()) {

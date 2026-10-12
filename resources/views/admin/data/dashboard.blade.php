@@ -319,6 +319,12 @@ dialog input:focus{outline:0;border-color:var(--navy);background:#fff;box-shadow
                             </a>
                         @endforeach
                     </div>
+                    <!-- Import CSV Button -->
+                    <button type="button" data-bs-toggle="modal" data-bs-target="#importModal"
+                        style="background:var(--primary-blue);color:white;border:none;border-radius:8px;padding:7px 15px;font-weight:700;font-size:0.83rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;">
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                        Import CSV
+                    </button>
                     <div class="exm" id="exm">
                         <button class="btn ghost" id="expBtn" type="button" aria-haspopup="menu" aria-expanded="false" aria-controls="expMenu">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
@@ -673,14 +679,130 @@ dialog input:focus{outline:0;border-color:var(--navy);background:#fff;box-shadow
     <!-- Toast Notification -->
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- IMPORT LOADING OVERLAY                                        -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div id="importOverlay" style="display:none;position:fixed;inset:0;z-index:9999;background:rgba(30,41,79,0.7);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;">
+        <div style="background:#fff;border-radius:18px;padding:40px 48px;text-align:center;box-shadow:0 20px 60px rgba(44,62,143,0.3);max-width:380px;width:90%;">
+            <div style="width:56px;height:56px;border:4px solid #E2E8F0;border-top-color:var(--primary-blue);border-radius:50%;animation:spin 0.8s linear infinite;margin:0 auto 20px;"></div>
+            <div style="font-weight:800;font-size:1.05rem;color:var(--primary-blue);" id="overlayTitle">Importing Data</div>
+            <div id="overlayDetail" style="font-size:0.82rem;color:#64748b;margin-top:8px;">Please wait...</div>
+            <div id="overlayResult" style="display:none;margin-top:20px;text-align:left;"></div>
+            <button onclick="hideImportOverlay()" id="overlayDoneBtn" style="display:none;margin-top:20px;background:var(--primary-gradient);color:#fff;border:none;border-radius:10px;padding:9px 28px;font-weight:800;font-size:0.9rem;cursor:pointer;">Done</button>
+        </div>
+    </div>
+    <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <!-- IMPORT MODAL                                                   -->
+    <!-- ══════════════════════════════════════════════════════════════ -->
+    <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content" style="border:none;border-radius:18px;overflow:hidden;box-shadow:0 12px 48px rgba(44,62,143,0.22);">
+                <div class="modal-header" style="background:var(--primary-gradient);color:white;padding:18px 24px;">
+                    <div>
+                        <div style="font-size:0.72rem;font-weight:800;letter-spacing:0.1em;text-transform:uppercase;color:var(--secondary-yellow);margin-bottom:2px;">DATA MANAGEMENT &bull; IMPORT CENTER</div>
+                        <h5 class="modal-title" id="importModalLabel" style="font-weight:900;font-size:1.25rem;margin:0;">Import CSV Data</h5>
+                    </div>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" style="background:#F8FAFC;padding:24px;">
+                    <!-- Scope notice -->
+                    <div style="background:#EEF2FF;border:1px solid #C7D6F5;border-radius:10px;padding:10px 14px;margin-bottom:16px;font-size:0.78rem;color:var(--primary-blue);font-weight:600;">
+                        <i class="bi bi-shield-lock me-1"></i>
+                        Imports are restricted to <strong>{{ $municipality->name }}</strong> &mdash; only records matching your municipality will be saved.
+                    </div>
+
+                    <!-- Step 1: Templates -->
+                    <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:14px 18px;margin-bottom:18px;">
+                        <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;color:#64748B;letter-spacing:0.06em;margin-bottom:10px;">Step 1 &mdash; Download a Template</div>
+                        <div class="d-flex flex-wrap gap-2">
+                            <a href="{{ route('admin.data.import.template', 'municipality_data') }}" class="btn btn-sm" style="background:#EEF2FF;color:var(--primary-blue);border:1px solid #C7D6F5;font-weight:700;border-radius:8px;">
+                                <i class="bi bi-file-earmark-arrow-down me-1"></i> Municipality Template
+                            </a>
+                            <a href="{{ route('admin.data.import.template', 'barangay_data') }}" class="btn btn-sm" style="background:#EEF2FF;color:var(--primary-blue);border:1px solid #C7D6F5;font-weight:700;border-radius:8px;">
+                                <i class="bi bi-file-earmark-arrow-down me-1"></i> Barangay Template
+                            </a>
+                            <a href="{{ route('admin.data.import.template', 'program_data') }}" class="btn btn-sm" style="background:#EEF2FF;color:var(--primary-blue);border:1px solid #C7D6F5;font-weight:700;border-radius:8px;">
+                                <i class="bi bi-file-earmark-arrow-down me-1"></i> Social Programs Template
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Step 2: Upload -->
+                    <div style="background:#FFFFFF;border:1px solid #E2E8F0;border-radius:12px;padding:16px 18px;">
+                        <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;color:#64748B;letter-spacing:0.06em;margin-bottom:12px;">Step 2 &mdash; Upload Your CSV</div>
+                        <form id="importForm" method="POST" action="{{ route('admin.data.import') }}" enctype="multipart/form-data">
+                            @csrf
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-4">
+                                    <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#475569;">Data Type *</label>
+                                    <select name="import_type" id="impType" class="form-select form-select-sm" required>
+                                        <option value="">&mdash; Select Type &mdash;</option>
+                                        <option value="municipality_data">Municipality Yearly Data</option>
+                                        <option value="barangay_data">Barangay Data</option>
+                                        <option value="program_data">Social Programs</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#475569;">Year Filter <span style="font-weight:400;color:#94a3b8;">(optional)</span></label>
+                                    <select name="year" id="impYear" class="form-select form-select-sm">
+                                        <option value="">All Years in File</option>
+                                        @foreach (range(2030, 2021, -1) as $yr)
+                                            <option value="{{ $yr }}">{{ $yr }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-4">
+                                    <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#475569;">Duplicates</label>
+                                    <select name="import_mode" class="form-select form-select-sm">
+                                        <option value="update">Update existing records</option>
+                                        <option value="skip">Skip duplicates</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label" style="font-size:0.78rem;font-weight:700;color:#475569;">CSV File * <span style="font-weight:400;color:#94a3b8;">(max 10 MB)</span></label>
+                                <input type="file" name="csv_file" id="impFile" accept=".csv,text/csv" class="form-control form-control-sm" required>
+                            </div>
+                            <div class="d-flex gap-2 flex-wrap">
+                                <button type="button" class="btn btn-sm" id="btnPreview" style="background:#F1F5F9;color:#334155;border:1px solid #CBD5E1;font-weight:700;border-radius:8px;padding:7px 16px;">
+                                    <i class="bi bi-eye me-1"></i> Preview (first 20 rows)
+                                </button>
+                                <button type="submit" class="btn btn-sm" id="btnImport" style="background:var(--primary-gradient);color:white;border:none;font-weight:800;border-radius:8px;padding:7px 18px;box-shadow:0 3px 10px rgba(44,62,143,0.22);">
+                                    <i class="bi bi-upload me-1"></i> Import File
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div id="previewArea" style="display:none;margin-top:16px;">
+                        <div id="previewMsg" style="font-size:0.78rem;color:#475569;margin-bottom:8px;font-weight:600;"></div>
+                        <div style="overflow-x:auto;max-height:220px;overflow-y:auto;border-radius:8px;border:1px solid #E2E8F0;">
+                            <table class="table table-sm" id="previewTable" style="font-size:0.75rem;margin:0;">
+                                <thead id="previewHead"></thead>
+                                <tbody id="previewBody"></tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <div style="margin-top:14px;font-size:0.72rem;color:#64748B;font-style:italic;">
+                        <i class="bi bi-shield-check me-1"></i>
+                        All imports are validated server-side. Only data for <strong>{{ $municipality->name }}</strong> will be accepted.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Hidden Export Forms -->
-    <form id="exportCsvForm" method="POST" action="{{ route('admin.data.export.csv') }}" style="display:none;">
-        @csrf
+    <form id="exportCsvForm" method="GET" action="{{ route('admin.data.export.data-csv') }}" style="display:none;">
         <input type="hidden" name="year" value="{{ $cYear }}">
+        <input type="hidden" name="category" value="all">
     </form>
-    <form id="exportReportForm" method="POST" action="{{ route('admin.data.export.report') }}" style="display:none;">
-        @csrf
+    <form id="exportReportForm" method="GET" action="{{ route('admin.data.export.data-excel') }}" style="display:none;">
         <input type="hidden" name="year" value="{{ $cYear }}">
+        <input type="hidden" name="category" value="all">
     </form>
 <div class="modal fade" id="exportOptionsModal" tabindex="-1" aria-labelledby="exportOptionsModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered modal-lg">
@@ -744,7 +866,7 @@ dialog input:focus{outline:0;border-color:var(--navy);background:#fff;box-shadow
                                         <li>README.txt (WSM formulas &amp; weights)</li>
                                     </ul>
                                 </div>
-                                <form id="modalCsvForm" method="POST" action="{{ route('admin.data.export.csv') }}">
+                                <form id="modalCsvForm" method="GET" action="{{ route('admin.data.export.data-csv') }}">
                                     @csrf
                                     <input type="hidden" name="year" id="modalCsvYear" value="{{ request('year', $currentYear) }}">
                                     <button type="submit" class="btn w-100" style="background:#FFFFFF; color:var(--primary-blue); border:2px solid var(--primary-blue); font-weight:800; font-size:0.85rem; border-radius:10px; padding:9px 16px;">
@@ -778,7 +900,7 @@ dialog input:focus{outline:0;border-color:var(--navy);background:#fff;box-shadow
                                         <li>Methodological Framework</li>
                                     </ul>
                                 </div>
-                                <form id="modalReportForm" method="POST" action="{{ route('admin.data.export.report') }}">
+                                <form id="modalReportForm" method="GET" action="{{ route('admin.data.export.data-excel') }}">
                                     @csrf
                                     <input type="hidden" name="year" id="modalReportYear" value="{{ request('year', $currentYear) }}">
                                     <button type="submit" class="btn w-100" style="background:var(--primary-gradient); color:white; border:none; font-weight:800; font-size:0.85rem; border-radius:10px; padding:10px 16px; box-shadow:0 4px 12px rgba(44,62,143,0.25);">
@@ -800,7 +922,7 @@ dialog input:focus{outline:0;border-color:var(--navy);background:#fff;box-shadow
                                         Compares demographic scale, beneficiary concentration, and calculated DSS/WSM indicators among <strong>Magdalena, Liliw, and Majayjay</strong>.
                                     </p>
                                 </div>
-                                <form method="POST" action="{{ route('admin.data.export.comparative') }}" class="m-0">
+                                <form method="GET" action="{{ route('admin.data.export.data-csv') }}" class="m-0">
                                     @csrf
                                     <input type="hidden" name="year" id="modalCompYear" value="{{ request('year', $currentYear) }}">
                                     <button type="submit" class="btn btn-sm" style="background:#F1F5F9; color:#334155; border:1px solid #CBD5E1; font-weight:700; border-radius:8px; padding:7px 16px;">
@@ -833,6 +955,22 @@ dialog input:focus{outline:0;border-color:var(--navy);background:#fff;box-shadow
                 toastTimer = setTimeout(function () {
                     t.classList.remove('on');
                 }, 3200);
+            }
+
+            // ── Export year select → sync all hidden year inputs ──────────
+            function updateExportForms(val) {
+                // If 'all' selected, send empty string so controller treats it as null (all years)
+                var yearVal = (val === 'all') ? '' : val;
+                var ids = ['modalCsvYear', 'modalReportYear', 'modalCompYear'];
+                ids.forEach(function(id) {
+                    var el = document.getElementById(id);
+                    if (el) el.value = yearVal;
+                });
+                // Also update the hidden quick-export forms
+                var csvHidden = document.querySelector('#exportCsvForm input[name="year"]');
+                var xlsHidden = document.querySelector('#exportReportForm input[name="year"]');
+                if (csvHidden) csvHidden.value = yearVal;
+                if (xlsHidden) xlsHidden.value = yearVal;
             }
 
             // Export dropdown toggle
