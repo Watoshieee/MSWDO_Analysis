@@ -43,45 +43,88 @@ class Appointment extends Model
     }
 
     // ── Slot configuration ─────────────────────────────────────────────────────
-    /** Hour slots available (excludes lunch 12:00) */
-    public static function availableSlots(): array
+    /** Office hour blocks (24h), lunch 12:xx excluded */
+    public static function officeHours(): array
     {
-        return ['08:00', '09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'];
+        return [8, 9, 10, 11, 13, 14, 15, 16];
     }
 
-    public static function maxPerSlot(): int { return 5; }
+    /** All valid HH:MM slots (5-min intervals) — kept for reschedule validation */
+    public static function availableSlots(): array
+    {
+        $slots = [];
+        foreach (static::officeHours() as $h) {
+            foreach (range(0, 55, 5) as $m) {
+                $slots[] = sprintf('%02d:%02d', $h, $m);
+            }
+        }
+        return $slots;
+    }
+
+    public static function maxPerSlot(): int { return 1; }
 
     /**
-     * Count confirmed appointments in a specific date+time slot.
+     * Count active appointments in a specific date+time slot.
      */
     public static function slotCount(string $date, string $time, ?string $municipality = null): int
     {
-        $query = static::where('appointment_date', $date)
-            ->where('appointment_time', $time)
-            ->whereIn('status', ['pending', 'confirmed']);
-            
+        $timeNorm = substr(trim($time), 0, 5);
+
+        $query = static::whereDate('appointment_date', $date)
+            ->where(function ($q) use ($time, $timeNorm) {
+                $q->where('appointment_time', $time)
+                  ->orWhere('appointment_time', $timeNorm)
+                  ->orWhere('appointment_time', 'like', $timeNorm . ':%');
+            })
+            ->whereIn('status', ['pending', 'confirmed', 'validated']);
+
         if ($municipality) {
             $query->where('municipality', $municipality);
         }
-        
+
         return $query->count();
     }
 
     /**
-     * Returns slot data for a given date scoped to a municipality.
+     * Returns slot data for a given date (5-min intervals per office hour).
+     * When $isToday is true, slots at or before the current time are marked past.
      */
-    public static function slotsForDate(string $date, ?string $municipality = null): array
+    public static function slotsForDate(string $date, ?string $municipality = null, bool $isToday = false): array
     {
+        $now   = Carbon::now();
         $slots = [];
-        foreach (static::availableSlots() as $time) {
-            $taken = static::slotCount($date, $time, $municipality);
-            $slots[] = [
-                'time'      => $time,
-                'label'     => Carbon::createFromFormat('H:i', $time)->format('h:i A'),
-                'taken'     => $taken,
-                'remaining' => max(0, static::maxPerSlot() - $taken),
-                'full'      => $taken >= static::maxPerSlot(),
-            ];
+
+        // Batch query all booked appointments for the day
+        $query = static::whereDate('appointment_date', $date)
+            ->whereIn('status', ['pending', 'confirmed', 'validated']);
+
+        if ($municipality) {
+            $query->where('municipality', $municipality);
+        }
+
+        $rows = $query->select('appointment_time')->get();
+        $counts = [];
+        foreach ($rows as $row) {
+            $t = substr(trim((string) $row->appointment_time), 0, 5);
+            $counts[$t] = ($counts[$t] ?? 0) + 1;
+        }
+
+        foreach (static::officeHours() as $h) {
+            foreach (range(0, 55, 5) as $m) {
+                $time    = sprintf('%02d:%02d', $h, $m);
+                $taken   = (int) ($counts[$time] ?? 0);
+                $isPast  = $isToday && ($h < $now->hour || ($h === $now->hour && $m <= $now->minute));
+                $slots[] = [
+                    'time'      => $time,
+                    'label'     => Carbon::createFromFormat('H:i', $time)->format('h:i A'),
+                    'hour'      => $h,
+                    'minute'    => $m,
+                    'taken'     => $taken,
+                    'remaining' => max(0, static::maxPerSlot() - $taken),
+                    'full'      => $taken >= static::maxPerSlot() || $isPast,
+                    'past_time' => $isPast,
+                ];
+            }
         }
         return $slots;
     }

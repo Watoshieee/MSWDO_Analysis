@@ -29,7 +29,7 @@ class ChatbotController extends Controller
         ]);
 
         $message = trim($request->input('message'));
-        $user    = Auth::user();
+        $user    = auth('sanctum')->user() ?? Auth::user();
         $lang    = $this->detectLanguage($message);
         $isPersonalAppQuestion = $this->isPersonalApplicationQuestion($message);
 
@@ -174,6 +174,7 @@ B) PERSONAL application status/process/progress ("my application", "check my sta
 Rules for personal application questions:
 • If NOT logged in → say: "Please log in to your account first so I can help you check the current status and process of your application for this program." (Tagalog equivalent if user writes in Tagalog)
 • If logged in → use ONLY statuses from USER APPLICATION DATA. Valid statuses include: pending, under review / in_review, approved, rejected, completed, confirmed, validated, processing, ready_for_pickup, released, cancelled — ONLY if they appear in the data.
+• If logged in and asked for application number or ID, provide the AppID from USER APPLICATION DATA.
 • If logged in but no application found → say: "I couldn't find an application associated with your account. Please make sure you are using the correct account or contact the appropriate system administrator for assistance."
 • NEVER guess application status, approval, rejection, or dates
 • NEVER reveal another user's application information
@@ -183,7 +184,7 @@ Rules for personal application questions:
 === SYSTEM STRUCTURE & NAVIGATION ===
 NAVBAR sections:
 1. HOME — Dashboard / landing page
-2. ANALYSIS — Programs Analysis (descriptive stats, trends, ANOVA, correlation, insights) and Demographic Analysis (population, map, gender, age, households, beneficiaries)
+2. ANALYSIS — Programs Analysis (descriptive stats, trends, insights) and Demographic Analysis (population, map, gender, age, households, beneficiaries)
 3. PROGRAMS — 4Ps, PWD, AICS (Medical, Burial, Emergency Shelter), Solo Parent, Senior Citizen, SLP
 4. APPLY — Program applications
 5. ABOUT / CONTACT
@@ -559,6 +560,7 @@ PROMPT;
                 : 'n/a';
 
             $parts = [
+                "AppID:{$app->id}",
                 "Program:{$app->program_type}",
                 "AppStatus:{$app->status}",
                 "Stage:" . ($app->stage ?? 'none'),

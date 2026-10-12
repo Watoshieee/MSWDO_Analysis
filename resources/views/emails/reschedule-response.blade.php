@@ -16,7 +16,7 @@
 <body>
     <div class="container">
         <div class="header {{ $action === 'approved' ? 'approved' : 'rejected' }}">
-            <h2>{{ $action === 'approved' ? '✅ Reschedule Approved' : '❌ Reschedule Rejected' }}</h2>
+            <h2>{{ $action === 'approved' ? 'Reschedule Approved' : 'Reschedule Rejected' }}</h2>
         </div>
         
         <div class="content">

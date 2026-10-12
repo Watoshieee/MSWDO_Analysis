@@ -1,722 +1,1285 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ $municipality->name }} Admin Dashboard – MSWDO</title>
+    <title>Admin Dashboard &mdash; MSWDO {{ $municipality->name }}</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    @include('components.admin-colors')
+
     <style>
         :root {
-            --primary-blue: {{ $adminPrimaryColor ?? '#2C3E8F' }};
-            --secondary-yellow: {{ $adminSecondaryColor ?? '#FDB913' }};
-            --accent-red: {{ $adminAccentColor ?? '#C41E24' }};
-            --primary-gradient: linear-gradient(135deg, var(--primary-blue) 0%, color-mix(in srgb, var(--primary-blue) 80%, black) 100%);
-            --secondary-gradient: linear-gradient(135deg, var(--secondary-yellow) 0%, color-mix(in srgb, var(--secondary-yellow) 90%, black) 100%);
-            --bg-light: #F8FAFC;
-            --bg-white: #FFFFFF;
-            --bg-soft-blue: #F0F5FF;
-            --border-light: #E2E8F0;
-            --text-dark: #1E293B;
+            --primary-navy: {{ $adminPrimaryColor ?? '#1a2470' }};
+            --primary-navy-dark: color-mix(in srgb, var(--primary-navy) 80%, black);
+            --primary-gradient: linear-gradient(135deg, var(--primary-navy) 0%, #243088 100%);
+            --accent-gold: {{ $adminSecondaryColor ?? '#f5b82e' }};
+            --accent-gold-hover: #ffc94d;
+            --accent-red: {{ $adminAccentColor ?? '#c41e24' }};
         }
 
-        body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); display:flex; flex-direction:column; min-height:100vh; margin:0; }
-        html, body { overscroll-behavior: none; }
-        a { text-decoration: none; }
-
-        /* ── NAVBAR ── */
-        .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
-        .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display:flex; align-items:center; gap:12px; }
-        .navbar-toggler { order: -1; }
-        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
-        @media (min-width: 992px) {
-            .navbar-toggler { order: 0; }
-            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
+        body {
+            margin: 0;
+            background: #f4f6fb;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            color: #1b2559;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
         }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.85rem; white-space: nowrap; }
-        .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
-        .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-info { color:white; display:flex; align-items:center; gap:12px; background:rgba(255,255,255,0.1); padding:9px 22px; border-radius:40px; font-size:0.9rem; font-weight:600; max-width: 100%; }
-        .user-info span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 200px; }
-        .logout-btn { background:transparent; border:2px solid rgba(255,255,255,0.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; transition:all 0.3s; font-size:0.88rem; cursor:pointer; }
-        .logout-btn:hover { background:var(--secondary-yellow); color:var(--primary-blue); border-color:var(--secondary-yellow); }
 
-        /* ── HERO BANNER ── */
-        .hero-banner { background: var(--primary-gradient); color: white; padding: 44px 0 38px; position: relative; overflow: hidden; }
-        .hero-banner::before { content:''; position:absolute; top:-80px; right:-80px; width:340px; height:340px; border-radius:50%; background:rgba(253,185,19,0.09); }
-        .hero-banner::after  { content:''; position:absolute; bottom:-60px; left:-40px; width:230px; height:230px; border-radius:50%; background:rgba(255,255,255,0.05); }
-        .hero-inner { position:relative; z-index:2; }
-        .hero-badge { display:inline-block; background:rgba(253,185,19,0.18); color:var(--secondary-yellow); border:1px solid rgba(253,185,19,0.35); border-radius:30px; padding:4px 16px; font-size:0.72rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; margin-bottom:10px; }
-        .hero-banner h1 { font-size:2rem; font-weight:900; margin-bottom:4px; }
-        .hero-divider { width:44px; height:4px; background:var(--secondary-yellow); border-radius:2px; margin:10px 0 8px; }
-        .hero-banner p { opacity:0.82; font-size: 0.85rem; margin:0; }
-        .muni-badge { background:rgba(253,185,19,0.18); border:1px solid rgba(253,185,19,0.35); color:var(--secondary-yellow); border-radius:12px; padding:14px 24px; text-align:center; }
-        .muni-badge .muni-name { font-size:1.35rem; font-weight:900; display:block; }
-        .muni-badge .muni-sub  { font-size:0.72rem; opacity:0.75; font-weight:600; text-transform:uppercase; letter-spacing:0.08em; }
-        .today-date { font-size:0.8rem; opacity:0.65; margin-top:10px; }
+        a {
+            color: #1e2a78;
+            text-decoration: none;
+        }
+        a:hover {
+            text-decoration: underline;
+        }
 
-        /* ── STAT CARDS ── */
-        .stat-card { background:#f1f5f9; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 4px 15px rgba(0,0,0,0.06); height:100%; transition:all 0.3s ease; position:relative; overflow:hidden; }
-        .stat-card::before { content:''; position:absolute; top:0; left:0; right:0; height:4px; background:var(--primary-gradient); }
-        .stat-card.yellow::before { background:var(--primary-gradient); }
-        .stat-card.green::before  { background:var(--primary-gradient); }
-        .stat-card.red::before    { background:var(--primary-gradient); }
-        .stat-card .card-body { padding:24px 26px; }
-        .stat-pill { font-size:0.68rem; font-weight:800; letter-spacing:0.1em; text-transform:uppercase; border-radius:20px; padding:3px 10px; display:inline-block; margin-bottom:10px; }
-        .stat-label { font-size:0.78rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:0.05em; margin-bottom:6px; }
-        .stat-value { font-size:2.8rem; font-weight:900; line-height:1; }
-        .stat-sub { font-size:0.75rem; color:#94a3b8; margin-top:8px; font-weight:500; }
+        /* Top banner */
+        .top-banner {
+            background: var(--primary-gradient);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(26, 36, 112, 0.15);
+        }
+        .banner-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 18px 32px 20px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .banner-badge {
+            display: inline-block;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            color: var(--accent-gold);
+            border: 1px solid rgba(245, 184, 46, .5);
+            border-radius: 99px;
+            padding: 3px 10px;
+            text-transform: uppercase;
+        }
+        .banner-title {
+            margin: 6px 0 2px;
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.01em;
+        }
+        .banner-sub {
+            margin: 0;
+            font-size: 12.5px;
+            color: #d3d9f5;
+        }
+        .muni-tag {
+            border: 1px solid rgba(245, 184, 46, .45);
+            background: rgba(245, 184, 46, .1);
+            border-radius: 10px;
+            padding: 8px 18px;
+            text-align: center;
+        }
+        .muni-tag-name {
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--accent-gold);
+            line-height: 1.2;
+        }
+        .muni-tag-label {
+            font-size: 9.5px;
+            letter-spacing: .14em;
+            color: var(--accent-gold);
+            font-weight: 600;
+            margin-top: 2px;
+        }
 
-        /* ── MAIN CONTENT ── */
-        .main-content { flex:1; }
+        /* Content wrap & grid */
+        .wrap {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 16px 32px 28px;
+            box-sizing: border-box;
+            flex: 1;
+            width: 100%;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: minmax(0, 8fr) minmax(0, 4fr);
+            gap: 16px;
+            align-items: stretch;
+        }
 
-        /* ── PANEL CARDS ── */
-        .panel-card { background:white; border-radius:18px; border:1px solid #e2e8f0; box-shadow:0 4px 15px rgba(0,0,0,0.06); overflow:hidden; height:100%; }
-        .panel-header { background:var(--primary-gradient); color:white; padding:16px 22px; font-size: 0.85rem; font-weight:700; display:flex; align-items:center; justify-content:space-between; }
-        .panel-header-badge { font-size:0.7rem; background:rgba(255,255,255,0.15); border-radius:20px; padding:3px 12px; font-weight:700; }
-        .panel-body { padding:20px; background:#f8fafc; }
+        /* Card styles */
+        .card {
+            background: #fff;
+            border: 1px solid #e1e6f2;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(23, 32, 102, .06);
+            overflow: hidden;
+        }
+        .ch {
+            background: var(--primary-gradient);
+            color: #fff;
+            border-radius: 11px 11px 0 0;
+            padding: 0 14px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: 700;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .pill {
+            background: rgba(255, 255, 255, .16);
+            font-size: 11px;
+            font-weight: 600;
+            padding: 3px 9px;
+            border-radius: 99px;
+            color: #fff;
+        }
+        .btn-view-all {
+            background: var(--accent-gold);
+            color: #172066 !important;
+            font-size: 12px;
+            font-weight: 700;
+            padding: 6px 12px;
+            border-radius: 8px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            text-decoration: none;
+            transition: background 0.15s ease;
+        }
+        .btn-view-all:hover {
+            background: var(--accent-gold-hover);
+            text-decoration: none;
+        }
 
-        /* ── SECTION TITLE ── */
-        .section-title { font-size:1.05rem; font-weight:800; color:var(--primary-blue); position:relative; padding-bottom:10px; margin-bottom:0; }
-        .section-title::after { content:''; position:absolute; bottom:0; left:0; width:32px; height:3px; background:var(--secondary-yellow); border-radius:2px; }
+        /* KPI cards */
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px;
+        }
+        .kpi {
+            background: #f4f6fb;
+            border: 1px solid #e1e6f2;
+            border-radius: 10px;
+            padding: 10px 12px;
+        }
+        .kpi.main {
+            background: #1e2a78;
+            border-color: #1e2a78;
+            color: #fff;
+        }
+        .kpi small {
+            display: block;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: #4d5878;
+            margin-bottom: 2px;
+        }
+        .kpi.main small {
+            color: #c9d0f2;
+        }
+        .kpi b {
+            display: block;
+            font-size: 26px;
+            line-height: 1.15;
+            font-weight: 800;
+        }
+        .kpi span {
+            font-size: 11px;
+            color: #4d5878;
+        }
+        .kpi.main span {
+            color: #c9d0f2;
+        }
 
-        /* ── ACTION ITEMS ── */
-        .action-item { display:flex; align-items:center; gap:14px; padding:14px 16px; border-radius:13px; background:var(--primary-gradient); color:white; border:none; transition:all 0.25s ease; margin-bottom:10px; text-decoration:none; }
-        .action-item:hover { box-shadow:0 8px 24px rgba(44,62,143,0.35); transform:translateY(-2px); color:white; }
-        .action-text  { flex:1; }
-        .action-num   { font-size:0.6rem; font-weight:800; letter-spacing:0.12em; text-transform:uppercase; color:rgba(253,185,19,0.9); display:block; margin-bottom:2px; }
-        .action-title { font-size:0.92rem; font-weight:700; color:white; display:block; line-height:1.25; }
-        .action-sub   { font-size:0.74rem; color:rgba(255,255,255,0.72); display:block; margin-top:2px; }
-        .action-arrow { font-size:1.3rem; font-weight:300; color:rgba(255,255,255,0.6); flex-shrink:0; transition:color 0.2s; }
-        .action-item:hover .action-arrow { color:var(--secondary-yellow); }
+        /* Two column section */
+        .two {
+            display: grid;
+            grid-template-columns: minmax(0, 4fr) minmax(0, 8fr);
+            gap: 18px;
+            margin-top: 14px;
+        }
+        .h {
+            font-size: 11px;
+            font-weight: 700;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: #4d5878;
+            margin: 0 0 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-        /* ── PROGRAM BREAKDOWN ── */
-        .prog-row { display:flex; align-items:center; gap:14px; padding:12px 0; border-bottom:1px solid #e2e8f0; }
-        .prog-row:last-child { border-bottom:none; }
-        .prog-num { font-size:0.68rem; font-weight:800; letter-spacing:0.08em; text-transform:uppercase; background:#e2e8f0; color:var(--primary-blue); border-radius:20px; padding:2px 10px; flex-shrink:0; }
-        .prog-name { font-size:0.88rem; font-weight:700; flex:1; }
-        .prog-bar-wrap { flex:2; height:6px; background:#E2E8F0; border-radius:3px; overflow:hidden; }
-        .prog-bar { height:100%; border-radius:3px; background:var(--primary-gradient); transition:width 0.8s ease; }
-        .prog-count { font-size:0.85rem; font-weight:800; color:var(--primary-blue); min-width:28px; text-align:right; }
+        /* Progress bars per program */
+        .pr {
+            display: grid;
+            grid-template-columns: 92px 1fr 22px;
+            gap: 8px;
+            align-items: center;
+            font-size: 12px;
+            padding: 6px 0;
+            border-bottom: 1px solid #eef1f8;
+        }
+        .pr:last-child {
+            border-bottom: none;
+        }
+        .pr span {
+            font-weight: 600;
+            color: #1b2559;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .bar {
+            height: 7px;
+            background: #e8ecf7;
+            border-radius: 9px;
+            overflow: hidden;
+        }
+        .bar i {
+            display: block;
+            height: 100%;
+            background: #1e2a78;
+            border-radius: 9px;
+            transition: width 0.4s ease;
+        }
+        .pr b {
+            font-weight: 700;
+            text-align: right;
+            color: #1b2559;
+        }
 
-        /* ── RECENT TABLE ── */
-        .recent-table { width:100%; }
-        .recent-table th { font-size:0.72rem; font-weight:800; text-transform:uppercase; letter-spacing:0.07em; color:#64748b; padding:6px 12px 10px; border-bottom:2px solid #e2e8f0; }
-        .recent-table td { padding:11px 12px; font-size:0.86rem; border-bottom:1px solid #e2e8f0; vertical-align:middle; }
-        .recent-table tr:last-child td { border-bottom:none; }
-        .recent-table tr:hover td { background:#f1f5f9; }
-        .status-badge { font-size:0.68rem; font-weight:800; letter-spacing:0.06em; text-transform:uppercase; border-radius:20px; padding:3px 11px; display:inline-block; }
-        .badge-pending  { background:#FFF3D6; color:#856404; }
-        .badge-approved { background:#d4edda; color:#155724; }
-        .badge-rejected { background:#fce8e8; color:#721c24; }
-        .no-apps { text-align:center; padding:32px 0; color:#94a3b8; font-size:0.88rem; }
+        /* Recent applications table */
+        table.dash-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 12px;
+        }
+        table.dash-table th {
+            text-align: left;
+            font-size: 10.5px;
+            letter-spacing: .06em;
+            text-transform: uppercase;
+            color: #4d5878;
+            padding: 0 6px 6px;
+            font-weight: 700;
+        }
+        table.dash-table td {
+            padding: 7px 6px;
+            border-top: 1px solid #eef1f8;
+            color: #1b2559;
+            vertical-align: middle;
+        }
+        .st {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: .04em;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 99px;
+            display: inline-block;
+        }
+        .st.ap { background: #dcf5e6; color: #14663a; }
+        .st.pe { background: #fff1cc; color: #7a5200; }
+        .st.re { background: #fde2e2; color: #8f1d1d; }
 
-        /* ── INFO TABLE ── */
-        .info-table tr td { padding:11px 4px; font-size:0.88rem; border-color:#e2e8f0; }
-        .info-table tr td:first-child { color:#64748b; font-weight:500; }
-        .info-table tr td:last-child { font-weight:800; color:var(--primary-blue); text-align:right; }
+        /* Aside column */
+        .side {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .qrow {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 14px;
+        }
+        .qa {
+            position: relative;
+        }
+        .qa a, .qa button {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            border: 1px solid #d5dcee;
+            background: #fff;
+            color: #1e2a78;
+            display: grid;
+            place-items: center;
+            cursor: pointer;
+            text-decoration: none;
+            transition: all 0.15s ease;
+            padding: 0;
+        }
+        .qa a:hover, .qa button:hover {
+            background: #1e2a78;
+            color: #fff;
+            border-color: #1e2a78;
+            text-decoration: none;
+        }
+        .qa a.pri, .qa button.pri {
+            background: var(--accent-gold);
+            border-color: var(--accent-gold);
+            color: #172066;
+        }
+        .qa a.pri:hover, .qa button.pri:hover {
+            background: var(--accent-gold-hover);
+            border-color: var(--accent-gold-hover);
+            color: #172066;
+        }
+        .qa a:focus-visible, .qa button:focus-visible {
+            outline: 2px solid var(--accent-gold);
+            outline-offset: 2px;
+        }
 
-        /* ── SUMMARY BOX ── */
-        .summary-box { background:#f1f5f9; border-radius:12px; padding:14px 18px; border-left:4px solid var(--primary-blue); margin-top:16px; font-size:0.86rem; color:#334155; line-height:1.7; }
+        .card.qa-card {
+            overflow: visible;
+            position: relative;
+            z-index: 50;
+        }
 
-        /* ── ALERTS ── */
-        .alert-styled { border-radius:12px; font-size:0.88rem; padding:12px 16px; margin-bottom:16px; }
-        .alert-success-c { background:#d4edda; border-left:4px solid #28a745; color:#155724; }
+        /* Tooltip */
+        .tip {
+            position: absolute;
+            top: 48px;
+            left: 0;
+            width: 176px;
+            background: #141b4d;
+            color: #fff;
+            border-radius: 8px;
+            padding: 8px 10px;
+            font-size: 11px;
+            line-height: 1.35;
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            z-index: 1050;
+            box-shadow: 0 6px 16px rgba(20, 27, 77, .3);
+            transition: opacity 0.15s ease, visibility 0.15s ease;
+        }
+        .tip b {
+            display: block;
+            font-size: 12px;
+            color: var(--accent-gold);
+            margin-bottom: 2px;
+        }
+        .qa:nth-child(n+5) .tip {
+            left: auto;
+            right: 0;
+        }
+        .qa:hover .tip, .qa:focus-within .tip {
+            opacity: 1;
+            visibility: visible;
+        }
 
-        /* ── FOOTER ── */
-        .footer-strip { background:var(--primary-gradient); color:rgba(255,255,255,0.75); text-align:center; padding:20px 0; font-size:0.85rem; margin-top:48px; }
-        .footer-strip strong { color:white; }
+        /* Organization & Settings Links */
+        .lk-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 14px;
+            color: #1b2559;
+            transition: background 0.15s ease;
+        }
+        .lk-row + .lk-row {
+            border-top: 1px solid #eef1f8;
+        }
+        .lk-row:hover {
+            background: #f8fafc;
+        }
+        .lk-title {
+            color: #1b2559;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .lk-title:hover {
+            color: var(--primary-navy);
+            text-decoration: underline;
+        }
+        .lk-arrow {
+            color: #4d5878;
+            padding-top: 4px;
+            display: inline-flex;
+            text-decoration: none;
+        }
+        .chip-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 4px;
+            margin-top: 4px;
+        }
+        .chip {
+            display: inline-block;
+            font-size: 10.5px;
+            font-weight: 600;
+            color: #1e2a78;
+            background: #eef1fb;
+            border-radius: 99px;
+            padding: 2px 9px;
+            text-decoration: none;
+            border: 1px solid transparent;
+            transition: all 0.15s ease;
+            cursor: pointer;
+            line-height: 1.4;
+        }
+        button.chip {
+            border: none;
+        }
+        .chip:hover {
+            background: #1e2a78;
+            color: #fff;
+            text-decoration: none;
+        }
+        .ic {
+            width: 34px;
+            height: 34px;
+            border-radius: 9px;
+            background: #e8ecf9;
+            color: #1e2a78;
+            display: grid;
+            place-items: center;
+            flex: none;
+            margin-top: 2px;
+        }
+        .lk-row b {
+            display: block;
+            font-size: 13px;
+            color: #1b2559;
+        }
+        .lk-row span.s {
+            display: block;
+            font-size: 11px;
+            color: #4d5878;
+            margin-top: 1px;
+        }
+
+        /* Municipality Snapshot */
+        .snap {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            padding: 12px 14px;
+        }
+        .snap > div {
+            background: #f4f6fb;
+            border: 1px solid #e1e6f2;
+            border-radius: 8px;
+            padding: 8px 10px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .snap-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #4d5878;
+            text-transform: uppercase;
+            letter-spacing: .04em;
+        }
+        .snap b {
+            display: block;
+            font-size: 18px;
+            color: #1b2559;
+            font-weight: 800;
+            line-height: 1.2;
+            margin: 3px 0 2px;
+        }
+        .snap-year {
+            font-size: 10.5px;
+            font-weight: 600;
+            color: #64748b;
+        }
+
+        /* VMG Modal styles */
+        .vmg-tab-btn {
+            background: transparent;
+            border: none;
+            font-weight: 700;
+            font-size: 0.88rem;
+            color: #64748b;
+            padding: 10px 18px;
+            border-bottom: 2px solid transparent;
+            cursor: pointer;
+        }
+        .vmg-tab-btn.active {
+            color: #1a2470;
+            border-bottom-color: #1a2470;
+        }
+        .vmg-field-label {
+            font-size: 0.85rem;
+            font-weight: 700;
+            color: #1b2559;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .vmg-field-icon {
+            width: 24px;
+            height: 24px;
+            border-radius: 6px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .vmg-textarea {
+            width: 100%;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 0.88rem;
+            line-height: 1.6;
+            color: #1e293b;
+            resize: vertical;
+            outline: none;
+            box-sizing: border-box;
+        }
+        .vmg-textarea:focus {
+            border-color: #1a2470;
+            box-shadow: 0 0 0 3px rgba(26, 36, 112, 0.1);
+        }
+        .vmg-save-btn {
+            background: var(--primary-gradient);
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            padding: 9px 22px;
+            font-weight: 700;
+            font-size: 0.88rem;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .sg-input-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sg-input-num {
+            width: 28px;
+            height: 28px;
+            border-radius: 8px;
+            background: #eef1fb;
+            color: #1a2470;
+            font-weight: 800;
+            font-size: 0.78rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+        .sg-input {
+            flex: 1;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.88rem;
+            color: #1e293b;
+            outline: none;
+        }
+        .sg-input:focus {
+            border-color: #1a2470;
+        }
+        .sg-remove-btn {
+            background: #fee2e2;
+            color: #dc2626;
+            border: none;
+            border-radius: 8px;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            flex-shrink: 0;
+        }
+
+        @media (max-width: 900px) {
+            .grid, .two {
+                grid-template-columns: 1fr;
+            }
+            .kpis {
+                grid-template-columns: 1fr 1fr;
+            }
+            .wrap, .banner-inner {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+            .card.ov {
+                overflow-x: auto;
+            }
+        }
+    
+        /* Dashboard-specific Chat Button Integrations (Recent Applications Table & QA) */
+        .cx-dot {
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: var(--accent-gold, #f5b82e);
+            border: 2px solid #fff;
+        }
+        .qa button:hover .cx-dot, .qa a:hover .cx-dot { border-color: #1e2a78; }
+
+        .cx-rowbtn {
+            position: relative;
+            width: 30px;
+            height: 30px;
+            border-radius: 8px;
+            border: 1px solid #d5dcee;
+            background: #fff;
+            color: #1e2a78;
+            display: inline-grid;
+            place-items: center;
+            cursor: pointer;
+            padding: 0;
+            transition: all 0.15s ease;
+        }
+        .cx-rowbtn:hover { background: #1e2a78; border-color: #1e2a78; color: #fff; }
+        .cx-rowbtn.has-unread::after {
+            content: "";
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: var(--accent-gold, #f5b82e);
+            border: 2px solid #fff;
+        }
+        @media (max-width: 900px) {
+            .card.ov th:last-child, .card.ov td:last-child {
+                position: sticky;
+                right: 0;
+                background: #fff;
+                box-shadow: -8px 0 6px -6px rgba(23, 32, 102, .18);
+            }
+        }
+
     </style>
 </head>
 <body>
 
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/admin/dashboard">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link active" href="/admin/dashboard">Dashboard</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.requirements*') ? 'active' : '' }}"
-                           href="{{ route('admin.requirements') }}">Applications</a>
-                    </li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.data.*') ? 'active' : '' }}"
-                           href="{{ route('admin.data.dashboard') }}">Data Management</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}"
-                           href="{{ route('admin.announcements.index') }}">Announcements</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.detailed*') ? 'active' : '' }}"
-                           href="{{ route('admin.detailed-analysis') }}">Analysis</a>
-                    </li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
-                </ul>
-                <div class="d-flex align-items-center gap-3">
-                    @auth
-                    {{-- Admin notification bell --}}
-                    <button type="button" class="btn" onclick="openAdminNotifModal()"
-                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
-                        title="Application Notifications">
-                        <i class="bi bi-bell-fill"></i>
-                        @if(isset($adminNotifCount) && $adminNotifCount > 0)
-                        <span class="admin-bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $adminNotifCount > 9 ? '9+' : $adminNotifCount }}</span>
-                        @endif
-                    </button>
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                    @endauth
-                </div>
+    {{-- System Admin Navbar --}}
+    @include('components.admin-navbar', ['active' => 'dashboard'])
+
+    {{-- Top Hero Banner --}}
+    <div class="top-banner">
+        <div class="banner-inner">
+            <div>
+                <span class="banner-badge">ADMIN DASHBOARD</span>
+                <h1 class="banner-title">Welcome back, {{ Auth::user()->full_name }}!</h1>
+                <p class="banner-sub">Overview of applications and program activity in {{ $municipality->name }} &bull; {{ now()->format('l, F j, Y') }}</p>
+            </div>
+            <div class="muni-tag">
+                <div class="muni-tag-name">{{ $municipality->name }}</div>
+                <div class="muni-tag-label">MUNICIPALITY</div>
             </div>
         </div>
-    </nav>
+    </div>
 
-    <!-- HERO BANNER -->
-    <section class="hero-banner">
-        <div class="container">
-            <div class="hero-inner">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <div class="hero-badge">Admin Dashboard</div>
-                        <h1>Welcome back, {{ Auth::user()->full_name }}!</h1>
-                        <div class="hero-divider"></div>
-                        <p>Here's an overview of applications and program activity in {{ $municipality->name }}.</p>
-                        <p class="today-date">{{ now()->format('l, F j, Y') }}</p>
-                    </div>
-                    <div class="col-md-4 d-none d-md-flex justify-content-end">
-                        <div class="muni-badge">
-                            <span class="muni-name">{{ $municipality->name }}</span>
-                            <span class="muni-sub">Municipality</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    <div class="main-content">
-    <div class="container mt-4">
+    {{-- Main Container Wrap --}}
+    <div class="wrap">
 
         @include('components.admin-notification')
 
-        <!-- STAT CARDS -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="card-body">
-                        <span class="stat-pill" style="background:#E5EEFF;color:#2C3E8F;">Total</span>
-                        <div class="stat-label">APPLICATIONS</div>
-                        <div class="stat-value" style="color:var(--primary-blue);">{{ number_format($totalApplications) }}</div>
-                        <div class="stat-sub">All time in {{ $municipality->name }}</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="card-body">
-                        <span class="stat-pill" style="background:#E5EEFF;color:#2C3E8F;">Pending</span>
-                        <div class="stat-label">FOR REVIEW</div>
-                        <div class="stat-value" style="color:var(--primary-blue);">{{ number_format($pendingApplications) }}</div>
-                        <div class="stat-sub">Awaiting action</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="card-body">
-                        <span class="stat-pill" style="background:#E5EEFF;color:#2C3E8F;">Approved</span>
-                        <div class="stat-label">COMPLETED</div>
-                        <div class="stat-value" style="color:var(--primary-blue);">{{ number_format($approvedApplications) }}</div>
-                        <div class="stat-sub">Successfully processed</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="card-body">
-                        <span class="stat-pill" style="background:#E5EEFF;color:#2C3E8F;">Rejected</span>
-                        <div class="stat-label">DECLINED</div>
-                        <div class="stat-value" style="color:var(--primary-blue);">{{ number_format($rejectedApplications) }}</div>
-                        <div class="stat-sub">Did not meet requirements</div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <div class="grid">
 
-        <!-- MIDDLE ROW: Quick Actions + Programs Breakdown -->
-        <div class="row g-4 mb-4">
-
-            <!-- QUICK ACTIONS -->
-            <div class="col-md-5">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        Quick Actions
-                        <span class="panel-header-badge">7 shortcuts</span>
-                    </div>
-                    <div class="panel-body">
-                        <a href="{{ route('admin.requirements') }}" class="action-item">
-                            <div class="action-text">
-                                <span class="action-num">01 &mdash; Priority</span>
-                                <span class="action-title">Manage Applications</span>
-                                <span class="action-sub">View, approve, or reject pending submissions</span>
-                            </div>
-                            <span class="action-arrow">&rsaquo;</span>
-                        </a>
-                        <a href="{{ route('admin.detailed-analysis') }}" class="action-item">
-                            <div class="action-text">
-                                <span class="action-num">02 &mdash; Analysis</span>
-                                <span class="action-title">View Detailed Analysis</span>
-                                <span class="action-sub">Applications by program, status &amp; barangay</span>
-                            </div>
-                            <span class="action-arrow">&rsaquo;</span>
-                        </a>
-                        <a href="{{ route('admin.data.dashboard') }}" class="action-item">
-                            <div class="action-text">
-                                <span class="action-num">03 &mdash; Data</span>
-                                <span class="action-title">Data Management</span>
-                                <span class="action-sub">Update municipality, barangay &amp; program data</span>
-                            </div>
-                            <span class="action-arrow">&rsaquo;</span>
-                        </a>
-                        <a href="/analysis/programs" class="action-item">
-                            <div class="action-text">
-                                <span class="action-num">04 &mdash; Public</span>
-                                <span class="action-title">Comparative Analysis</span>
-                                <span class="action-sub">View comparative data across municipalities</span>
-                            </div>
-                            <span class="action-arrow">&rsaquo;</span>
-                        </a>
-                        <a href="{{ route('admin.announcements.index') }}" class="action-item">
-                            <div class="action-text">
-                                <span class="action-num">05 &mdash; Announcements</span>
-                                <span class="action-title">Manage Announcements</span>
-                                <span class="action-sub">Post updates and notices for residents</span>
-                            </div>
-                            <span class="action-arrow">&rsaquo;</span>
-                        </a>
-                        {{-- Edit Vision/Mission/Goals button --}}
-                        <button type="button" class="action-item" data-bs-toggle="modal" data-bs-target="#vmgEditModal"
-                                style="width:100%;text-align:left;cursor:pointer;">
-                            <div class="action-text">
-                                <span class="action-num">06 &mdash; Content</span>
-                                <span class="action-title">Vision, Mission &amp; Strategic Goals</span>
-                                <span class="action-sub">Edit your municipality's VMG &amp; strategic goals</span>
-                            </div>
-                            <span class="action-arrow">&#9998;</span>
-                        </button>
-                        {{-- User Management --}}
-                        <a href="{{ route('admin.users') }}" class="action-item">
-                            <div class="action-text">
-                                <span class="action-num">07 &mdash; Users</span>
-                                <span class="action-title">User Management</span>
-                                <span class="action-sub">View registered users &amp; admins in your municipality</span>
-                            </div>
-                            <span class="action-arrow">&rsaquo;</span>
-                        </a>
-                    </div>
+            {{-- LEFT COLUMN: Application Overview Card --}}
+            <section class="card ov">
+                <div class="ch">
+                    <span>Application Overview</span>
+                    <a class="btn-view-all" href="{{ route('admin.requirements') }}">
+                        View All Applications
+                        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                            <line x1="5" y1="12" x2="19" y2="12"></line>
+                            <polyline points="12 5 19 12 12 19"></polyline>
+                        </svg>
+                    </a>
                 </div>
-            </div>
-
-            <!-- PROGRAMS BREAKDOWN -->
-            <div class="col-md-7">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        Applications by Program
-                        <span class="panel-header-badge">{{ $applicationsByProgram->count() }} programs</span>
-                    </div>
-                    <div class="panel-body">
-                        @php $maxProgram = $applicationsByProgram->max('total') ?: 1; $pIdx = 1; @endphp
-                        @forelse($applicationsByProgram as $program => $stats)
-                        <div class="prog-row">
-                            <span class="prog-num">{{ str_pad($pIdx++, 2, '0', STR_PAD_LEFT) }}</span>
-                            <span class="prog-name">{{ str_replace('_', ' ', $program) }}</span>
-                            <div class="prog-bar-wrap">
-                                <div class="prog-bar" style="width:{{ ($stats['total'] / $maxProgram) * 100 }}%"></div>
-                            </div>
-                            <span class="prog-count">{{ $stats['total'] }}</span>
+                <div style="padding: 14px">
+                    {{-- KPI Stat Boxes --}}
+                    <div class="kpis">
+                        <div class="kpi main">
+                            <small>Total applications</small>
+                            <b>{{ number_format($totalApplications) }}</b>
+                            <span>All time</span>
                         </div>
-                        @empty
-                        <div class="no-apps">No applications recorded yet.</div>
-                        @endforelse
+                        <div class="kpi">
+                            <small>Pending</small>
+                            <b>{{ number_format($pendingApplications) }}</b>
+                            <span>Awaiting review</span>
+                        </div>
+                        <div class="kpi">
+                            <small>Approved</small>
+                            <b>{{ number_format($approvedApplications) }}</b>
+                            <span>Processed</span>
+                        </div>
+                        <div class="kpi">
+                            <small>Rejected</small>
+                            <b>{{ number_format($rejectedApplications) }}</b>
+                            <span>Did not qualify</span>
+                        </div>
                     </div>
-                </div>
-            </div>
 
-        </div>
+                    {{-- Two-column sub-layout: By program | Recent applications --}}
+                    <div class="two">
+                        {{-- By Program --}}
+                        <div>
+                            <p class="h">By program</p>
+                            @php
+                                $maxProgCount = (isset($programOverview) && $programOverview->count() > 0) ? ($programOverview->max('count') ?: 1) : 1;
+                            @endphp
 
-        <!-- BOTTOM ROW: Recent Applications + Municipality Info -->
-        <div class="row g-4 mb-4">
-
-            <!-- RECENT APPLICATIONS -->
-            <div class="col-md-7">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        Recent Applications
-                        <a href="{{ route('admin.requirements') }}" style="font-size:0.78rem;color:rgba(255,255,255,0.80);font-weight:700;">View All</a>
-                    </div>
-                    <div class="panel-body" style="padding:0 22px 8px; background:#f8fafc;">
-                        @php $recent = $applications->sortByDesc('application_date')->take(6); @endphp
-                        @if($recent->count())
-                        <table class="recent-table">
-                            <thead>
-                                <tr>
-                                    <th>Applicant</th>
-                                    <th>Program</th>
-                                    <th>Barangay</th>
-                                    <th>Date</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($recent as $app)
-                                <tr>
-                                    <td><strong>{{ $app->full_name }}</strong></td>
-                                    <td>{{ str_replace('_', ' ', $app->program_type) }}</td>
-                                    <td>{{ $app->barangay ?: '—' }}</td>
-                                    <td>{{ optional($app->application_date)->format('M d, Y') ?? '—' }}</td>
-                                    <td>
-                                        <span class="status-badge badge-{{ $app->status }}">
-                                            {{ ucfirst($app->status) }}
-                                        </span>
-                                    </td>
-                                </tr>
+                            @if(isset($programOverview) && $programOverview->count() > 0)
+                                @foreach($programOverview as $pItem)
+                                    @php
+                                        $barPct = $maxProgCount > 0 ? round(($pItem['count'] / $maxProgCount) * 100) : 0;
+                                    @endphp
+                                    <div class="pr">
+                                        <span title="{{ $pItem['full_label'] }}">{{ $pItem['label'] }}</span>
+                                        <div class="bar"><i style="width:{{ $barPct }}%"></i></div>
+                                        <b>{{ $pItem['count'] }}</b>
+                                    </div>
                                 @endforeach
-                            </tbody>
-                        </table>
-                        @else
-                        <div class="no-apps">No applications recorded yet.</div>
-                        @endif
-                    </div>
-                </div>
-            </div>
+                            @else
+                                <div style="font-size:12px;color:#8893a7;padding:12px 0;">No program data available.</div>
+                            @endif
+                        </div>
 
-            <!-- MUNICIPALITY INFO -->
-            <div class="col-md-5">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        Municipality Information
-                    </div>
-                    <div class="panel-body">
-                        <table class="table info-table mb-2">
-                            <tr>
-                                <td>Municipality</td>
-                                <td>{{ $municipality->name }}</td>
-                            </tr>
-                            <tr>
-                                <td>Total Barangays</td>
-                                <td>{{ $totalBarangays ?? 0 }}</td>
-                            </tr>
-                            <tr>
-                                <td>Social Programs</td>
-                                <td>{{ $totalPrograms ?? 0 }}</td>
-                            </tr>
-                            <tr>
-                                <td>Total Population</td>
-                                <td>{{ number_format($municipality->male_population + $municipality->female_population) }}</td>
-                            </tr>
-                            <tr>
-                                <td>Total Households</td>
-                                <td>{{ number_format($municipality->total_households) }}</td>
-                            </tr>
-                        </table>
-
-                        <div class="summary-box">
-                            <strong>{{ $municipality->name }}</strong> currently has
-                            <strong style="color:#856404;">{{ $pendingApplications }} pending</strong> and
-                            <strong style="color:var(--primary-blue);">{{ $approvedApplications }} approved</strong>
-                            applications out of <strong>{{ $totalApplications }} total</strong>.
+                        {{-- Recent Applications --}}
+                        <div>
+                            <p class="h">
+                                <span>Recent applications</span>
+                                <a href="{{ route('admin.requirements') }}" style="text-transform:none;letter-spacing:0;font-size:12px">View all</a>
+                            </p>
+                            <table class="dash-table">
+                                <thead>
+                                    <tr>
+                                        <th>Applicant</th>
+                                        <th>Program</th>
+                                        <th>Barangay</th>
+                                        <th>Date</th>
+                                        <th>Status</th>
+                                        <th style="text-align:right">Chat</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($recentApplications as $app)
+                                        @php
+                                            $stClass = match (strtolower($app->status ?? '')) {
+                                                'approved' => 'ap',
+                                                'rejected' => 're',
+                                                default => 'pe'
+                                            };
+                                            $appDate = $app->application_date ? (is_string($app->application_date) ? \Carbon\Carbon::parse($app->application_date)->format('M j') : $app->application_date->format('M j')) : '&mdash;';
+                                            $shortProg = match ($app->program_type) {
+                                                'PWD_Assistance' => 'PWD',
+                                                'Solo_Parent' => 'Solo Parent',
+                                                'AICS_Medical' => 'AICS Medical',
+                                                'AICS_Burial' => 'AICS Burial',
+                                                default => ucwords(str_replace('_', ' ', $app->program_type))
+                                            };
+                                        @endphp
+                                        <tr>
+                                            <td><b>{{ $app->full_name }}</b></td>
+                                            <td>{{ $shortProg }}</td>
+                                            <td>{{ $app->barangay ?: '&mdash;' }}</td>
+                                            <td>{!! $appDate !!}</td>
+                                            <td><span class="st {{ $stClass }}">{{ ucfirst($app->status ?? 'pending') }}</span></td>
+                                            <td style="text-align:right">
+                                                <button type="button" class="cx-rowbtn" data-open-chat data-user-id="{{ $app->user_id ?? '' }}" onclick="openChatWithApplicant({{ $app->user_id ?? 'null' }}, '{{ addslashes($app->full_name) }}', '{{ $shortProg }}', '{{ addslashes($app->barangay ?? '') }}', '{{ $app->status ?? 'pending' }}', '{{ route('admin.requirements') }}?search={{ urlencode($app->full_name) }}')" title="Message {{ $app->full_name }}" aria-label="Message {{ $app->full_name }}">
+                                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path></svg>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="6" style="text-align:center;padding:16px;color:#8893a7;">No recent applications recorded.</td>
+                                        </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
-            </div>
+            </section>
+
+            {{-- RIGHT COLUMN: Aside containing 3 cards --}}
+            <aside class="side">
+
+                {{-- 1. Quick Actions --}}
+                <section class="card qa-card">
+                    <div class="ch">
+                        <span>Quick Actions</span>
+                        <span class="pill">8 shortcuts</span>
+                    </div>
+                    <div class="qrow">
+                        {{-- Add User --}}
+                        <div class="qa">
+                            <a href="{{ route('admin.users') }}#create" class="pri" aria-label="Add User">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                </svg>
+                            </a>
+                            <span class="tip" role="tooltip"><b>Add User</b>Register a new user or admin</span>
+                        </div>
+
+                        {{-- Users Management --}}
+                        <div class="qa">
+                            <a href="{{ route('admin.users') }}" aria-label="Users Management">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path>
+                                    <circle cx="9" cy="7" r="4"></circle>
+                                    <path d="M22 21v-2a4 4 0 0 0-3-3.87"></path>
+                                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                                </svg>
+                            </a>
+                            <span class="tip" role="tooltip"><b>Users Management</b>View registered users and admins</span>
+                        </div>
+
+                        {{-- Manage Applications --}}
+                        <div class="qa">
+                            <a href="{{ route('admin.requirements') }}" aria-label="Manage Applications">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="8" y1="13" x2="16" y2="13"></line>
+                                    <line x1="8" y1="17" x2="16" y2="17"></line>
+                                </svg>
+                            </a>
+                            <span class="tip" role="tooltip"><b>Manage Applications</b>Review and process applications</span>
+                        </div>
+
+                        {{-- Messages (Chat with applicants) --}}
+                        <div class="qa">
+                            <button type="button" onclick="openChatDrawer()" aria-label="Messages" aria-haspopup="dialog" title="Messages">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                                    <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+                                </svg>
+                                <span class="cx-dot" id="cxQaDot" style="display:none;"></span>
+                            </button>
+                            <span class="tip" role="tooltip"><b>Messages</b>Chat with applicants</span>
+                        </div>
+
+                        {{-- View Analysis --}}
+                        <div class="qa">
+                            <a href="{{ route('admin.detailed-analysis') }}" aria-label="Analysis">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <line x1="12" y1="20" x2="12" y2="10"></line>
+                                    <line x1="18" y1="20" x2="18" y2="4"></line>
+                                    <line x1="6" y1="20" x2="6" y2="16"></line>
+                                </svg>
+                            </a>
+                            <span class="tip" role="tooltip"><b>Analysis</b>By program, status and barangay</span>
+                        </div>
+
+                        {{-- Data Management --}}
+                        <div class="qa">
+                            <a href="{{ route('admin.data.dashboard') }}" aria-label="Data Management">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                                    <path d="M3 5v14c0 1.7 4 3 9 3s9-1.3 9-3V5"></path>
+                                    <path d="M3 12c0 1.7 4 3 9 3s9-1.3 9-3"></path>
+                                </svg>
+                            </a>
+                            <span class="tip" role="tooltip"><b>Data Management</b>Municipality, barangay and program data</span>
+                        </div>
+
+                        {{-- Announcements --}}
+                        <div class="qa">
+                            <a href="{{ route('admin.announcements.index') }}" aria-label="Announcements">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z"></path>
+                                    <path d="M15.5 8.5a5 5 0 0 1 0 7"></path>
+                                </svg>
+                            </a>
+                            <span class="tip" role="tooltip"><b>Announcements</b>Post updates and notices</span>
+                        </div>
+
+                        {{-- Settings --}}
+                        <div class="qa">
+                            <a href="{{ route('admin.settings') }}" aria-label="Settings">
+                                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                                    <line x1="4" y1="21" x2="4" y2="14"></line>
+                                    <line x1="4" y1="10" x2="4" y2="3"></line>
+                                    <line x1="12" y1="21" x2="12" y2="12"></line>
+                                    <line x1="12" y1="8" x2="12" y2="3"></line>
+                                    <line x1="20" y1="21" x2="20" y2="16"></line>
+                                    <line x1="20" y1="12" x2="20" y2="3"></line>
+                                    <line x1="1" y1="14" x2="7" y2="14"></line>
+                                    <line x1="9" y1="8" x2="15" y2="8"></line>
+                                    <line x1="17" y1="16" x2="23" y2="16"></line>
+                                </svg>
+                            </a>
+                            <span class="tip" role="tooltip"><b>Settings</b>Municipality Configuration</span>
+                        </div>
+                    </div>
+                </section>
+
+                {{-- 2. Organization & Settings --}}
+                <section class="card">
+                    <div class="ch">
+                        <span>Organization &amp; Settings</span>
+                    </div>
+
+                    {{-- Row 1: Content Management -> Mission, Vision & Strategic Goals --}}
+                    <div class="lk-row">
+                        <span class="ic">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                            </svg>
+                        </span>
+                        <div style="flex:1">
+                            <a href="{{ route('admin.settings', ['tab' => 'vmg']) }}" class="lk-title">
+                                <b>Mission, Vision &amp; Strategic Goals</b>
+                            </a>
+                            <span class="s">Content Management</span>
+                            <div class="chip-group">
+                                <a href="{{ route('admin.settings', ['tab' => 'vmg']) }}" class="chip" onclick="if(event.ctrlKey||event.metaKey)return;event.preventDefault();openVMGModal('vmg');" title="Quick edit Vision">Vision</a>
+                                <a href="{{ route('admin.settings', ['tab' => 'vmg']) }}" class="chip" onclick="if(event.ctrlKey||event.metaKey)return;event.preventDefault();openVMGModal('vmg');" title="Quick edit Mission">Mission</a>
+                                <a href="{{ route('admin.settings', ['tab' => 'vmg', 'sub' => 'sg']) }}" class="chip" id="dashChipStrategicGoals" title="Quick edit strategic goals" onclick="if(event.ctrlKey||event.metaKey)return;event.preventDefault();openVMGModal('sg');">
+                                    {{ count($visionData['strategic_goals'] ?? []) ?: 4 }} strategic goals
+                                </a>
+                            </div>
+                        </div>
+                        <a href="{{ route('admin.settings', ['tab' => 'vmg']) }}" aria-label="Open Mission, Vision & Strategic Goals" class="lk-arrow">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 6 15 12 9 18"></polyline>
+                            </svg>
+                        </a>
+                    </div>
+
+                    {{-- Row 2: Municipality Configuration -> Programs, Muni Info, UI Colors --}}
+                    <div class="lk-row">
+                        <span class="ic">
+                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                <circle cx="12" cy="10" r="3"></circle>
+                            </svg>
+                        </span>
+                        <div style="flex:1">
+                            <a href="{{ route('admin.settings') }}" class="lk-title">
+                                <b>Municipality Configuration</b>
+                            </a>
+                            <span class="s">Programs, information and UI settings</span>
+                            <div class="chip-group">
+                                <a href="{{ route('admin.settings', ['tab' => 'programs']) }}" class="chip" title="Manage Programs & Services">{{ $totalPrograms ?: 4 }} programs</a>
+                                <a href="{{ route('admin.settings', ['tab' => 'muni']) }}" class="chip" title="Manage Municipality Information">Municipality info</a>
+                                <a href="{{ route('admin.settings', ['tab' => 'theme']) }}" class="chip" title="Manage Branding & UI Colors">UI &amp; colors</a>
+                            </div>
+                        </div>
+                        <a href="{{ route('admin.settings') }}" aria-label="Open Municipality Configuration" class="lk-arrow">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                                <polyline points="9 6 15 12 9 18"></polyline>
+                            </svg>
+                        </a>
+                    </div>
+                </section>
+
+                {{-- 3. Municipality Snapshot --}}
+                <section class="card">
+                    <div class="ch">
+                        <span>Municipality Snapshot</span>
+                        <span class="pill" style="font-weight: 700; letter-spacing: 0.02em;">Dashboard Year: {{ $dashboardYear ?? 2026 }}</span>
+                    </div>
+                    <div class="snap">
+                        <div>
+                            <div class="snap-label">Population</div>
+                            <b>{{ number_format($snapshotPopulation ?? 0) }}</b>
+                            <span class="snap-year">{{ $snapshotYear ?? 2024 }}</span>
+                        </div>
+                        <div>
+                            <div class="snap-label">Households</div>
+                            <b>{{ number_format($snapshotHouseholds ?? 0) }}</b>
+                            <span class="snap-year">{{ $snapshotYear ?? 2024 }}</span>
+                        </div>
+                        <div>
+                            <div class="snap-label">Barangays</div>
+                            <b>{{ $totalBarangays }}</b>
+                            <span class="snap-year">Current</span>
+                        </div>
+                        <div>
+                            <div class="snap-label">Programs</div>
+                            <b>{{ $totalPrograms }}</b>
+                            <span class="snap-year">Current</span>
+                        </div>
+                    </div>
+                </section>
+
+            </aside>
 
         </div>
     </div>
-    </div>
 
-    <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
-
-    @include('components.admin-chat-modal')
-    @include('components.admin-settings-modal')
-    @include('components.admin-notification-modal')
-
-    {{-- ═══════════════════════════════════════════════════════════
-         VMG & STRATEGIC GOALS EDIT MODAL
-         ═══════════════════════════════════════════════════════════ --}}
+    {{-- MODAL: Vision, Mission & Strategic Goals --}}
     <div class="modal fade" id="vmgEditModal" tabindex="-1" aria-labelledby="vmgEditModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl modal-dialog-scrollable">
-            <div class="modal-content" style="border-radius:20px;overflow:hidden;border:none;box-shadow:0 24px 80px rgba(44,62,143,.22);">
-
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <div class="modal-content" style="border-radius:16px;overflow:hidden;border:none;box-shadow:0 20px 60px rgba(0,0,0,.25);">
                 {{-- Header --}}
-                <div class="modal-header" style="background:var(--primary-gradient);border:none;padding:20px 28px;">
+                <div class="modal-header" style="background:var(--primary-gradient);border:none;padding:20px 28px;align-items:center;">
                     <div>
-                        <div style="font-size:.72rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:var(--secondary-yellow);margin-bottom:4px;">
-                            {{ $municipality->name }} &mdash; Content Editor
-                        </div>
-                        <h5 class="modal-title" id="vmgEditModalLabel" style="color:#fff;font-weight:800;font-size:1.15rem;margin:0;">
-                            Vision, Mission &amp; Goals + Strategic Goals
+                        <div style="font-size:0.75rem;letter-spacing:0.1em;color:var(--accent-gold);font-weight:800;text-transform:uppercase;">Content Management</div>
+                        <h5 class="modal-title" id="vmgEditModalLabel" style="color:white;font-weight:800;font-size:1.2rem;margin:2px 0 0;">
+                            Mission, Vision &amp; Strategic Goals
                         </h5>
                     </div>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
 
                 {{-- Tabs --}}
-                <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:0 28px;">
-                    <ul class="nav" id="vmgTabs" role="tablist" style="gap:4px;margin:0;">
-                        <li class="nav-item"><button class="vmg-tab active" id="tab-vmg" data-bs-toggle="tab" data-bs-target="#pane-vmg" type="button" role="tab">Vision / Mission / Goals</button></li>
-                        <li class="nav-item"><button class="vmg-tab" id="tab-sg" data-bs-toggle="tab" data-bs-target="#pane-sg" type="button" role="tab">Strategic Goals</button></li>
-                    </ul>
+                <div style="background:#f8fafc;border-bottom:1px solid #e2e8f0;padding:0 28px;display:flex;gap:4px;">
+                    <button type="button" class="vmg-tab-btn active" id="tab-btn-vmg" onclick="switchVMGTab('vmg')">
+                        Vision, Mission &amp; Goals
+                    </button>
+                    <button type="button" class="vmg-tab-btn" id="tab-btn-sg" onclick="switchVMGTab('sg')">
+                        Strategic Goals
+                    </button>
                 </div>
 
                 {{-- Body --}}
                 <div class="modal-body" style="padding:28px;background:#fff;">
-                    <div class="tab-content">
-
-                        {{-- PANE 1: Vision / Mission / Goals --}}
-                        <div class="tab-pane fade show active" id="pane-vmg" role="tabpanel">
-                            <div class="row g-4">
-                                <div class="col-12">
-                                    <label class="vmg-field-label">
-                                        <span class="vmg-field-icon" style="background:#2C3E8F;">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
-                                        </span>
-                                        Vision
-                                    </label>
-                                    <textarea id="vmgVision" class="vmg-textarea" rows="4" placeholder="Enter the vision statement for {{ $municipality->name }}...">{{ $visionData['vision'] }}</textarea>
-                                </div>
-                                <div class="col-12">
-                                    <label class="vmg-field-label">
-                                        <span class="vmg-field-icon" style="background:#FDB913;">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1A2A5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
-                                        </span>
-                                        Mission
-                                    </label>
-                                    <textarea id="vmgMission" class="vmg-textarea" rows="4" placeholder="Enter the mission statement for {{ $municipality->name }}...">{{ $visionData['mission'] }}</textarea>
-                                </div>
-                                <div class="col-12">
-                                    <label class="vmg-field-label">
-                                        <span class="vmg-field-icon" style="background:#6366f1;">
-                                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
-                                        </span>
-                                        Goals
-                                    </label>
-                                    <textarea id="vmgGoals" class="vmg-textarea" rows="4" placeholder="Enter the goals for {{ $municipality->name }}...">{{ $visionData['goals'] }}</textarea>
-                                </div>
+                    {{-- Pane 1: Vision / Mission / Goals --}}
+                    <div id="pane-vmg">
+                        <div class="row g-4">
+                            <div class="col-12">
+                                <label class="vmg-field-label">
+                                    <span class="vmg-field-icon" style="background:#2C3E8F;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                                    </span>
+                                    Vision
+                                </label>
+                                <textarea id="vmgVision" class="vmg-textarea" rows="4" placeholder="Enter the vision statement for {{ $municipality->name }}...">{{ $visionData['vision'] }}</textarea>
                             </div>
-                            <div class="vmg-save-row">
-                                <button onclick="saveVMG()" class="vmg-save-btn" id="vmgSaveBtn">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                                    Save Vision, Mission &amp; Goals
-                                </button>
-                                <span id="vmgSaveStatus" style="font-size:.82rem;font-weight:600;"></span>
+                            <div class="col-12">
+                                <label class="vmg-field-label">
+                                    <span class="vmg-field-icon" style="background:#FDB913;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1A2A5C" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                                    </span>
+                                    Mission
+                                </label>
+                                <textarea id="vmgMission" class="vmg-textarea" rows="4" placeholder="Enter the mission statement for {{ $municipality->name }}...">{{ $visionData['mission'] }}</textarea>
+                            </div>
+                            <div class="col-12">
+                                <label class="vmg-field-label">
+                                    <span class="vmg-field-icon" style="background:#6366f1;">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+                                    </span>
+                                    General Goals
+                                </label>
+                                <textarea id="vmgGoals" class="vmg-textarea" rows="4" placeholder="Enter the general goals for {{ $municipality->name }}...">{{ $visionData['goals'] }}</textarea>
                             </div>
                         </div>
+                        <div class="d-flex align-items-center gap-3 mt-4">
+                            <button type="button" onclick="saveVMG()" class="vmg-save-btn" id="vmgSaveBtn">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                Save Vision, Mission &amp; Goals
+                            </button>
+                            <span id="vmgSaveStatus" style="font-size:.82rem;font-weight:600;"></span>
+                        </div>
+                    </div>
 
-                        {{-- PANE 2: Strategic Goals --}}
-                        <div class="tab-pane fade" id="pane-sg" role="tabpanel">
-                            <div style="margin-bottom:16px;">
-                                <div style="font-size:.8rem;color:#64748b;line-height:1.6;">
-                                    Add up to <strong>10 strategic goals</strong> for <strong>{{ $municipality->name }}</strong>. Each goal will be displayed on the public analysis page.
-                                </div>
+                    {{-- Pane 2: Strategic Goals --}}
+                    <div id="pane-sg" style="display:none;">
+                        <div style="margin-bottom:16px;">
+                            <div style="font-size:.82rem;color:#64748b;line-height:1.6;">
+                                Manage the strategic goals for <strong>{{ $municipality->name }}</strong>. These goals guide your MSWDO programs and priorities.
                             </div>
-                            <div id="sgGoalsList" style="display:flex;flex-direction:column;gap:10px;">
-                                @php $existingGoals = $visionData['strategic_goals'] ?? []; @endphp
-                                @if(count($existingGoals) > 0)
-                                    @foreach($existingGoals as $gi => $goal)
-                                        <div class="sg-input-row" data-idx="{{ $gi }}">
-                                            <span class="sg-input-num">{{ str_pad($gi+1, 2, '0', STR_PAD_LEFT) }}</span>
-                                            <input type="text" class="sg-input" value="{{ $goal }}" placeholder="Enter strategic goal...">
-                                            <button type="button" onclick="removeSGRow(this)" class="sg-remove-btn" title="Remove">
-                                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-                                            </button>
-                                        </div>
-                                    @endforeach
-                                @else
-                                    <div class="sg-input-row" data-idx="0">
-                                        <span class="sg-input-num">01</span>
-                                        <input type="text" class="sg-input" value="" placeholder="Enter strategic goal...">
+                        </div>
+                        <div id="sgGoalsList" style="display:flex;flex-direction:column;gap:10px;">
+                            @php $existingGoals = $visionData['strategic_goals'] ?? []; @endphp
+                            @if(count($existingGoals) > 0)
+                                @foreach($existingGoals as $gi => $goal)
+                                    <div class="sg-input-row" data-idx="{{ $gi }}">
+                                        <span class="sg-input-num">{{ str_pad($gi + 1, 2, '0', STR_PAD_LEFT) }}</span>
+                                        <input type="text" class="sg-input" value="{{ $goal }}" placeholder="Enter strategic goal...">
                                         <button type="button" onclick="removeSGRow(this)" class="sg-remove-btn" title="Remove">
                                             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
                                         </button>
                                     </div>
-                                @endif
-                            </div>
-                            <button type="button" onclick="addSGRow()" id="addSGBtn"
-                                    style="margin-top:12px;background:#f1f5f9;border:2px dashed #cbd5e1;border-radius:10px;color:#64748b;font-weight:700;font-size:.82rem;padding:10px 18px;cursor:pointer;width:100%;transition:all .2s;"
-                                    onmouseover="this.style.background='#e5eeff';this.style.borderColor='#2C3E8F';this.style.color='#2C3E8F'" onmouseout="this.style.background='#f1f5f9';this.style.borderColor='#cbd5e1';this.style.color='#64748b'">
-                                + Add Strategic Goal
-                            </button>
-                            <div class="vmg-save-row">
-                                <button onclick="saveSG()" class="vmg-save-btn" id="sgSaveBtn">
-                                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
-                                    Save Strategic Goals
-                                </button>
-                                <span id="sgSaveStatus" style="font-size:.82rem;font-weight:600;"></span>
-                            </div>
+                                @endforeach
+                            @else
+                                <div class="sg-input-row" data-idx="0">
+                                    <span class="sg-input-num">01</span>
+                                    <input type="text" class="sg-input" value="" placeholder="Enter strategic goal...">
+                                    <button type="button" onclick="removeSGRow(this)" class="sg-remove-btn" title="Remove">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                                    </button>
+                                </div>
+                            @endif
                         </div>
-
+                        <button type="button" onclick="addSGRow()" id="addSGBtn"
+                                style="margin-top:12px;background:#f1f5f9;border:2px dashed #cbd5e1;border-radius:10px;color:#64748b;font-weight:700;font-size:.82rem;padding:10px 18px;cursor:pointer;width:100%;transition:all .2s;">
+                            + Add Strategic Goal
+                        </button>
+                        <div class="d-flex align-items-center gap-3 mt-4">
+                            <button type="button" onclick="saveSG()" class="vmg-save-btn" id="sgSaveBtn">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+                                Save Strategic Goals
+                            </button>
+                            <span id="sgSaveStatus" style="font-size:.82rem;font-weight:600;"></span>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <style>
-        .vmg-tab { background:none;border:none;padding:12px 18px;font-size:.88rem;font-weight:700;color:#64748b;border-bottom:3px solid transparent;transition:all .2s;cursor:pointer;border-radius:0; }
-        .vmg-tab.active,.vmg-tab:focus { color:var(--primary-blue);border-bottom-color:var(--primary-blue);outline:none; }
-        .vmg-field-label { display:flex;align-items:center;gap:10px;font-size:.78rem;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:#334155;margin-bottom:8px; }
-        .vmg-field-icon { width:26px;height:26px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0; }
-        .vmg-textarea { width:100%;border:2px solid #e2e8f0;border-radius:12px;padding:14px 16px;font-size:.88rem;font-family:'Inter',sans-serif;color:#1e293b;resize:vertical;line-height:1.7;transition:border-color .2s;background:#f8fafc; }
-        .vmg-textarea:focus { outline:none;border-color:var(--primary-blue);background:#fff;box-shadow:0 0 0 4px rgba(44,62,143,.08); }
-        .vmg-save-row { display:flex;align-items:center;gap:16px;margin-top:24px;padding-top:20px;border-top:1px solid #e2e8f0; }
-        .vmg-save-btn { display:inline-flex;align-items:center;gap:8px;background:var(--primary-gradient);color:#fff;border:none;border-radius:12px;padding:11px 24px;font-size:.88rem;font-weight:800;cursor:pointer;transition:all .25s; }
-        .vmg-save-btn:hover { box-shadow:0 8px 24px rgba(44,62,143,.35);transform:translateY(-2px); }
-        .sg-input-row { display:flex;align-items:center;gap:10px; }
-        .sg-input-num { font-size:.7rem;font-weight:900;color:#fff;background:var(--primary-blue);border-radius:8px;padding:4px 8px;flex-shrink:0;letter-spacing:.05em; }
-        .sg-input { flex:1;border:2px solid #e2e8f0;border-radius:10px;padding:10px 14px;font-size:.88rem;font-family:'Inter',sans-serif;transition:border-color .2s;background:#f8fafc; }
-        .sg-input:focus { outline:none;border-color:var(--primary-blue);background:#fff;box-shadow:0 0 0 4px rgba(44,62,143,.08); }
-        .sg-remove-btn { background:#fce8e8;border:none;border-radius:8px;width:34px;height:34px;display:flex;align-items:center;justify-content:center;color:#dc2626;cursor:pointer;flex-shrink:0;transition:all .2s; }
-        .sg-remove-btn:hover { background:#dc2626;color:#fff; }
-    </style>
-
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-    const MUNI_NAME = @json($municipality->name);
-    const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
-    const SAVE_URL = '{{ route("admin.vision-mission.save") }}';
+        const CSRF_TOKEN = document.querySelector('meta[name="csrf-token"]').content;
+        const MUNI_NAME = {!! json_encode(Auth::user()->municipality ?? ($municipality?->name ?? '')) !!};
+        const SAVE_URL = {!! json_encode(route('admin.vision-mission.save')) !!};
 
-    // ── Save Vision/Mission/Goals ────────────────────────────────────────────
-    async function saveVMG() {
-        const btn = document.getElementById('vmgSaveBtn');
-        const status = document.getElementById('vmgSaveStatus');
-        btn.disabled = true;
-        btn.textContent = 'Saving…';
-        status.style.color = '#94a3b8';
-        status.textContent = '';
-
-        const payload = {
-            _token: CSRF_TOKEN,
-            municipality_name: MUNI_NAME,
-            vision:  document.getElementById('vmgVision').value,
-            mission: document.getElementById('vmgMission').value,
-            goals:   document.getElementById('vmgGoals').value,
-        };
-
-        try {
-            const res = await fetch(SAVE_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (data.success) {
-                status.style.color = '#16a34a';
-                status.textContent = '✓ Saved successfully!';
-            } else {
-                status.style.color = '#dc2626';
-                status.textContent = data.message || 'Error saving.';
-            }
-        } catch (e) {
-            status.style.color = '#dc2626';
-            status.textContent = 'Network error. Please try again.';
+        function switchVMGTab(tab) {
+            document.getElementById('pane-vmg').style.display = tab === 'vmg' ? 'block' : 'none';
+            document.getElementById('pane-sg').style.display  = tab === 'sg'  ? 'block' : 'none';
+            document.getElementById('tab-btn-vmg').classList.toggle('active', tab === 'vmg');
+            document.getElementById('tab-btn-sg').classList.toggle('active', tab === 'sg');
         }
 
-        btn.disabled = false;
-        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Vision, Mission &amp; Goals`;
-    }
-
-    // ── Strategic Goals helpers ──────────────────────────────────────────────
-    function renumberSG() {
-        document.querySelectorAll('#sgGoalsList .sg-input-row').forEach((row, i) => {
-            row.dataset.idx = i;
-            row.querySelector('.sg-input-num').textContent = String(i + 1).padStart(2, '0');
-        });
-    }
-
-    function addSGRow() {
-        const list = document.getElementById('sgGoalsList');
-        if (list.children.length >= 10) { alert('Maximum 10 strategic goals allowed.'); return; }
-        const idx = list.children.length;
-        const div = document.createElement('div');
-        div.className = 'sg-input-row';
-        div.dataset.idx = idx;
-        div.innerHTML = `
-            <span class="sg-input-num">${String(idx + 1).padStart(2, '0')}</span>
-            <input type="text" class="sg-input" value="" placeholder="Enter strategic goal...">
-            <button type="button" onclick="removeSGRow(this)" class="sg-remove-btn" title="Remove">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-            </button>`;
-        list.appendChild(div);
-        div.querySelector('.sg-input').focus();
-    }
-
-    function removeSGRow(btn) {
-        const row = btn.closest('.sg-input-row');
-        const list = document.getElementById('sgGoalsList');
-        if (list.children.length <= 1) { row.querySelector('.sg-input').value = ''; return; }
-        row.remove();
-        renumberSG();
-    }
-
-    // ── Save Strategic Goals ─────────────────────────────────────────────────
-    async function saveSG() {
-        const btn = document.getElementById('sgSaveBtn');
-        const status = document.getElementById('sgSaveStatus');
-        btn.disabled = true;
-        btn.textContent = 'Saving…';
-        status.textContent = '';
-
-        const goals = Array.from(document.querySelectorAll('#sgGoalsList .sg-input'))
-            .map(i => i.value.trim())
-            .filter(v => v !== '');
-
-        const payload = {
-            _token: CSRF_TOKEN,
-            municipality_name: MUNI_NAME,
-            strategic_goals: goals,
-        };
-
-        try {
-            const res = await fetch(SAVE_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (data.success) {
-                status.style.color = '#16a34a';
-                status.textContent = '✓ Strategic goals saved!';
-            } else {
-                status.style.color = '#dc2626';
-                status.textContent = data.message || 'Error saving.';
-            }
-        } catch (e) {
-            status.style.color = '#dc2626';
-            status.textContent = 'Network error. Please try again.';
+        function openVMGModal(tab) {
+            switchVMGTab(tab);
+            const modalEl = document.getElementById('vmgEditModal');
+            const modal = bootstrap.Modal.getOrCreateInstance(modalEl);
+            modal.show();
         }
 
-        btn.disabled = false;
-        btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Strategic Goals`;
-    }
+        async function saveVMG() {
+            const btn = document.getElementById('vmgSaveBtn');
+            const status = document.getElementById('vmgSaveStatus');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            status.textContent = '';
+
+            const payload = {
+                _token: CSRF_TOKEN,
+                municipality_name: MUNI_NAME,
+                vision: document.getElementById('vmgVision').value,
+                mission: document.getElementById('vmgMission').value,
+                goals: document.getElementById('vmgGoals').value,
+            };
+
+            try {
+                const res = await fetch(SAVE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    status.style.color = '#16a34a';
+                    status.textContent = 'Saved successfully!';
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    status.style.color = '#dc2626';
+                    status.textContent = data.message || 'Error saving.';
+                }
+            } catch (e) {
+                status.style.color = '#dc2626';
+                status.textContent = 'Network error. Please try again.';
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Vision, Mission &amp; Goals`;
+        }
+
+        function renumberSG() {
+            document.querySelectorAll('#sgGoalsList .sg-input-row').forEach((row, i) => {
+                row.dataset.idx = i;
+                row.querySelector('.sg-input-num').textContent = String(i + 1).padStart(2, '0');
+            });
+        }
+
+        function addSGRow() {
+            const list = document.getElementById('sgGoalsList');
+            if (list.children.length >= 10) { alert('Maximum 10 strategic goals allowed.'); return; }
+            const idx = list.children.length;
+            const div = document.createElement('div');
+            div.className = 'sg-input-row';
+            div.dataset.idx = idx;
+            div.innerHTML = `
+                <span class="sg-input-num">${String(idx + 1).padStart(2, '0')}</span>
+                <input type="text" class="sg-input" value="" placeholder="Enter strategic goal...">
+                <button type="button" onclick="removeSGRow(this)" class="sg-remove-btn" title="Remove">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>`;
+            list.appendChild(div);
+            div.querySelector('.sg-input').focus();
+        }
+
+        function removeSGRow(btn) {
+            const row = btn.closest('.sg-input-row');
+            const list = document.getElementById('sgGoalsList');
+            if (list.children.length <= 1) { row.querySelector('.sg-input').value = ''; return; }
+            row.remove();
+            renumberSG();
+        }
+
+        async function saveSG() {
+            const btn = document.getElementById('sgSaveBtn');
+            const status = document.getElementById('sgSaveStatus');
+            btn.disabled = true;
+            btn.textContent = 'Saving...';
+            status.textContent = '';
+
+            const goals = Array.from(document.querySelectorAll('#sgGoalsList .sg-input'))
+                .map(i => i.value.trim())
+                .filter(v => v !== '');
+
+            const payload = {
+                _token: CSRF_TOKEN,
+                municipality_name: MUNI_NAME,
+                strategic_goals: goals,
+            };
+
+            try {
+                const res = await fetch(SAVE_URL, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': CSRF_TOKEN, 'Accept': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (data.success) {
+                    status.style.color = '#16a34a';
+                    status.textContent = 'Strategic goals saved!';
+                    setTimeout(() => location.reload(), 1200);
+                } else {
+                    status.style.color = '#dc2626';
+                    status.textContent = data.message || 'Error saving.';
+                }
+            } catch (e) {
+                status.style.color = '#dc2626';
+                status.textContent = 'Network error. Please try again.';
+            }
+
+            btn.disabled = false;
+            btn.innerHTML = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg> Save Strategic Goals`;
+        }
     </script>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
 </body>
 </html>

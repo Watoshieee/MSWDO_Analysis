@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use App\Models\Application;
 use App\Models\FileUpload;
 use App\Models\FileMonitoring;
@@ -17,6 +18,10 @@ use App\Mail\NewApplicationNotification;
 use App\Mail\AppointmentStatusMail;
 use App\Models\Appointment;
 use Illuminate\Support\Facades\Mail;
+use App\Models\MunicipalitySettings;
+use App\Models\MunicipalityProgram;
+use App\Models\MunicipalityVision;
+use App\Models\Municipality;
 
 class UserController extends Controller
 {
@@ -34,6 +39,41 @@ class UserController extends Controller
             ->where('program_type', 'Solo_Parent')
             ->whereIn('id_status', ['processing', 'ready_for_pickup', 'released'])
             ->exists();
+    }
+
+    private function mtaRequirementCatalog(): array
+    {
+        return [
+            [
+                'category' => 'Certificate for the Issuance of Guardianship',
+                'documents' => [
+                    'Affidavit of Guardianship',
+                    'Certificate from the Barangay',
+                ],
+            ],
+            [
+                'category' => 'Certificate for the Issuance of Financial Incapability / Certificate of Indigency',
+                'documents' => [
+                    'Certificate of Indigency from the Barangay',
+                ],
+            ],
+        ];
+    }
+
+    private function mtaRequiredDocumentNames(): array
+    {
+        return collect($this->mtaRequirementCatalog())
+            ->pluck('documents')
+            ->flatten()
+            ->values()
+            ->all();
+    }
+
+    private function abortUnlessLiliwUser($user, $service = 'This service')
+    {
+        if (!$user || !$user->isLiliwResident()) {
+            abort(403, $service . ' is available only to Liliw residents.');
+        }
     }
 
     // ── Shared notification helper ──────────────────────────────────────────
@@ -288,6 +328,8 @@ class UserController extends Controller
         $soloParentRequirementsValidated = $notifData['soloParentRequirementsValidated'];
         $aicsValidatedApplications = $notifData['aicsValidatedApplications'];
         $aicsReadyApplications = $notifData['aicsReadyApplications'];
+        $canAccessMta = $user?->isLiliwResident() ?? false;
+        $canAccessDayCare = $user?->isLiliwResident() ?? false;
 
         return view('user.dashboard', compact(
             'totalApplications',
@@ -310,7 +352,9 @@ class UserController extends Controller
             'approvedSoloParentAppointment',
             'soloParentRequirementsValidated',
             'aicsValidatedApplications',
-            'aicsReadyApplications'
+            'aicsReadyApplications',
+            'canAccessMta',
+            'canAccessDayCare'
         ));
     }
 
@@ -320,7 +364,12 @@ class UserController extends Controller
         $notifData = $this->notificationData($user);
         $hasPwdBeneficiary = $this->hasPwdBeneficiaryStatus($user);
 
-        return view('user.programs', array_merge($notifData, compact('hasPwdBeneficiary')));
+        // Municipality-driven program visibility
+        $municipalityPrograms = MunicipalityProgram::forMunicipality($user->municipality);
+        $canAccessMta = $municipalityPrograms->contains('program_key', 'MTA');
+        $canAccessDayCare = $municipalityPrograms->contains('program_key', 'Day_Care');
+
+        return view('user.programs', array_merge($notifData, compact('hasPwdBeneficiary', 'canAccessMta', 'canAccessDayCare', 'municipalityPrograms')));
     }
 
     public function announcements(Request $request)
@@ -470,9 +519,23 @@ class UserController extends Controller
             }
             $fileMonitoring->save();
 
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success'          => true,
+                    'message'          => 'Document re-uploaded successfully! Waiting for admin review.',
+                    'file_upload_id'   => $fileUpload->id,
+                    'requirement_name' => $fileUpload->requirement_name,
+                    'file_name'        => $fileUpload->file_name,
+                    'file_url'         => route('user.serve-file', $fileUpload->id),
+                    'file_ext'         => strtolower(pathinfo($fileUpload->file_path, PATHINFO_EXTENSION)),
+                ]);
+            }
             return redirect()->back()->with('success', 'Document re-uploaded successfully! Waiting for admin review.');
         } catch (\Exception $e) {
             Log::error('Resubmit Error: ' . $e->getMessage());
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => 'Failed to upload file: ' . $e->getMessage()], 500);
+            }
             return redirect()->back()->with('error', 'Failed to upload file: ' . $e->getMessage());
         }
     }
@@ -509,6 +572,550 @@ class UserController extends Controller
 
         return view('user.pwd-application', compact('user', 'application', 'uploadedFiles', 'pwdRequirements', 'isPwdBeneficiary'));
     }
+
+    public function mtaApplication()
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        $user = Auth::user();
+        $this->abortUnlessLiliwUser($user);
+
+        $mtaRequirementGroups = $this->mtaRequirementCatalog();
+        $mtaRequirements = $this->mtaRequiredDocumentNames();
+
+        $application = Application::where('user_id', $user->id)
+            ->where('program_type', 'MTA')
+            ->latest('id')
+            ->first();
+
+        $uploadedFiles = collect();
+        if ($application) {
+            $fm = FileMonitoring::where('application_id', $application->id)->first();
+            if ($fm) {
+                $uploadedFiles = FileUpload::where('file_monitoring_id', $fm->id)->get();
+            }
+        }
+
+        $uploadedCount = $uploadedFiles->filter(fn ($file) => !empty($file->file_path))->count();
+        $allMtaUploaded = collect($mtaRequirements)->every(function ($reqName) use ($uploadedFiles) {
+            $match = $uploadedFiles->firstWhere('requirement_name', $reqName);
+            return $match && !empty($match->file_path);
+        });
+
+        return view('user.mta-application', compact(
+            'user',
+            'application',
+            'uploadedFiles',
+            'mtaRequirementGroups',
+            'mtaRequirements',
+            'uploadedCount',
+            'allMtaUploaded'
+        ));
+    }
+
+    public function uploadMtaRequirement(Request $request)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        $user = Auth::user();
+        $this->abortUnlessLiliwUser($user);
+
+        $allowedNames = $this->mtaRequiredDocumentNames();
+
+        $request->validate([
+            'requirement_name' => ['required', 'string', Rule::in($allowedNames)],
+            'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:25600',
+        ]);
+
+        $file = $request->file('file');
+        $isImage = in_array($file->getMimeType(), ['image/jpeg', 'image/jpg', 'image/png'], true);
+        $maxSize = $isImage ? 5 * 1024 * 1024 : 25 * 1024 * 1024;
+        if ($file->getSize() > $maxSize) {
+            $message = $isImage
+                ? 'File size must be less than 5MB for images.'
+                : 'File size must be less than 25MB for PDF files.';
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            return redirect()->route('user.mta-application')->with('error', $message);
+        }
+
+        $genderRaw = strtolower(trim($user->gender ?? ''));
+        $gender = $genderRaw === 'female' ? 'Female' : 'Male';
+
+        $application = Application::where('user_id', $user->id)
+            ->where('program_type', 'MTA')
+            ->latest('id')
+            ->first();
+
+        if (!$application) {
+            $application = Application::create([
+                'user_id' => $user->id,
+                'program_type' => 'MTA',
+                'municipality' => $user->municipality ?? '',
+                'barangay' => $user->barangay ?? '',
+                'full_name' => $user->full_name ?? $user->name ?? '',
+                'age' => is_numeric($user->age ?? null) ? (int) $user->age : 0,
+                'gender' => $gender,
+                'contact_number' => $user->contact_number ?? $user->mobile_number ?? '',
+                'status' => 'in_progress',
+                'application_date' => now(),
+                'year' => now()->year,
+                'stage' => 'documents_upload',
+            ]);
+        }
+
+        $fileMonitoring = FileMonitoring::firstOrCreate(
+            ['application_id' => $application->id],
+            [
+                'overall_status' => 'uploaded',
+                'municipality' => $application->municipality ?? $user->municipality ?? '',
+                'user_id' => $user->id,
+            ]
+        );
+
+        $existing = FileUpload::where('file_monitoring_id', $fileMonitoring->id)
+            ->where('requirement_name', $request->requirement_name)
+            ->first();
+
+        if ($existing && $existing->file_path && Storage::disk('public')->exists($existing->file_path)) {
+            Storage::disk('public')->delete($existing->file_path);
+        }
+
+        $folder = 'applications/' . $application->id . '/requirements';
+        $filePath = $file->store($folder, 'public');
+
+        $fileUpload = FileUpload::updateOrCreate(
+            [
+                'file_monitoring_id' => $fileMonitoring->id,
+                'requirement_name' => $request->requirement_name,
+            ],
+            [
+                'file_path' => $filePath,
+                'file_name' => $file->getClientOriginalName(),
+                'status' => 'uploaded',
+                'uploaded_at' => now(),
+                'admin_remarks' => null,
+                'remarks' => null,
+                'verified_at' => null,
+                'verified_by' => null,
+            ]
+        );
+
+        $requiredNames = $this->mtaRequiredDocumentNames();
+        $uploads = FileUpload::where('file_monitoring_id', $fileMonitoring->id)->get();
+        $uploadedCount = collect($requiredNames)->filter(function ($reqName) use ($uploads) {
+            $match = $uploads->firstWhere('requirement_name', $reqName);
+            return $match && !empty($match->file_path);
+        })->count();
+
+        $fileMonitoring->overall_status = $uploadedCount === count($requiredNames) ? 'complete' : 'uploaded';
+        $fileMonitoring->save();
+
+        $message = '"' . $request->requirement_name . '" uploaded successfully.';
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'file_upload_id' => $fileUpload->id,
+                'requirement_name' => $fileUpload->requirement_name,
+                'file_name' => $fileUpload->file_name,
+                'file_url' => route('user.serve-file', $fileUpload->id),
+                'file_ext' => strtolower(pathinfo((string) $fileUpload->file_path, PATHINFO_EXTENSION)),
+                'uploaded_at' => optional($fileUpload->uploaded_at)->format('M j, Y'),
+                'uploaded_count' => $uploadedCount,
+                'total_required' => count($requiredNames),
+                'all_uploaded' => $uploadedCount === count($requiredNames),
+            ]);
+        }
+
+        return redirect()->route('user.mta-application')->with('upload_success', $message);
+    }
+
+    public function submitMtaApplication(Request $request)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        $user = Auth::user();
+        $this->abortUnlessLiliwUser($user);
+
+        $application = Application::where('user_id', $user->id)
+            ->where('program_type', 'MTA')
+            ->latest('id')
+            ->first();
+
+        if (!$application) {
+            return redirect()->route('user.mta-application')
+                ->with('error', 'Upload all required MTA documents before submitting.');
+        }
+
+        $fm = FileMonitoring::where('application_id', $application->id)->first();
+        $uploadedFiles = $fm
+            ? FileUpload::where('file_monitoring_id', $fm->id)->get()
+            : collect();
+
+        $missing = collect($this->mtaRequiredDocumentNames())->filter(function ($reqName) use ($uploadedFiles) {
+            $match = $uploadedFiles->firstWhere('requirement_name', $reqName);
+            return !$match || empty($match->file_path);
+        });
+
+        if ($missing->isNotEmpty()) {
+            return redirect()->route('user.mta-application')
+                ->with('error', 'All required MTA documents must be uploaded before submitting.');
+        }
+
+        $application->status = 'submitted';
+        $application->stage = 'submitted';
+        $application->completed_at = now();
+        $application->save();
+
+        if ($fm) {
+            $fm->overall_status = 'complete';
+            $fm->save();
+        }
+
+        return redirect()->route('user.mta-application')
+            ->with('upload_success', 'MTA application submitted. All required documents have been uploaded.');
+    }
+
+    private function dayCareRequirementsCatalog(): array
+    {
+        return [
+            'Birth Certificate of the Child',
+            'Babybook / Immunization Book',
+        ];
+    }
+
+    private function ensureDayCareProgramType(): void
+    {
+        try {
+            if (\Illuminate\Support\Facades\DB::connection()->getDriverName() !== 'mysql' || !\Illuminate\Support\Facades\Schema::hasColumn('applications', 'program_type')) {
+                return;
+            }
+
+            $column = \Illuminate\Support\Facades\DB::selectOne("SHOW COLUMNS FROM applications LIKE 'program_type'");
+            if (!$column || !isset($column->Type) || !str_starts_with(strtolower($column->Type), 'enum(')) {
+                return;
+            }
+
+            preg_match_all("/'((?:\\\\'|[^'])*)'/", $column->Type, $matches);
+            $values = $matches[1] ?? [];
+
+            if (in_array('Day_Care', $values, true)) {
+                return;
+            }
+
+            $values[] = 'Day_Care';
+            $quoted = implode(', ', array_map(fn ($v) => "'" . str_replace("'", "''", $v) . "'", $values));
+            $nullable = strtoupper((string) ($column->Null ?? '')) === 'YES' ? 'NULL' : 'NOT NULL';
+
+            \Illuminate\Support\Facades\DB::statement("ALTER TABLE applications MODIFY COLUMN program_type ENUM({$quoted}) {$nullable}");
+        } catch (\Throwable $e) {
+            \Illuminate\Support\Facades\Log::warning('Could not alter applications program_type for Day_Care: ' . $e->getMessage());
+        }
+    }
+
+    public function dayCareRegistration(Request $request)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        $user = Auth::user();
+        $this->abortUnlessLiliwUser($user, 'Registration for Day Care Services');
+        $this->ensureDayCareProgramType();
+
+        $dayCareRequirements = $this->dayCareRequirementsCatalog();
+        $isNew = $request->query('new') == '1';
+
+        $application = Application::where('user_id', $user->id)
+            ->where('program_type', 'Day_Care')
+            ->latest('id')
+            ->first();
+
+        $uploadedFiles = collect();
+        if ($application) {
+            $fm = FileMonitoring::where('application_id', $application->id)->first();
+            if ($fm) {
+                $uploadedFiles = FileUpload::where('file_monitoring_id', $fm->id)->get();
+            }
+        }
+
+        $uploadedCount = $uploadedFiles->filter(fn ($f) => !empty($f->file_path))->count();
+        $allDayCareUploaded = collect($dayCareRequirements)->every(function ($reqName) use ($uploadedFiles) {
+            $match = $uploadedFiles->firstWhere('requirement_name', $reqName);
+            return $match && !empty($match->file_path);
+        });
+
+        return view('user.day-care-registration', compact(
+            'user',
+            'application',
+            'uploadedFiles',
+            'dayCareRequirements',
+            'uploadedCount',
+            'allDayCareUploaded',
+            'isNew'
+        ));
+    }
+
+    public function uploadDayCareRequirement(Request $request)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        $user = Auth::user();
+        $this->abortUnlessLiliwUser($user, 'Registration for Day Care Services');
+        $this->ensureDayCareProgramType();
+
+        $allowedNames = $this->dayCareRequirementsCatalog();
+
+        $request->validate([
+            'requirement_name' => ['required', 'string', Rule::in($allowedNames)],
+            'file' => 'required|file|mimes:jpg,jpeg,png,pdf|max:25600',
+        ]);
+
+        $file = $request->file('file');
+        $isImage = in_array($file->getMimeType(), ['image/jpeg', 'image/jpg', 'image/png'], true);
+        $maxSize = $isImage ? 5 * 1024 * 1024 : 25 * 1024 * 1024;
+        if ($file->getSize() > $maxSize) {
+            $message = $isImage
+                ? 'File size must be less than 5MB for images.'
+                : 'File size must be less than 25MB for PDF files.';
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json(['success' => false, 'message' => $message], 422);
+            }
+            return redirect()->route('user.day-care-registration')->with('error', $message);
+        }
+
+        $application = Application::where('user_id', $user->id)
+            ->where('program_type', 'Day_Care')
+            ->where('status', 'in_progress')
+            ->latest('id')
+            ->first();
+
+        if (!$application) {
+            $application = Application::create([
+                'user_id' => $user->id,
+                'program_type' => 'Day_Care',
+                'municipality' => $user->municipality ?? 'Liliw',
+                'barangay' => $user->barangay ?? '',
+                'full_name' => $user->full_name ?? $user->name ?? '',
+                'age' => 0,
+                'gender' => 'Male',
+                'contact_number' => $user->contact_number ?? $user->mobile_number ?? '',
+                'status' => 'in_progress',
+                'application_date' => now(),
+                'year' => now()->year,
+                'stage' => 'documents_upload',
+            ]);
+        }
+
+        $fileMonitoring = FileMonitoring::firstOrCreate(
+            ['application_id' => $application->id],
+            [
+                'overall_status' => 'uploaded',
+                'municipality' => $application->municipality ?? $user->municipality ?? 'Liliw',
+                'user_id' => $user->id,
+            ]
+        );
+
+        $existing = FileUpload::where('file_monitoring_id', $fileMonitoring->id)
+            ->where('requirement_name', $request->requirement_name)
+            ->first();
+
+        if ($existing && $existing->file_path && Storage::disk('public')->exists($existing->file_path)) {
+            Storage::disk('public')->delete($existing->file_path);
+        }
+
+        $folder = 'applications/' . $application->id . '/requirements';
+        $filePath = $file->store($folder, 'public');
+
+        $fileUpload = FileUpload::updateOrCreate(
+            [
+                'file_monitoring_id' => $fileMonitoring->id,
+                'requirement_name' => $request->requirement_name,
+            ],
+            [
+                'file_path' => $filePath,
+                'file_name' => $file->getClientOriginalName(),
+                'status' => 'uploaded',
+                'uploaded_at' => now(),
+                'admin_remarks' => null,
+                'remarks' => null,
+                'verified_at' => null,
+                'verified_by' => null,
+            ]
+        );
+
+        $requiredNames = $this->dayCareRequirementsCatalog();
+        $uploads = FileUpload::where('file_monitoring_id', $fileMonitoring->id)->get();
+        $uploadedCount = collect($requiredNames)->filter(function ($reqName) use ($uploads) {
+            $match = $uploads->firstWhere('requirement_name', $reqName);
+            return $match && !empty($match->file_path);
+        })->count();
+
+        $fileMonitoring->overall_status = $uploadedCount === count($requiredNames) ? 'complete' : 'uploaded';
+        $fileMonitoring->save();
+
+        $message = '"' . $request->requirement_name . '" uploaded successfully.';
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'file_upload_id' => $fileUpload->id,
+                'requirement_name' => $fileUpload->requirement_name,
+                'file_name' => $fileUpload->file_name,
+                'file_url' => route('user.serve-file', $fileUpload->id),
+                'file_ext' => strtolower(pathinfo((string) $fileUpload->file_path, PATHINFO_EXTENSION)),
+                'uploaded_at' => optional($fileUpload->uploaded_at)->format('M j, Y'),
+                'uploaded_count' => $uploadedCount,
+                'total_required' => count($requiredNames),
+                'all_uploaded' => $uploadedCount === count($requiredNames),
+            ]);
+        }
+
+        return redirect()->route('user.day-care-registration')->with('upload_success', $message);
+    }
+
+    public function submitDayCareRegistration(Request $request)
+    {
+        if (!Auth::check()) {
+            return redirect()->route('login');
+        }
+
+        $user = Auth::user();
+        $this->abortUnlessLiliwUser($user, 'Registration for Day Care Services');
+        $this->ensureDayCareProgramType();
+
+        $request->validate([
+            'child_development_center' => 'required|string|max:255',
+            'child_first_name' => 'required|string|max:100',
+            'child_middle_name' => 'required|string|max:100',
+            'child_last_name' => 'required|string|max:100',
+            'birthday' => 'required|date|before_or_equal:today',
+            'father_name' => 'required|string|max:150',
+            'mother_name' => 'required|string|max:150',
+            'address' => 'required|string|max:255',
+            'birth_certificate' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:25600',
+            'immunization_book' => 'nullable|file|mimes:jpg,jpeg,png,pdf|max:25600',
+        ]);
+
+        $birthDate = Carbon::parse($request->birthday);
+        $age = (int) $birthDate->age;
+
+        $childFullName = trim($request->child_last_name . ', ' . $request->child_first_name . ' ' . $request->child_middle_name);
+
+        $application = Application::where('user_id', $user->id)
+            ->where('program_type', 'Day_Care')
+            ->where('status', 'in_progress')
+            ->latest('id')
+            ->first();
+
+        if (!$application) {
+            $application = new Application();
+            $application->user_id = $user->id;
+            $application->program_type = 'Day_Care';
+            $application->application_date = now();
+            $application->year = now()->year;
+        }
+
+        $application->municipality = $user->municipality ?? 'Liliw';
+        $application->barangay = $user->barangay ?? '';
+        $application->full_name = $childFullName;
+        $application->age = $age;
+        $application->gender = 'Male';
+        $application->contact_number = $user->contact_number ?? $user->mobile_number ?? '';
+        $application->status = 'submitted';
+        $application->stage = 'submitted';
+        $application->completed_at = now();
+        $application->form_data = [
+            'child_development_center' => $request->child_development_center,
+            'child_first_name' => $request->child_first_name,
+            'child_middle_name' => $request->child_middle_name,
+            'child_last_name' => $request->child_last_name,
+            'child_full_name' => $childFullName,
+            'birthday' => $request->birthday,
+            'age' => $age,
+            'father_name' => $request->father_name,
+            'mother_name' => $request->mother_name,
+            'address' => $request->address,
+        ];
+        $application->save();
+
+        $fileMonitoring = FileMonitoring::firstOrCreate(
+            ['application_id' => $application->id],
+            [
+                'overall_status' => 'uploaded',
+                'municipality' => $application->municipality ?? $user->municipality ?? 'Liliw',
+                'user_id' => $user->id,
+            ]
+        );
+
+        if ($request->hasFile('birth_certificate')) {
+            $file = $request->file('birth_certificate');
+            $folder = 'applications/' . $application->id . '/requirements';
+            $filePath = $file->store($folder, 'public');
+            FileUpload::updateOrCreate(
+                [
+                    'file_monitoring_id' => $fileMonitoring->id,
+                    'requirement_name' => 'Birth Certificate of the Child',
+                ],
+                [
+                    'file_path' => $filePath,
+                    'file_name' => $file->getClientOriginalName(),
+                    'status' => 'uploaded',
+                    'uploaded_at' => now(),
+                ]
+            );
+        }
+
+        if ($request->hasFile('immunization_book')) {
+            $file = $request->file('immunization_book');
+            $folder = 'applications/' . $application->id . '/requirements';
+            $filePath = $file->store($folder, 'public');
+            FileUpload::updateOrCreate(
+                [
+                    'file_monitoring_id' => $fileMonitoring->id,
+                    'requirement_name' => 'Babybook / Immunization Book',
+                ],
+                [
+                    'file_path' => $filePath,
+                    'file_name' => $file->getClientOriginalName(),
+                    'status' => 'uploaded',
+                    'uploaded_at' => now(),
+                ]
+            );
+        }
+
+        $uploads = FileUpload::where('file_monitoring_id', $fileMonitoring->id)->get();
+        $reqNames = $this->dayCareRequirementsCatalog();
+        $missing = collect($reqNames)->filter(function ($r) use ($uploads) {
+            $m = $uploads->firstWhere('requirement_name', $r);
+            return !$m || empty($m->file_path);
+        });
+
+        if ($missing->isNotEmpty()) {
+            return redirect()->route('user.day-care-registration')
+                ->withInput()
+                ->with('error', 'Both required documents (Birth Certificate of the Child & Babybook / Immunization Book) must be uploaded before submitting.');
+        }
+
+        $fileMonitoring->overall_status = 'complete';
+        $fileMonitoring->save();
+
+        return redirect()->route('user.day-care-registration')
+            ->with('upload_success', 'Registration for Day Care Services submitted successfully.');
+    }
+
     public function pwdFillableForm()
     {
         if (!Auth::check()) {
@@ -610,15 +1217,25 @@ class UserController extends Controller
             }
         }
 
-        $minDate = Carbon::tomorrow()->format('Y-m-d');
-        $maxDate = Carbon::now()->addDays(30)->format('Y-m-d');
+        $minDate = Carbon::tomorrow('Asia/Manila')->format('Y-m-d');
+        $maxDate = Carbon::now('Asia/Manila')->addYears(5)->format('Y-m-d');
 
         // If validated, load the associated Application with its file monitoring / uploads
         $soloParentApplication = null;
-        if ($appointment && $appointment->solo_parent_app_id) {
-            $soloParentApplication = Application::with([
-                'fileMonitoring.fileUploads'
-            ])->find($appointment->solo_parent_app_id);
+        if ($appointment && $appointment->status === 'validated') {
+            // Primary: use solo_parent_app_id if set and record still exists
+            if ($appointment->solo_parent_app_id) {
+                $soloParentApplication = Application::with(['fileMonitoring.fileUploads'])
+                    ->find($appointment->solo_parent_app_id);
+            }
+            // Fallback: find by user_id + program_type (handles deleted/missing app_id)
+            if (!$soloParentApplication) {
+                $soloParentApplication = Application::with(['fileMonitoring.fileUploads'])
+                    ->where('user_id', $user->id)
+                    ->where('program_type', 'Solo_Parent')
+                    ->latest('id')
+                    ->first();
+            }
         }
 
         return view('user.solo-parent-application', compact('appointment', 'minDate', 'maxDate', 'soloParentApplication', 'isSoloParentBeneficiary'));
@@ -719,7 +1336,7 @@ class UserController extends Controller
                 'file_name' => $file->getClientOriginalName(),
                 'status' => 'pending',
                 'uploaded_at' => now(),
-                'admin_remarks' => null,
+
             ]
         );
 
@@ -794,8 +1411,8 @@ class UserController extends Controller
             ->orderByRaw("FIELD(status,'pending','confirmed')")
             ->orderBy('appointment_date', 'desc')
             ->first();
-        $minDate = Carbon::tomorrow()->format('Y-m-d');
-        $maxDate = Carbon::now()->addDays(30)->format('Y-m-d');
+        $minDate = Carbon::tomorrow('Asia/Manila')->format('Y-m-d');
+        $maxDate = Carbon::now('Asia/Manila')->addYears(5)->format('Y-m-d');
 
         $notifData = $this->notificationData($user);
 
@@ -833,8 +1450,8 @@ class UserController extends Controller
             ->orderByRaw("FIELD(status,'pending','confirmed')")
             ->orderBy('appointment_date', 'desc')
             ->first();
-        $minDate = Carbon::tomorrow()->format('Y-m-d');
-        $maxDate = Carbon::now()->addDays(30)->format('Y-m-d');
+        $minDate = Carbon::tomorrow('Asia/Manila')->format('Y-m-d');
+        $maxDate = Carbon::now('Asia/Manila')->addYears(5)->format('Y-m-d');
 
         $notifData = $this->notificationData($user);
 
@@ -1036,6 +1653,57 @@ class UserController extends Controller
     }
 
     /**
+     * Show mobile app download page
+     */
+    public function downloadApp()
+    {
+        $user = Auth::user();
+        extract($this->notificationData($user));
+
+        // APK file metadata — update these when releasing a new version
+        $apkFileName = 'mswdo-app-v1.0.2.apk';
+        $apkPath = public_path('downloads/' . $apkFileName);
+        $apkExists = file_exists($apkPath);
+        $apkSize = $apkExists ? filesize($apkPath) : 0;
+        $apkSizeMB = $apkExists ? round($apkSize / (1024 * 1024), 1) : 0;
+
+        $appInfo = [
+            'version' => '1.0.2',
+            'versionCode' => 3,
+            'minAndroid' => 'Android 7.0 (Nougat) or higher',
+            'minSdk' => 24,
+            'package' => 'com.mswdo.app.mswdo_beneficiary_app',
+            'sha256' => '35A07004D99BDB97BC44BD1F53C90EEE4A50B1F2D4303F99F0BC36950BE416E5',
+            'fileName' => $apkFileName,
+            'fileExists' => $apkExists,
+            'fileSize' => $apkSize,
+            'fileSizeMB' => $apkSizeMB,
+            // Set to true when Google Play listing is approved
+            'googlePlayAvailable' => false,
+            'googlePlayUrl' => null,
+        ];
+
+        return view('user.download-app', compact(
+            'appInfo',
+            'documentNotifications',
+            'rejectedApplications',
+            'newAnnouncements',
+            'notificationCount',
+            'validatedAppointment',
+            'idReadyApplication',
+            'confirmedAicsAppointments',
+            'newAicsConfirmedCount',
+            'newAnnouncementCount',
+            'pwdValidatedApplication',
+            'pwdIdReadyApplication',
+            'approvedSoloParentAppointment',
+            'soloParentRequirementsValidated',
+            'aicsValidatedApplications',
+            'aicsReadyApplications'
+        ));
+    }
+
+    /**
      * Show user profile page
      */
     public function profile()
@@ -1099,4 +1767,95 @@ class UserController extends Controller
         return redirect()->route('user.profile')->with('success', 'Profile updated successfully!');
     }
 
+    /**
+     * Securely serve an uploaded requirement document to its owning user.
+     * Streams the file through PHP to support Hostinger environments
+     * without relying on public storage symlinks.
+     *
+     * Authorizes access via: FileUpload -> FileMonitoring -> Application -> user_id === Auth::id()
+     */
+    public function serveFile(Request $request, $id)
+    {
+        $user = Auth::user();
+
+        if (!$user) {
+            abort(401, 'Unauthenticated.');
+        }
+
+        // Authorize that the file belongs to an application owned by this user
+        // Strictly verified chain: FileUpload -> FileMonitoring -> Application -> Application.user_id === Auth::id()
+        $fileUpload = FileUpload::with(['fileMonitoring.application'])
+            ->where('id', $id)
+            ->whereHas('fileMonitoring.application', function ($query) use ($user) {
+                $query->where('user_id', $user->id);
+            })
+            ->first();
+
+        if (!$fileUpload) {
+            abort(404, 'File not found or access denied.');
+        }
+
+        $filePath = $fileUpload->file_path;
+
+        if (!$filePath) {
+            abort(404, 'No file path stored for this record.');
+        }
+
+        // Reject directory traversal attempts
+        if (str_contains($filePath, '..') || str_starts_with($filePath, '/') || str_starts_with($filePath, '\\')) {
+            abort(403, 'Invalid file path.');
+        }
+
+        // Candidate paths matching AdminController logic for Hostinger
+        $candidates = [
+            Storage::disk('public')->path($filePath),
+            base_path('storage/app/public/' . $filePath),
+            public_path('storage/' . $filePath),
+        ];
+
+        $fullPath = null;
+        foreach ($candidates as $candidate) {
+            if (file_exists($candidate) && is_file($candidate)) {
+                $fullPath = $candidate;
+                break;
+            }
+        }
+
+        if (!$fullPath) {
+            Log::warning('user.serveFile: file not found on disk for upload ID ' . $id, [
+                'user_id'    => $user->id,
+                'file_path'  => $filePath,
+                'candidates' => $candidates,
+            ]);
+            abort(404, 'File not found on disk.');
+        }
+
+        $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
+
+        $mimeMap = [
+            'pdf'  => 'application/pdf',
+            'jpg'  => 'image/jpeg',
+            'jpeg' => 'image/jpeg',
+            'png'  => 'image/png',
+            'gif'  => 'image/gif',
+            'webp' => 'image/webp',
+            'bmp'  => 'image/bmp',
+        ];
+
+        $mime = $mimeMap[$ext] ?? (mime_content_type($fullPath) ?: 'application/octet-stream');
+        $forceDownload = $request->query('dl') === '1';
+        $filename = $fileUpload->file_name ?: basename($filePath);
+        $disposition = $forceDownload
+            ? 'attachment; filename="' . basename($filename) . '"'
+            : 'inline; filename="' . basename($filename) . '"';
+
+        return response()->file($fullPath, [
+            'Content-Type'        => $mime,
+            'Content-Disposition' => $disposition,
+            'Content-Length'      => (string) filesize($fullPath),
+            'Cache-Control'       => 'private, max-age=3600',
+        ]);
+    }
+
 }
+

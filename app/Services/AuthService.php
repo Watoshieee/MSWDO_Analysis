@@ -4,17 +4,20 @@ namespace App\Services;
 
 use App\Mail\RegistrationPasswordMail;
 use App\Models\User;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class AuthService
 {
     /**
      * Register a new user and return the created model.
+     * If valid ID file is provided, stores it before sending password email.
      * Does NOT send OTP — that is OtpService's responsibility.
      */
-    public function register(array $data, int $age): User
+    public function register(array $data, int $age, ?UploadedFile $validIdFile = null): User
     {
         $fullName = trim(
             $data['first_name'] . ' ' .
@@ -37,10 +40,17 @@ class AuthService
             'password'      => Hash::make($generatedPassword),
             'role'          => User::ROLE_USER,
             'status'        => 'inactive',
+            'id_verification_status' => User::ID_STATUS_PENDING,
             'must_change_password' => true,
         ]);
 
-        // Send the generated password to the user's email
+        // If a valid ID file is provided, store it immediately.
+        // If storage fails, an exception is thrown so caller rolls back user creation.
+        if ($validIdFile) {
+            $this->storeValidId($user, $validIdFile);
+        }
+
+        // Send the generated password to the user's email ONLY after user and ID are confirmed
         try {
             Mail::to($user->email)->send(
                 new RegistrationPasswordMail($fullName, $generatedPassword, $user->email)
@@ -53,6 +63,41 @@ class AuthService
         }
 
         return $user;
+    }
+
+    /**
+     * Store the uploaded valid ID file and associate it with the given user.
+     *
+     * Called AFTER user creation so we have a known user ID for path isolation.
+     * Uses a server-generated safe filename — never trusts the client name.
+     * Stores in valid-ids/{user_id}/ matching the website's OtpController pattern.
+     * Sets id_verification_status to 'pending' so admins can review it.
+     *
+     * @param  User          $user  The already-created user
+     * @param  UploadedFile  $file  The validated uploaded ID file
+     * @return void
+     * @throws \RuntimeException if file storage fails
+     */
+    public function storeValidId(User $user, UploadedFile $file): void
+    {
+        $extension = strtolower($file->getClientOriginalExtension() ?: $file->extension() ?: 'jpg');
+
+        // Server-generated safe filename — never trust client filename
+        $safeFilename = 'valid-id.' . $extension;
+        $directory = 'valid-ids/' . $user->id;
+
+        Storage::disk('public')->makeDirectory($directory);
+        $storedPath = $file->storeAs($directory, $safeFilename, 'public');
+
+        if (!$storedPath) {
+            throw new \RuntimeException('Failed to save uploaded valid ID to storage.');
+        }
+
+        $user->update([
+            'valid_id_path'          => $storedPath,
+            'valid_id_filename'      => $file->getClientOriginalName(),
+            'id_verification_status' => User::ID_STATUS_PENDING,
+        ]);
     }
 
     /**

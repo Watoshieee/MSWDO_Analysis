@@ -66,7 +66,7 @@
             </div>
             
             <div class="warning-box">
-                <h4 style="margin-top: 0; color: #856404;">⚠️ Important Security Information</h4>
+                <h4 style="margin-top: 0; color: #856404;">Important Security Information</h4>
                 <ul style="margin: 10px 0; color: #856404;">
                     <li>This is your <strong>temporary password</strong></li>
                     <li>Keep this password secure and do not share it with anyone</li>

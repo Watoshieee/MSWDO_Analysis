@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Applications - MSWDO Admin</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @include('components.admin-colors')
@@ -593,54 +595,7 @@
         </div>
     </div>
 
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/admin/dashboard">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD"
-                    style="width:36px;height:36px;object-fit:contain;"> MSWDO
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link active"
-                            href="{{ route('admin.requirements') }}">Applications</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}"
-                            href="{{ route('admin.users') }}">Users Management</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data
-                            Management</a></li>
-                    <li class="nav-item"><a
-                            class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}"
-                            href="{{ route('admin.announcements.index') }}">Announcements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a>
-                    </li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
-                </ul>
-                <div class="d-flex align-items-center gap-3">
-                    @auth
-                        <button type="button" class="btn" onclick="openAdminNotifModal()"
-                            style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
-                            title="Application Notifications">
-                            <i class="bi bi-bell-fill"></i>
-                            @if(isset($adminNotifCount) && $adminNotifCount > 0)
-                                <span class="admin-bell-badge"
-                                    style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $adminNotifCount > 9 ? '9+' : $adminNotifCount }}</span>
-                            @endif
-                        </button>
-                        <div class="user-info">
-                            <span>{{ Auth::user()->full_name }}</span>
-                            <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                                @csrf
-                                <button type="submit" class="logout-btn">Logout</button>
-                            </form>
-                        </div>
-                    @endauth
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('components.admin-navbar')
 
     <div style="flex:1;">
         <div class="container mt-4">
@@ -662,7 +617,13 @@
             <div class="panel-card">
                 <div class="panel-header">
                     <span>Submitted Applications</span>
-                    <div style="display:flex;align-items:center;gap:10px;">
+                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                        <a href="{{ route('admin.solo-parent-requirements.index') }}"
+                            style="background:rgba(253,185,19,0.2);border:1.5px solid rgba(253,185,19,0.5);color:#FDB913;border-radius:20px;padding:5px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:all .2s;"
+                            onmouseover="this.style.background='rgba(253,185,19,0.35)'"
+                            onmouseout="this.style.background='rgba(253,185,19,0.2)'">
+                            ⚙️ Solo Parent Requirements
+                        </a>
                         <button type="button" onclick="document.getElementById('archiveModal').style.display='flex'"
                             style="background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.3);color:white;border-radius:20px;padding:5px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;"
                             onmouseover="this.style.background='rgba(255,255,255,0.22)'"
@@ -902,6 +863,23 @@
     </div>
 
 
+    {{-- Notes modal --}}
+    <div id="notesModal"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;"
+        onclick="if(event.target===this) this.style.display='none'">
+        <div style="background:white;border-radius:16px;padding:28px;max-width:480px;width:90%;box-shadow:0 8px 40px rgba(0,0,0,.2);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+                <h5 style="font-weight:800;color:#1e293b;margin:0;">Appointment Notes</h5>
+                <button onclick="document.getElementById('notesModal').style.display='none'" style="background:rgba(44,62,143,.08);border:none;color:#1e293b;border-radius:8px;width:32px;height:32px;font-size:1.1rem;cursor:pointer;line-height:1;">&times;</button>
+            </div>
+            <p id="notesModalApplicant" style="font-size:.8rem;color:#64748b;margin-bottom:12px;"></p>
+            <div id="notesModalBody" style="background:#f8faff;border:1px solid #c7d6f5;border-radius:10px;padding:14px 16px;font-size:.88rem;color:#1e293b;line-height:1.6;white-space:pre-wrap;min-height:60px;"></div>
+            <div style="text-align:right;margin-top:16px;">
+                <button onclick="document.getElementById('notesModal').style.display='none'" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:10px;padding:9px 22px;font-weight:700;cursor:pointer;font-size:.86rem;">Close</button>
+            </div>
+        </div>
+    </div>
+
     {{-- Reject modal --}}
     <div id="rejectModal"
         style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;align-items:center;justify-content:center;">
@@ -922,7 +900,68 @@
         </div>
     </div>
 
+
+    {{-- Validate Solo Parent Eligibility & Assign Category Modal --}}
+    <div id="validateSoloParentModal"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(2px);">
+        <div style="background:white;border-radius:18px;padding:26px 28px;max-width:560px;width:92%;box-shadow:0 12px 48px rgba(0,0,0,.25);max-height:90vh;display:flex;flex-direction:column;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                <h5 style="font-weight:800;margin:0;color:#1e293b;font-size:1.15rem;">Validate Solo Parent Eligibility</h5>
+                <button type="button" onclick="closeValidateSoloParentModal()" style="background:none;border:none;font-size:1.4rem;color:#94a3b8;cursor:pointer;line-height:1;">&times;</button>
+            </div>
+
+            <div style="font-size:.88rem;color:#475569;margin-bottom:14px;background:#f1f5f9;padding:10px 14px;border-radius:10px;">
+                <strong>Applicant:</strong> <span id="vspApplicantName" style="color:#2C3E8F;font-weight:700;"></span>
+            </div>
+
+            <div style="margin-bottom:14px;">
+                <label style="font-size:.78rem;font-weight:700;color:#334155;text-transform:uppercase;letter-spacing:.05em;display:block;margin-bottom:6px;">
+                    Solo Parent Category <span style="color:#dc3545;">*</span>
+                </label>
+                <select id="vspCategorySelect" class="form-select" style="border-radius:10px;font-weight:600;font-size:.88rem;border:1.5px solid #cbd5e1;padding:9px 12px;" onchange="updateVspPreview()">
+                    @foreach(\App\Services\SoloParentCategoryService::getCategories() as $code => $title)
+                        <option value="{{ $code }}">{{ $title }}</option>
+                    @endforeach
+                </select>
+            </div>
+            <div style="margin-bottom:14px;background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:12px;padding:12px 14px;">
+                <label style="display:flex;align-items:flex-start;gap:10px;cursor:pointer;margin:0;">
+                    <input type="checkbox" id="vspAvailBenefit" value="CODE_1_2" style="margin-top:3px;accent-color:#2C3E8F;width:17px;height:17px;cursor:pointer;" onchange="updateVspPreview()">
+                    <div>
+                        <span style="font-size:.86rem;font-weight:700;color:#1e293b;display:block;">
+                            Applicant is availing of Solo Parent Subsidy &amp; Discount (Code 1,2)
+                        </span>
+                        <span style="font-size:.78rem;color:#64748b;display:block;margin-top:2px;line-height:1.4;">
+                            Separate benefit track under RA 11861. Adds the 4 proof of income requirements without altering the applicant's primary category.
+                        </span>
+                    </div>
+                </label>
+            </div>
+
+            <div style="flex:1;overflow-y:auto;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-bottom:18px;max-height:280px;">
+                <div style="font-size:.75rem;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px;">
+                    Requirements That Will Be Assigned (<span id="vspReqCount">0</span>):
+                </div>
+                <div id="vspReqPreviewList" style="display:flex;flex-direction:column;gap:8px;"></div>
+            </div>
+
+            <div style="display:flex;gap:10px;justify-content:flex-end;">
+                <button type="button" onclick="closeValidateSoloParentModal()"
+                    style="background:#f1f5f9;color:#374151;border:none;border-radius:10px;padding:10px 20px;font-weight:600;cursor:pointer;font-size:.88rem;">Cancel</button>
+                <button type="button" onclick="submitValidateSoloParent()" id="vspSubmitBtn"
+                    style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;font-size:.88rem;">
+                    Validate Eligibility
+                </button>
+            </div>
+        </div>
+    </div>
     <script>
+        function openNotesModal(encodedName, encodedNotes) {
+            document.getElementById('notesModalApplicant').textContent = 'Applicant: ' + decodeURIComponent(encodedName);
+            document.getElementById('notesModalBody').textContent = decodeURIComponent(encodedNotes);
+            document.getElementById('notesModal').style.display = 'flex';
+        }
+
         var rejectTargetId = null;
         var csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
         var _allAppointments = [];
@@ -1038,38 +1077,27 @@
                     }
                 }
 
-                // Build notes/reason display - show only ONE note based on priority
-                let notesDisplay = '';
-                
-                // Priority 1: Show cancellation reason if pending cancellation
+                // Build notes data for modal
+                let notesModalContent = '';
+                let hasNotes = false;
+
                 if (a.cancellation_status === 'pending' && a.cancel_reason) {
-                    notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.35;background:#fff3cd;border:1px solid #ffc107;color:#856404;border-radius:10px;padding:8px 10px;font-size:.76rem;font-weight:600;">${a.cancel_reason}</div>`;
+                    notesModalContent = a.cancel_reason;
+                    hasNotes = true;
+                } else if (a.reschedule_status === 'pending' && a.reschedule_request_reason) {
+                    notesModalContent = (a.reschedule_request_date || '') + ' ' + (a.reschedule_request_time || '') + (a.reschedule_request_reason ? '\n' + a.reschedule_request_reason : '') + (a.reschedule_admin_notes ? '\nAdmin: ' + a.reschedule_admin_notes : '');
+                    hasNotes = true;
+                } else if (a.status === 'cancelled' && a.cancel_reason) {
+                    notesModalContent = 'Cancelled: ' + a.cancel_reason;
+                    hasNotes = true;
+                } else if ((a.user_notes || '').trim()) {
+                    notesModalContent = a.user_notes.trim();
+                    hasNotes = true;
                 }
-                // Priority 2: Show reschedule info if pending reschedule
-                else if (a.reschedule_status === 'pending' && a.reschedule_request_reason) {
-                    notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.4;font-size:.78rem;font-weight:600;color:#0c4a6e;">`;
-                    notesDisplay += `${a.reschedule_request_date || ''} ${a.reschedule_request_time || ''}`;
-                    if (a.reschedule_request_reason) {
-                        notesDisplay += `<br><span style="margin-top:4px;display:inline-block;">${a.reschedule_request_reason}</span>`;
-                    }
-                    if (a.reschedule_admin_notes) {
-                        notesDisplay += `<br><span style="margin-top:4px;display:inline-block;font-size:.72rem;">Admin: ${a.reschedule_admin_notes}</span>`;
-                    }
-                    notesDisplay += `</div>`;
-                }
-                // Priority 3: Show cancel reason if cancelled
-                else if (a.status === 'cancelled' && a.cancel_reason) {
-                    notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.35;background:#fee2e2;border:1px solid #fecaca;color:#991b1b;border-radius:10px;padding:8px 10px;font-size:.76rem;font-weight:600;"><strong>Cancelled:</strong><br>${a.cancel_reason}</div>`;
-                }
-                // Priority 4: Show user notes (default)
-                else {
-                    const noteText = (a.user_notes || '').trim();
-                    if (noteText) {
-                        notesDisplay = `<div style="max-width:280px;white-space:normal;line-height:1.35;background:#eef3ff;border:1px solid #c7d6f5;color:#1e3a8a;border-radius:10px;padding:6px 9px;font-size:.76rem;font-weight:600;" title="${noteText}">${noteText}</div>`;
-                    }
-                }
-                
-                const notesCell = notesDisplay || '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
+
+                const notesCell = hasNotes
+                    ? `<button onclick="openNotesModal('${encodeURIComponent(a.user_name)}', '${encodeURIComponent(notesModalContent)}')" style="background:#eef3ff;color:#1e3a8a;border:1px solid #c7d6f5;border-radius:8px;padding:5px 13px;font-size:.76rem;font-weight:700;cursor:pointer;white-space:nowrap;">View Notes</button>`
+                    : '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
 
                 // Always show admin reschedule button
                 actions += `<button onclick="showAdminRescheduleModal(${a.id}, '${encodeURIComponent(a.user_name)}')" style="background:#e0e7ff;color:#3730a3;border:1px solid #a5b4fc;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-left:6px;">Reschedule</button>`;
@@ -1117,15 +1145,124 @@
             });
         }
 
+        const _vspCategoryMap = @json(\App\Services\SoloParentCategoryService::getCategoryPreviewMap());
+        const _vspBenefitData = @json(\App\Services\SoloParentCategoryService::getBenefitPreviewList());
+        let _vspTargetId = null;
+
+        function openValidateSoloParentModal(id, appt) {
+            _vspTargetId = id;
+            document.getElementById('vspApplicantName').textContent = appt ? (appt.user_name || 'Applicant #' + id) : 'Applicant #' + id;
+            document.getElementById('vspCategorySelect').value = 'A1';
+            const _vspBenefitEl = document.getElementById('vspAvailBenefit');
+            if (_vspBenefitEl) _vspBenefitEl.checked = false;
+            updateVspPreview();
+            document.getElementById('validateSoloParentModal').style.display = 'flex';
+        }
+
+        function closeValidateSoloParentModal() {
+            document.getElementById('validateSoloParentModal').style.display = 'none';
+            _vspTargetId = null;
+        }
+
+        function updateVspPreview() {
+            const cat = document.getElementById('vspCategorySelect').value;
+            const data = _vspCategoryMap[cat];
+            const isBenefit = document.getElementById('vspAvailBenefit')?.checked;
+            const listEl = document.getElementById('vspReqPreviewList');
+            const countEl = document.getElementById('vspReqCount');
+            listEl.innerHTML = '';
+
+            const catReqs = (data && data.requirements) ? data.requirements : [];
+            const benefitReqs = (isBenefit && _vspBenefitData && _vspBenefitData.requirements) ? _vspBenefitData.requirements : [];
+            const totalCount = catReqs.length + benefitReqs.length;
+
+            countEl.textContent = totalCount;
+
+            if (totalCount === 0) {
+                listEl.innerHTML = '<div style="color:#94a3b8;font-size:.82rem;">No requirements configured.</div>';
+                return;
+            }
+
+            if (isBenefit && catReqs.length > 0) {
+                const head = document.createElement('div');
+                head.style.cssText = 'font-size:.75rem;font-weight:800;color:#2C3E8F;text-transform:uppercase;letter-spacing:.04em;margin-bottom:2px;';
+                head.textContent = `Category ${cat} Requirements (${catReqs.length}):`;
+                listEl.appendChild(head);
+            }
+
+            catReqs.forEach((req, idx) => {
+                const item = document.createElement('div');
+                item.style.cssText = 'background:white;border:1px solid #e2e8f0;border-radius:8px;padding:9px 12px;font-size:.82rem;line-height:1.4;';
+
+                if (req.is_or_group) {
+                    let orHtml = `<div style="font-weight:700;color:#2C3E8F;margin-bottom:4px;">${idx + 1}. ${req.title} <span style="background:#e0f2fe;color:#0369a1;font-size:.7rem;padding:2px 8px;border-radius:10px;margin-left:6px;">Submit 1 of ${req.options.length}</span></div>`;
+                    orHtml += '<div style="padding-left:12px;display:flex;flex-direction:column;gap:3px;margin-top:4px;">';
+                    req.options.forEach((opt, oIdx) => {
+                        const orBadge = oIdx > 0 ? '<span style="color:#d97706;font-weight:700;font-size:.72rem;margin-right:4px;">OR</span> ' : '';
+                        orHtml += `<div style="color:#475569;">${orBadge}• ${opt}</div>`;
+                    });
+                    orHtml += '</div>';
+                    item.innerHTML = orHtml;
+                } else {
+                    item.innerHTML = `<div style="color:#1e293b;"><strong style="color:#2C3E8F;">${idx + 1}.</strong> ${req.title}</div>`;
+                }
+
+                listEl.appendChild(item);
+            });
+
+            if (isBenefit && benefitReqs.length > 0) {
+                const bHead = document.createElement('div');
+                bHead.style.cssText = 'font-size:.75rem;font-weight:800;color:#15803d;text-transform:uppercase;letter-spacing:.04em;margin-top:10px;margin-bottom:2px;';
+                bHead.textContent = `Code 1,2 Benefit Requirements (${benefitReqs.length}):`;
+                listEl.appendChild(bHead);
+
+                benefitReqs.forEach((bReq, bIdx) => {
+                    const bItem = document.createElement('div');
+                    bItem.style.cssText = 'background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:9px 12px;font-size:.82rem;line-height:1.4;';
+                    bItem.innerHTML = `<div style="color:#14532d;"><strong style="color:#15803d;">+${bIdx + 1}.</strong> ${bReq.title}</div>`;
+                    listEl.appendChild(bItem);
+                });
+            }
+        }
+
+        function submitValidateSoloParent() {
+            if (!_vspTargetId) return;
+            const cat = document.getElementById('vspCategorySelect').value;
+            const isAvailing = document.getElementById('vspAvailBenefit')?.checked;
+            const benefitCode = isAvailing ? 'CODE_1_2' : null;
+            const apptId = _vspTargetId;
+            closeValidateSoloParentModal();
+            showLoading('Validating Eligibility', 'Assigning category requirements and notifying applicant...');
+
+            fetch(`/admin/appointments/${apptId}/validate`, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                body: JSON.stringify({ category_code: cat, benefit_code: benefitCode })
+            }).then(r => r.json()).then(d => {
+                if (d.success) {
+                    uiToast(d.message || 'Validated and requirements assigned.');
+                    loadAppointments();
+                } else {
+                    uiToast(d.message || 'Error validating appointment.', 'Error');
+                }
+            }).catch(() => uiToast('Error validating appointment.', 'Error'))
+              .finally(() => hideLoading());
+        }
+
         function validateAppt(id) {
-            // Find the appointment data to get program type
             const appt = _allAppointments.find(a => a.id === id);
+            const isSoloParent = appt && appt.program_type === 'Solo_Parent';
+
+            if (isSoloParent) {
+                openValidateSoloParentModal(id, appt);
+                return;
+            }
+
             const programLabel = appt
                 ? (appt.program_type === 'AICS_Burial' ? 'AICS Burial Assistance'
                     : appt.program_type === 'AICS_Medical' ? 'AICS Medical Assistance'
                     : 'Solo Parent ID')
                 : 'program';
-            const isSoloParent = appt && appt.program_type === 'Solo_Parent';
 
             uiConfirm(
                 'Validate interview?',
@@ -1149,7 +1286,6 @@
                     .finally(() => hideLoading());
             });
         }
-
         function openRejectModal(id) {
             rejectTargetId = id;
             document.getElementById('rejectNotes').value = '';
@@ -1161,17 +1297,18 @@
         }
         function submitReject() {
             const notes = document.getElementById('rejectNotes').value.trim();
-            if (!notes) { alert('Please enter a reason for rejection.'); return; }
+            if (!notes) { uiToast('Please enter a reason for rejection.', 'Error'); return; }
+            const targetId = rejectTargetId;
+            closeRejectModal();
             showLoading('Rejecting Appointment', 'Sending rejection notification...');
-            fetch(`/admin/appointments/${rejectTargetId}/reject`, {
+            fetch(`/admin/appointments/${targetId}/reject`, {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
                 body: JSON.stringify({ admin_notes: notes })
             }).then(r => r.json()).then(d => {
-                closeRejectModal();
-                alert(d.message);
+                uiToast(d.message || 'Appointment rejected.');
                 loadAppointments();
-            }).catch(() => alert('Error rejecting appointment.'))
+            }).catch(() => uiToast('Error rejecting appointment.', 'Error'))
                 .finally(() => hideLoading());
         }
 
@@ -1274,9 +1411,7 @@
         });
     </script>
 
-    <div class="footer-strip">
-        MSWDO &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
+    <div class="footer-strip"></div>
 
     @include('components.admin-settings-modal')
     @include('components.admin-chat-modal')

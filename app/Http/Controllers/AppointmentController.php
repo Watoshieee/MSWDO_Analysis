@@ -7,6 +7,7 @@ use App\Models\Application;
 use App\Models\User;
 use App\Mail\AppointmentStatusMail;
 use App\Mail\NewAppointmentAdminMail;
+use App\Services\PhilippineHolidayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -41,7 +42,12 @@ class AppointmentController extends Controller
             return response()->json(['error' => 'Past dates are not available'], 422);
         }
 
-        return response()->json(Appointment::slotsForDate($date, $user->municipality));
+        $holidayCheck = app(PhilippineHolidayService::class)->isAllowedBookingDate($date);
+        if (!$holidayCheck['allowed']) {
+            return response()->json(['error' => $holidayCheck['reason']], 422);
+        }
+
+        return response()->json(Appointment::slotsForDate($date, $user->municipality, $carbon->isToday()));
     }
 
     /** Allowed program types for appointment booking */
@@ -61,7 +67,7 @@ class AppointmentController extends Controller
 
         $request->validate([
             'appointment_date' => 'required|date|after:today',
-            'appointment_time' => 'required|in:' . implode(',', Appointment::availableSlots()),
+            'appointment_time' => ['required', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
             'interview_type'   => 'required|in:face_to_face,online',
             'user_notes'       => 'nullable|string|max:500',
             'program_type'     => 'nullable|in:' . $allowed,
@@ -70,6 +76,12 @@ class AppointmentController extends Controller
         $programType = $request->input('program_type', 'Solo_Parent');
         $date = $request->appointment_date;
         $time = $request->appointment_time;
+
+        // Validate: weekday and Philippine holiday
+        $holidayCheck = app(PhilippineHolidayService::class)->isAllowedBookingDate($date);
+        if (!$holidayCheck['allowed']) {
+            return back()->withInput()->with('appt_error', $holidayCheck['reason'])->withErrors(['appointment_date' => $holidayCheck['reason']]);
+        }
 
         if ($programType === 'Solo_Parent') {
             $isSoloParentBeneficiary = Application::where('user_id', $user->id)
@@ -80,11 +92,6 @@ class AppointmentController extends Controller
             if ($isSoloParentBeneficiary) {
                 return back()->with('appt_error', 'Solo Parent re-application is disabled because you are already a beneficiary.');
             }
-        }
-
-        // Validate: weekday only
-        if (Carbon::parse($date)->isWeekend()) {
-            return back()->with('appt_error', 'Appointments can only be booked on weekdays (Mon–Fri).');
         }
 
         // Check user doesn't already have an active appointment for this program
@@ -208,13 +215,14 @@ class AppointmentController extends Controller
 
         $request->validate([
             'reschedule_date'   => 'required|date|after:today',
-            'reschedule_time'   => 'required|in:' . implode(',', Appointment::availableSlots()),
+            'reschedule_time'   => ['required', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
             'reschedule_reason' => 'required|string|max:500',
         ]);
 
         $date = $request->reschedule_date;
-        if (Carbon::parse($date)->isWeekend()) {
-            return back()->with('appt_error', 'Reschedule date must be a weekday.');
+        $holidayCheck = app(PhilippineHolidayService::class)->isAllowedBookingDate($date);
+        if (!$holidayCheck['allowed']) {
+            return back()->withInput()->with('appt_error', $holidayCheck['reason'])->withErrors(['reschedule_date' => $holidayCheck['reason']]);
         }
 
         if (Appointment::slotCount($date, $request->reschedule_time, $user->municipality) >= Appointment::maxPerSlot()) {

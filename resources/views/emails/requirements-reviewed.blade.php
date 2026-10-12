@@ -35,21 +35,21 @@
 <div class="wrapper">
     <div class="header">
         @if($overallStatus === 'approved')
-            <h1>✅ Requirements Approved!</h1>
+            <h1>Requirements Approved!</h1>
         @elseif($overallStatus === 'rejected')
-            <h1>❌ Some Requirements Need Attention</h1>
+            <h1>Some Requirements Need Attention</h1>
         @else
-            <h1>📋 Requirements Under Review</h1>
+            <h1>Requirements Under Review</h1>
         @endif
         <p>Municipal Social Welfare and Development Office</p>
     </div>
 
     @if($overallStatus === 'approved')
-        <div class="badge-approved">✅ All Requirements Approved — ID Processing Will Begin Soon</div>
+        <div class="badge-approved">All Requirements Approved — ID Processing Will Begin Soon</div>
     @elseif($overallStatus === 'rejected')
-        <div class="badge-rejected">❌ Action Required — Some Documents Were Declined</div>
+        <div class="badge-rejected">Action Required — Some Documents Were Declined</div>
     @else
-        <div class="badge-review">🔍 Review In Progress</div>
+        <div class="badge-review">Review In Progress</div>
     @endif
 
     <div class="body">
@@ -82,7 +82,7 @@
 
         @if($overallStatus === 'approved')
         <div class="success-box">
-            🎉 <strong>Congratulations!</strong> Your <strong>{{ $programLabel }}</strong> application has been fully approved. You will be contacted when your application is ready for the next step.
+            <strong>Congratulations!</strong> Your <strong>{{ $programLabel }}</strong> application has been fully approved. You will be contacted when your application is ready for the next step.
         </div>
         @endif
 
@@ -101,11 +101,11 @@
                     <td>{{ $file->requirement_name }}</td>
                     <td>
                         @if($file->status === 'approved')
-                            <span class="pill-approved">✅ Approved</span>
+                            <span class="pill-approved">Approved</span>
                         @elseif($file->status === 'rejected')
-                            <span class="pill-rejected">❌ Declined</span>
+                            <span class="pill-rejected">Declined</span>
                         @else
-                            <span class="pill-pending">⏳ Pending</span>
+                            <span class="pill-pending">Pending</span>
                         @endif
                     </td>
                     <td style="color:#64748b;font-size:0.82rem;">{{ $file->admin_remarks ?? '—' }}</td>
@@ -116,14 +116,14 @@
 
         @if($overallStatus === 'rejected')
         <div class="warning-box">
-            ⚠️ <strong>Action Required:</strong> Please resubmit the declined documents. Make sure they are clear, readable, and complete. Log in to your account to resubmit.
+            <strong>Action Required:</strong> Please resubmit the declined documents. Make sure they are clear, readable, and complete. Log in to your account to resubmit.
         </div>
         <div style="text-align:center;margin-bottom:16px;">
-            <a href="{{ url('/user/my-requirements') }}" class="cta-btn">🔄 Resubmit Documents</a>
+            <a href="{{ url('/user/my-requirements') }}" class="cta-btn">Resubmit Documents</a>
         </div>
         @elseif($overallStatus === 'approved')
         <div style="text-align:center;margin-bottom:16px;">
-            <a href="{{ url('/user/dashboard') }}" class="cta-btn">🏠 Go to Dashboard</a>
+            <a href="{{ url('/user/dashboard') }}" class="cta-btn">Go to Dashboard</a>
         </div>
         @endif
 

@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use App\Models\User;
 use App\Models\ProgramRequirement;
 use App\Mail\NewAppointmentAdminMail;
+use App\Services\PhilippineHolidayService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -42,6 +43,11 @@ class AicsApiController extends Controller
             return response()->json(['success' => false, 'message' => 'Past dates are not available'], 422);
         }
 
+        $holidayCheck = app(PhilippineHolidayService::class)->isAllowedBookingDate($date);
+        if (!$holidayCheck['allowed']) {
+            return response()->json(['success' => false, 'message' => $holidayCheck['reason']], 422);
+        }
+
         $slots = Appointment::slotsForDate($date, $user->municipality);
 
         return response()->json(['slots' => $slots]);
@@ -53,6 +59,25 @@ class AicsApiController extends Controller
     private function bookAppointment(Request $request, string $programType): JsonResponse
     {
         $user = Auth::user();
+
+        $request->validate([
+            'appointment_date' => 'required|date|after:today',
+            'appointment_time' => 'required|in:' . implode(',', Appointment::availableSlots()),
+            'interview_type'   => 'required|in:face_to_face,online',
+            'user_notes'       => 'nullable|string|max:500',
+        ]);
+
+        $date = $request->appointment_date;
+        $time = $request->appointment_time;
+
+        // Validate weekday and Philippine holiday
+        $holidayCheck = app(PhilippineHolidayService::class)->isAllowedBookingDate($date);
+        if (!$holidayCheck['allowed']) {
+            return response()->json([
+                'success' => false,
+                'message' => $holidayCheck['reason'],
+            ], 422);
+        }
 
         // Block only if user has an active appointment (pending/confirmed/validated)
         // for this program. A CANCELLED appointment allows rebooking.
@@ -82,24 +107,6 @@ class AicsApiController extends Controller
             ], 409);
         }
 
-        $request->validate([
-            'appointment_date' => 'required|date|after:today',
-            'appointment_time' => 'required|in:' . implode(',', Appointment::availableSlots()),
-            'interview_type'   => 'required|in:face_to_face,online',
-            'user_notes'       => 'nullable|string|max:500',
-        ]);
-
-        $date = $request->appointment_date;
-        $time = $request->appointment_time;
-
-        // Validate weekday only
-        if (Carbon::parse($date)->isWeekend()) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Appointments can only be booked on weekdays (Mon–Fri).',
-            ], 422);
-        }
-
         // Check slot capacity (scoped to user's municipality)
         if (Appointment::slotCount($date, $time, $user->municipality) >= Appointment::maxPerSlot()) {
             return response()->json([
@@ -118,6 +125,16 @@ class AicsApiController extends Controller
             'status' => 'pending',
             'user_notes' => $request->user_notes,
         ]);
+
+        // Send push notification to user
+        $label = $programType === 'AICS_Medical' ? 'AICS Medical Assistance' : 'AICS Burial Assistance';
+        $this->sendPushNotification(
+            $user->id,
+            'Appointment Booked',
+            'Your ' . $label . ' appointment has been submitted and is pending admin confirmation.',
+            'aics',
+            $programType
+        );
 
         // Notify admins
         $admins = User::where('role', 'admin')
@@ -141,11 +158,11 @@ class AicsApiController extends Controller
         ], 201);
     }
 
-    // ── Shared push notification helper (DB first, then OneSignal) ───────────
-    private function sendPushNotification(int $userId, string $title, string $body, string $type = 'aics'): void
+        // ── Shared push notification helper (DB first, then OneSignal) ───────────
+    private function sendPushNotification(int $userId, string $title, string $body, string $type = 'aics', ?string $programType = null): void
     {
         try {
-            \DB::table('notifications')->insert([
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $userId,
                 'type'       => $type,
                 'title'      => $title,
@@ -154,44 +171,10 @@ class AicsApiController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            $extraData = $programType ? ['program_type' => $programType] : [];
+            \App\Services\OneSignalService::sendPush($userId, $title, $body, $type, $notifId, $extraData);
         } catch (\Exception $e) {
-            Log::error('AICS: Failed to insert notification', ['error' => $e->getMessage()]);
-        }
-
-        try {
-            $oneSignalKey = env('ONESIGNAL_API_KEY', '');
-            if (!$oneSignalKey) return;
-
-            $payload = [
-                'app_id'          => env('ONESIGNAL_APP_ID', '3db6828d-49af-4f5a-8d89-ff0b90749aec'),
-                'target_channel'  => 'push',
-                'include_aliases' => ['external_id' => [(string) $userId]],
-                'headings'        => ['en' => $title],
-                'contents'        => ['en' => $body],
-                'data'            => ['type' => $type],
-                'priority'        => 10,
-            ];
-
-            $ch = curl_init('https://api.onesignal.com/notifications');
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_POST           => true,
-                CURLOPT_HTTPHEADER     => [
-                    'Content-Type: application/json; charset=utf-8',
-                    'Authorization: Key ' . $oneSignalKey,
-                ],
-                CURLOPT_POSTFIELDS     => json_encode($payload),
-                CURLOPT_TIMEOUT        => 10,
-            ]);
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-
-            if ($httpCode !== 200 && $httpCode !== 201) {
-                Log::warning('AICS: OneSignal push failed', ['http_code' => $httpCode]);
-            }
-        } catch (\Exception $e) {
-            Log::error('AICS: Push notification exception', ['error' => $e->getMessage()]);
+            Log::error('AICS: Failed to insert or push notification', ['error' => $e->getMessage()]);
         }
     }
 

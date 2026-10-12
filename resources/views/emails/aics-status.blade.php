@@ -31,9 +31,9 @@
 <div class="wrap">
     <div class="head {{ $isReady ? 'ready' : ($isEligible ? 'eligible' : '') }}">
         <h1>
-            @if($isReady)       🎁 Grant Ready for Claiming
-            @elseif($isEligible) 🏆 You Are Eligible!
-            @else               ✅ Requirements Validated
+            @if($isReady)       Grant Ready for Claiming
+            @elseif($isEligible) You Are Eligible!
+            @else               Requirements Validated
             @endif
         </h1>
     </div>

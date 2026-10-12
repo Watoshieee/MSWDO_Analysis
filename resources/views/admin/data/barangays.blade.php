@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 
 <head>
@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Barangay Data – {{ $municipality->name }} – MSWDO Admin</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     @include('components.admin-colors')
@@ -487,83 +489,40 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .toast-error   { background: #C41E24; }
         .toast-timer { height: 3px; width: 100%; background: var(--secondary-yellow); position: absolute; bottom: 0; left: 0; border-radius: 0 0 12px 12px; animation: timerShrink 3.5s linear; }
         @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes timerShrink { from { width: 100%; } to { width: 0%; } }
+        #return {
+            scroll-margin-top: 30px;
+        }
     </style>
 </head>
 
 <body>
     <script>
-        // Force scroll to top immediately
-        document.documentElement.scrollTop = 0;
-        document.body.scrollTop = 0;
-        window.scrollTo(0, 0);
-        
-        // Prevent scroll restoration
-        if ('scrollRestoration' in history) {
-            history.scrollRestoration = 'manual';
+        // Force scroll to top only when NOT targeting a hash like #return
+        if (window.location.hash !== '#return') {
+            document.documentElement.scrollTop = 0;
+            document.body.scrollTop = 0;
+            window.scrollTo(0, 0);
+            
+            // Prevent scroll restoration
+            if ('scrollRestoration' in history) {
+                history.scrollRestoration = 'manual';
+            }
+            
+            // Lock scroll position during page load
+            window.addEventListener('DOMContentLoaded', function() {
+                if (window.location.hash !== '#return') {
+                    window.scrollTo(0, 0);
+                }
+            });
+            
+            window.addEventListener('load', function() {
+                if (window.location.hash !== '#return') {
+                    window.scrollTo(0, 0);
+                }
+            });
         }
-        
-        // Lock scroll position during page load
-        window.addEventListener('DOMContentLoaded', function() {
-            window.scrollTo(0, 0);
-        });
-        
-        window.addEventListener('load', function() {
-            window.scrollTo(0, 0);
-        });
     </script>
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/admin/dashboard">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.requirements*') ? 'active' : '' }}"
-                           href="{{ route('admin.requirements') }}">Applications</a>
-                    </li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.data.*') ? 'active' : '' }}"
-                           href="{{ route('admin.data.dashboard') }}">Data Management</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}"
-                           href="{{ route('admin.announcements.index') }}">Announcements</a>
-                    </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ request()->routeIs('admin.detailed*') ? 'active' : '' }}"
-                           href="{{ route('admin.detailed-analysis') }}">Analysis</a>
-                    </li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
-                </ul>
-                <div class="d-flex align-items-center gap-3">
-                    @auth
-                    <button type="button" class="btn" onclick="openAdminNotifModal()"
-                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
-                        title="Application Notifications">
-                        <i class="bi bi-bell-fill"></i>
-                        @if(isset($adminNotifCount) && $adminNotifCount > 0)
-                        <span class="admin-bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $adminNotifCount > 9 ? '9+' : $adminNotifCount }}</span>
-                        @endif
-                    </button>
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                    @endauth
-                </div>
-            </div>
-        </div>
-    </nav>
+@include('components.admin-navbar')
 
     <section class="hero-banner">
         <div class="container" style="position:relative;z-index:2;">
@@ -752,10 +711,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
-    <footer class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </footer>
 
+
+    <footer class="footer-strip"></footer>
     <!-- Archived Barangays Modal -->
     <div class="modal fade" id="archivedBarangaysModal" tabindex="-1">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
@@ -835,11 +793,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Year</label>
-                                <select name="year" class="form-select" required>
-                                    @foreach($yearsForAddModal as $yr)
-                                        <option value="{{ $yr }}" {{ $yr == (int) date('Y') ? 'selected' : '' }}>{{ $yr }}</option>
-                                    @endforeach
-                                </select>
+                                <input type="number" name="year" id="addBarangayYear" class="form-control" required
+                                       min="1000" max="9999" step="1"
+                                       value="{{ date('Y') }}" placeholder="YYYY (e.g. {{ date('Y') }})"
+                                       oninput="if(this.value.length > 4) this.value = this.value.slice(0, 4)">
+                                <small class="text-muted" style="font-size:0.75rem;">Enter any 4-digit year (e.g. 2024, 2027)</small>
                             </div>
                             <div class="col-md-6">
                                 <label class="form-label">Total Population</label>
@@ -1147,14 +1105,25 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             loadBarangayOptions(ADMIN_MUN);
         });
 
-        // Intercept Add form — if "All Barangays" selected, bulk-store via AJAX
+        // Intercept Add form — validate 4-digit year & handle "All Barangays" bulk-store
         document.getElementById('addBarangayForm').addEventListener('submit', function (e) {
+            const yearInput = document.querySelector('#addBarangayForm [name="year"]');
+            const yearVal = yearInput ? yearInput.value.trim() : '';
+
+            // Client-side 4-digit validation
+            if (!/^\d{4}$/.test(yearVal)) {
+                e.preventDefault();
+                showToast('Year must be exactly 4 digits (e.g. 2027).', 'warning');
+                if (yearInput) yearInput.focus();
+                return;
+            }
+
             const bgySelect = document.getElementById('addBarangayName');
             if (bgySelect.value !== '__ALL__') return;
             e.preventDefault();
 
             const municipality = ADMIN_MUN;
-            const year = parseInt(document.querySelector('#addBarangayForm select[name="year"]').value, 10);
+            const year = parseInt(yearVal, 10);
             const allBgys = barangayLists[municipality] || [];
 
             if (!municipality || !allBgys.length) {
@@ -1518,34 +1487,28 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 .catch(() => { showToast('Network error.', 'danger'); btn.textContent = orig; btn.disabled = false; });
         }
 
-        window.addEventListener('DOMContentLoaded', function () {
-            // Check if URL has #return hash
+        function scrollToReturn() {
             if (window.location.hash === '#return') {
-                // Wait for page to fully load
-                setTimeout(() => {
-                    const el = document.getElementById('return');
-                    if (el) {
-                        // Scroll to the table with smooth animation
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        // Add a small offset to account for any fixed headers
-                        window.scrollBy(0, -20);
-                    }
-                }, 300);
+                const el = document.getElementById('return');
+                if (el) {
+                    el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', function () {
+            if (window.location.hash === '#return') {
+                setTimeout(scrollToReturn, 100);
             }
         });
 
-        // Also handle when coming back from another page
         window.addEventListener('load', function() {
             if (window.location.hash === '#return') {
-                setTimeout(() => {
-                    const el = document.getElementById('return');
-                    if (el) {
-                        el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                        window.scrollBy(0, -20);
-                    }
-                }, 100);
+                setTimeout(scrollToReturn, 50);
             }
         });
+
+        window.addEventListener('hashchange', scrollToReturn);
 
         // ── Search function ──────────────────────────────────────────
         function searchTable() {

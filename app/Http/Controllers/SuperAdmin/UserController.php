@@ -39,7 +39,10 @@ class UserController extends Controller
      */
     public function index()
     {
-        $users = User::withoutTrashed()->orderBy('created_at', 'desc')->get();
+        $users = User::withoutTrashed()
+            ->orderByRaw("FIELD(role, 'user', 'admin', 'super_admin')")
+            ->orderBy('created_at', 'desc')
+            ->get();
         $roles = User::getRoles();
         $municipalities = $this->municipalityOptions();
 
@@ -66,7 +69,7 @@ class UserController extends Controller
             'email'        => 'required|string|email|max:100|unique:users,email',
             'password'     => 'required|string|min:8|confirmed',
             'full_name'    => 'required|string|max:100',
-            'gender'       => 'required|string|in:Male,Female',
+            'gender'       => 'nullable|string|in:Male,Female',
             'role'         => 'required|in:super_admin,admin,user',
             'municipality' => $muniRules,
             'status'       => 'required|in:active,inactive',

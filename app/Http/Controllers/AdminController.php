@@ -178,9 +178,30 @@ class AdminController extends Controller
             'strategic_goals' => $visionRow?->strategic_goals ?? [],
         ];
 
+        // Municipality Snapshot: fetch 2024 (or latest year) from MunicipalityYearlySummary
+        $snapshotYear = 2024;
+        $yearlySummary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->where('year', $snapshotYear)
+            ->first();
+
+        // If no 2024 data, fall back to the latest available year
+        if (!$yearlySummary) {
+            $yearlySummary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+                ->orderBy('year', 'desc')
+                ->first();
+            $snapshotYear = $yearlySummary?->year ?? $snapshotYear;
+        }
+
+        $snapshotPopulation = $yearlySummary?->total_population ?? 0;
+        $snapshotHouseholds = $yearlySummary?->total_households ?? 0;
+
+        // Recent applications (last 5) for dashboard feed
+        $recentApplications = $applications->sortByDesc('application_date')->take(5);
+
         return view('admin.dashboard', compact(
             'municipality',
             'applications',
+            'recentApplications',
             'totalApplications',
             'pendingApplications',
             'approvedApplications',
@@ -193,7 +214,10 @@ class AdminController extends Controller
             'adminNewAppointments',
             'adminNewUploads',
             'adminNotifCount',
-            'visionData'
+            'visionData',
+            'snapshotHouseholds',
+            'snapshotPopulation',
+            'snapshotYear'
         ));
     }
 
@@ -271,6 +295,7 @@ class AdminController extends Controller
         }
 
         $applications = $applicationsQuery
+            ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
             ->orderBy('application_date', 'desc')
             ->paginate(20);
 
@@ -301,7 +326,20 @@ class AdminController extends Controller
             ->where('municipality', $admin->municipality)
             ->firstOrFail();
 
-        $application->delete(); // soft delete
+        \DB::transaction(function () use ($application) {
+            $application->delete(); // soft delete
+
+            // Soft-delete associated appointment(s)
+            Appointment::where('solo_parent_app_id', $application->id)->delete();
+        });
+
+        if (class_exists(\App\Services\DashboardService::class)) {
+            try {
+                app(\App\Services\DashboardService::class)->invalidateStats($application->user_id);
+            } catch (\Throwable $e) {
+                Log::warning("Failed to invalidate dashboard stats for user {$application->user_id}: " . $e->getMessage());
+            }
+        }
 
         return redirect()->route('admin.requirements')
             ->with('success', "Application of \"{$application->full_name}\" has been archived.");
@@ -316,7 +354,52 @@ class AdminController extends Controller
             ->where('municipality', $admin->municipality)
             ->firstOrFail();
 
-        $application->restore();
+        \DB::transaction(function () use ($application) {
+            $application->restore();
+
+            // Find associated trashed appointments
+            $trashedAppts = Appointment::onlyTrashed()
+                ->where('solo_parent_app_id', $application->id)
+                ->get();
+
+            foreach ($trashedAppts as $appt) {
+                // If it was validated (eligibility check passed) and application is active, restore it
+                if ($appt->status === 'validated') {
+                    $appt->restore();
+                    continue;
+                }
+
+                // If pending or confirmed, check if appointment date/time is already in the past
+                if (in_array($appt->status, ['pending', 'confirmed'])) {
+                    $isPast = false;
+                    try {
+                        if ($appt->appointment_date) {
+                            $dateStr = $appt->appointment_date->format('Y-m-d');
+                            $timeStr = $appt->appointment_time ? substr(trim($appt->appointment_time), 0, 5) : '00:00';
+                            $isPast = Carbon::parse("$dateStr $timeStr")->isPast();
+                        }
+                    } catch (\Throwable $e) {
+                        $isPast = true;
+                    }
+
+                    if ($isPast) {
+                        // Stale past appointment: mark cancelled so user is not trapped on an expired schedule
+                        $appt->update(['status' => 'cancelled']);
+                    } else {
+                        // Future pending/confirmed slot may be restored
+                        $appt->restore();
+                    }
+                }
+            }
+        });
+
+        if (class_exists(\App\Services\DashboardService::class)) {
+            try {
+                app(\App\Services\DashboardService::class)->invalidateStats($application->user_id);
+            } catch (\Throwable $e) {
+                Log::warning("Failed to invalidate dashboard stats for user {$application->user_id}: " . $e->getMessage());
+            }
+        }
 
         return redirect()->route('admin.requirements')
             ->with('success', "Application of \"{$application->full_name}\" has been restored.");
@@ -332,7 +415,24 @@ class AdminController extends Controller
             ->firstOrFail();
 
         $name = $application->full_name;
-        $application->forceDelete();
+        $userId = $application->user_id;
+
+        \DB::transaction(function () use ($application) {
+            // Permanently delete associated appointment(s)
+            Appointment::withTrashed()
+                ->where('solo_parent_app_id', $application->id)
+                ->forceDelete();
+
+            $application->forceDelete();
+        });
+
+        if (class_exists(\App\Services\DashboardService::class)) {
+            try {
+                app(\App\Services\DashboardService::class)->invalidateStats($userId);
+            } catch (\Throwable $e) {
+                Log::warning("Failed to invalidate dashboard stats for user {$userId}: " . $e->getMessage());
+            }
+        }
 
         return redirect()->route('admin.requirements')
             ->with('success', "Application of \"{$name}\" has been permanently deleted.");
@@ -347,7 +447,24 @@ class AdminController extends Controller
             ->firstOrFail();
 
         $name = $application->full_name;
-        $application->forceDelete(); // bypasses soft delete entirely
+        $userId = $application->user_id;
+
+        \DB::transaction(function () use ($application) {
+            // Permanently delete associated appointment(s)
+            Appointment::withTrashed()
+                ->where('solo_parent_app_id', $application->id)
+                ->forceDelete();
+
+            $application->forceDelete(); // bypasses soft delete entirely
+        });
+
+        if (class_exists(\App\Services\DashboardService::class)) {
+            try {
+                app(\App\Services\DashboardService::class)->invalidateStats($userId);
+            } catch (\Throwable $e) {
+                Log::warning("Failed to invalidate dashboard stats for user {$userId}: " . $e->getMessage());
+            }
+        }
 
         return redirect()->route('admin.requirements')
             ->with('success', "Application of \"{$name}\" has been permanently deleted.");
@@ -380,12 +497,16 @@ class AdminController extends Controller
             return redirect()->back()->with('error', $msg);
         }
 
-        if ($isSoloParent && !($application->status === 'approved' && $application->id_status === 'processing')) {
-            $msg = 'Solo Parent requirements must be fully approved before marking ID ready.';
-            if (request()->expectsJson() || request()->ajax()) {
-                return response()->json(['success' => false, 'message' => $msg], 422);
+        if ($isSoloParent) {
+            $fileMonitoring = $application->fileMonitoring;
+            $completion = \App\Services\SoloParentCategoryService::evaluateCompletion($application, $fileMonitoring);
+            if (!$completion['is_complete'] || !($application->status === 'approved' && $application->id_status === 'processing')) {
+                $msg = 'Solo Parent requirements must be fully satisfied and approved before marking ID ready.';
+                if (request()->expectsJson() || request()->ajax()) {
+                    return response()->json(['success' => false, 'message' => $msg], 422);
+                }
+                return redirect()->back()->with('error', $msg);
             }
-            return redirect()->back()->with('error', $msg);
         }
 
         if ($isAics && !($application->status === 'approved' && $application->id_status === 'processing')) {
@@ -429,15 +550,18 @@ class AdminController extends Controller
         $label = $isPwd ? 'PWD ID' : ($isAics ? 'AICS grant' : 'Solo Parent ID');
         $programLabel = $isPwd ? 'pwd' : ($isAics ? 'aics' : 'solo_parent');
         try {
-            \DB::table('notifications')->insert([
+            $notifTitle = $label . ' Ready for Pickup';
+            $notifBody  = 'Your ' . $label . ' is now ready for pickup at the MSWDO office. Please bring a valid ID when claiming.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $application->user_id,
                 'type'       => $programLabel,
-                'title'      => $label . ' Ready for Pickup',
-                'body'       => 'Your ' . $label . ' is now ready for pickup at the MSWDO office. Please bring a valid ID when claiming.',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, $programLabel, $notifId, ['program_type' => $application->program_type]);
         } catch (\Exception $e) {
             Log::error('markIdReady notification insert failed: ' . $e->getMessage());
         }
@@ -507,15 +631,18 @@ class AdminController extends Controller
 
         // ── Bell notification ────────────────────────────────────────────────
         try {
-            \DB::table('notifications')->insert([
+            $notifTitle = 'Solo Parent ID Claimed';
+            $notifBody  = 'Your Solo Parent ID has been successfully claimed and recorded. Congratulations!';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $application->user_id,
                 'type'       => 'solo_parent',
-                'title'      => '✅ Solo Parent ID Claimed',
-                'body'       => 'Your Solo Parent ID has been successfully claimed and recorded. Congratulations!',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'solo_parent', $notifId, ['program_type' => $application->program_type]);
         } catch (\Exception $e) {
             Log::error('markClaimed notification insert failed: ' . $e->getMessage());
         }
@@ -581,15 +708,18 @@ class AdminController extends Controller
 
         // ── Bell notification ──────────────────────────────────────────────────
         try {
-            \DB::table('notifications')->insert([
+            $notifTitle = $programLabel . ' Grant Released';
+            $notifBody  = 'Your ' . $programLabel . ' grant has been successfully released. Thank you for availing MSWDO assistance.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $application->user_id,
                 'type'       => 'aics',
-                'title'      => '✅ ' . $programLabel . ' Grant Released',
-                'body'       => 'Your ' . $programLabel . ' grant has been successfully released. Thank you for availing MSWDO assistance.',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'aics', $notifId, ['program_type' => $application->program_type]);
         } catch (\Exception $e) {
             Log::error('markReleased notification insert failed: ' . $e->getMessage());
         }
@@ -634,17 +764,46 @@ class AdminController extends Controller
             'completed_at' => now(),
         ]);
 
-        // ── Create in-app notification ───────────────────────────────────
+        // Create in-app notification & OneSignal push
         try {
-            \DB::table('notifications')->insert([
+            $label = $application->program_type === 'AICS_Medical' ? 'AICS Medical Assistance' : 'AICS Burial Assistance';
+            $notifTitle = 'AICS Requirements Validated';
+            $notifBody  = 'Your ' . $label . ' requirements are validated. Please wait for grant release notice.';
+            $notifId = \DB::table('notifications')->insertGetId([
                 'user_id'    => $application->user_id,
-                'type'       => 'pwd',
-                'title'      => 'PWD Application Validated',
-                'body'       => 'Your PWD application requirements have been validated. Your PWD ID is now being processed.',
+                'type'       => 'aics',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+            \App\Services\OneSignalService::sendPush(
+                $application->user_id,
+                $notifTitle,
+                $notifBody,
+                'aics',
+                $notifId,
+                ['program_type' => $application->program_type]
+            );
+        } catch (\Exception $e) {
+            Log::error('AICS validate notification insert failed: ' . $e->getMessage());
+        }
+
+        // ── Create in-app notification ───────────────────────────────────
+        try {
+            $notifTitle = 'PWD Application Validated';
+            $notifBody  = 'Your PWD application requirements have been validated. Your PWD ID is now being processed.';
+            $notifId = \DB::table('notifications')->insertGetId([
+                'user_id'    => $application->user_id,
+                'type'       => 'pwd',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, 'pwd', $notifId, ['program_type' => $application->program_type]);
         } catch (\Exception $e) {
             Log::error('PWD validate notification insert failed: ' . $e->getMessage());
         }
@@ -682,6 +841,32 @@ class AdminController extends Controller
             'completed_at' => now(),
         ]);
 
+        // Create in-app notification & OneSignal push
+        try {
+            $label = $application->program_type === 'AICS_Medical' ? 'AICS Medical Assistance' : 'AICS Burial Assistance';
+            $notifTitle = 'AICS Requirements Validated';
+            $notifBody  = 'Your ' . $label . ' requirements are validated. Please wait for grant release notice.';
+            $notifId = \DB::table('notifications')->insertGetId([
+                'user_id'    => $application->user_id,
+                'type'       => 'aics',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            \App\Services\OneSignalService::sendPush(
+                $application->user_id,
+                $notifTitle,
+                $notifBody,
+                'aics',
+                $notifId,
+                ['program_type' => $application->program_type]
+            );
+        } catch (\Exception $e) {
+            Log::error('AICS validate notification insert failed: ' . $e->getMessage());
+        }
+
         $user = \App\Models\User::find($application->user_id);
         if ($user && $user->email) {
             try {
@@ -714,11 +899,24 @@ class AdminController extends Controller
         $allApproved = $fileMonitoring
             && $fileMonitoring->overall_status === 'approved';
 
+        $soloParentCategory = null;
+        $soloParentCompletion = null;
+        if ($application->program_type === 'Solo_Parent') {
+            $categories = \App\Services\SoloParentCategoryService::getCategories();
+            $soloParentCategory = $categories[$application->category_code] ?? null;
+            $soloParentCompletion = \App\Services\SoloParentCategoryService::evaluateCompletion($application, $fileMonitoring);
+            if ($application->category_code) {
+                $allApproved = ($soloParentCompletion['is_complete'] ?? false);
+            }
+        }
+
         return view('admin.view-requirement', compact(
             'fileMonitoring',
             'application',
             'hasDocuments',
-            'allApproved'
+            'allApproved',
+            'soloParentCategory',
+            'soloParentCompletion'
         ));
     }
 
@@ -755,7 +953,7 @@ class AdminController extends Controller
         // 2. Hostinger root deployment: {base_path}/storage/app/public/{filePath}
         // 3. Fallback: public/storage/{filePath} (if symlink was manually created)
         $candidates = [
-            \Illuminate\Support\Facades\Storage::disk('public')->path($filePath),
+            Storage::disk('public')->path($filePath),
             base_path('storage/app/public/' . $filePath),
             public_path('storage/' . $filePath),
         ];
@@ -832,6 +1030,8 @@ class AdminController extends Controller
         $approvedFiles = $fileMonitoring->fileUploads()->where('status', 'approved')->count();
         $rejectedFiles = $fileMonitoring->fileUploads()->where('status', 'rejected')->count();
 
+        $isSoloParent = ($fileMonitoring->application && $fileMonitoring->application->program_type === 'Solo_Parent');
+
         if ($rejectedFiles > 0) {
             $fileMonitoring->overall_status = 'rejected';
 
@@ -843,6 +1043,18 @@ class AdminController extends Controller
                     // Show the latest rejection note as the application-level reason.
                     'admin_remarks' => $request->admin_remarks ?? $fileMonitoring->application->admin_remarks,
                 ]);
+            }
+        } elseif ($isSoloParent && $fileMonitoring->application->category_code) {
+            $completion = \App\Services\SoloParentCategoryService::evaluateCompletion($fileMonitoring->application, $fileMonitoring);
+            if ($completion['is_complete']) {
+                $fileMonitoring->overall_status = 'approved';
+                $fileMonitoring->application->update([
+                    'status' => 'approved',
+                    'completed_at' => now(),
+                    'id_status' => 'processing',
+                ]);
+            } else {
+                $fileMonitoring->overall_status = 'in_review';
             }
         } elseif ($approvedFiles == $totalFiles && $totalFiles > 0) {
             $fileMonitoring->overall_status = 'approved';
@@ -900,14 +1112,28 @@ class AdminController extends Controller
             }
 
             try {
-                \DB::table('notifications')->insert([
+                $notifData = json_encode([
+                    'requirement_name' => $docName,
+                    'status'           => $request->status,
+                    'admin_remarks'    => $request->admin_remarks,
+                    'program_type'     => $programType,
+                    'application_id'   => $fileMonitoring->application_id,
+                ]);
+                $notifId = \DB::table('notifications')->insertGetId([
                     'user_id'    => $fileMonitoring->application->user_id,
                     'type'       => $notifType,
                     'title'      => $notifTitle,
                     'body'       => $notifBody,
+                    'data'       => $notifData,
                     'is_read'    => false,
                     'created_at' => now(),
                     'updated_at' => now(),
+                ]);
+                \App\Services\OneSignalService::sendPush($fileMonitoring->application->user_id, $notifTitle, $notifBody, $notifType, $notifId, [
+                    'program_type'     => $programType,
+                    'requirement_name' => $docName,
+                    'status'           => $request->status,
+                    'application_id'   => $fileMonitoring->application_id,
                 ]);
             } catch (\Exception $e) {
                 Log::error('File status notification insert failed: ' . $e->getMessage());
@@ -935,7 +1161,24 @@ class AdminController extends Controller
             }
         }
 
-        return redirect()->back()->with('success', 'File status updated successfully!');
+        $scroll = (int) $request->input('scroll', 0);
+
+        // Return JSON for AJAX requests (no page reload)
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'File status updated successfully!',
+                'new_status' => $request->status,
+                'admin_remarks' => $request->admin_remarks,
+                'overall_status' => $fileMonitoring->overall_status,
+                'application_status' => $fileMonitoring->application->status ?? null,
+            ]);
+        }
+
+        $backUrl = url()->previous();
+        $separator = str_contains($backUrl, '?') ? '&' : '?';
+        return redirect($backUrl . ($scroll > 0 ? $separator . 'scroll=' . $scroll : ''))
+            ->with('success', 'File status updated successfully!');
     }
 
     /**
@@ -967,7 +1210,15 @@ class AdminController extends Controller
             ->map(fn ($y) => (int) $y)
             ->toArray();
 
-        $availableAnalysisYears = array_values(array_unique(array_merge($yearsFromBarangays, $yearsFromSummary)));
+        // Also include years with application records (e.g. 2026) so they always appear as filter chips
+        $yearsFromApplications = Application::where('municipality', $user->municipality)
+            ->whereNotNull('application_date')
+            ->selectRaw('DISTINCT YEAR(application_date) as yr')
+            ->pluck('yr')
+            ->map(fn ($y) => (int) $y)
+            ->toArray();
+
+        $availableAnalysisYears = array_values(array_unique(array_merge($yearsFromBarangays, $yearsFromSummary, $yearsFromApplications)));
         rsort($availableAnalysisYears, SORT_NUMERIC);
 
         if ($request->filled('year') && $availableAnalysisYears !== []) {
@@ -1054,6 +1305,23 @@ class AdminController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Multi-year population & household trend (for Trend panel)
+        $yearlyTrendData = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->whereNotNull('year')
+            ->orderBy('year')
+            ->get(['year', 'total_population', 'total_households', 'male_population', 'female_population'])
+            ->keyBy('year');
+
+        // Unique applicants (distinct user_id) in the selected year
+        $uniqueApplicants = Application::where('municipality', $user->municipality)
+            ->whereNotNull('application_date')
+            ->whereYear('application_date', $analysisYear)
+            ->distinct('user_id')
+            ->count('user_id');
+
+        // Total beneficiaries across all programs for the year
+        $totalBeneficiaries = (int) collect($programBeneficiaries)->sum();
+
         extract($this->adminNotifData($user));
 
         return view('admin.detailed-analysis', compact(
@@ -1072,11 +1340,780 @@ class AdminController extends Controller
             'genderData',
             'ageGroupData',
             'programBeneficiaries',
-            'barangayRowsForAnalysis'
+            'barangayRowsForAnalysis',
+            'yearlyTrendData',
+            'uniqueApplicants',
+            'totalBeneficiaries'
         ));
     }
 
-    /** Load and date-parse applications for a given municipality. */
+    // ─────────────────────────────────────────────────────────────────────────
+    // ANALYSIS EXPORTS  (CSV + Excel) — scoped to authenticated admin municipality
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /** Shared data-gathering helper for both export methods. */
+    private function buildAnalysisData(Request $request): array
+    {
+        $user         = \Illuminate\Support\Facades\Auth::user();
+        $municipality = Municipality::where('name', $user->municipality)->first();
+        $muniYear     = (int) ($municipality->year ?? date('Y'));
+
+        // Resolve selected year (same logic as detailedAnalysis)
+        $yearsFromBarangays = Barangay::where('municipality', $user->municipality)
+            ->whereNotNull('year')->distinct()->pluck('year')->map(fn($y)=>(int)$y)->toArray();
+        $yearsFromSummary   = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->whereNotNull('year')->distinct()->pluck('year')->map(fn($y)=>(int)$y)->toArray();
+        $yearsFromApps      = Application::where('municipality', $user->municipality)
+            ->whereNotNull('application_date')->selectRaw('DISTINCT YEAR(application_date) as yr')
+            ->pluck('yr')->map(fn($y)=>(int)$y)->toArray();
+        $available = array_values(array_unique(array_merge($yearsFromBarangays, $yearsFromSummary, $yearsFromApps)));
+        rsort($available, SORT_NUMERIC);
+
+        $analysisYear = $muniYear;
+        if ($request->filled('year')) {
+            $reqYear = (int) $request->year;
+            $analysisYear = in_array($reqYear, $available, true) ? $reqYear : ($available[0] ?? $muniYear);
+        } elseif ($available) {
+            $analysisYear = in_array($muniYear, $available, true) ? $muniYear : $available[0];
+        }
+
+        // Applications for the year — municipality scoped
+        $apps = $this->loadApplications($user->municipality)->filter(function ($app) use ($analysisYear) {
+            return $app->application_date && (int) $app->application_date->year === (int) $analysisYear;
+        });
+
+        [$totalApps, $pendingApps, $approvedApps, $rejectedApps, $appsByProgram] = $this->buildApplicationStats($apps);
+
+        $programOverview = $this->buildProgramOverview($user->municipality, $analysisYear);
+
+        // Population / household summary
+        $summary = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->where('year', $analysisYear)->first();
+
+        if ($summary && ($summary->total_population > 0 || $summary->total_households > 0)) {
+            $totalPop  = (int) $summary->total_population;
+            $totalHH   = (int) $summary->total_households;
+            $malePop   = (int) $summary->male_population;
+            $femalePop = (int) $summary->female_population;
+        } else {
+            $totalPop  = $municipality->male_population + $municipality->female_population;
+            $totalHH   = $municipality->total_households;
+            $malePop   = $municipality->male_population;
+            $femalePop = $municipality->female_population;
+        }
+
+        // Trend data
+        $trend = MunicipalityYearlySummary::where('municipality', $user->municipality)
+            ->whereNotNull('year')->orderBy('year')
+            ->get(['year','total_population','total_households','male_population','female_population']);
+
+        // Barangay rows
+        $barangays = Barangay::where('municipality', $user->municipality)
+            ->where('year', $analysisYear)->orderBy('name')->get();
+
+        $uniqueApplicants   = Application::where('municipality', $user->municipality)
+            ->whereNotNull('application_date')->whereYear('application_date', $analysisYear)
+            ->distinct('user_id')->count('user_id');
+        $totalBeneficiaries = (int) $programOverview->sum();
+        $approvalRate       = $totalApps > 0 ? round($approvedApps / $totalApps * 100, 1) : null;
+
+        return compact(
+            'municipality', 'analysisYear', 'totalApps', 'pendingApps', 'approvedApps', 'rejectedApps',
+            'appsByProgram', 'programOverview', 'totalPop', 'totalHH', 'malePop', 'femalePop',
+            'trend', 'barangays', 'uniqueApplicants', 'totalBeneficiaries', 'approvalRate'
+        );
+    }
+
+    /** CSV export — well-organized sections with UTF-8 BOM, visual ASCII chart representations, and clean alignment. */
+    public function exportAnalysisCsv(Request $request)
+    {
+        $d  = $this->buildAnalysisData($request);
+        extract($d);
+
+        $bar = function($val, $max, $len = 16) {
+            if ($max <= 0 || $val <= 0) return '[' . str_repeat(' ', $len) . ']';
+            $filled = (int) round(($val / $max) * $len);
+            $filled = max(1, min($len, $filled));
+            return '[' . str_repeat('=', $filled) . str_repeat(' ', $len - $filled) . ']';
+        };
+
+        $ts  = fn($n) => ($n !== null && $n !== '') ? number_format((float)$n, 0, '.', ',') : 'N/A';
+        $pct = fn($v, $t) => ($t > 0 && $v !== null) ? number_format(($v / $t) * 100, 1) . '%' : '0.0%';
+
+        $rows = [];
+        $rows[] = ["MSWDO DETAILED ANALYSIS REPORT"];
+        $rows[] = ["Municipality", $municipality->name];
+        $rows[] = ["Analysis Year", $analysisYear];
+        $rows[] = ["Generated Date", now()->format('Y-m-d H:i:s')];
+        $rows[] = [""];
+
+        // SECTION 1: KEY PERFORMANCE INDICATORS
+        $rows[] = ["1. KEY PERFORMANCE INDICATORS (KPIs)"];
+        $rows[] = ["Metric", "Value", "Notes"];
+        $rows[] = ["Total Population", $totalPop > 0 ? $ts($totalPop) : "N/A", $totalPop > 0 ? "Official record for $analysisYear" : "No population record recorded for $analysisYear"];
+        $rows[] = ["Total Households", $totalHH > 0 ? $ts($totalHH) : "N/A", $totalHH > 0 ? "Registered households" : "No household record recorded for $analysisYear"];
+        $rows[] = ["Total Applications", $ts($totalApps), "Total submitted cases in $analysisYear"];
+        $rows[] = ["Unique Applicants", $ts($uniqueApplicants), "Distinct applicant individuals"];
+        $rows[] = ["Approved Applications", $ts($approvedApps), ($approvalRate !== null ? $approvalRate . "% approval rate" : "N/A")];
+        $rows[] = ["Pending Applications", $ts($pendingApps), ($totalApps > 0 ? $pct($pendingApps, $totalApps) . " of total" : "N/A")];
+        $rows[] = ["Rejected Applications", $ts($rejectedApps), ($totalApps > 0 ? $pct($rejectedApps, $totalApps) . " of total" : "N/A")];
+        $rows[] = ["Total Program Beneficiaries", $totalBeneficiaries > 0 ? $ts($totalBeneficiaries) : "N/A", "Across all welfare programs"];
+        $rows[] = [""];
+
+        // SECTION 2: APPLICATION STATUS (WITH VISUAL CHART)
+        $rows[] = ["2. APPLICATION STATUS DISTRIBUTION (VISUAL CHART)"];
+        $rows[] = ["Status", "Count", "Percentage", "Visual Graph"];
+        $maxStatus = max(1, $pendingApps, $approvedApps, $rejectedApps);
+        $rows[] = ["Approved", $ts($approvedApps), $pct($approvedApps, $totalApps), $bar($approvedApps, $maxStatus)];
+        $rows[] = ["Pending",  $ts($pendingApps),  $pct($pendingApps,  $totalApps), $bar($pendingApps,  $maxStatus)];
+        $rows[] = ["Rejected", $ts($rejectedApps), $pct($rejectedApps, $totalApps), $bar($rejectedApps, $maxStatus)];
+        $rows[] = ["Total",    $ts($totalApps),    "100.0%", ""];
+        $rows[] = [""];
+
+        // SECTION 3: APPLICATIONS BY PROGRAM (WITH VISUAL CHART)
+        $rows[] = ["3. APPLICATIONS BY WELFARE PROGRAM (VISUAL CHART)"];
+        if ($appsByProgram->isNotEmpty()) {
+            $rows[] = ["Program", "Total Applications", "Pending", "Approved", "Rejected", "Visual Share"];
+            $maxProgApps = 1;
+            foreach ($appsByProgram as $p => $data) {
+                $tot = ($data['pending'] ?? 0) + ($data['approved'] ?? 0) + ($data['rejected'] ?? 0);
+                if ($tot > $maxProgApps) $maxProgApps = $tot;
+            }
+            foreach ($appsByProgram as $prog => $data) {
+                $tot = ($data['pending'] ?? 0) + ($data['approved'] ?? 0) + ($data['rejected'] ?? 0);
+                $rows[] = [
+                    str_replace('_', ' ', $prog),
+                    $ts($tot),
+                    $ts($data['pending'] ?? 0),
+                    $ts($data['approved'] ?? 0),
+                    $ts($data['rejected'] ?? 0),
+                    $bar($tot, $maxProgApps)
+                ];
+            }
+            $rows[] = ["Total", $ts($totalApps), $ts($pendingApps), $ts($approvedApps), $ts($rejectedApps), ""];
+        } else {
+            $rows[] = ["Program", "Applications", "Note"];
+            $rows[] = ["N/A", "0", "No program application records for $analysisYear"];
+        }
+        $rows[] = [""];
+
+        // SECTION 4: SOCIAL WELFARE PROGRAMS & BENEFICIARIES (WITH VISUAL CHART)
+        $rows[] = ["4. SOCIAL WELFARE PROGRAMS BENEFICIARIES (VISUAL CHART)"];
+        if ($programOverview->isNotEmpty()) {
+            $rows[] = ["Program", "Beneficiaries", "Share of Total", "Visual Graph"];
+            $sumBenef = $programOverview->sum() ?: 1;
+            $maxBenef = $programOverview->max() ?: 1;
+            foreach ($programOverview as $prog => $count) {
+                $rows[] = [
+                    str_replace('_', ' ', $prog),
+                    $ts($count),
+                    $pct($count, $sumBenef),
+                    $bar($count, $maxBenef)
+                ];
+            }
+            $rows[] = ["Total Beneficiaries", $ts($sumBenef), "100.0%", ""];
+        } else {
+            $rows[] = ["Program", "Beneficiaries", "Note"];
+            $rows[] = ["N/A", "0", "No welfare beneficiary records for $analysisYear"];
+        }
+        $rows[] = [""];
+
+        // SECTION 5: GENDER DISTRIBUTION (WITH VISUAL CHART)
+        $rows[] = ["5. GENDER DISTRIBUTION (VISUAL CHART)"];
+        $rows[] = ["Gender", "Population", "Percentage", "Visual Graph"];
+        $totGender = ($malePop ?? 0) + ($femalePop ?? 0);
+        if ($totGender > 0) {
+            $maxG = max(1, $malePop, $femalePop);
+            $rows[] = ["Male",   $ts($malePop),   $pct($malePop, $totGender),   $bar($malePop, $maxG)];
+            $rows[] = ["Female", $ts($femalePop), $pct($femalePop, $totGender), $bar($femalePop, $maxG)];
+            $rows[] = ["Total",  $ts($totGender), "100.0%", ""];
+        } else {
+            $rows[] = ["Male",   "N/A", "-", ""];
+            $rows[] = ["Female", "N/A", "-", ""];
+            $rows[] = ["Note", "No gender breakdown recorded for $analysisYear", "", ""];
+        }
+        $rows[] = [""];
+
+        // SECTION 6: POPULATION & HOUSEHOLD TREND
+        $rows[] = ["6. HISTORICAL POPULATION & HOUSEHOLD TREND"];
+        $rows[] = ["Year", "Total Population", "Households", "Male Population", "Female Population"];
+        if ($trend->isNotEmpty()) {
+            foreach ($trend as $row) {
+                $rows[] = [
+                    $row->year,
+                    $row->total_population > 0 ? $ts($row->total_population) : "N/A",
+                    $row->total_households  > 0 ? $ts($row->total_households)  : "N/A",
+                    $row->male_population   > 0 ? $ts($row->male_population)   : "N/A",
+                    $row->female_population > 0 ? $ts($row->female_population) : "N/A",
+                ];
+            }
+        } else {
+            $rows[] = ["N/A", "No historical trend records found", "", "", ""];
+        }
+        $rows[] = [""];
+
+        // SECTION 7: BARANGAY BREAKDOWN
+        $rows[] = ["7. BARANGAY DEMOGRAPHICS & WELFARE BREAKDOWN"];
+        if ($barangays->isNotEmpty()) {
+            $rows[] = ["Barangay", "Population", "Male", "Female", "PWD", "AICS", "Solo Parent", "4Ps", "Senior"];
+            foreach ($barangays as $b) {
+                $pop = ($b->male_population ?? 0) + ($b->female_population ?? 0);
+                $rows[] = [
+                    $b->name,
+                    $pop > 0 ? $ts($pop) : "N/A",
+                    ($b->male_population   ?? 0) > 0 ? $ts($b->male_population)   : "N/A",
+                    ($b->female_population ?? 0) > 0 ? $ts($b->female_population) : "N/A",
+                    ($b->pwd_count         ?? 0) > 0 ? $ts($b->pwd_count)         : "N/A",
+                    ($b->aics_count        ?? 0) > 0 ? $ts($b->aics_count)        : "N/A",
+                    ($b->solo_parent_count ?? 0) > 0 ? $ts($b->solo_parent_count) : "N/A",
+                    ($b->four_ps_count     ?? 0) > 0 ? $ts($b->four_ps_count)     : "N/A",
+                    ($b->senior_count      ?? 0) > 0 ? $ts($b->senior_count)      : "N/A",
+                ];
+            }
+        } else {
+            $rows[] = ["Barangay", "Population", "Status"];
+            $rows[] = ["N/A", "0", "No barangay records recorded for $analysisYear"];
+        }
+        $rows[] = [""];
+        $rows[] = ["Note: 'N/A' indicates no record exists for that specific period or barangay."];
+
+        // Build CSV output with UTF-8 BOM
+        $output = "\xEF\xBB\xBF";
+        foreach ($rows as $row) {
+            $output .= implode(',', array_map(function ($cell) {
+                $cell = (string) $cell;
+                if (str_contains($cell, ',') || str_contains($cell, '"') || str_contains($cell, "\n")) {
+                    return '"' . str_replace('"', '""', $cell) . '"';
+                }
+                return $cell;
+            }, $row)) . "\r\n";
+        }
+
+        $filename = 'analysis-' . $municipality->name . '-' . $analysisYear . '.csv';
+        return response($output, 200, [
+            'Content-Type'        => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /** Excel workbook export - clean multi-sheet report without embedded charts (chart objects crash PhpSpreadsheet on some PHP builds). */
+    public function exportAnalysisExcel(Request $request)
+    {
+        $d = $this->buildAnalysisData($request);
+        extract($d);
+
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $spreadsheet->getProperties()
+            ->setTitle("MSWDO Analysis {$municipality->name} {$analysisYear}")
+            ->setCreator('MSWDO System')
+            ->setSubject("Detailed Analysis Report");
+
+        // -- Shared style helpers ------------------------------------------------
+        $navy  = '1B2B5B';
+        $gold  = 'FDB913';
+        $green = '28A745';
+        $red   = 'C41E24';
+        $blue  = '2C3E8F';
+        $bg    = 'F0F4FF';
+        $white = 'FFFFFF';
+        $gray  = 'E8ECF5';
+
+        $headerStyle = [
+            'font'      => ['bold' => true, 'color' => ['rgb' => $white], 'size' => 11],
+            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => $navy]],
+            'alignment' => ['horizontal' => 'center'],
+            'borders'   => ['bottom' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'AAAAAA']]],
+        ];
+        $subHeaderStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => $navy], 'size' => 11],
+            'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => $bg]],
+        ];
+        $altRowStyle = ['fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => $gray]]];
+        $titleStyle  = ['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]]];
+        $boldStyle   = ['font' => ['bold' => true]];
+
+        $setHeader = function($ws, $range) use ($headerStyle) {
+            $ws->getStyle($range)->applyFromArray($headerStyle);
+        };
+        $pct = fn($v, $t) => $t > 0 ? round($v / $t * 100, 1) . '%' : '0.0%';
+
+        // Chart helpers - pass data literals directly to avoid formula parser / calculation crashes
+        $createColumnChart = function($id, $title, array $labels, array $counts, array $colors, $topCell, $bottomCell) {
+            $n = count($counts);
+            if ($n === 0) return null;
+            $val = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_NUMBER, null, null, $n, $counts);
+            $val->setFillColor($colors);
+            $cat = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, $n, $labels)];
+            $lbl = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, 1, [$title])];
+
+            $ds = new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(\PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART, \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED, [0], $lbl, $cat, [$val]);
+            $ds->setPlotDirection(\PhpOffice\PhpSpreadsheet\Chart\DataSeries::DIRECTION_COL);
+
+            $chart = new \PhpOffice\PhpSpreadsheet\Chart\Chart($id, new \PhpOffice\PhpSpreadsheet\Chart\Title($title),
+                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, new \PhpOffice\PhpSpreadsheet\Chart\Layout(), false),
+                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(new \PhpOffice\PhpSpreadsheet\Chart\Layout(), [$ds]), true, 0, null, null);
+            $chart->setTopLeftPosition($topCell);
+            $chart->setBottomRightPosition($bottomCell);
+            return $chart;
+        };
+
+        $createPieChart = function($id, $title, array $labels, array $counts, array $colors, $topCell, $bottomCell) {
+            $n = count($counts);
+            if ($n === 0 || array_sum($counts) === 0) return null;
+            $val = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_NUMBER, null, null, $n, $counts);
+            $val->setFillColor($colors);
+            $cat = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, $n, $labels)];
+            $lbl = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, 1, [$title])];
+
+            $ds = new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(\PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART, null, range(0, $n - 1), $lbl, $cat, [$val]);
+            $layout = new \PhpOffice\PhpSpreadsheet\Chart\Layout();
+            $layout->setShowPercent(true);
+            $layout->setShowVal(false);
+
+            $chart = new \PhpOffice\PhpSpreadsheet\Chart\Chart($id, new \PhpOffice\PhpSpreadsheet\Chart\Title($title),
+                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_RIGHT, new \PhpOffice\PhpSpreadsheet\Chart\Layout(), false),
+                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea($layout, [$ds]), true, 0, null, null);
+            $chart->setTopLeftPosition($topCell);
+            $chart->setBottomRightPosition($bottomCell);
+            return $chart;
+        };
+
+        // ----------------------------------------------------------------------
+        // SHEET 1: SUMMARY
+        // ----------------------------------------------------------------------
+        $ws1 = $spreadsheet->getActiveSheet()->setTitle('Summary');
+
+        $ws1->mergeCells('A1:F1');
+        $ws1->setCellValue('A1', "MSWDO Analysis Report - {$municipality->name} - {$analysisYear}");
+        $ws1->getStyle('A1')->applyFromArray($titleStyle);
+        $ws1->getRowDimension(1)->setRowHeight(24);
+
+        $ws1->mergeCells('A2:F2');
+        $ws1->setCellValue('A2', 'Generated: ' . now()->format('F d, Y h:i A'));
+        $ws1->getStyle('A2')->getFont()->setItalic(true)->setColor((new \PhpOffice\PhpSpreadsheet\Style\Color())->setRGB('888888'));
+        $ws1->getRowDimension(2)->setRowHeight(16);
+
+        // KPI cards (A4:C15)
+        $ws1->setCellValue('A4', 'KEY PERFORMANCE INDICATORS');
+        $ws1->getStyle('A4')->applyFromArray($subHeaderStyle);
+
+        $ws1->fromArray([['Metric', 'Value', 'Notes']], null, 'A5');
+        $setHeader($ws1, 'A5:C5');
+
+        $kpis = [
+            ['Total Population',       $totalPop > 0 ? number_format($totalPop) : 'N/A',   'Registered population'],
+            ['Total Households',        $totalHH  > 0 ? number_format($totalHH)  : 'N/A',   'Registered households'],
+            ['Male Population',         $malePop  > 0 ? number_format($malePop)  : 'N/A',   $totalPop > 0 ? round($malePop/$totalPop*100,1).'% of total' : 'N/A'],
+            ['Female Population',       $femalePop> 0 ? number_format($femalePop): 'N/A',   $totalPop > 0 ? round($femalePop/$totalPop*100,1).'% of total' : 'N/A'],
+            ['Total Applications',      number_format($totalApps),                           "Submitted cases in {$analysisYear}"],
+            ['Unique Applicants',       number_format($uniqueApplicants),                    'Distinct individuals'],
+            ['Approved Applications',   number_format($approvedApps),                        $approvalRate !== null ? "{$approvalRate}% approval rate" : 'N/A'],
+            ['Pending Applications',    number_format($pendingApps),                         $totalApps > 0 ? $pct($pendingApps, $totalApps).' of total' : 'N/A'],
+            ['Rejected Applications',   number_format($rejectedApps),                        $totalApps > 0 ? $pct($rejectedApps, $totalApps).' of total' : 'N/A'],
+            ['Total Beneficiaries',     $totalBeneficiaries > 0 ? number_format($totalBeneficiaries) : 'N/A', 'Across all welfare programs'],
+        ];
+        $r = 6;
+        foreach ($kpis as $i => $row) {
+            $ws1->fromArray([$row], null, "A{$r}");
+            if ($i % 2 === 0) $ws1->getStyle("A{$r}:C{$r}")->applyFromArray($altRowStyle);
+            $r++;
+        }
+
+        // Application status table (A18:C23)
+        $ws1->setCellValue('A18', 'APPLICATION STATUS OVERVIEW');
+        $ws1->getStyle('A18')->applyFromArray($subHeaderStyle);
+        $ws1->fromArray([['Status', 'Count', 'Share']], null, 'A19');
+        $setHeader($ws1, 'A19:C19');
+        $statusRows = [
+            ['Approved', $approvedApps, $pct($approvedApps, $totalApps)],
+            ['Pending',  $pendingApps,  $pct($pendingApps,  $totalApps)],
+            ['Rejected', $rejectedApps, $pct($rejectedApps, $totalApps)],
+            ['Total',    $totalApps,    '100.0%'],
+        ];
+        $r = 20;
+        foreach ($statusRows as $i => $row) {
+            $ws1->fromArray([$row], null, "A{$r}");
+            if ($i % 2 === 0) $ws1->getStyle("A{$r}:C{$r}")->applyFromArray($altRowStyle);
+            if ($i === 3) $ws1->getStyle("A{$r}:C{$r}")->applyFromArray($boldStyle);
+            $r++;
+        }
+
+        // Embedded Chart 1: Application Outcomes Pie Chart on Summary (E4 to L16)
+        $chSummary = $createPieChart('ch_sum_status', 'Application Outcomes',
+            ['Approved', 'Pending', 'Rejected'], [$approvedApps, $pendingApps, $rejectedApps],
+            [$blue, $gold, $red], 'E4', 'L16');
+        if ($chSummary) $ws1->addChart($chSummary);
+
+        $ws1->getColumnDimension('A')->setWidth(26);
+        $ws1->getColumnDimension('B')->setWidth(18);
+        $ws1->getColumnDimension('C')->setWidth(22);
+        $ws1->getColumnDimension('D')->setWidth(4);
+        foreach (['E','F','G','H','I','J','K','L'] as $col) $ws1->getColumnDimension($col)->setWidth(10);
+
+        // ----------------------------------------------------------------------
+        // SHEET 2: APPLICATIONS
+        // ----------------------------------------------------------------------
+        $ws2 = $spreadsheet->createSheet()->setTitle('Applications');
+
+        $ws2->mergeCells('A1:G1');
+        $ws2->setCellValue('A1', "Application Analysis - {$analysisYear} - {$municipality->name}");
+        $ws2->getStyle('A1')->applyFromArray($titleStyle);
+
+        // Section 1: Application Status Breakdown (Rows 3 to 8)
+        $ws2->setCellValue('A3', 'APPLICATION STATUS BREAKDOWN');
+        $ws2->getStyle('A3')->applyFromArray($subHeaderStyle);
+        $ws2->fromArray([['Status', 'Count', 'Percentage']], null, 'A4');
+        $setHeader($ws2, 'A4:C4');
+        $r = 5;
+        foreach ([['Approved', $approvedApps], ['Pending', $pendingApps], ['Rejected', $rejectedApps]] as $i => $row) {
+            $ws2->setCellValue("A{$r}", $row[0]);
+            $ws2->setCellValue("B{$r}", $row[1]);
+            $ws2->setCellValue("C{$r}", $pct($row[1], $totalApps));
+            if ($i % 2 === 0) $ws2->getStyle("A{$r}:C{$r}")->applyFromArray($altRowStyle);
+            $r++;
+        }
+        $ws2->fromArray([['Total', $totalApps, '100.0%']], null, "A{$r}");
+        $ws2->getStyle("A{$r}:C{$r}")->applyFromArray($boldStyle);
+
+        // Embedded Chart 1: Status Pie Chart (placed neatly beside Section 1: E3 to L16)
+        $chAppStatus = $createPieChart('ch_app_status', 'Application Status Distribution',
+            ['Approved', 'Pending', 'Rejected'], [$approvedApps, $pendingApps, $rejectedApps],
+            [$blue, $gold, $red], 'E3', 'L16');
+        if ($chAppStatus) $ws2->addChart($chAppStatus);
+
+        // Section 2: Applications by Program (starts safely at Row 18 below Chart 1)
+        $r = 18;
+        $ws2->setCellValue("A{$r}", 'APPLICATIONS BY WELFARE PROGRAM');
+        $ws2->getStyle("A{$r}")->applyFromArray($subHeaderStyle);
+        $r++;
+        $ws2->fromArray([['Program', 'Total', 'Pending', 'Approved', 'Rejected', 'Share']], null, "A{$r}");
+        $setHeader($ws2, "A{$r}:F{$r}");
+        $r++;
+
+        $appProgLabels = [];
+        $appProgTotals = [];
+        $ws2LastContentRow = 16;
+
+        if ($appsByProgram->isNotEmpty()) {
+            foreach ($appsByProgram as $prog => $data) {
+                $tot = ($data['pending'] ?? 0) + ($data['approved'] ?? 0) + ($data['rejected'] ?? 0);
+                $cleanProg = str_replace('_', ' ', $prog);
+                $appProgLabels[] = $cleanProg;
+                $appProgTotals[] = $tot;
+                $ws2->fromArray([[
+                    $cleanProg,
+                    $tot,
+                    $data['pending']  ?? 0,
+                    $data['approved'] ?? 0,
+                    $data['rejected'] ?? 0,
+                    $pct($tot, $totalApps),
+                ]], null, "A{$r}");
+                $r++;
+            }
+
+            // Embedded Chart 2: Applications by Program Column Chart (placed neatly below Table 2)
+            $chAppProgTop = $r + 2;
+            $chAppProgBottom = $chAppProgTop + 16;
+            $chAppProg = $createColumnChart('ch_app_prog', 'Applications by Program',
+                $appProgLabels, $appProgTotals, array_fill(0, count($appProgTotals), $blue),
+                'A' . $chAppProgTop, 'K' . $chAppProgBottom);
+            if ($chAppProg) {
+                $ws2->addChart($chAppProg);
+                $ws2LastContentRow = $chAppProgBottom;
+            } else {
+                $ws2LastContentRow = $r;
+            }
+        } else {
+            $ws2->setCellValue("A{$r}", 'No application data for this year.');
+            $ws2LastContentRow = max(16, $r);
+        }
+
+        foreach (['A' => 24, 'B' => 12, 'C' => 12, 'D' => 12, 'E' => 12, 'F' => 12] as $col => $w) {
+            $ws2->getColumnDimension($col)->setWidth($w);
+        }
+        foreach (['G','H','I','J','K','L'] as $col) {
+            $ws2->getColumnDimension($col)->setWidth(10);
+        }
+
+        // ----------------------------------------------------------------------
+        // SHEET 3: WELFARE PROGRAMS
+        // ----------------------------------------------------------------------
+        $ws3 = $spreadsheet->createSheet()->setTitle('Welfare Programs');
+
+        $ws3->mergeCells('A1:E1');
+        $ws3->setCellValue('A1', "Social Welfare Programs - {$analysisYear} - {$municipality->name}");
+        $ws3->getStyle('A1')->applyFromArray($titleStyle);
+
+        $ws3->fromArray([['Program', 'Beneficiaries', 'Share (%)']], null, 'A3');
+        $setHeader($ws3, 'A3:C3');
+
+        $progLabels = [];
+        $progCounts = [];
+        $palette = ['1B2B5B', 'FDB913', '28A745', 'C41E24', '6366F1', '0D7377', 'E67E22'];
+
+        $r = 4;
+        $ws3LastContentRow = 18;
+
+        if ($programOverview->isNotEmpty()) {
+            $sumB = $programOverview->sum() ?: 1;
+            foreach ($programOverview as $prog => $count) {
+                $cleanName = str_replace('_', ' ', $prog);
+                $progLabels[] = $cleanName;
+                $progCounts[] = (int) $count;
+                $ws3->fromArray([[
+                    $cleanName,
+                    $count,
+                    round($count / $sumB * 100, 1),
+                ]], null, "A{$r}");
+                if (($r - 4) % 2 === 0) $ws3->getStyle("A{$r}:C{$r}")->applyFromArray($altRowStyle);
+                $r++;
+            }
+            $ws3->fromArray([['Total Beneficiaries', $sumB, '100.0']], null, "A{$r}");
+            $ws3->getStyle("A{$r}:C{$r}")->applyFromArray($boldStyle);
+
+            // Embedded Chart: Beneficiaries by Program Column Chart (placed beside table: E3 to M18)
+            $progColors = array_slice(array_merge($palette, $palette), 0, count($progCounts));
+            $chProg = $createColumnChart('ch_prog_benef', "Beneficiaries by Program ({$analysisYear})",
+                $progLabels, $progCounts, $progColors, 'E3', 'M18');
+            if ($chProg) {
+                $ws3->addChart($chProg);
+                $ws3LastContentRow = max($r, 18);
+            } else {
+                $ws3LastContentRow = $r;
+            }
+        } else {
+            $ws3->setCellValue("A{$r}", 'No beneficiary data for this year.');
+            $ws3LastContentRow = $r;
+        }
+
+        foreach (['A' => 28, 'B' => 16, 'C' => 14, 'D' => 6] as $col => $w) {
+            $ws3->getColumnDimension($col)->setWidth($w);
+        }
+        foreach (['E','F','G','H','I','J','K','L','M'] as $col) {
+            $ws3->getColumnDimension($col)->setWidth(10);
+        }
+
+        // ----------------------------------------------------------------------
+        // SHEET 4: DEMOGRAPHICS
+        // ----------------------------------------------------------------------
+        $ws4 = $spreadsheet->createSheet()->setTitle('Demographics');
+
+        $ws4->mergeCells('A1:F1');
+        $ws4->setCellValue('A1', "Demographics - {$analysisYear} - {$municipality->name}");
+        $ws4->getStyle('A1')->applyFromArray($titleStyle);
+
+        // Section 1: Gender Distribution (Rows 3 to 7)
+        $ws4->setCellValue('A3', 'GENDER DISTRIBUTION');
+        $ws4->getStyle('A3')->applyFromArray($subHeaderStyle);
+        $ws4->fromArray([['Gender', 'Count', 'Percentage']], null, 'A4');
+        $setHeader($ws4, 'A4:C4');
+        $totG = ($malePop ?? 0) + ($femalePop ?? 0);
+        if ($totG > 0) {
+            $ws4->fromArray([
+                ['Male', $malePop, round($malePop/$totG*100, 1)],
+                ['Female', $femalePop, round($femalePop/$totG*100, 1)],
+                ['Total', $totG, '100.0'],
+            ], null, 'A5');
+            $ws4->getStyle("A5:C5")->applyFromArray($altRowStyle);
+            $ws4->getStyle("A7:C7")->applyFromArray($boldStyle);
+
+            // Embedded Chart 1: Gender Pie Chart (placed neatly beside Section 1: E3 to L16)
+            $chGender = $createPieChart('ch_demo_gender', "Gender Distribution ({$analysisYear})",
+                ['Male', 'Female'], [(int)$malePop, (int)$femalePop], [$navy, $gold], 'E3', 'L16');
+            if ($chGender) $ws4->addChart($chGender);
+        } else {
+            $ws4->setCellValue('A5', 'No gender data recorded.');
+        }
+
+        // Section 2: Historical Population & Household Trend (starts safely at Row 18 below Chart 1)
+        $r = 18;
+        $ws4->setCellValue("A{$r}", 'HISTORICAL POPULATION & HOUSEHOLD TREND');
+        $ws4->getStyle("A{$r}")->applyFromArray($subHeaderStyle);
+        $r++;
+        $ws4->fromArray([['Year', 'Population', 'Households', 'Male', 'Female']], null, "A{$r}");
+        $setHeader($ws4, "A{$r}:E{$r}");
+        $r++;
+
+        $trendYears = [];
+        $trendPops  = [];
+        $trendHHs   = [];
+        $ws4LastContentRow = 16;
+
+        if ($trend->isNotEmpty()) {
+            foreach ($trend as $i => $row) {
+                $p = (int)$row->total_population;
+                $h = (int)$row->total_households;
+                $trendYears[] = (string)$row->year;
+                $trendPops[]  = $p;
+                $trendHHs[]   = $h;
+
+                $ws4->fromArray([[
+                    $row->year,
+                    $p > 0 ? $p : 'N/A',
+                    $h > 0 ? $h : 'N/A',
+                    $row->male_population   > 0 ? $row->male_population   : 'N/A',
+                    $row->female_population > 0 ? $row->female_population : 'N/A',
+                ]], null, "A{$r}");
+                if ($i % 2 === 0) $ws4->getStyle("A{$r}:E{$r}")->applyFromArray($altRowStyle);
+                $r++;
+            }
+
+            // Embedded Chart 2: Historical Trend Multi-Series Bar Chart (placed neatly below Table 2)
+            if (count($trendYears) > 0) {
+                $n = count($trendYears);
+                $cats = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, $n, $trendYears)];
+                $lbl1 = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, 1, ['Population']);
+                $lbl2 = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, 1, ['Households']);
+                $sv1  = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_NUMBER, null, null, $n, $trendPops);
+                $sv1->setFillColor($navy);
+                $sv2  = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_NUMBER, null, null, $n, $trendHHs);
+                $sv2->setFillColor($gold);
+
+                $dsTrend = new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
+                    \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART,
+                    \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED,
+                    [0, 1],
+                    [$lbl1, $lbl2],
+                    $cats,
+                    [$sv1, $sv2]
+                );
+                $dsTrend->setPlotDirection(\PhpOffice\PhpSpreadsheet\Chart\DataSeries::DIRECTION_COL);
+
+                $chTrend = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
+                    'ch_demo_trend',
+                    new \PhpOffice\PhpSpreadsheet\Chart\Title('Historical Population & Household Trend'),
+                    new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, new \PhpOffice\PhpSpreadsheet\Chart\Layout(), false),
+                    new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(new \PhpOffice\PhpSpreadsheet\Chart\Layout(), [$dsTrend]),
+                    true,
+                    0,
+                    null,
+                    null
+                );
+                $chTrendTop = $r + 2;
+                $chTrendBottom = $chTrendTop + 16;
+                $chTrend->setTopLeftPosition('A' . $chTrendTop);
+                $chTrend->setBottomRightPosition('K' . $chTrendBottom);
+                $ws4->addChart($chTrend);
+                $ws4LastContentRow = $chTrendBottom;
+            } else {
+                $ws4LastContentRow = $r;
+            }
+        } else {
+            $ws4->setCellValue("A{$r}", 'No historical data found.');
+            $ws4LastContentRow = max(16, $r);
+        }
+
+        foreach (['A' => 12, 'B' => 16, 'C' => 16, 'D' => 16, 'E' => 16] as $col => $w) {
+            $ws4->getColumnDimension($col)->setWidth($w);
+        }
+        foreach (['F','G','H','I','J','K','L'] as $col) {
+            $ws4->getColumnDimension($col)->setWidth(10);
+        }
+
+        // ----------------------------------------------------------------------
+        // SHEET 5: BARANGAY DATA
+        // ----------------------------------------------------------------------
+        $ws5 = $spreadsheet->createSheet()->setTitle('Barangay Data');
+
+        $ws5->mergeCells('A1:I1');
+        $ws5->setCellValue('A1', "Barangay Data - {$analysisYear} - {$municipality->name}");
+        $ws5->getStyle('A1')->applyFromArray($titleStyle);
+
+        $ws5->fromArray([['Barangay', 'Population', 'Households', 'PWD', 'AICS', 'Solo Parent', '4Ps', 'Senior', 'Approved Apps']], null, 'A3');
+        $setHeader($ws5, 'A3:I3');
+
+        $bgyNames = [];
+        $bgyPops  = [];
+        $ws5LastContentRow = 10;
+        $chBgy = null;
+
+        $r = 4;
+        if ($barangays->isNotEmpty()) {
+            foreach ($barangays as $i => $b) {
+                $pop = (int)($b->total_population ?? (($b->male_population ?? 0) + ($b->female_population ?? 0)));
+                if ($pop > 0) {
+                    $bgyNames[] = $b->name;
+                    $bgyPops[]  = $pop;
+                }
+                $ws5->fromArray([[
+                    $b->name,
+                    $pop > 0 ? $pop : 'N/A',
+                    ($b->total_households  ?? 0) > 0 ? $b->total_households  : 'N/A',
+                    ($b->pwd_count         ?? 0) > 0 ? $b->pwd_count         : 'N/A',
+                    ($b->aics_count        ?? 0) > 0 ? $b->aics_count        : 'N/A',
+                    ($b->solo_parent_count ?? 0) > 0 ? $b->solo_parent_count : 'N/A',
+                    ($b->four_ps_count     ?? 0) > 0 ? $b->four_ps_count     : 'N/A',
+                    ($b->senior_count      ?? 0) > 0 ? $b->senior_count      : 'N/A',
+                    ($b->total_approved_applications ?? 0) > 0 ? $b->total_approved_applications : 'N/A',
+                ]], null, "A{$r}");
+                if ($i % 2 === 0) $ws5->getStyle("A{$r}:I{$r}")->applyFromArray($altRowStyle);
+                $r++;
+            }
+
+            if (count($bgyNames) > 0) {
+                // Embedded Chart: Barangay Population Column Chart
+                $chBgy = $createColumnChart('ch_bgy_pop', "Barangay Population ({$analysisYear})",
+                    $bgyNames, $bgyPops, array_fill(0, count($bgyPops), $navy),
+                    'A' . ($r + 2), 'J' . ($r + 20));
+                if ($chBgy) {
+                    $ws5->addChart($chBgy);
+                    $ws5LastContentRow = $r + 20;
+                } else {
+                    $ws5LastContentRow = $r;
+                }
+            } else {
+                $ws5LastContentRow = $r;
+            }
+        } else {
+            $ws5->setCellValue('A4', "No barangay records for {$analysisYear}.");
+            $ws5LastContentRow = 10;
+        }
+
+        foreach (['A' => 22, 'B' => 14, 'C' => 14, 'D' => 10, 'E' => 10, 'F' => 14, 'G' => 10, 'H' => 10, 'I' => 14] as $col => $w) {
+            $ws5->getColumnDimension($col)->setWidth($w);
+        }
+
+        // -- Footnote on each sheet (placed 2 rows below the lowest content/chart) ----
+        $footnote = "Note: 'N/A' indicates no record exists for that specific year or barangay. Generated by MSWDO System.";
+        
+        $ws1Last = max(16, $ws1->getHighestRow());
+        $sheetMap = [
+            [$ws1, $ws1Last],
+            [$ws2, $ws2LastContentRow],
+            [$ws3, $ws3LastContentRow],
+            [$ws4, $ws4LastContentRow],
+            [$ws5, $ws5LastContentRow],
+        ];
+
+        foreach ($sheetMap as [$ws, $lastRow]) {
+            $fnRow = $lastRow + 2;
+            $ws->setCellValue("A{$fnRow}", $footnote);
+            $ws->getStyle("A{$fnRow}")->getFont()->setItalic(true)->setSize(9)->getColor()->setRGB('888888');
+        }
+
+        $spreadsheet->setActiveSheetIndex(0);
+
+        // -- Stream via temp file with embedded charts enabled ------------------
+        $filename = 'analysis-' . $municipality->name . '-' . $analysisYear . '.xlsx';
+        $writer   = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer->setIncludeCharts(true);
+
+        $tmpPath = tempnam(sys_get_temp_dir(), 'xlsx_');
+        $writer->save($tmpPath);
+
+        // Clear any stray output buffer before streaming binary file
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        return response()->download($tmpPath, $filename, [
+            'Content-Type'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+            'Pragma'        => 'no-cache',
+            'Expires'       => '0',
+        ])->deleteFileAfterSend(true);
+    }
+        /** Load and date-parse applications for a given municipality. */
     private function loadApplications(string $municipality)
     {
         $applications = Application::where('municipality', $municipality)
@@ -1357,7 +2394,7 @@ class AdminController extends Controller
             }
 
             try {
-                \DB::table('notifications')->insert([
+                $notifId = \DB::table('notifications')->insertGetId([
                     'user_id'    => $application->user_id,
                     'type'       => $notifType,
                     'title'      => $notifTitle,
@@ -1366,6 +2403,7 @@ class AdminController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+                \App\Services\OneSignalService::sendPush($application->user_id, $notifTitle, $notifBody, $notifType, $notifId, ['program_type' => $programType]);
             } catch (\Exception $e) {
                 Log::error('Application status notification insert failed: ' . $e->getMessage());
             }
@@ -1534,7 +2572,7 @@ class AdminController extends Controller
 
         $filePath = $user->valid_id_path;
         $candidates = [
-            \Illuminate\Support\Facades\Storage::disk('public')->path($filePath),
+            Storage::disk('public')->path($filePath),
             base_path('storage/app/public/' . $filePath),
             public_path('storage/' . $filePath),
         ];

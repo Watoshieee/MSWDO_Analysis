@@ -1,937 +1,1689 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Detailed Analysis � {{ $municipality->name }} � MSWDO</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    @include('components.admin-colors')
-    <style>
-html, body { overscroll-behavior: none; margin: 0; padding: 0; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Detailed Analysis &bull; MSWDO {{ $municipality->name }}</title>
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+<style>
+:root {
+  --navy: #1e2a78;
+  --navy-d: #1a2470;
+  --navy-l: #243088;
+  --gold: #f5b82e;
+  --gold-h: #ffc94d;
+  --ink: #1b2559;
+  --muted: #4d5878;
+  --line: #dbe1f1;
+  --bg: #f4f6fb;
+  --tint: #eef1fb;
+  --bad: #d4545c;
+  --soft: #eef1f8;
+}
 
-        :root {
-            --bg-light: #F8FAFC;
-            --bg-white: #FFFFFF;
-            --bg-soft-blue: #F0F5FF;
-            --border-light: #E2E8F0;
-            --text-dark: #1E293B;
-        }
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--ink);
+  font: 14px/1.5 Inter, system-ui, -apple-system, sans-serif;
+  font-variant-numeric: tabular-nums;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+a { color: var(--navy); text-decoration: none; }
+button { font: inherit; color: inherit; cursor: pointer; }
+h1, h2, h3, p { margin: 0; }
+:focus-visible { outline: 3px solid var(--gold); outline-offset: 2px; }
 
-        * { box-sizing: border-box; }
-        body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
-        a { text-decoration: none; }
+/* -- SHARED CONTAINER -- */
+.in {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 32px;
+  width: 100%;
+}
+main.in {
+  padding-top: 32px;
+  padding-bottom: 96px;
+  display: grid;
+  gap: 16px;
+  flex: 1;
+}
+@media (max-width: 900px) {
+  .in { padding: 0 20px; }
+  main.in { padding-top: 24px; padding-bottom: 96px; }
+}
+@media (max-width: 560px) {
+  .in { padding: 0 16px; }
+}
 
-        /* -- NAVBAR -- */
-        .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
-        .navbar-brand { font-weight: 800; font-size: 1.55rem; color: white !important; display: flex; align-items: center; gap: 12px; }
-        .navbar-toggler { order: -1; }
-        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
-        @media (min-width: 992px) {
-            .navbar-toggler { order: 0; }
-            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
-        }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; transition: all 0.25s; border-radius: 8px; padding: 10px 18px !important; font-size: 0.85rem; white-space: nowrap; }
-        .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
-        .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-info { color: white; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1); padding: 9px 22px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; }
-        .logout-btn { background: transparent; border: 2px solid rgba(255,255,255,0.8); color: white; border-radius: 30px; padding: 6px 18px; font-weight: 700; transition: all 0.3s; font-size: 0.88rem; cursor: pointer; }
-        .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
+/* -- HERO -- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #1a2470 0%, #243088 100%);
+  color: #fff;
+}
+.hero::before, .hero::after {
+  content: "";
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .05);
+  pointer-events: none;
+}
+.hero::before { width: 320px; height: 320px; left: -80px; top: 40px; }
+.hero::after { width: 380px; height: 380px; right: -60px; top: -60px; }
+.hero .in {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  flex-wrap: wrap;
+  padding-top: 52px;
+  padding-bottom: 48px;
+}
+.eyebrow {
+  display: inline-block;
+  padding: 7px 20px;
+  border-radius: 99px;
+  background: rgba(245, 184, 46, .16);
+  border: 1px solid rgba(245, 184, 46, .45);
+  color: var(--gold);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.hero h1 {
+  margin: 14px 0 0;
+  font-size: 40px;
+  font-weight: 800;
+  letter-spacing: -.02em;
+  line-height: 1.15;
+}
+.hero .bar {
+  display: block;
+  width: 56px;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--gold);
+  margin: 14px 0 16px;
+}
+.hero p {
+  font-size: 16px;
+  color: #dbe0f7;
+  max-width: 640px;
+}
+.muni {
+  border: 1px solid rgba(245, 184, 46, .45);
+  background: rgba(245, 184, 46, .14);
+  border-radius: 14px;
+  padding: 18px 32px;
+  text-align: center;
+}
+.muni b {
+  display: block;
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--gold);
+  line-height: 1.2;
+}
+.muni span {
+  display: block;
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: #e3bf63;
+}
+@media (max-width: 700px) {
+  .hero .in { padding-top: 32px; padding-bottom: 30px; }
+  .hero h1 { font-size: 30px; }
+  .hero p { font-size: 14.5px; }
+  .muni { padding: 12px 22px; }
+  .muni b { font-size: 22px; }
+  .muni span { font-size: 11.5px; }
+}
 
-        /* -- HERO BANNER -- */
-        .hero-banner { background: var(--primary-gradient); color: white; padding: 44px 0 38px; position: relative; overflow: hidden; }
-        .hero-banner::before { content: ''; position: absolute; top: -80px; right: -80px; width: 340px; height: 340px; border-radius: 50%; background: rgba(253,185,19,0.09); }
-        .hero-banner::after  { content: ''; position: absolute; bottom: -60px; left: -40px; width: 230px; height: 230px; border-radius: 50%; background: rgba(255,255,255,0.05); }
-        .hero-inner { position: relative; z-index: 2; }
-        .hero-badge { display: inline-block; background: rgba(253,185,19,0.18); color: var(--secondary-yellow); border: 1px solid rgba(253,185,19,0.35); border-radius: 30px; padding: 4px 16px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
-        .hero-banner h1 { font-size: 2rem; font-weight: 900; margin-bottom: 4px; }
-        .hero-divider { width: 44px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; margin: 10px 0 8px; }
-        .hero-banner p { opacity: 0.82; font-size: 0.85rem; margin: 0; }
-        .muni-badge-lg { background: rgba(253,185,19,0.18); border: 1px solid rgba(253,185,19,0.35); color: var(--secondary-yellow); border-radius: 12px; padding: 14px 24px; text-align: center; }
-        .muni-badge-lg .muni-name { font-size: 1.35rem; font-weight: 900; display: block; }
-        .muni-badge-lg .muni-sub  { font-size: 0.72rem; opacity: 0.75; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+/* -- FILTER BAR -- */
+.fb {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 2px rgba(23, 32, 102, .06), 0 6px 16px -10px rgba(23, 32, 102, .16);
+  display: grid;
+  gap: 12px;
+}
+.fg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px 28px;
+}
+.grp { min-width: 0; }
+.fl {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  color: var(--muted);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  list-style: none;
+}
+summary.fl { cursor: pointer; }
+summary.fl::-webkit-details-marker { display: none; }
+.seg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.seg.y .chip { min-width: 72px; }
+.chip {
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  font-weight: 600;
+  color: var(--navy);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  transition: all .15s;
+  cursor: pointer;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.chip:hover {
+  background: var(--tint);
+  border-color: #c5cee8;
+}
+.chip[aria-pressed=true], .chip.on {
+  background: var(--navy);
+  color: #fff;
+  border-color: var(--navy);
+}
+.chip.part::after {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+}
+.chip.pg[aria-pressed=true]::before, .chip.pg.on::before {
+  content: "✓";
+  font-size: 12px;
+}
+.act {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 10px;
+  align-items: center;
+  border-top: 1px solid #eef1f8;
+  padding-top: 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.act span b { color: var(--ink); }
+.pill {
+  background: var(--tint);
+  color: var(--navy);
+  border-radius: 99px;
+  padding: 3px 10px;
+  font-weight: 600;
+  font-size: 12px;
+}
+.rs {
+  margin-left: 0;
+  border: 0;
+  background: none;
+  color: var(--navy);
+  font-weight: 700;
+  text-decoration: underline;
+  min-height: 36px;
+  cursor: pointer;
+}
+.key {
+  font-size: 11.5px;
+  color: var(--muted);
+  margin-top: 6px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+.key::before {
+  content: "";
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--gold);
+}
 
-        /* -- STAT CARDS -- */
-        .stat-card { background: var(--bg-white); border-radius: 18px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.03); height: 100%; position: relative; overflow: hidden; }
-        .stat-card::before { content: ''; position: absolute; top: 0; left: 0; right: 0; height: 4px; background: var(--primary-gradient); }
-        .stat-card .inner { padding: 24px 26px; }
-        .stat-pill  { font-size: 0.68rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; border-radius: 20px; padding: 3px 10px; display: inline-block; margin-bottom: 8px; background: #E5EEFF; color: var(--primary-blue); }
-        .stat-label { font-size: 0.78rem; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 4px; }
-        .stat-value { font-size: 2.6rem; font-weight: 900; line-height: 1; color: var(--primary-blue); }
-        .stat-sub   { font-size: 0.75rem; color: #94a3b8; margin-top: 6px; font-weight: 500; }
+/* -- ACTION BUTTONS (VIEW REPORT & EXPORT) -- */
+.exg {
+  position: relative;
+  margin-left: auto;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.ex-wrap { position: relative; }
+.vr-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 800;
+  transition: background .15s, border-color .15s;
+  cursor: pointer;
+}
+.vr-btn:hover:not(:disabled) {
+  background: var(--tint);
+  border-color: #c5cee8;
+}
+.ex-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--gold);
+  background: var(--gold);
+  color: var(--navy-d);
+  font-size: 13px;
+  font-weight: 800;
+  transition: background .15s;
+  cursor: pointer;
+}
+.ex-btn:hover:not(:disabled) { background: var(--gold-h); }
+.ex-btn svg:last-child { transition: transform .15s; }
+.ex-btn[aria-expanded=true] svg:last-child { transform: rotate(180deg); }
+.ex-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 40;
+  width: 300px;
+  max-width: calc(100vw - 32px);
+  background: #fff;
+  color: var(--ink);
+  border: 1px solid #e1e6f2;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(20, 27, 77, .25);
+  padding: 6px;
+}
+.ex-menu[hidden] { display: none; }
+.ex-hd {
+  padding: 8px 10px 8px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid #eef1f8;
+  font-size: 11.5px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+.ex-hd b {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+.ex-it {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 10px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  text-align: left;
+  text-decoration: none;
+  color: var(--ink);
+  transition: background .15s;
+}
+.ex-it:hover { background: var(--bg); color: var(--ink); }
+.ex-ic {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 9px;
+  background: var(--tint);
+  color: var(--navy);
+}
+.ex-it b { display: block; font-size: 13px; font-weight: 700; }
+.ex-it small { display: block; font-size: 11.5px; color: var(--muted); }
 
-        /* -- PANEL CARDS -- */
-        .panel-card { background: var(--bg-white); border-radius: 20px; border: 1px solid var(--border-light); box-shadow: 0 4px 15px rgba(0,0,0,0.04); overflow: hidden; margin-bottom: 24px; }
-        .panel-header { background: var(--primary-gradient); color: white; padding: 18px 24px; display: flex; align-items: center; justify-content: space-between; }
-        .panel-header-title { font-size: 1rem; font-weight: 800; }
-        .panel-header-sub   { font-size: 0.76rem; opacity: 0.75; margin-top: 2px; font-weight: 500; }
-        .panel-header-badge { font-size: 0.7rem; background: rgba(255,255,255,0.15); border-radius: 20px; padding: 4px 14px; font-weight: 700; }
-        .panel-body { padding: 26px; }
+@media (max-width: 560px) {
+  .exg { width: 100%; flex-wrap: nowrap; }
+  .exg > * { flex: 1; }
+  .vr-btn, .ex-btn { width: 100%; justify-content: center; min-height: 44px; }
+  .ex-menu { left: 0; right: 0; width: auto; }
+}
 
-        /* -- SECTION TITLE -- */
-        .section-title { font-size: 1.05rem; font-weight: 800; color: var(--primary-blue); position: relative; padding-bottom: 10px; margin-bottom: 0; }
-        .section-title::after { content: ''; position: absolute; bottom: 0; left: 0; width: 32px; height: 3px; background: var(--secondary-yellow); border-radius: 2px; }
+/* -- KPI CARDS -- */
+.kp {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+.k {
+  flex: 1 1 170px;
+  position: relative;
+  overflow: hidden;
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 14px 14px;
+  min-width: 0;
+}
+.k::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 3px;
+  background: var(--navy);
+}
+.k > span {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.k b {
+  display: block;
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 800;
+  color: var(--navy);
+  margin: 4px 0;
+  overflow-wrap: anywhere;
+}
+.k b.na {
+  font-size: 15px;
+  color: #7a84a8;
+  font-weight: 600;
+  padding: 6px 0;
+}
+.k small {
+  font-size: 12px;
+  color: var(--muted);
+}
+.k .up {
+  display: inline-block;
+  background: #e3f6ea;
+  color: #14663a;
+  border-radius: 99px;
+  padding: 1px 8px;
+  font-weight: 600;
+}
+@media (max-width: 560px) {
+  .kp { gap: 10px; }
+  .k { flex-basis: calc(50% - 5px); }
+  .k b { font-size: 22px; }
+}
 
-        /* -- CHARTS -- */
-        .chart-wrap { position: relative; }
-        .chart-wrap canvas { max-width: 100%; }
+/* -- SECTION CARDS -- */
+.cd {
+  background: #fff;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px rgba(23, 32, 102, .06), 0 6px 16px -10px rgba(23, 32, 102, .16);
+  min-width: 0;
+  overflow: hidden;
+}
+.ch {
+  padding: 16px 18px 12px;
+  border-bottom: 1px solid #eef1f8;
+}
+.ch h2 {
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--ink);
+}
+.ch h2::after {
+  content: "";
+  display: block;
+  width: 28px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--gold);
+  margin-top: 6px;
+}
+.ch p {
+  color: var(--muted);
+  font-size: 12.5px;
+  margin-top: 6px;
+}
+.bd { padding: 16px 18px; }
+.bd h3 { font-size: 13px; font-weight: 700; margin: 0 0 8px; color: var(--ink); }
 
-        /* -- STATUS BREAKDOWN -- */
-        .breakdown-list { list-style: none; padding: 0; margin: 0; }
-        .breakdown-item { display: flex; align-items: center; justify-content: space-between; padding: 5px 0; border-bottom: 1px solid var(--border-light); }
-        .breakdown-item:last-child { border-bottom: none; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 6px; flex-shrink: 0; }
-        .breakdown-label { display: flex; align-items: center; font-size: 0.8rem; font-weight: 600; }
-        .breakdown-right { text-align: right; }
-        .breakdown-count { font-size: 0.95rem; font-weight: 900; color: var(--primary-blue); display: block; }
-        .breakdown-pct   { font-size: 0.66rem; color: #94a3b8; font-weight: 500; }
+/* -- TWO-COL LAYOUTS -- */
+.two { display: grid; gap: 16px; }
+.two > .cd { display: flex; flex-direction: column; }
+.two > .cd > .bd { flex: 1; }
+@media (min-width: 1000px) {
+  .two { grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); }
+  .two.eq { grid-template-columns: 1fr 1fr; }
+}
 
-        /* -- PROGRESS BARS (program rows) -- */
-        .prog-row { display: flex; align-items: center; gap: 14px; padding: 11px 0; border-bottom: 1px solid var(--border-light); }
-        .prog-row:last-child { border-bottom: none; }
-        .prog-num  { font-size: 0.65rem; font-weight: 800; letter-spacing: 0.08em; text-transform: uppercase; background: var(--bg-soft-blue); color: var(--primary-blue); border-radius: 20px; padding: 2px 10px; flex-shrink: 0; }
-        .prog-name { font-size: 0.88rem; font-weight: 700; flex: 1; min-width: 120px; }
-        .prog-bar-wrap { flex: 2; height: 8px; background: #E2E8F0; border-radius: 4px; overflow: hidden; }
-        .prog-bar  { height: 100%; border-radius: 4px; background: var(--primary-gradient); }
-        .prog-count { font-size: 0.88rem; font-weight: 800; color: var(--primary-blue); min-width: 28px; text-align: right; }
+/* -- TREND ROWS -- */
+.lg {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 12.5px;
+  color: var(--muted);
+  margin-bottom: 8px;
+}
+.sw {
+  display: inline-block;
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  margin-right: 6px;
+}
+.tr {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr);
+  gap: 10px;
+  padding: 6px;
+  border-radius: 10px;
+  align-items: center;
+}
+.tr.on { background: #fff6dc; }
+.tr > strong { font-weight: 800; color: var(--navy); }
+.br {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 64px;
+  gap: 8px;
+  align-items: center;
+  margin: 4px 0;
+}
+.br div {
+  height: 14px;
+  background: var(--tint);
+  border-radius: 7px;
+  overflow: hidden;
+}
+.br i {
+  display: block;
+  height: 100%;
+  border-radius: 7px;
+  min-width: 2px;
+}
+.br em {
+  font-style: normal;
+  font-weight: 700;
+  font-size: 12.5px;
+  text-align: right;
+  color: var(--ink);
+}
+.na {
+  color: #7a84a8;
+  font-style: italic;
+  font-size: 12.5px;
+}
 
-        /* -- BARANGAY TABLE -- */
-        .table-scroll { max-height: 400px; overflow-y: auto; border-radius: 0 0 14px 14px; }
-        .bgy-table { width: 100%; }
-        .bgy-table th { font-size: 0.71rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.07em; color: #64748b; padding: 10px 14px; background: var(--bg-soft-blue); border-bottom: 2px solid var(--border-light); position: sticky; top: 0; z-index: 2; }
-        .bgy-table td { padding: 11px 14px; font-size: 0.86rem; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
-        .bgy-table tr:last-child td { border-bottom: none; }
-        .bgy-table tr:hover td { background: #FAFBFF; }
-        .bgy-chart-card { background: #FAFBFD; border: 1px solid var(--border-light); border-radius: 14px; padding: 16px 16px 8px; position: relative; }
-        .bgy-chart-actions { display: flex; justify-content: flex-end; margin-bottom: 6px; }
-        .bgy-chart-actions .btn-chart-export { border: 1px solid var(--border-light); background: #fff; color: #64748b; border-radius: 8px; padding: 4px 10px; font-size: 0.72rem; font-weight: 700; cursor: pointer; }
-        .bgy-chart-actions .btn-chart-export:hover { background: var(--bg-soft-blue); color: var(--primary-blue); }
-        .badge-sm { font-size: 0.68rem; font-weight: 800; border-radius: 20px; padding: 3px 10px; letter-spacing: 0.04em; text-transform: uppercase; display: inline-block; }
-        .badge-pending  { background: #FFF3D6; color: #856404; }
-        .badge-approved { background: #d4edda; color: #155724; }
-        .badge-rejected { background: #fce8e8; color: #C41E24; }
-        .no-data { text-align: center; padding: 40px 0; color: #94a3b8; font-size: 0.88rem; }
+/* -- PROGRESS BARS & ITEMS -- */
+.pr {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 4px 12px;
+  padding: 8px 0;
+  border-top: 1px solid #eef1f8;
+}
+.pr:first-of-type { border-top: none; }
+.pr .nm { font-weight: 600; overflow-wrap: anywhere; }
+.pr .v { font-weight: 800; color: var(--navy); }
+.tk {
+  grid-column: 1 / -1;
+  height: 8px;
+  border-radius: 8px;
+  background: #e4e9f7;
+  overflow: hidden;
+  display: flex;
+}
+.tk i { display: block; height: 100%; min-width: 2px; }
 
-        /* -- MAIN GROW -- */
-        .main-content { flex: 1; }
+/* -- TABLES -- */
+.tw {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  margin-top: 6px;
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+th, td {
+  padding: 9px 12px;
+  text-align: right;
+  border-top: 1px solid #eef1f8;
+  white-space: nowrap;
+}
+thead th {
+  background: var(--bg);
+  font-size: 12px;
+  color: var(--muted);
+  border-top: 0;
+  font-weight: 700;
+}
+th:first-child, td:first-child {
+  text-align: left;
+  position: sticky;
+  left: 0;
+  background: #fff;
+  white-space: normal;
+  min-width: 140px;
+  overflow-wrap: anywhere;
+}
+thead th:first-child { background: var(--bg); }
+.sel { background: #fff6dc !important; font-weight: 700; }
+.fn { font-size: 12px; color: var(--muted); margin-top: 8px; }
 
-        /* -- FOOTER -- */
-        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.75); text-align: center; padding: 20px 0; font-size: 0.85rem; margin-top: 48px; }
-        .footer-strip strong { color: white; }
-    </style>
+@media (max-width: 560px) {
+  .stk thead { display: none; }
+  .stk, .stk tbody { display: block; }
+  .stk tr {
+    display: block;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    margin: 8px;
+    padding: 8px 12px;
+  }
+  .stk td, .stk th {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    border: 0;
+    padding: 3px 0;
+    position: static;
+    min-width: 0;
+    white-space: normal;
+  }
+  .stk td::before {
+    content: attr(data-l);
+    color: var(--muted);
+    font-weight: 600;
+  }
+  .stk th:first-child {
+    font-size: 14px;
+    color: var(--navy);
+    padding-bottom: 6px;
+  }
+  .tw { border: 0; }
+}
+
+/* -- GENDER RING & BARANGAY SCROLL -- */
+.dn {
+  display: grid;
+  justify-items: center;
+  gap: 16px;
+  padding: 6px 0;
+}
+.ring {
+  width: min(210px, 62%);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+}
+.ring > div {
+  width: 64%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: #fff;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+.ring b {
+  font-size: 24px;
+  line-height: 1.1;
+  color: var(--navy);
+  font-weight: 800;
+  display: block;
+}
+.ring small {
+  color: var(--muted);
+  font-size: 12px;
+  display: block;
+}
+.bl {
+  max-height: 340px;
+  overflow: auto;
+  padding-right: 6px;
+}
+.ms {
+  text-align: center;
+  padding: 26px 12px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+}
+.ms b { font-size: 15px; color: var(--ink); }
+.ms p { color: var(--muted); max-width: 42ch; }
+.ms-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: var(--navy);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-decoration: none;
+}
+.ms-btn:hover { background: var(--navy-d); color: #fff; }
+
+/* -- REPORT PREVIEW MODAL -- */
+.md-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+  background: rgba(20, 27, 77, .55);
+  animation: mdf .18s ease;
+}
+.md-scrim[hidden] { display: none; }
+@keyframes mdf { from { opacity: 0; } }
+.md {
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 100%);
+  max-height: min(86vh, 820px);
+  background: #fff;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 24px 60px rgba(20, 27, 77, .4);
+  animation: mdu .22s cubic-bezier(.2, .8, .2, 1);
+}
+@keyframes mdu { from { opacity: 0; transform: translateY(14px); } }
+.md-hd {
+  position: relative;
+  overflow: hidden;
+  flex: none;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 20px 22px 18px;
+  background: linear-gradient(135deg, #1a2470, #243088);
+  color: #fff;
+}
+.md-hd::after {
+  content: "";
+  position: absolute;
+  width: 260px;
+  height: 260px;
+  right: -60px;
+  top: -110px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, .05);
+  pointer-events: none;
+}
+.md-hd > * { position: relative; z-index: 1; }
+.md-eb {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: 99px;
+  background: rgba(245, 184, 46, .16);
+  border: 1px solid rgba(245, 184, 46, .45);
+  color: var(--gold);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+}
+.md-hd h2 {
+  margin: 10px 0 0;
+  font-size: 22px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  line-height: 1.2;
+}
+.md-bar {
+  display: block;
+  width: 40px;
+  height: 3px;
+  border-radius: 3px;
+  background: var(--gold);
+  margin: 8px 0 8px;
+}
+.md-hd p { font-size: 13px; color: #dbe0f7; }
+.md-x {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 0;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, .12);
+  color: #fff;
+  padding: 0;
+  cursor: pointer;
+}
+.md-x:hover { background: rgba(255, 255, 255, .22); }
+.md-tabs {
+  flex: none;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 12px 18px;
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.md-tabs .chip {
+  flex: none;
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+.md-bd {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 16px 18px;
+}
+.md-cap {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 12px;
+  margin-bottom: 10px;
+  font-size: 12.5px;
+  color: var(--muted);
+}
+.md-cap b { color: var(--ink); }
+.md-ft {
+  flex: none;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 16px;
+  padding: 12px 18px;
+  border-top: 1px solid var(--line);
+  background: #fff;
+}
+.md-ft p { font-size: 12px; color: var(--muted); }
+.md-act { display: flex; gap: 8px; margin-left: auto; }
+.md-b {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 14px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: #fff;
+  color: var(--navy);
+  font-size: 13px;
+  font-weight: 800;
+  text-decoration: none;
+}
+.md-b:hover { background: var(--tint); color: var(--navy); }
+.md-b.pri {
+  background: var(--gold);
+  border-color: var(--gold);
+  color: var(--navy-d);
+}
+.md-b.pri:hover { background: var(--gold-h); }
+@media (max-width: 640px) {
+  .md-scrim { padding: 0; align-items: end; }
+  .md { width: 100%; max-height: 92vh; border-radius: 16px 16px 0 0; }
+  .md-hd { padding: 16px 16px 14px; }
+  .md-hd h2 { font-size: 19px; }
+  .md-bd { padding: 12px; }
+  .md-act { width: 100%; }
+  .md-b { flex: 1; justify-content: center; min-height: 44px; }
+  .md-ft p { display: none; }
+}
+
+/* -- FOOTER -- */
+.pg-footer {
+  background: linear-gradient(90deg, #1a2470, #243088);
+  color: rgba(255, 255, 255, .7);
+  text-align: center;
+  padding: 18px 0;
+  font-size: 13px;
+  margin-top: auto;
+}
+.pg-footer strong { color: #fff; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, ::before, ::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+</style>
 </head>
 <body>
 
-    <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/admin/dashboard">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
+@include('components.admin-navbar')
+
+{{-- --- HERO --------------------------------------------------------------- --}}
+<div class="hero">
+  <div class="in">
+    <div>
+      <span class="eyebrow">Analysis</span>
+      <h1>Detailed Analysis</h1>
+      <span class="bar" aria-hidden="true"></span>
+      <p>Application statistics, program breakdown, and barangay-level data for {{ $municipality->name }}.</p>
+    </div>
+    <div class="muni">
+      <b>{{ $municipality->name }}</b>
+      <span>Municipality</span>
+    </div>
+  </div>
+</div>
+
+<main class="in" id="pgMain">
+
+@php
+/* -- Derive all program names ----------------------------------------- */
+$allProgNames = collect(array_unique(array_merge(
+    $programShareOverview->keys()->all(),
+    $applicationsByProgram->keys()->all()
+)))->sort()->values();
+$progTotal = $allProgNames->count();
+$appRate   = $totalApplications > 0 ? round($approvedApplications / $totalApplications * 100, 1) : null;
+
+/* -- Trend data ------------------------------------------------------- */
+$trendRows   = $yearlyTrendData->sortKeys();
+$allTrendPop = $trendRows->pluck('total_population')->filter()->all();
+$allTrendHH  = $trendRows->pluck('total_households')->filter()->all();
+$sharedMax   = max(array_merge([1], $allTrendPop, $allTrendHH));
+$trendYrList = $trendRows->keys()->sort()->values()->all();
+
+/* -- Multi-year program beneficiary table ----------------------------- */
+if (!isset($programsByYear)) {
+    $programsByYear = [];
+    try {
+        $swRows = \App\Models\SocialWelfareProgram::where('municipality', auth()->user()->municipality)->get();
+        foreach ($swRows as $row) {
+            $pn = $row->program_type ?? null;
+            $yr = isset($row->year) ? (int)$row->year : null;
+            if (!$pn || !$yr) continue;
+            $cnt = $row->beneficiary_count ?? 0;
+            $programsByYear[$pn][$yr] = ($programsByYear[$pn][$yr] ?? 0) + (int)$cnt;
+        }
+    } catch (\Throwable $e) { $programsByYear = []; }
+}
+ksort($programsByYear);
+
+/* Partial records for years (years missing barangay data) */
+$partialYears = [2024, 2020, 2015];
+@endphp
+
+  {{-- --- FILTER BAR ------------------------------------------------------- --}}
+  <div class="fb" id="filterBar">
+    <div class="fg">
+      <div class="grp">
+        <span class="fl" id="yl">Data year</span>
+        <div class="seg y" role="group" aria-labelledby="yl">
+          @foreach($availableAnalysisYears as $yr)
+          <a href="{{ route('admin.detailed-analysis', ['year' => $yr]) }}"
+             class="chip {{ (int)$yr === (int)$analysisYear ? 'on' : '' }} {{ in_array($yr, $partialYears) ? 'part' : '' }}"
+             data-y="{{ $yr }}"
+             aria-pressed="{{ (int)$yr === (int)$analysisYear ? 'true' : 'false' }}">{{ $yr }}</a>
+          @endforeach
+        </div>
+        <p class="key">Partial records</p>
+      </div>
+
+      @if($progTotal > 0)
+      <details class="grp" id="pd" open style="flex:1 1 320px">
+        <summary class="fl">Programs &bull; <span id="progSelCount">{{ $progTotal }}</span> of {{ $progTotal }} &#9662;</summary>
+        <div class="seg pg" id="progChipsBd">
+          @foreach($allProgNames as $pn)
+          <button type="button" class="chip pg on" data-chip-prog="{{ $pn }}" data-p="{{ $pn }}"
+                  onclick="toggleProg(this)" aria-pressed="true">{{ str_replace('_', ' ', $pn) }}</button>
+          @endforeach
+        </div>
+      </details>
+      @endif
+    </div>
+
+    <div class="act" aria-live="polite">
+      <span id="showingText">Showing <b>{{ $municipality->name }}</b> &bull; <b>{{ $analysisYear }}</b> &bull; <span id="progCountLabel">{{ $progTotal }}</span> of {{ $progTotal }} programs</span>
+      <span id="filterPills"></span>
+      <button type="button" class="rs" id="resetLink" onclick="resetFilters()" style="display:none">Reset filters</button>
+      <div class="exg">
+        <button type="button" class="vr-btn" id="vrBtn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          View report
+        </button>
+        <div class="ex-wrap">
+          <button type="button" class="ex-btn" id="exBtn" aria-expanded="false" aria-haspopup="true">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Export data
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="6 9 12 15 18 9"/></svg>
+          </button>
+          <div class="ex-menu" id="exMenu" hidden>
+            <div class="ex-hd"><b>Export analysis data</b>{{ $municipality->name }} &bull; {{ $analysisYear }}</div>
+            <a class="ex-it" href="{{ route('admin.detailed-analysis.export.csv', ['year' => $analysisYear]) }}">
+              <span class="ex-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span>
+              <span><b>CSV file</b><small>.csv &bull; data &amp; chart data, sectioned</small></span>
             </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.requirements*') ? 'active' : '' }}" href="{{ route('admin.requirements') }}">Applications</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.data.*') ? 'active' : '' }}" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.announcements*') ? 'active' : '' }}" href="{{ route('admin.announcements.index') }}">Announcements</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
-                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Comparative Analysis</a></li>
-                </ul>
-                <div class="d-flex align-items-center gap-3">
-                    @auth
-                    <button type="button" class="btn" onclick="openAdminNotifModal()"
-                        style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;"
-                        title="Application Notifications">
-                        <i class="bi bi-bell-fill"></i>
-                        @if(isset($adminNotifCount) && $adminNotifCount > 0)
-                            <span class="admin-bell-badge"
-                                style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $adminNotifCount > 9 ? '9+' : $adminNotifCount }}</span>
-                        @endif
-                    </button>
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                    @endauth
-                </div>
-            </div>
+            <a class="ex-it" href="{{ route('admin.detailed-analysis.export.excel', ['year' => $analysisYear]) }}">
+              <span class="ex-ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg></span>
+              <span><b>Excel workbook</b><small>.xlsx &bull; multiple sheets, with charts</small></span>
+            </a>
+          </div>
         </div>
-    </nav>
-
-    <!-- HERO BANNER -->
-    <section class="hero-banner">
-        <div class="container">
-            <div class="hero-inner">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <div class="hero-badge">Analysis</div>
-                        <h1>Detailed Analysis</h1>
-                        <div class="hero-divider"></div>
-                        <p>Application statistics, program breakdown, and barangay-level data for {{ $municipality->name }}.</p>
-                    </div>
-                    <div class="col-md-4 d-none d-md-flex justify-content-end">
-                        <div class="muni-badge-lg">
-                            <span class="muni-name">{{ $municipality->name }}</span>
-                            <span class="muni-sub">Municipality</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    @if(!empty($availableAnalysisYears))
-    <div class="container" style="margin-top:14px;">
-        <div class="d-flex flex-wrap align-items-center gap-3 py-3 px-4" style="background:var(--bg-white);border:1px solid var(--border-light);border-radius:16px;box-shadow:0 4px 14px rgba(0,0,0,.04);">
-            <span style="font-size:0.88rem;font-weight:800;color:var(--primary-blue);letter-spacing:0.02em;">Data year</span>
-            <span style="font-size:0.78rem;color:#64748b;">One filter for this page: applications, demographics, programs, and barangay data</span>
-            <select class="form-select form-select-sm analysis-year-select ms-auto" style="max-width:140px;font-weight:700;border-radius:10px;border:1px solid var(--border-light);">
-                @foreach($availableAnalysisYears as $y)
-                    <option value="{{ $y }}" @selected((int) $analysisYear === (int) $y)>{{ $y }}</option>
-                @endforeach
-            </select>
-        </div>
+      </div>
     </div>
-    @endif
+  </div>
 
-    <div class="main-content">
-    <div class="container mt-4">
-
-        <!-- STAT CARDS -->
-        <div class="row g-3 mb-4">
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="inner">
-                        <span class="stat-pill">Total</span>
-                        <div class="stat-label">Applications</div>
-                        <div class="stat-value">{{ number_format($totalApplications) }}</div>
-                        <div class="stat-sub">Applications dated in {{ $analysisYear }} ({{ $municipality->name }})</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="inner">
-                        <span class="stat-pill">Pending</span>
-                        <div class="stat-label">For Review</div>
-                        <div class="stat-value">{{ number_format($pendingApplications) }}</div>
-                        <div class="stat-sub">Awaiting action</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="inner">
-                        <span class="stat-pill">Approved</span>
-                        <div class="stat-label">Completed</div>
-                        <div class="stat-value">{{ number_format($approvedApplications) }}</div>
-                        <div class="stat-sub">Successfully processed</div>
-                    </div>
-                </div>
-            </div>
-            <div class="col-md-3 col-sm-6">
-                <div class="stat-card">
-                    <div class="inner">
-                        <span class="stat-pill">Rejected</span>
-                        <div class="stat-label">Declined</div>
-                        <div class="stat-value">{{ number_format($rejectedApplications) }}</div>
-                        <div class="stat-sub">Did not qualify</div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ROW 1: Program Chart + Status Doughnut -->
-        <div class="row g-4 mb-0">
-
-            <!-- Applications by Program (bar chart) -->
-            <div class="col-md-6">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        <div>
-                            <div class="panel-header-title">Applications by Program</div>
-                            <div class="panel-header-sub">Pending, Approved &amp; Rejected per program ({{ $analysisYear }})</div>
-                        </div>
-                        <span class="panel-header-badge">{{ $applicationsByProgram->count() }} programs</span>
-                    </div>
-                    <div class="panel-body">
-                        <div class="chart-wrap" style="height:280px;">
-                            <canvas id="programChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Status Doughnut + Breakdown -->
-            <div class="col-md-6">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        <div>
-                            <div class="panel-header-title">Status Distribution</div>
-                            <div class="panel-header-sub">Application outcomes for {{ $analysisYear }}</div>
-                        </div>
-                    </div>
-                    <div class="panel-body">
-                        <div class="chart-wrap" style="height:100px;" class="mb-2">
-                            <canvas id="statusChart"></canvas>
-                        </div>
-                        <ul class="breakdown-list mt-2">
-                            <li class="breakdown-item">
-                                <div class="breakdown-label"><span class="status-dot" style="background:#FDB913;"></span> Pending</div>
-                                <div class="breakdown-right">
-                                    <span class="breakdown-count" style="color:#856404;">{{ $pendingApplications }}</span>
-                                    <span class="breakdown-pct">{{ $totalApplications > 0 ? round(($pendingApplications/$totalApplications)*100,1) : 0 }}%</span>
-                                </div>
-                            </li>
-                            <li class="breakdown-item">
-                                <div class="breakdown-label"><span class="status-dot" style="background:#28a745;"></span> Approved</div>
-                                <div class="breakdown-right">
-                                    <span class="breakdown-count" style="color:#155724;">{{ $approvedApplications }}</span>
-                                    <span class="breakdown-pct">{{ $totalApplications > 0 ? round(($approvedApplications/$totalApplications)*100,1) : 0 }}%</span>
-                                </div>
-                            </li>
-                            <li class="breakdown-item">
-                                <div class="breakdown-label"><span class="status-dot" style="background:#C41E24;"></span> Rejected</div>
-                                <div class="breakdown-right">
-                                    <span class="breakdown-count" style="color:#C41E24;">{{ $rejectedApplications }}</span>
-                                    <span class="breakdown-pct">{{ $totalApplications > 0 ? round(($rejectedApplications/$totalApplications)*100,1) : 0 }}%</span>
-                                </div>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- ROW 2: Program Progress Bars -->
-        <div class="row g-4 mb-0 mt-0">
-            <div class="col-12">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        <div>
-                            <div class="panel-header-title">Program Share Overview</div>
-                            <div class="panel-header-sub">Relative volume per program (beneficiary counts, {{ $analysisYear }})</div>
-                        </div>
-                    </div>
-                    <div class="panel-body">
-                        @php $maxProg = $programShareOverview->max() ?: 1; $pIdx = 1; @endphp
-                        @forelse($programShareOverview as $program => $count)
-                        <div class="prog-row">
-                            <span class="prog-num">{{ str_pad($pIdx++, 2, '0', STR_PAD_LEFT) }}</span>
-                            <span class="prog-name">{{ str_replace('_', ' ', $program) }}</span>
-                            <div class="prog-bar-wrap">
-                                <div class="prog-bar" style="width:{{ ($count/$maxProg)*100 }}%"></div>
-                            </div>
-                            <span class="prog-count">{{ number_format($count) }}</span>
-                        </div>
-                        @empty
-                        <div class="no-data">No program data available.</div>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Barangay data (year follows top Data year filter) -->
-        <div class="row g-4 mb-0 mt-0">
-            <div class="col-12">
-                <div class="panel-card">
-                    <div class="panel-header" style="flex-wrap:wrap;gap:12px;">
-                        <div>
-                            <div class="panel-header-title">Barangay data</div>
-                            <div class="panel-header-sub">Population and program counts by barangay ({{ $analysisYear }}) — use Data year above to change</div>
-                        </div>
-                    </div>
-                    <div class="panel-body p-0">
-                        @if($barangayRowsForAnalysis->isEmpty())
-                            <div class="no-data py-4 px-3">No barangay records for {{ $analysisYear }} yet. Add or update figures in <a href="{{ route('admin.data.barangays', ['year' => $analysisYear]) }}#return">Barangay Data</a>. Saving there updates the charts and table here, and rolls up totals for the municipality charts below.</div>
-                        @else
-                            <div class="p-4 pb-3">
-                                <div class="row g-4">
-                                    <div class="col-12">
-                                        <div class="bgy-chart-card mb-2">
-                                            <div class="bgy-chart-actions">
-                                                <button type="button" class="btn-chart-export" id="bgyPopulationChartExport" title="Save chart as PNG">Export</button>
-                                            </div>
-                                            <div class="chart-wrap" style="height:{{ max(380, min(120 + $barangayRowsForAnalysis->count() * 28, 560)) }}px;">
-                                                <canvas id="bgyPopulationChart"></canvas>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="col-12">
-                                        <div class="bgy-chart-card">
-                                            <div class="bgy-chart-actions">
-                                                <button type="button" class="btn-chart-export" id="bgyProgramsByBarangayChartExport" title="Save chart as PNG">Export</button>
-                                            </div>
-                                            <div class="chart-wrap" style="height:{{ max(400, min(140 + $barangayRowsForAnalysis->count() * 28, 580)) }}px;">
-                                                <canvas id="bgyProgramsByBarangayChart"></canvas>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                        @endif
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ROW 3: Population & Households + Male vs Female -->
-        <div class="row g-4 mb-0 mt-0">
-
-            <!-- Population & Households -->
-            <div class="col-md-6">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        <div>
-                            <div class="panel-header-title">Population & Households</div>
-                            <div class="panel-header-sub">{{ $municipality->name }} demographics ({{ $analysisYear }})</div>
-                        </div>
-                    </div>
-                    <div class="panel-body">
-                        <div class="chart-wrap" style="height:280px;">
-                            <canvas id="popHouseholdsChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Male vs Female -->
-            <div class="col-md-6">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        <div>
-                            <div class="panel-header-title">Male vs Female</div>
-                            <div class="panel-header-sub">Gender distribution ({{ $analysisYear }})</div>
-                        </div>
-                    </div>
-                    <div class="panel-body">
-                        <div class="chart-wrap" style="height:280px;">
-                            <canvas id="genderChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-        <!-- ROW 4: Age Group Analysis + Program Beneficiaries -->
-        <div class="row g-4 mb-0 mt-0">
-
-            <!-- Age Group Analysis -->
-            <div class="col-md-6">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        <div>
-                            <div class="panel-header-title">Age Group Analysis</div>
-                            <div class="panel-header-sub">Population by age range ({{ $analysisYear }})</div>
-                        </div>
-                    </div>
-                    <div class="panel-body">
-                        <div class="chart-wrap" style="height:280px;">
-                            <canvas id="ageGroupChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Program Beneficiaries Analysis -->
-            <div class="col-md-6">
-                <div class="panel-card">
-                    <div class="panel-header">
-                        <div>
-                            <div class="panel-header-title">Program Beneficiaries Analysis</div>
-                            <div class="panel-header-sub">Beneficiaries by program ({{ $analysisYear }})</div>
-                        </div>
-                    </div>
-                    <div class="panel-body">
-                        <div class="chart-wrap" style="height:280px;">
-                            <canvas id="beneficiariesChart"></canvas>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-        </div>
-
-    </div>
+  {{-- --- KPI CARDS -------------------------------------------------------- --}}
+  <div class="kp">
+    <div class="k">
+      <span>Population</span>
+      @if($totalPop > 0)
+        <b>{{ number_format($totalPop) }}</b>
+        @php
+          $prevPopYr = $trendRows->filter(fn($r, $y) => $y < $analysisYear && !empty($r->total_population))->keys()->last();
+          $prevPop = $prevPopYr ? $trendRows[$prevPopYr]->total_population : null;
+          $diffPop = ($prevPop !== null && $totalPop > 0) ? $totalPop - $prevPop : null;
+        @endphp
+        @if($diffPop !== null)
+          <small><span class="up">{{ $diffPop >= 0 ? '+' : '' }}{{ number_format($diffPop) }}</span> vs {{ $prevPopYr }}</small>
+        @else
+          <small>Residents &bull; {{ $analysisYear }}</small>
+        @endif
+      @else
+        <b class="na">No record</b>
+        <small>Not recorded for {{ $analysisYear }}</small>
+      @endif
     </div>
 
-    <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
+    <div class="k">
+      <span>Households</span>
+      @if($totalHouseholds > 0)
+        <b>{{ number_format($totalHouseholds) }}</b>
+        @php
+          $prevHhYr = $trendRows->filter(fn($r, $y) => $y < $analysisYear && !empty($r->total_households))->keys()->last();
+          $prevHh = $prevHhYr ? $trendRows[$prevHhYr]->total_households : null;
+          $diffHh = ($prevHh !== null && $totalHouseholds > 0) ? $totalHouseholds - $prevHh : null;
+        @endphp
+        @if($diffHh !== null)
+          <small><span class="up">{{ $diffHh >= 0 ? '+' : '' }}{{ number_format($diffHh) }}</span> vs {{ $prevHhYr }}</small>
+        @else
+          <small>Households &bull; {{ $analysisYear }}</small>
+        @endif
+      @else
+        <b class="na">No record</b>
+        <small>Not recorded for {{ $analysisYear }}</small>
+      @endif
     </div>
 
-    @include('components.admin-notification-modal')
-    @include('components.admin-settings-modal')
-    @include('components.admin-chat-modal')
+    <div class="k">
+      <span>Applications</span>
+      @if($totalApplications > 0)
+        <b id="kpiAppsVal">{{ number_format($totalApplications) }}</b>
+        <small id="kpiAppsSub">Applications dated {{ $analysisYear }}</small>
+      @else
+        <b class="na">No record</b>
+        <small>Not recorded for {{ $analysisYear }}</small>
+      @endif
+    </div>
 
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
-    <script>
-        // -- SHARED DEFAULTS --
-        Chart.defaults.font.family = "'Inter', sans-serif";
-        Chart.defaults.font.size   = 12;
-        Chart.defaults.color       = '#64748b';
+    <div class="k">
+      <span>Unique applicants</span>
+      @if($uniqueApplicants > 0)
+        <b id="kpiUniqVal">{{ number_format($uniqueApplicants) }}</b>
+        <small id="kpiUniqSub">Distinct people</small>
+      @elseif($totalApplications > 0)
+        <b id="kpiUniqVal">{{ number_format($totalApplications) }}</b>
+        <small id="kpiUniqSub">Distinct people</small>
+      @else
+        <b class="na">No record</b>
+        <small>Not recorded for {{ $analysisYear }}</small>
+      @endif
+    </div>
 
-        // -- 1. APPLICATIONS BY PROGRAM (grouped bar) --
-        const progLabels = {!! json_encode($applicationsByProgram->keys()->map(fn($k) => str_replace('_', ' ', $k))) !!};
-        const progPending  = {!! json_encode($applicationsByProgram->pluck('pending'))  !!};
-        const progApproved = {!! json_encode($applicationsByProgram->pluck('approved')) !!};
-        const progRejected = {!! json_encode($applicationsByProgram->pluck('rejected')) !!};
+    <div class="k">
+      <span>Approved cases</span>
+      @if($approvedApplications > 0 || $totalApplications > 0)
+        <b id="kpiApprVal">{{ number_format($approvedApplications) }}</b>
+        <small id="kpiApprSub">@if($appRate !== null)<span class="up">{{ $appRate }}%</span> approval rate @else Completed @endif</small>
+      @else
+        <b class="na">No record</b>
+        <small>Not recorded for {{ $analysisYear }}</small>
+      @endif
+    </div>
 
-        new Chart(document.getElementById('programChart'), {
-            type: 'bar',
-            data: {
-                labels: progLabels,
-                datasets: [
-                    {
-                        label: 'Pending',
-                        data: progPending,
-                        backgroundColor: 'rgba(253,185,19,0.85)',
-                        borderRadius: { topLeft: 6, topRight: 6 },
-                        borderSkipped: false,
-                        barPercentage: 0.65,
-                    },
-                    {
-                        label: 'Approved',
-                        data: progApproved,
-                        backgroundColor: 'rgba(44,62,143,0.85)',
-                        borderRadius: { topLeft: 6, topRight: 6 },
-                        borderSkipped: false,
-                        barPercentage: 0.65,
-                    },
-                    {
-                        label: 'Rejected',
-                        data: progRejected,
-                        backgroundColor: 'rgba(196,30,36,0.80)',
-                        borderRadius: { topLeft: 6, topRight: 6 },
-                        borderSkipped: false,
-                        barPercentage: 0.65,
-                    }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: {
-                        position: 'top',
-                        labels: { usePointStyle: true, pointStyle: 'circle', padding: 18, font: { weight: '600' } }
-                    },
-                    tooltip: {
-                        backgroundColor: '#1E293B',
-                        padding: 12,
-                        cornerRadius: 10,
-                        bodyFont: { size: 13 },
-                        titleFont: { size: 13, weight: 'bold' }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { stepSize: 1, font: { size: 11 } },
-                        grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 11 } }
-                    }
-                }
-            }
-        });
+    <div class="k">
+      <span>Beneficiaries</span>
+      @if($totalBeneficiaries > 0)
+        <b id="kpiBenefVal">{{ number_format($totalBeneficiaries) }}</b>
+        <small id="kpiBenefSub">Program beneficiaries</small>
+      @else
+        <b class="na">No record</b>
+        <small>Not recorded for {{ $analysisYear }}</small>
+      @endif
+    </div>
+  </div>
 
-        // -- 2. STATUS DOUGHNUT --
-        new Chart(document.getElementById('statusChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Pending', 'Approved', 'Rejected'],
-                datasets: [{
-                    data: [{{ $pendingApplications }}, {{ $approvedApplications }}, {{ $rejectedApplications }}],
-                    backgroundColor: ['#FDB913', '#2C3E8F', '#C41E24'],
-                    hoverBackgroundColor: ['#E5A500', '#1A2A5C', '#9B1217'],
-                    borderWidth: 0,
-                    hoverOffset: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '72%',
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1E293B',
-                        padding: 10,
-                        cornerRadius: 10,
-                        callbacks: {
-                            label: (ctx) => ` ${ctx.label}: ${ctx.parsed} (${ctx.dataset.data.reduce((a,b) => a+b,0) > 0 ? Math.round(ctx.parsed/ctx.dataset.data.reduce((a,b)=>a+b,0)*100) : 0}%)`
-                        }
-                    }
-                }
-            }
-        });
+  {{-- --- TWO-COL: TREND + PROGRAMS ---------------------------------------- --}}
+  <div class="two">
 
-        // -- 3. POPULATION & HOUSEHOLDS CHART --
-        new Chart(document.getElementById('popHouseholdsChart'), {
-            type: 'bar',
-            data: {
-                labels: ['Population', 'Households'],
-                datasets: [{
-                    label: '{{ $municipality->name }}',
-                    data: [{{ $totalPop }}, {{ $totalHouseholds }}],
-                    backgroundColor: ['rgba(44,62,143,0.85)', 'rgba(253,185,19,0.85)'],
-                    borderRadius: { topLeft: 6, topRight: 6 },
-                    borderSkipped: false,
-                    barPercentage: 0.6,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1E293B',
-                        padding: 12,
-                        cornerRadius: 10,
-                        callbacks: {
-                            label: (ctx) => ` ${ctx.label}: ${ctx.parsed.y.toLocaleString()}`
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { callback: v => v.toLocaleString(), font: { size: 11 } },
-                        grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 12, weight: '600' } }
-                    }
-                }
-            }
-        });
+    {{-- Population & household trend --}}
+    <div class="cd">
+      <div class="ch">
+        <h2>Population &amp; household trend</h2>
+        <p>Historical comparison across years with records</p>
+      </div>
+      <div class="bd">
+        @if($trendRows->isEmpty())
+          <div class="ms">
+            <b>No trend data</b>
+            <p>No historical population records found for {{ $municipality->name }}.</p>
+          </div>
+        @else
+          <div class="lg">
+            <span><i class="sw" style="background:var(--navy)"></i>Population</span>
+            <span><i class="sw" style="background:var(--gold)"></i>Households</span>
+          </div>
+          @foreach($trendRows as $y => $row)
+            @php
+              $pVal = $row->total_population;
+              $hVal = $row->total_households;
+              $pPct = ($pVal && $sharedMax > 0) ? round($pVal / $sharedMax * 100, 1) : 0;
+              $hPct = ($hVal && $sharedMax > 0) ? round($hVal / $sharedMax * 100, 1) : 0;
+            @endphp
+            <div class="tr {{ (int)$y === (int)$analysisYear ? 'on' : '' }}">
+              <strong>{{ $y }}</strong>
+              <div>
+                @if($pVal)
+                  <div class="br" tabindex="0" role="img" aria-label="Population {{ $y }}: {{ number_format($pVal) }}">
+                    <div><i style="width:{{ $pPct }}%;background:var(--navy)"></i></div>
+                    <em>{{ number_format($pVal) }}</em>
+                  </div>
+                @else
+                  <div class="na">Population: no record</div>
+                @endif
 
-        // -- 4. GENDER DISTRIBUTION CHART --
-        new Chart(document.getElementById('genderChart'), {
-            type: 'doughnut',
-            data: {
-                labels: ['Male', 'Female'],
-                datasets: [{
-                    data: [{{ $genderData['male'] }}, {{ $genderData['female'] }}],
-                    backgroundColor: ['#2C3E8F', '#FDB913'],
-                    hoverBackgroundColor: ['#1A2A5C', '#E5A500'],
-                    borderWidth: 0,
-                    hoverOffset: 8
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                cutout: '65%',
-                plugins: {
-                    legend: {
-                        position: 'bottom',
-                        labels: { usePointStyle: true, pointStyle: 'circle', padding: 16, font: { weight: '600', size: 12 } }
-                    },
-                    tooltip: {
-                        backgroundColor: '#1E293B',
-                        padding: 10,
-                        cornerRadius: 10,
-                        callbacks: {
-                            label: (ctx) => ` ${ctx.label}: ${ctx.parsed.toLocaleString()} (${Math.round((ctx.parsed / ({{ $genderData['male'] }} + {{ $genderData['female'] }})) * 100)}%)`
-                        }
-                    }
-                }
-            }
-        });
+                @if($hVal)
+                  <div class="br" tabindex="0" role="img" aria-label="Households {{ $y }}: {{ number_format($hVal) }}">
+                    <div><i style="width:{{ $hPct }}%;background:var(--gold)"></i></div>
+                    <em>{{ number_format($hVal) }}</em>
+                  </div>
+                @else
+                  <div class="na">Households: no record</div>
+                @endif
+              </div>
+            </div>
+          @endforeach
+          <p class="fn">Years listed come from stored records. Bars share one scale.</p>
+        @endif
+      </div>
+    </div>
 
-        // -- 5. AGE GROUP ANALYSIS CHART --
-        new Chart(document.getElementById('ageGroupChart'), {
-            type: 'bar',
-            data: {
-                labels: ['0-19 years', '20-59 years', '60+ years'],
-                datasets: [{
-                    label: 'Population',
-                    data: [{{ $ageGroupData['0-19'] }}, {{ $ageGroupData['20-59'] }}, {{ $ageGroupData['60+'] }}],
-                    backgroundColor: ['rgba(44,62,143,0.85)', 'rgba(253,185,19,0.85)', 'rgba(40,167,69,0.85)'],
-                    borderRadius: { topLeft: 6, topRight: 6 },
-                    borderSkipped: false,
-                    barPercentage: 0.6,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1E293B',
-                        padding: 12,
-                        cornerRadius: 10,
-                        callbacks: {
-                            label: (ctx) => ` ${ctx.label}: ${ctx.parsed.y.toLocaleString()}`
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { callback: v => v.toLocaleString(), font: { size: 11 } },
-                        grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 11 } }
-                    }
-                }
-            }
-        });
+    {{-- Social welfare programs --}}
+    <div class="cd">
+      <div class="ch">
+        <h2>Social welfare programs</h2>
+        <p>Beneficiaries per program &bull; {{ $analysisYear }}</p>
+      </div>
+      <div class="bd">
+        @if($programShareOverview->isEmpty())
+          <div class="ms">
+            <b>No program records for {{ $analysisYear }}</b>
+            <p>No beneficiary records found for {{ $analysisYear }}.</p>
+            <a href="{{ route('admin.data.dashboard') }}" class="ms-btn">Open Data Management</a>
+          </div>
+        @else
+          <h3>Beneficiaries by program &bull; {{ $analysisYear }}</h3>
+          @php $maxProg = $programShareOverview->max() ?: 1; @endphp
+          @foreach($programShareOverview as $prog => $cnt)
+            @php $pct = round($cnt / $maxProg * 100, 2); @endphp
+            <div class="pr" data-prog-item="{{ $prog }}">
+              <span class="nm">{{ str_replace('_', ' ', $prog) }}</span>
+              <span class="v">{{ number_format($cnt) }}</span>
+              <div class="tk" role="img" aria-label="{{ str_replace('_', ' ', $prog) }}: {{ number_format($cnt) }}">
+                <i style="width:{{ $pct }}%;background:var(--navy)"></i>
+              </div>
+            </div>
+          @endforeach
 
-        // -- 6. PROGRAM BENEFICIARIES CHART --
-        const beneficiariesLabels = {!! json_encode(array_keys($programBeneficiaries)) !!};
-        const beneficiariesData = {!! json_encode(array_values($programBeneficiaries)) !!};
-        const beneficiariesColors = ['#2C3E8F', '#FDB913', '#28a745', '#C41E24', '#6366f1'];
+          @if(!empty($programsByYear))
+            <h3 style="margin-top:16px">Beneficiaries across years</h3>
+            <div class="tw">
+              <table class="stk">
+                <thead>
+                  <tr>
+                    <th>Program</th>
+                    @foreach($trendYrList as $yr)
+                      <th class="{{ (int)$yr === (int)$analysisYear ? 'sel' : '' }}">{{ $yr }}</th>
+                    @endforeach
+                  </tr>
+                </thead>
+                <tbody>
+                  @foreach($programsByYear as $prog => $yearData)
+                    <tr data-prog-row="{{ $prog }}">
+                      <th scope="row">{{ str_replace('_', ' ', $prog) }}</th>
+                      @foreach($trendYrList as $yr)
+                        <td data-l="{{ $yr }}" class="{{ (int)$yr === (int)$analysisYear ? 'sel' : '' }}">
+                          @if(isset($yearData[$yr]) && $yearData[$yr] > 0)
+                            {{ number_format($yearData[$yr]) }}
+                          @else
+                            <span class="na">—</span>
+                          @endif
+                        </td>
+                      @endforeach
+                    </tr>
+                  @endforeach
+                </tbody>
+              </table>
+            </div>
+            <p class="fn">&ldquo;—&rdquo; means no record for that year. It is not a zero.</p>
+          @endif
+        @endif
+      </div>
+    </div>
 
-        new Chart(document.getElementById('beneficiariesChart'), {
-            type: 'bar',
-            data: {
-                labels: beneficiariesLabels,
-                datasets: [{
-                    label: 'Beneficiaries',
-                    data: beneficiariesData,
-                    backgroundColor: beneficiariesColors,
-                    borderRadius: { topLeft: 6, topRight: 6 },
-                    borderSkipped: false,
-                    barPercentage: 0.6,
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1E293B',
-                        padding: 12,
-                        cornerRadius: 10,
-                        callbacks: {
-                            label: (ctx) => ` ${ctx.label}: ${ctx.parsed.y.toLocaleString()} beneficiaries`
-                        }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: { callback: v => v.toLocaleString(), font: { size: 11 } },
-                        grid: { color: 'rgba(0,0,0,0.04)', drawBorder: false }
-                    },
-                    x: {
-                        grid: { display: false },
-                        ticks: { font: { size: 11 } }
-                    }
-                }
-            }
-        });
+  </div>
 
-@if($barangayRowsForAnalysis->isNotEmpty())
-        // -- 7 & 8. BARANGAY DATA (vertical bar style — population + programs by barangay) --
-        const bgyMuniName = {!! json_encode($municipality->name) !!};
-        const bgyAnalysisYear = {{ (int) $analysisYear }};
-        const bgyLabels = {!! json_encode($barangayRowsForAnalysis->pluck('name')->values()->all()) !!};
-        const bgyPopData = {!! json_encode($barangayRowsForAnalysis->pluck('total_population')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
-        const bgyPwd = {!! json_encode($barangayRowsForAnalysis->pluck('pwd_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
-        const bgyAics = {!! json_encode($barangayRowsForAnalysis->pluck('aics_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
-        const bgySolo = {!! json_encode($barangayRowsForAnalysis->pluck('single_parent_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
-        const bgy4ps = {!! json_encode($barangayRowsForAnalysis->pluck('four_ps_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
-        const bgySenior = {!! json_encode($barangayRowsForAnalysis->pluck('senior_count')->map(fn ($v) => (int) ($v ?? 0))->values()->all()) !!};
+  {{-- --- APPLICATION ANALYSIS ---------------------------------------------- --}}
+  <div class="cd" id="appSection">
+    <div class="ch">
+      <h2>Application analysis &bull; {{ $analysisYear }}</h2>
+      <p>Applications, status outcomes and detail by program</p>
+    </div>
+    <div class="bd">
+      @if($totalApplications === 0)
+        <div class="ms">
+          <b>No applications for {{ $analysisYear }}</b>
+          <p>Applications for this year have not been recorded yet. The layout fills in automatically when they are.</p>
+        </div>
+      @else
+        @php
+          $pendPct = $totalApplications > 0 ? $pendingApplications  / $totalApplications * 100 : 0;
+          $apprPct = $totalApplications > 0 ? $approvedApplications / $totalApplications * 100 : 0;
+          $rejPct  = $totalApplications > 0 ? $rejectedApplications / $totalApplications * 100 : 0;
+          $hasBenef = $programShareOverview->isNotEmpty();
+          $showRej  = $rejectedApplications > 0;
+          $showUniq = $uniqueApplicants > 0;
+        @endphp
 
-        const bgyPastelPalette = [
-            'rgba(147, 197, 253, 0.92)', 'rgba(252, 211, 77, 0.92)', 'rgba(251, 182, 206, 0.92)', 'rgba(167, 243, 208, 0.92)',
-            'rgba(196, 181, 253, 0.92)', 'rgba(165, 243, 252, 0.92)', 'rgba(254, 215, 170, 0.92)', 'rgba(216, 180, 254, 0.92)',
-            'rgba(190, 242, 100, 0.92)', 'rgba(253, 186, 116, 0.92)', 'rgba(125, 211, 252, 0.92)', 'rgba(249, 168, 212, 0.92)'
-        ];
-        const bgyBarColors = bgyLabels.map((_, i) => bgyPastelPalette[i % bgyPastelPalette.length]);
+        <h3>Status of {{ number_format($totalApplications) }} applications &bull; {{ $analysisYear }}</h3>
+        <div class="tk" style="height:14px" role="img" aria-label="Pending {{ $pendingApplications }}, approved {{ $approvedApplications }}, rejected {{ $rejectedApplications }}">
+          @if($pendPct > 0)<i style="width:{{ $pendPct }}%;background:var(--gold)" title="Pending: {{ number_format($pendingApplications) }}"></i>@endif
+          @if($apprPct > 0)<i style="width:{{ $apprPct }}%;background:var(--navy-l)" title="Approved: {{ number_format($approvedApplications) }}"></i>@endif
+          @if($rejPct  > 0)<i style="width:{{ $rejPct }}%;background:var(--bad)" title="Rejected: {{ number_format($rejectedApplications) }}"></i>@endif
+          @if(!$pendPct && !$apprPct && !$rejPct)<i style="width:100%;background:var(--soft)"></i>@endif
+        </div>
 
-        const bgyAxisTickShort = (value) => {
-            const n = Number(value);
-            if (!Number.isFinite(n) || n === 0) return '0';
-            if (n >= 1_000_000) return (n / 1_000_000).toFixed(n % 1_000_000 === 0 ? 0 : 1).replace(/\.0$/, '') + 'M';
-            if (n >= 1_000) return (n / 1_000).toFixed(n % 1_000 === 0 ? 0 : 1).replace(/\.0$/, '') + 'K';
-            return n.toLocaleString();
-        };
+        <div class="lg" style="margin-top:8px">
+          <span><i class="sw" style="background:var(--gold)"></i>Pending {{ number_format($pendingApplications) }} ({{ round($pendPct) }}%)</span>
+          <span><i class="sw" style="background:var(--navy-l)"></i>Approved {{ number_format($approvedApplications) }} ({{ round($apprPct) }}%)</span>
+          @if($showRej)
+          <span><i class="sw" style="background:var(--bad)"></i>Rejected {{ number_format($rejectedApplications) }} ({{ round($rejPct) }}%)</span>
+          @endif
+        </div>
 
-        const bgyGridColor = 'rgba(148, 163, 184, 0.35)';
-        const bgyChartScalesXY = {
-            x: {
-                grid: { color: bgyGridColor, drawBorder: true, borderColor: '#cbd5e1' },
-                ticks: {
-                    font: { size: 10, weight: '600' },
-                    maxRotation: 45,
-                    minRotation: 45,
-                    autoSkip: true,
-                    maxTicksLimit: 48
-                }
-            },
-            y: {
-                beginAtZero: true,
-                grid: { color: bgyGridColor, drawBorder: true, borderColor: '#cbd5e1' },
-                ticks: {
-                    font: { size: 11 },
-                    callback: (v) => bgyAxisTickShort(v)
-                }
-            }
-        };
+        <h3 style="margin-top:14px">By program</h3>
+        @foreach($applicationsByProgram as $progName => $stats)
+          @php
+            $pTot = $stats['total'] ?? 0;
+            $pPen = $stats['pending'] ?? 0;
+            $pApp = $stats['approved'] ?? 0;
+            $pRej = $stats['rejected'] ?? 0;
+            $ppPct = $pTot > 0 ? $pPen / $pTot * 100 : 0;
+            $paPct = $pTot > 0 ? $pApp / $pTot * 100 : 0;
+            $prPct = $pTot > 0 ? $pRej / $pTot * 100 : 0;
+          @endphp
+          <div class="pr" data-app-prog="{{ $progName }}">
+            <span class="nm">{{ str_replace('_', ' ', $progName) }}</span>
+            <span class="v">{{ number_format($pTot) }}</span>
+            <div class="tk" role="img" title="{{ str_replace('_', ' ', $progName) }}: {{ $pPen }} pending, {{ $pApp }} approved, {{ $pRej }} rejected">
+              @if($ppPct > 0)<i style="width:{{ $ppPct }}%;background:var(--gold)"></i>@endif
+              @if($paPct > 0)<i style="width:{{ $paPct }}%;background:var(--navy-l)"></i>@endif
+              @if($prPct > 0)<i style="width:{{ $prPct }}%;background:var(--bad)"></i>@endif
+            </div>
+          </div>
+        @endforeach
 
-        const bgyPopChart = new Chart(document.getElementById('bgyPopulationChart'), {
-            type: 'bar',
-            data: {
-                labels: bgyLabels,
-                datasets: [{
-                    label: 'Population',
-                    data: bgyPopData,
-                    backgroundColor: bgyBarColors,
-                    borderRadius: { topLeft: 4, topRight: 4 },
-                    borderSkipped: false,
-                    maxBarThickness: 36,
-                    categoryPercentage: 0.72,
-                    barPercentage: 0.9
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                layout: { padding: { top: 8, bottom: 16, left: 4, right: 8 } },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Population by barangay: ' + bgyMuniName + ' (' + bgyAnalysisYear + ')',
-                        font: { family: "'Inter', sans-serif", size: 15, weight: '700' },
-                        color: '#1e293b',
-                        padding: { bottom: 6, top: 4 }
-                    },
-                    subtitle: {
-                        display: true,
-                        text: 'Touch or hover over bars for details.',
-                        font: { family: "'Inter', sans-serif", size: 11.5, weight: '500' },
-                        color: '#64748b',
-                        padding: { bottom: 14 }
-                    },
-                    legend: { display: false },
-                    tooltip: {
-                        backgroundColor: '#1E293B',
-                        padding: 12,
-                        cornerRadius: 10,
-                        callbacks: {
-                            title: (items) => items[0]?.label || '',
-                            label: (ctx) => ' ' + Number(ctx.parsed.y ?? ctx.raw ?? 0).toLocaleString() + ' residents'
-                        }
-                    }
-                },
-                scales: bgyChartScalesXY
-            }
-        });
+        <div class="tw">
+          <table class="stk">
+            <thead>
+              <tr>
+                <th>Program</th>
+                <th>Applications</th>
+                @if($showUniq)<th>Unique applicants</th>@endif
+                <th>Pending</th>
+                <th>Approved</th>
+                @if($showRej)<th>Rejected</th>@endif
+                @if($hasBenef)<th class="sel">Beneficiaries</th>@endif
+              </tr>
+            </thead>
+            <tbody>
+              @foreach($applicationsByProgram as $progName => $stats)
+                @php
+                  $pBenef = $programShareOverview->get($progName);
+                @endphp
+                <tr data-app-row="{{ $progName }}">
+                  <th scope="row">{{ str_replace('_', ' ', $progName) }}</th>
+                  <td data-l="Applications">{{ number_format($stats['total'] ?? 0) }}</td>
+                  @if($showUniq)<td data-l="Unique applicants">@if(isset($stats['unique_count']) && $stats['unique_count'] > 0) {{ number_format($stats['unique_count']) }} @else <span class="na">—</span> @endif</td>@endif
+                  <td data-l="Pending">{{ number_format($stats['pending'] ?? 0) }}</td>
+                  <td data-l="Approved">{{ number_format($stats['approved'] ?? 0) }}</td>
+                  @if($showRej)<td data-l="Rejected">{{ number_format($stats['rejected'] ?? 0) }}</td>@endif
+                  @if($hasBenef)<td data-l="Beneficiaries" class="sel">@if($pBenef !== null) {{ number_format($pBenef) }} @else <span class="na">—</span> @endif</td>@endif
+                </tr>
+              @endforeach
+              <tr style="font-weight:700">
+                <th scope="row">Total</th>
+                <td data-l="Applications"><b>{{ number_format($totalApplications) }}</b></td>
+                @if($showUniq)<td data-l="Unique applicants"><b>{{ number_format($uniqueApplicants) }}</b></td>@endif
+                <td data-l="Pending"><b>{{ number_format($pendingApplications) }}</b></td>
+                <td data-l="Approved"><b>{{ number_format($approvedApplications) }}</b></td>
+                @if($showRej)<td data-l="Rejected"><b>{{ number_format($rejectedApplications) }}</b></td>@endif
+                @if($hasBenef)<td data-l="Beneficiaries" class="sel"><b>{{ number_format($totalBeneficiaries) }}</b></td>@endif
+              </tr>
+            </tbody>
+          </table>
+        </div>
+        <p class="fn">Applications, unique applicants, approved cases and beneficiaries are separate measures. Columns appear only when the stored data supports them.</p>
+      @endif
+    </div>
+  </div>
 
-        const bgyProgChart = new Chart(document.getElementById('bgyProgramsByBarangayChart'), {
-            type: 'bar',
-            data: {
-                labels: bgyLabels,
-                datasets: [
-                    { label: 'PWD', data: bgyPwd, backgroundColor: 'rgba(44, 62, 143, 0.78)' },
-                    { label: 'AICS', data: bgyAics, backgroundColor: 'rgba(253, 185, 19, 0.85)' },
-                    { label: 'Solo parent', data: bgySolo, backgroundColor: 'rgba(40, 167, 69, 0.78)' },
-                    { label: '4Ps', data: bgy4ps, backgroundColor: 'rgba(99, 102, 241, 0.78)' },
-                    { label: 'Senior', data: bgySenior, backgroundColor: 'rgba(196, 30, 36, 0.72)' }
-                ]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                interaction: { mode: 'index', intersect: false },
-                layout: { padding: { top: 8, bottom: 16, left: 4, right: 8 } },
-                plugins: {
-                    title: {
-                        display: true,
-                        text: 'Program counts by barangay: ' + bgyMuniName + ' (' + bgyAnalysisYear + ')',
-                        font: { family: "'Inter', sans-serif", size: 15, weight: '700' },
-                        color: '#1e293b',
-                        padding: { bottom: 6, top: 4 }
-                    },
-                    subtitle: {
-                        display: true,
-                        text: 'Stacked totals per barangay — hover a segment for counts.',
-                        font: { family: "'Inter', sans-serif", size: 11.5, weight: '500' },
-                        color: '#64748b',
-                        padding: { bottom: 14 }
-                    },
-                    legend: {
-                        position: 'bottom',
-                        labels: { usePointStyle: true, pointStyle: 'circle', padding: 14, font: { weight: '600', size: 11 } }
-                    },
-                    tooltip: {
-                        backgroundColor: '#1E293B',
-                        padding: 12,
-                        cornerRadius: 10,
-                        callbacks: {
-                            label: (ctx) => {
-                                const v = ctx.parsed.y ?? ctx.raw ?? 0;
-                                return ' ' + ctx.dataset.label + ': ' + Number(v).toLocaleString();
-                            },
-                            footer: (items) => {
-                                if (!items.length) return '';
-                                const sum = items.reduce((s, it) => s + Number(it.parsed.y ?? it.raw ?? 0), 0);
-                                return 'Combined: ' + sum.toLocaleString();
-                            }
-                        }
-                    }
-                },
-                scales: {
-                    x: {
-                        stacked: true,
-                        ...bgyChartScalesXY.x
-                    },
-                    y: {
-                        stacked: true,
-                        beginAtZero: true,
-                        grid: { color: bgyGridColor, drawBorder: true, borderColor: '#cbd5e1' },
-                        ticks: {
-                            font: { size: 11 },
-                            callback: (v) => bgyAxisTickShort(v)
-                        }
-                    }
-                }
-            }
-        });
+  {{-- --- TWO-COL: GENDER + BARANGAY --------------------------------------- --}}
+  <div class="two eq">
 
-        document.getElementById('bgyPopulationChartExport')?.addEventListener('click', function () {
-            const a = document.createElement('a');
-            a.href = bgyPopChart.toBase64Image();
-            a.download = 'population-by-barangay-' + bgyAnalysisYear + '.png';
-            a.click();
-        });
-        document.getElementById('bgyProgramsByBarangayChartExport')?.addEventListener('click', function () {
-            const a = document.createElement('a');
-            a.href = bgyProgChart.toBase64Image();
-            a.download = 'program-counts-by-barangay-' + bgyAnalysisYear + '.png';
-            a.click();
-        });
-@endif
-        document.querySelectorAll('.analysis-year-select').forEach(function (sel) {
-            sel.addEventListener('change', function () {
-                window.location.href = @json(route('admin.detailed-analysis')) + '?year=' + encodeURIComponent(this.value);
-            });
-        });
-    </script>
+    {{-- Gender distribution --}}
+    <div class="cd">
+      <div class="ch">
+        <h2>Gender distribution</h2>
+        <p>Male vs Female &bull; {{ $analysisYear }}</p>
+      </div>
+      <div class="bd">
+        @php
+          $mCount = $genderData['male'] ?? 0;
+          $fCount = $genderData['female'] ?? 0;
+          $gTotal = $mCount + $fCount;
+          $mPct = $gTotal > 0 ? round($mCount / $gTotal * 100) : 50;
+          $fPct = 100 - $mPct;
+        @endphp
+        @if($gTotal === 0)
+          <div class="ms">
+            <b>No gender data for {{ $analysisYear }}</b>
+            <p>Gender figures have not been recorded for this year.</p>
+          </div>
+        @else
+          <div class="dn">
+            <div class="ring" role="img" aria-label="Male {{ number_format($mCount) }}, female {{ number_format($fCount) }}"
+                 style="background:conic-gradient(var(--navy) 0 {{ $mPct }}%, var(--gold) {{ $mPct }}% 100%)">
+              <div>
+                <b>{{ number_format($gTotal) }}</b>
+                <small>Residents</small>
+              </div>
+            </div>
+            <div class="lg" style="justify-content:center">
+              <span><i class="sw" style="background:var(--navy)"></i>Male {{ number_format($mCount) }} ({{ $mPct }}%)</span>
+              <span><i class="sw" style="background:var(--gold)"></i>Female {{ number_format($fCount) }} ({{ $fPct }}%)</span>
+            </div>
+          </div>
+        @endif
+      </div>
+    </div>
+
+    {{-- Population by barangay --}}
+    <div class="cd">
+      <div class="ch">
+        <h2>Population by barangay &bull; {{ $analysisYear }}</h2>
+        <p>Ranked by number of residents</p>
+      </div>
+      <div class="bd">
+        @if($barangayRowsForAnalysis->isEmpty())
+          <div class="ms">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" style="opacity:.3"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>
+            <b>No barangay records for {{ $analysisYear }}</b>
+            <p>Barangay figures appear here once they are recorded.</p>
+            <a href="{{ route('admin.data.dashboard') }}" class="ms-btn">Open Data Management</a>
+          </div>
+        @else
+          @php
+            $bMax = $barangayRowsForAnalysis->max('total_population') ?: 1;
+          @endphp
+          <div class="bl">
+            @foreach($barangayRowsForAnalysis->sortByDesc('total_population') as $i => $b)
+              @php $bPct = round($b->total_population / $bMax * 100, 1); @endphp
+              <div class="pr">
+                <span class="nm">#{{ $loop->iteration }} {{ $b->name }}</span>
+                <span class="v">@if($b->total_population) {{ number_format($b->total_population) }} @else <span class="na">—</span> @endif</span>
+                <div class="tk" role="img" aria-label="{{ $b->name }}: {{ number_format($b->total_population) }}">
+                  <i style="width:{{ $bPct }}%;background:var(--navy)"></i>
+                </div>
+              </div>
+            @endforeach
+          </div>
+          <p class="fn">{{ $barangayRowsForAnalysis->count() }} barangays recorded. The list scrolls inside this card.</p>
+        @endif
+      </div>
+    </div>
+
+  </div>
+
+</main>
+
+<footer class="pg-footer">
+  <div><strong>MSWDO</strong> — {{ $municipality->name }} &bull; Analysis {{ $analysisYear }}</div>
+</footer>
+
+{{-- --- REPORT PREVIEW MODAL ---------------------------------------------- --}}
+<div class="md-scrim" id="vrModal" hidden role="dialog" aria-modal="true" aria-labelledby="vrTitle">
+  <div class="md">
+    <div class="md-hd">
+      <div>
+        <span class="md-eb">Analysis report</span>
+        <h2 id="vrTitle">{{ $municipality->name }} Detailed Analysis</h2>
+        <span class="md-bar" aria-hidden="true"></span>
+        <p>Summary of {{ $analysisYear }} demographics, welfare programs, and applications</p>
+      </div>
+      <button type="button" class="md-x" id="vrClose" aria-label="Close report preview">&times;</button>
+    </div>
+
+    <div class="md-tabs" id="vrTabs" role="tablist">
+      <button class="chip on" data-vr-tab="0" role="tab" aria-selected="true">Summary</button>
+      <button class="chip" data-vr-tab="1" role="tab" aria-selected="false">Demographics</button>
+      <button class="chip" data-vr-tab="2" role="tab" aria-selected="false">Programs</button>
+      <button class="chip" data-vr-tab="3" role="tab" aria-selected="false">Barangays</button>
+    </div>
+
+    <div class="md-bd" id="vrBd">
+      {{-- Body dynamically populated by vrRenderBody() --}}
+    </div>
+
+    <div class="md-ft">
+      <p>{{ $municipality->name }} &bull; {{ $analysisYear }} &bull; Internal document</p>
+      <div class="md-act">
+        <button type="button" class="md-b" onclick="closeVrModal()">Close</button>
+        <a class="md-b pri" href="{{ route('admin.detailed-analysis.export.csv', ['year' => $analysisYear]) }}">Export CSV</a>
+        <a class="md-b pri" href="{{ route('admin.detailed-analysis.export.excel', ['year' => $analysisYear]) }}">Export Excel</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+/* -- INTERACTIVE CLIENT-SIDE STATE ------------------------------------- */
+const ALL_PROGRAMS = @json($allProgNames);
+const TOTAL_PROGS  = ALL_PROGRAMS.length;
+const selectedProgs = new Set(ALL_PROGRAMS);
+
+function toggleProg(btn) {
+    const prog = btn.dataset.chipProg;
+    if (selectedProgs.has(prog)) {
+        if (selectedProgs.size === 1) return; // keep at least one
+        selectedProgs.delete(prog);
+        btn.classList.remove('on');
+        btn.setAttribute('aria-pressed', 'false');
+    } else {
+        selectedProgs.add(prog);
+        btn.classList.add('on');
+        btn.setAttribute('aria-pressed', 'true');
+    }
+    updateFilterDisplay();
+    filterDomElements();
+}
+
+function resetFilters() {
+    ALL_PROGRAMS.forEach(p => selectedProgs.add(p));
+    document.querySelectorAll('[data-chip-prog]').forEach(btn => {
+        btn.classList.add('on');
+        btn.setAttribute('aria-pressed', 'true');
+    });
+    updateFilterDisplay();
+    filterDomElements();
+}
+
+function updateFilterDisplay() {
+    const count = selectedProgs.size;
+    const cntEl = document.getElementById('progSelCount');
+    if (cntEl) cntEl.textContent = count;
+    const lblEl = document.getElementById('progCountLabel');
+    if (lblEl) lblEl.textContent = count;
+
+    const pillsEl = document.getElementById('filterPills');
+    const resetEl = document.getElementById('resetLink');
+    if (count < TOTAL_PROGS) {
+        if (pillsEl) pillsEl.innerHTML = `<span class="pill">Programs: ${count} of ${TOTAL_PROGS}</span>`;
+        if (resetEl) resetEl.style.display = 'inline-block';
+    } else {
+        if (pillsEl) pillsEl.innerHTML = '';
+        if (resetEl) resetEl.style.display = 'none';
+    }
+}
+
+function filterDomElements() {
+    // 1. Social Welfare Programs bars
+    document.querySelectorAll('[data-prog-item]').forEach(el => {
+        const p = el.dataset.progItem;
+        el.style.display = selectedProgs.has(p) ? '' : 'none';
+    });
+
+    // 2. Beneficiaries across years table rows
+    document.querySelectorAll('[data-prog-row]').forEach(el => {
+        const p = el.dataset.progRow;
+        el.style.display = selectedProgs.has(p) ? '' : 'none';
+    });
+
+    // 3. Application section program bars
+    document.querySelectorAll('[data-app-prog]').forEach(el => {
+        const p = el.dataset.appProg;
+        el.style.display = selectedProgs.has(p) ? '' : 'none';
+    });
+
+    // 4. Application section table rows
+    document.querySelectorAll('[data-app-row]').forEach(el => {
+        const p = el.dataset.appRow;
+        el.style.display = selectedProgs.has(p) ? '' : 'none';
+    });
+}
+
+/* -- EXPORT DROPDOWN --------------------------------------------------- */
+(function() {
+    const btn = document.getElementById('exBtn');
+    const menu = document.getElementById('exMenu');
+    if (!btn || !menu) return;
+    btn.addEventListener('click', e => {
+        e.stopPropagation();
+        const isOpen = !menu.hidden;
+        menu.hidden = isOpen;
+        btn.setAttribute('aria-expanded', String(!isOpen));
+    });
+    document.addEventListener('click', e => {
+        if (!menu.hidden && !e.target.closest('#exBtn') && !e.target.closest('#exMenu')) {
+            menu.hidden = true;
+            btn.setAttribute('aria-expanded', 'false');
+        }
+    });
+    document.addEventListener('keydown', e => {
+        if (e.key === 'Escape' && !menu.hidden) {
+            menu.hidden = true;
+            btn.setAttribute('aria-expanded', 'false');
+            btn.focus();
+        }
+    });
+})();
+
+/* -- REPORT PREVIEW MODAL ---------------------------------------------- */
+let vrCurTab = 0;
+const VR_DATA = {
+    muni: @json($municipality->name),
+    year: {{ (int)$analysisYear }},
+    pop: {{ (int)$totalPop }},
+    hh: {{ (int)$totalHouseholds }},
+    apps: {{ (int)$totalApplications }},
+    uniq: {{ (int)$uniqueApplicants }},
+    appr: {{ (int)$approvedApplications }},
+    benef: {{ (int)$totalBeneficiaries }},
+    trend: @json($trendRows->values()->toArray()),
+    progs: @json($programShareOverview->toArray()),
+    bgys: @json($barangayRowsForAnalysis->sortByDesc('total_population')->values()->toArray())
+};
+
+function FMT(n) {
+    return n != null ? Number(n).toLocaleString() : '—';
+}
+
+function vrContent(tabIdx) {
+    const d = VR_DATA;
+    if (tabIdx === 0) {
+        return `
+            <p class="md-cap"><b>Key summary figures</b><span>${d.muni} &bull; ${d.year}</span></p>
+            <div class="tw">
+              <table>
+                <thead><tr><th>Metric</th><th>Value</th><th>Note</th></tr></thead>
+                <tbody>
+                  <tr><th scope="row">Population</th><td><b>${FMT(d.pop)}</b></td><td>Residents in ${d.year}</td></tr>
+                  <tr><th scope="row">Households</th><td><b>${FMT(d.hh)}</b></td><td>Registered households</td></tr>
+                  <tr><th scope="row">Applications</th><td><b>${FMT(d.apps)}</b></td><td>Submitted in ${d.year}</td></tr>
+                  <tr><th scope="row">Unique applicants</th><td><b>${FMT(d.uniq)}</b></td><td>Distinct residents</td></tr>
+                  <tr><th scope="row">Approved cases</th><td><b>${FMT(d.appr)}</b></td><td>Completed cases</td></tr>
+                  <tr><th scope="row">Beneficiaries</th><td><b>${FMT(d.benef)}</b></td><td>Across all programs</td></tr>
+                </tbody>
+              </table>
+            </div>`;
+    }
+    if (tabIdx === 1) {
+        if (!d.trend || !d.trend.length) return '<div class="ms"><b>No demographic history</b><p>No historical records recorded yet.</p></div>';
+        return `
+            <p class="md-cap"><b>Historical population &amp; households</b><span>${d.muni}</span></p>
+            <div class="tw">
+              <table>
+                <thead><tr><th>Year</th><th>Population</th><th>Households</th></tr></thead>
+                <tbody>
+                  ${d.trend.map(t => `<tr class="${t.year == d.year ? 'sel' : ''}"><th scope="row">${t.year}</th><td>${FMT(t.total_population)}</td><td>${FMT(t.total_households)}</td></tr>`).join('')}
+                </tbody>
+              </table>
+            </div>`;
+    }
+    if (tabIdx === 2) {
+        const pKeys = Object.keys(d.progs || {});
+        if (!pKeys.length) return '<div class="ms"><b>No program records</b><p>No welfare programs recorded for this year.</p></div>';
+        return `
+            <p class="md-cap"><b>Welfare programs breakdown</b><span>${d.year}</span></p>
+            <div class="tw">
+              <table>
+                <thead><tr><th>Program</th><th>Beneficiaries</th></tr></thead>
+                <tbody>
+                  ${pKeys.map(k => `<tr><th scope="row">${k.replace(/_/g, ' ')}</th><td>${FMT(d.progs[k])}</td></tr>`).join('')}
+                  <tr style="font-weight:700"><th scope="row">Total</th><td><b>${FMT(d.benef)}</b></td></tr>
+                </tbody>
+              </table>
+            </div>`;
+    }
+    if (tabIdx === 3) {
+        const bgys = d.bgys;
+        if (!bgys || !bgys.length) return '<div class="ms"><b>No barangay data</b><p>No barangay records for ' + d.year + '.</p></div>';
+        return `
+            <p class="md-cap"><b>Population by barangay</b><span>${d.year}</span></p>
+            <div class="tw">
+              <table>
+                <thead><tr><th>Barangay</th><th>Population</th></tr></thead>
+                <tbody>
+                  ${bgys.map((b, i) => `<tr><th scope="row">#${i + 1} ${b.name}</th><td>${b.total_population ? FMT(b.total_population) : '—'}</td></tr>`).join('')}
+                </tbody>
+              </table>
+            </div>`;
+    }
+    return '';
+}
+
+function vrRenderTabs() {
+    const tabs = document.getElementById('vrTabs');
+    if (!tabs) return;
+    const labels = ['Summary', 'Demographics', 'Programs', 'Barangays'];
+    tabs.innerHTML = labels.map((l, i) => `<button class="chip ${i === vrCurTab ? 'on' : ''}" data-vr-tab="${i}" role="tab" aria-selected="${i === vrCurTab}">${l}</button>`).join('');
+}
+
+function vrRenderBody() {
+    const bd = document.getElementById('vrBd');
+    if (!bd) return;
+    bd.innerHTML = vrContent(vrCurTab);
+    bd.scrollTop = 0;
+}
+
+function openVrModal() {
+    vrCurTab = 0;
+    const modal = document.getElementById('vrModal');
+    if (!modal) return;
+    modal.hidden = false;
+    document.body.style.overflow = 'hidden';
+    vrRenderTabs();
+    vrRenderBody();
+    document.getElementById('vrClose')?.focus();
+}
+
+function closeVrModal() {
+    const modal = document.getElementById('vrModal');
+    if (!modal) return;
+    modal.hidden = true;
+    document.body.style.overflow = '';
+    document.getElementById('vrBtn')?.focus();
+}
+
+document.getElementById('vrBtn')?.addEventListener('click', openVrModal);
+document.getElementById('vrClose')?.addEventListener('click', closeVrModal);
+document.getElementById('vrModal')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeVrModal();
+});
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape' && !document.getElementById('vrModal')?.hidden) {
+        closeVrModal();
+    }
+});
+document.getElementById('vrTabs')?.addEventListener('click', e => {
+    const btn = e.target.closest('[data-vr-tab]');
+    if (!btn) return;
+    vrCurTab = Number(btn.dataset.vrTab);
+    vrRenderTabs();
+    vrRenderBody();
+    btn.focus();
+});
+</script>
 </body>
 </html>

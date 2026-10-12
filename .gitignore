@@ -29,4 +29,10 @@
 /vendor
 Homestead.json
 Homestead.yaml
+
 Thumbs.db
+
+.env
+
+# Local APK downloads
+/public/downloads/*.apk

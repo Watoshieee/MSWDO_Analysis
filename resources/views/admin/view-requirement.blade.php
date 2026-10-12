@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Review Requirements - {{ $application->full_name }}</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -356,33 +358,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/admin/dashboard">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
-            </a>
-            <div class="collapse navbar-collapse">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/admin/dashboard">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="{{ route('admin.requirements') }}">Applications</a></li>
-                    <li class="nav-item"><a class="nav-link {{ request()->routeIs('admin.users') ? 'active' : '' }}" href="{{ route('admin.users') }}">Users Management</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.data.dashboard') }}">Data Management</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('admin.detailed-analysis') }}">Analysis</a></li>
-                </ul>
-                <div class="d-flex">
-                    @auth
-                    <div class="user-info gap-3 d-flex align-items-center">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                    @endauth
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('components.admin-navbar')
 
     <div class="container mt-4 pb-5">
 
@@ -427,7 +403,36 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <span class="s-badge s-{{ $st }}">{{ ucfirst($st) }}</span>
                 </div>
             </div>
+
+            @if($application->program_type === 'Solo_Parent')
+            <div class="mt-3 pt-3 border-top">
+                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2">
+                    <div>
+                        <div style="font-size:.75rem;color:#94a3b8;font-weight:700;text-transform:uppercase;margin-bottom:3px;">Assigned Category</div>
+                        @if($application->category_code && !empty($soloParentCategory))
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <span class="badge bg-primary" style="font-size:.85rem;">Category {{ $application->category_code }}</span>
+                                <span style="font-weight:700;color:#1e293b;font-size:.95rem;">
+                                    {{ is_array($soloParentCategory) ? ($soloParentCategory['title'] ?? '') : $soloParentCategory }}
+                                </span>
+                                @if(!empty($application->benefit_code) && $application->benefit_code === 'CODE_1_2')
+                                    <span class="badge bg-success" style="font-size:.8rem;background:#15803d !important;">Subsidy &amp; Discount (Code 1,2)</span>
+                                @endif
+                            </div>
+                            @if(is_array($soloParentCategory) && !empty($soloParentCategory['description']))
+                                <div class="text-muted small mt-1" style="max-width:850px;line-height:1.45;">
+                                    {{ $soloParentCategory['description'] }}
+                                </div>
+                            @endif
+                        @else
+                            <span class="text-muted small">No specific category assigned</span>
+                        @endif
+                    </div>
+                </div>
+            </div>
+            @endif
         </div>{{-- end Applicant Info info-card --}}
+
 
         {{-- No-Documents Warning Banner --}}
         @if(!$hasDocuments)
@@ -490,7 +495,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 $extUpper = strtoupper($ext);
             @endphp
             
-            <div class="req-card {{ $status }}">
+            <div class="req-card {{ $status }}" data-file-id="{{ $file->id }}">
                 {{-- Thumbnail / File Icon --}}
                 <div class="req-card-image"
                      onclick="openFileModal('{{ $fileUrl }}', '{{ addslashes($file->requirement_name) }}', '{{ $ext }}', {{ $file->id }}, '{{ $status }}')"
@@ -685,9 +690,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
-    <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
+    <div class="footer-strip"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -696,23 +699,119 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         let currentFileName = null;
         let currentFileStatus = null;
         
+        // Prevent browser scroll restoration on all loads (AJAX and non-AJAX)
+        if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+        // Restore scroll from URL query param (fallback for non-AJAX browsers)
+        (function () {
+            var s = {{ (int) request('scroll', 0) }};
+            if (s > 0) {
+                window.addEventListener('load', function () { window.scrollTo(0, s); });
+            }
+        })();
+
         document.addEventListener('DOMContentLoaded', function() {
             fileViewerModal = new bootstrap.Modal(document.getElementById('fileViewerModal'));
+
+            // Intercept all approve forms — submit via AJAX, update DOM in-place
             document.querySelectorAll('.js-loading-submit').forEach(form => {
-                form.addEventListener('submit', function () {
-                    const submitBtn = this.querySelector('button[type="submit"]');
-                    if (submitBtn) {
-                        submitBtn.disabled = true;
-                        submitBtn.style.opacity = '.65';
-                        submitBtn.style.cursor = 'not-allowed';
-                    }
-                    showLoading(
-                        this.getAttribute('data-loading-title') || 'Processing Request',
-                        this.getAttribute('data-loading-sub') || 'Please wait while we update records.'
-                    );
+                form.addEventListener('submit', function (e) {
+                    e.preventDefault();
+                    submitFileStatus(this);
                 });
             });
         });
+
+        function submitFileStatus(form, extraData) {
+            const data = new FormData(form);
+            if (extraData) {
+                Object.entries(extraData).forEach(([k, v]) => data.set(k, v));
+            }
+            const fileId = form.action.match(/\/requirements\/(\d+)\//)?.[1]
+                        || form.action.match(/\/requirements\/(\d+)/)?.[1];
+            const card = fileId ? document.querySelector('.req-card[data-file-id="' + fileId + '"]') : null;
+
+            const scrollBefore = window.scrollY || window.pageYOffset;
+
+            // Disable submit button and show loading overlay
+            const btn = form.querySelector('button[type="submit"]');
+            if (btn) { btn.disabled = true; btn.style.opacity = '.65'; }
+            const loadingTitle = form.getAttribute('data-loading-title') || 'Processing Request';
+            const loadingSub   = form.getAttribute('data-loading-sub')   || 'Please wait while we update records.';
+            showLoading(loadingTitle, loadingSub);
+
+            fetch(form.action, {
+                method: 'POST',
+                headers: { 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            'X-Requested-With': 'XMLHttpRequest' },
+                body: data
+            })
+            .then(r => r.json())
+            .then(res => {
+                hideLoading();
+                if (!res.success) {
+                    alert(res.message || 'Error');
+                    if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+                    return;
+                }
+                if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+                if (card) {
+                    updateCardDOM(card, res);
+                    window.scrollTo(0, scrollBefore);
+                } else {
+                    const url = new URL(window.location.href);
+                    url.searchParams.set('scroll', scrollBefore);
+                    window.location.href = url.toString();
+                }
+            })
+            .catch(() => {
+                hideLoading();
+                if (btn) { btn.disabled = false; btn.style.opacity = ''; }
+                const url = new URL(window.location.href);
+                url.searchParams.set('scroll', scrollBefore);
+                window.location.href = url.toString();
+            });
+        }
+
+        function escapeHtml(str) {
+            return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+        }
+
+        function updateCardDOM(card, res) {
+            const status = res.new_status; // 'approved' or 'rejected'
+
+            // Update card border class
+            card.classList.remove('pending', 'approved', 'rejected');
+            card.classList.add(status);
+
+            // Update status badge
+            const badge = card.querySelector('.req-status-badge');
+            if (badge) {
+                badge.className = 'req-status-badge s-' + status;
+                badge.textContent = status === 'approved' ? 'Approved' : 'Rejected';
+            }
+
+            // Update remarks if rejected
+            const content = card.querySelector('.req-card-content');
+            if (status === 'rejected' && res.admin_remarks) {
+                let remarksEl = card.querySelector('.req-remarks');
+                if (!remarksEl) {
+                    remarksEl = document.createElement('div');
+                    remarksEl.className = 'req-remarks';
+                    badge.insertAdjacentElement('afterend', remarksEl);
+                }
+                remarksEl.innerHTML = '<strong>Admin Note:</strong> ' + escapeHtml(res.admin_remarks);
+            }
+
+            // Replace action buttons with status text
+            const actions = card.querySelector('.req-actions');
+            if (actions) {
+                if (status === 'approved') {
+                    actions.innerHTML = '<div class="req-status-text req-text-approved">✔ Already Approved</div>';
+                } else {
+                    actions.innerHTML = '<div class="req-status-text req-text-rejected">⏳ Waiting for Re-upload</div>';
+                }
+            }
+        }
 
         function showLoading(title = 'Processing Request', subtitle = 'Please wait while we update records.') {
             const backdrop = document.getElementById('uiLoadingBackdrop');
@@ -723,6 +822,13 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             if (subEl) subEl.textContent = subtitle;
             backdrop.style.display = 'flex';
             backdrop.setAttribute('aria-hidden', 'false');
+        }
+
+        function hideLoading() {
+            const backdrop = document.getElementById('uiLoadingBackdrop');
+            if (!backdrop) return;
+            backdrop.style.display = 'none';
+            backdrop.setAttribute('aria-hidden', 'true');
         }
         
         function openFileModal(fileUrl, fileName, fileExt, fileId, fileStatus) {
@@ -842,18 +948,22 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }, 300);
         });
         
-        // Populate the decline modal with the correct file data
+        // Populate the decline modal with the correct file data + reset state
         const declineModal = document.getElementById('declineModal');
         declineModal.addEventListener('show.bs.modal', function (e) {
-            const btn      = e.relatedTarget;
-            const fileId   = btn.getAttribute('data-file-id');
-            const fileName = btn.getAttribute('data-file-name');
-
-            document.getElementById('declineDocName').textContent = fileName;
-            document.getElementById('declineForm').action = '/admin/requirements/' + fileId + '/status';
+            // Reset button and form state on every open
+            const confirmBtn = document.getElementById('confirmDeclineBtn');
+            if (confirmBtn) { confirmBtn.disabled = false; confirmBtn.style.opacity = ''; }
             document.getElementById('rejectionReason').value = '';
             document.getElementById('declineRemarks').value = '';
             document.getElementById('remarksError').style.display = 'none';
+
+            const btn = e.relatedTarget;
+            if (!btn) return; // triggered programmatically — action already set by show.bs.modal or modalDeclineBtn handler
+            const fileId   = btn.getAttribute('data-file-id');
+            const fileName = btn.getAttribute('data-file-name');
+            document.getElementById('declineDocName').textContent = fileName;
+            document.getElementById('declineForm').action = '/admin/requirements/' + fileId + '/status';
         });
         
         // Auto-fill rejection reason into additional comments
@@ -881,42 +991,43 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             }
         });
         
-        // Client-side validation: require rejection reason before submit
+        // Client-side validation + AJAX submit for decline form
         document.getElementById('declineForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+
             var reason = document.getElementById('rejectionReason').value;
             var comments = document.getElementById('declineRemarks').value.trim();
             var errorDiv = document.getElementById('remarksError');
-            
+
             if (!reason) {
-                e.preventDefault();
                 errorDiv.textContent = 'Please select a rejection reason.';
                 errorDiv.style.display = 'block';
                 document.getElementById('rejectionReason').focus();
                 return;
             }
-            
-            // If "Other" is selected, require additional comments
             if (reason === 'Other' && !comments) {
-                e.preventDefault();
                 errorDiv.textContent = 'Please specify the reason in Additional Comments when selecting "Other".';
                 errorDiv.style.display = 'block';
                 document.getElementById('declineRemarks').focus();
                 return;
             }
-            
-            // For non-Other reasons, use the reason as final remarks (comments are already auto-filled)
-            var finalRemarks = comments || reason;
-            document.getElementById('declineRemarks').value = finalRemarks;
-            const declineBtn = document.getElementById('confirmDeclineBtn');
-            if (declineBtn) {
-                declineBtn.disabled = true;
-                declineBtn.style.opacity = '.65';
-                declineBtn.style.cursor = 'not-allowed';
+
+            document.getElementById('declineRemarks').value = comments || reason;
+
+            const confirmBtn = document.getElementById('confirmDeclineBtn');
+            if (confirmBtn) { confirmBtn.disabled = true; confirmBtn.style.opacity = '.65'; }
+
+            // Hide modal first, then fire AJAX — same pattern as Approve
+            const bsModal = bootstrap.Modal.getInstance(document.getElementById('declineModal'));
+            if (bsModal) {
+                document.getElementById('declineModal').addEventListener('hidden.bs.modal', function handler() {
+                    document.getElementById('declineModal').removeEventListener('hidden.bs.modal', handler);
+                    submitFileStatus(document.getElementById('declineForm'));
+                }, { once: true });
+                bsModal.hide();
+            } else {
+                submitFileStatus(this);
             }
-            showLoading(
-                this.getAttribute('data-loading-title') || 'Declining Requirement',
-                this.getAttribute('data-loading-sub') || 'Saving remarks and notifying the applicant...'
-            );
         });
     </script>
 </body>

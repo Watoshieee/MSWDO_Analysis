@@ -30,11 +30,11 @@
                             <div style="text-align: center; margin: 30px 0;">
                                 @if(strtolower($status) === 'approved')
                                     <span style="display: inline-block; padding: 12px 24px; background-color: #d4edda; color: #155724; font-size: 18px; font-weight: bold; border-radius: 30px;">
-                                        ✅ APPROVED
+                                        APPROVED
                                     </span>
                                 @else
                                     <span style="display: inline-block; padding: 12px 24px; background-color: #f8d7da; color: #721c24; font-size: 18px; font-weight: bold; border-radius: 30px;">
-                                        ❌ REJECTED
+                                        REJECTED
                                     </span>
                                 @endif
                             </div>

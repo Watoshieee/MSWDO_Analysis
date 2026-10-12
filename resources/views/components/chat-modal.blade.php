@@ -52,7 +52,7 @@
     box-shadow: 0 8px 24px rgba(44, 62, 143, 0.35);
     cursor: pointer;
     transition: all 0.3s;
-    z-index: 1000;
+    z-index: 10450;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -78,6 +78,54 @@
     font-size: 0.7rem;
     font-weight: 800;
     border: 3px solid white;
+}
+
+/* Responsive floating chat button */
+@media (max-width: 768px) {
+    .chat-float-btn {
+        bottom: 24px;
+        right: 24px;
+        width: 56px;
+        height: 56px;
+    }
+    .chat-float-btn svg {
+        width: 22px;
+        height: 22px;
+    }
+}
+
+@media (max-width: 480px) {
+    .chat-float-btn {
+        bottom: 16px;
+        right: 16px;
+        width: 52px;
+        height: 52px;
+    }
+    .chat-float-btn svg {
+        width: 20px;
+        height: 20px;
+    }
+    .chat-badge {
+        width: 20px;
+        height: 20px;
+        font-size: 0.65rem;
+        top: -3px;
+        right: -3px;
+        border-width: 2px;
+    }
+}
+
+@media (max-width: 360px) {
+    .chat-float-btn {
+        bottom: 12px;
+        right: 12px;
+        width: 48px;
+        height: 48px;
+    }
+    .chat-float-btn svg {
+        width: 18px;
+        height: 18px;
+    }
 }
 
 .chat-modal {

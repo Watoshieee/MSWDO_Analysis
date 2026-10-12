@@ -32,7 +32,6 @@
 <div class="wrapper">
     <!-- Header -->
     <div class="header">
-        <div class="header-icon">🎫</div>
         <h1>Your Solo Parent ID is Ready!</h1>
         <p>Municipal Social Welfare and Development Office</p>
         <span class="badge">{{ $application->municipality }} MSWDO</span>
@@ -50,7 +49,7 @@
 
         <!-- Info Card -->
         <div class="info-card">
-            <h3>📋 Application Details</h3>
+            <h3>Application Details</h3>
             <div class="info-row">
                 <span>Applicant:</span>
                 <span>{{ $application->full_name }}</span>
@@ -71,7 +70,7 @@
 
         <!-- Pickup Reminder -->
         <div class="highlight-box">
-            <strong>📍 Pick-Up Instructions</strong>
+            <strong>Pick-Up Instructions</strong>
             Please bring a <strong>valid government-issued ID</strong> when claiming your Solo Parent ID.
             Office hours: <strong>Monday – Friday, 8:00 AM – 5:00 PM</strong> (excluding public holidays).
         </div>

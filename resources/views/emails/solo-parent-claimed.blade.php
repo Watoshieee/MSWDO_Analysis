@@ -32,7 +32,6 @@
 <div class="wrapper">
     <!-- Header -->
     <div class="header">
-        <div class="header-icon">✅</div>
         <h1>Solo Parent ID Successfully Claimed!</h1>
         <p>Municipal Social Welfare and Development Office</p>
         <span class="badge">{{ $application->municipality }} MSWDO</span>
@@ -50,7 +49,7 @@
 
         <!-- Info Card -->
         <div class="info-card">
-            <h3>📋 Claim Details</h3>
+            <h3>Claim Details</h3>
             <div class="info-row">
                 <span>Applicant:</span>
                 <span>{{ $application->full_name }}</span>
@@ -71,7 +70,7 @@
 
         <!-- Reminder -->
         <div class="highlight-box">
-            <strong>🎉 You're Now an Official Solo Parent Beneficiary</strong>
+            <strong>You're Now an Official Solo Parent Beneficiary</strong>
             Please keep your Solo Parent ID safe. For renewals, updates, or additional benefits,
             visit your <strong>{{ $application->municipality }} MSWDO Office</strong> during office hours:
             <strong>Monday – Friday, 8:00 AM – 5:00 PM</strong>.

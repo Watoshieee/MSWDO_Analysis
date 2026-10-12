@@ -33,11 +33,11 @@
 <body>
 <div class="wrapper">
   <div class="header">
-    <h1>🏛 MSWDO — Municipal Social Welfare</h1>
+    <h1>MSWDO — Municipal Social Welfare</h1>
     <p>Municipal Social Welfare and Development Office</p>
   </div>
 
-  <div class="badge-row">📁 Action Required — Solo Parent Documents Submitted for Review</div>
+  <div class="badge-row">Action Required — Solo Parent Documents Submitted for Review</div>
 
   <div class="body">
     <p class="greeting">Hello, Admin!</p>
@@ -47,7 +47,7 @@
     </p>
 
     <div class="detail-box">
-      <h3>👤 Applicant Details</h3>
+      <h3>Applicant Details</h3>
       <div class="detail-row">
         <span class="detail-label">Full Name</span>
         <span class="detail-value">{{ $fileMonitoring->application?->full_name ?? 'N/A' }}</span>
@@ -67,7 +67,7 @@
     </div>
 
     <div class="detail-box">
-      <h3>📄 Uploaded Documents</h3>
+      <h3>Uploaded Documents</h3>
       @php $uploads = $fileMonitoring->fileUploads->whereNotNull('file_path'); @endphp
       @if($uploads->count())
       <table class="file-table">
@@ -85,7 +85,7 @@
             <td>{{ $i + 1 }}</td>
             <td>{{ $f->requirement_name }}</td>
             <td>{{ $f->file_name ?? 'uploaded' }}</td>
-            <td><span class="badge-pending">⏳ Pending</span></td>
+            <td><span class="badge-pending">Pending</span></td>
           </tr>
           @endforeach
         </tbody>
@@ -95,7 +95,7 @@
       @endif
     </div>
 
-    <a href="{{ url('/admin/requirements') }}" class="cta-btn">📋 Review Documents Now</a>
+    <a href="{{ url('/admin/requirements') }}" class="cta-btn">Review Documents Now</a>
 
     <p style="font-size:.82rem;color:#64748b;line-height:1.6;">
       Please review and approve or decline each document at your earliest convenience.

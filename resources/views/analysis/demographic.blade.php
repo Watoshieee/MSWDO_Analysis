@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Demographic Analysis – MSWDO Analysis</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -39,6 +41,9 @@
         body {
             background: #e2e8f0;
             font-family: 'Inter', 'Segoe UI', sans-serif;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
 
         /* ===== NAVBAR ===== */
@@ -568,6 +573,7 @@
             text-align: center;
             padding: 20px;
             font-size: 0.88rem;
+                    margin-top: auto;
         }
 
         @media (max-width: 768px) {
@@ -583,7 +589,10 @@
                 height: 300px;
             }
         }
-    </style>
+    
+        html { background: #1A2A5C; }
+        body { padding-bottom: 0 !important; }
+</style>
 </head>
 
 <body>
@@ -592,7 +601,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
             <a class="navbar-brand" href="/analysis">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD"
+                <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWD"
                     style="width:36px;height:36px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
@@ -875,7 +884,7 @@
                 <div class="col-lg-5">
                     <div class="chart-card h-100">
                         <h5>Overall Male vs Female</h5>
-                        <p class="chart-sub">Combined across all {{ count($demographicData) }} municipalities {{ $selectedYear }}</p>
+                        <p class="chart-sub">Combined across all {{ count($demographicData) }} municipalities — {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:280px;">
                             <canvas id="genderPieChart"></canvas>
                         </div>
@@ -884,7 +893,7 @@
                 <div class="col-lg-7">
                     <div class="chart-card h-100">
                         <h5>Male vs Female per Municipality</h5>
-                        <p class="chart-sub">Side-by-side comparison {{ $selectedYear }}</p>
+                        <p class="chart-sub">Side-by-side comparison — {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:280px;">
                             <canvas id="genderBarChart"></canvas>
                         </div>
@@ -902,7 +911,7 @@
                 or aging? Compare age brackets per municipality.</p>
             <div class="chart-card">
                 <h5>Population by Age Group per Municipality</h5>
-                <p class="chart-sub">Stacked bars show Youth (0–19), Working Age (20–59), Senior (60+)
+                <p class="chart-sub">Stacked bars show Youth (0–19), Working Age (20–59), Senior (60+) —
                     {{ $selectedYear }}</p>
                 <div class="chart-container" style="height:320px;">
                     <canvas id="ageStackedChart"></canvas>
@@ -1026,7 +1035,7 @@
                 <div class="col-lg-7">
                     <div class="chart-card h-100">
                         <h5>Population vs Households</h5>
-                        <p class="chart-sub">Combo chart showing population (bars) and households (line)
+                        <p class="chart-sub">Combo chart showing population (bars) and households (line) —
                             {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:300px;">
                             <canvas id="hhComboChart"></canvas>
@@ -1122,7 +1131,7 @@
                 <div class="col-lg-8">
                     <div class="chart-card h-100">
                         <h5>Programs per Municipality (Stacked)</h5>
-                        <p class="chart-sub">PWD, AICS, Solo Parent, 4Ps, Senior {{ $selectedYear }}</p>
+                        <p class="chart-sub">PWD, AICS, Solo Parent, 4Ps, Senior — {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:320px;">
                             <canvas id="benefStackedChart"></canvas>
                         </div>
@@ -1131,7 +1140,7 @@
                 <div class="col-lg-4">
                     <div class="chart-card h-100">
                         <h5>Total Beneficiaries</h5>
-                        <p class="chart-sub">Combined all programs {{ $selectedYear }}</p>
+                        <p class="chart-sub">Combined all programs — {{ $selectedYear }}</p>
                         <div class="chart-container" style="height:320px;">
                             <canvas id="benefTotalChart"></canvas>
                         </div>
@@ -1245,11 +1254,9 @@
         </div>
     </section>
 
-    <!-- ===== FOOTER ===== -->
-    <div class="footer-strip">
-        MSWDO &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
 
+
+    <div class="footer-strip"></div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     {{-- ===== PHP → JS data bridge ===== --}}
@@ -2011,7 +2018,8 @@
                         transform: translateY(0);
                     }
                 }
-            </style>
+            
+    </style>
             <a href="{{ route('admin.dashboard') }}" class="admin-back-btn" title="Return to Admin Dashboard">
                 <span class="abtn-arrow">&#8592;</span>
                 <span class="abtn-dot"></span>

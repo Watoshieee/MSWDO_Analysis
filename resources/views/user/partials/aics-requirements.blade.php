@@ -35,7 +35,7 @@
         $fStatus = $uf?->status ?? 'not_uploaded';
     @endphp
     <div class="{{ $uploadCols }}">
-        <div class="aics-req-card">
+        <div class="aics-req-card" data-req-name="{{ $reqName }}">
             <div class="aics-req-head">
                 <div>
                     <div class="aics-req-name">{{ $reqName }}</div>
@@ -51,11 +51,14 @@
                     @else <span class="aics-badge none">○ Not uploaded</span>
                     @endif
                     @if($uf && $uf->file_path)
-                    @php $ext = strtolower(pathinfo($uf->file_path, PATHINFO_EXTENSION)); @endphp
+                    @php 
+                        $ext = strtolower(pathinfo($uf->file_path, PATHINFO_EXTENSION)); 
+                        $fileUrl = route('user.serve-file', $uf->id);
+                    @endphp
                     @if(in_array($ext, ['jpg','jpeg','png','webp']))
-                    <img src="{{ asset('storage/'.$uf->file_path) }}" onclick="window.open('{{ asset('storage/'.$uf->file_path) }}')" class="aics-thumb">
+                    <img src="{{ $fileUrl }}" onclick="window.open('{{ $fileUrl }}')" class="aics-thumb">
                     @endif
-                    <a href="{{ asset('storage/'.$uf->file_path) }}" target="_blank" class="aics-view-link">View</a>
+                    <a href="{{ $fileUrl }}" target="_blank" class="aics-view-link">View</a>
                     @endif
                 </div>
             </div>
@@ -97,7 +100,7 @@
 @endphp
 @if(!$uf2 || $fStatus2 === 'rejected')
 <div class="{{ $uploadCols }}">
-    <div class="aics-req-card {{ $fStatus2==='rejected' ? 'rejected-border' : '' }}">
+    <div class="aics-req-card {{ $fStatus2==='rejected' ? 'rejected-border' : '' }}" data-req-name="{{ $reqName }}">
         <div class="aics-req-head">
             <div class="aics-req-name">{{ $reqName }}</div>
             @if($fStatus2==='rejected')<span class="aics-badge rejected">✗ Rejected</span>

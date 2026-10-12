@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 160" width="100%" height="100%">
+        <circle cx="80" cy="80" r="76" fill="#1e3a8a" stroke="#ffffff" stroke-width="4"/>
+        <path d="M80 32 C 55 15, 30 40, 80 82 C 130 40, 105 15, 80 32 Z" fill="#facc15" opacity="0.2"/>
+        <text x="80" y="65" font-family="cursive, sans-serif" font-size="18" font-weight="bold" font-style="italic" fill="#ffffff" text-anchor="middle">Tulong</text>
+        <text x="80" y="86" font-family="sans-serif" font-size="12" font-weight="600" fill="#fef08a" text-anchor="middle">para sa</text>
+        <text x="80" y="108" font-family="cursive, sans-serif" font-size="16" font-weight="bold" font-style="italic" fill="#ffffff" text-anchor="middle">bawat pamilya</text>
+    </svg>

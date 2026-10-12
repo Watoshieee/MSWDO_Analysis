@@ -1,9 +1,11 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Reset Password – MSWDO</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <style>
@@ -207,7 +209,7 @@
     <!-- LEFT: Branding -->
     <div class="brand-panel">
         <div class="brand-logo">
-            <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD Logo" style="width:56px;height:56px;object-fit:contain;">
+            <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWD Logo" style="width:56px;height:56px;object-fit:contain;">
             <div>
                 <div class="logo-text">MSWDO</div>
                 <div class="logo-sub">Municipal Social Welfare &amp; Development</div>

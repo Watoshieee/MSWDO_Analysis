@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solo Parent -AICS Category | MSWDO</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -68,7 +70,11 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         /* FOOTER */
         .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.8); text-align: center; padding: 20px; font-size: 0.84rem; margin-top: auto; }
         .footer-strip strong { color: white; }
-    </style>
+    
+    
+        html { background: #1A2A5C; }
+        body { padding-bottom: 0 !important; }
+</style>
 </head>
 <body>
 
@@ -78,7 +84,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="container">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 0;position:relative;z-index:2;">
                 <div class="brand">
-                    <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD">
+                    <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWD">
                     <span>MSWDO</span>
                 </div>
                 <div class="d-flex align-items-center gap-3">
@@ -150,10 +156,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     </div>
     </div>
 
-    <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
 
+
+    <div class="footer-strip"></div>
     @include('components.chat-modal')
     @include('components.chatbot-widget')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>

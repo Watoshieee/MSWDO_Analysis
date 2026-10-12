@@ -4,7 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Available Programs – MSWDO Member Portal</title>
+    <title>Available Programs – MSWDO {{ Auth::user()->municipality }}</title>
+    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -26,22 +28,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         body { background: #e2e8f0; font-family: 'Inter', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; margin: 0; }
         a { text-decoration: none; }
 
-        /* ── NAVBAR ── */
-        .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
-        .navbar-brand { font-weight: 800; font-size: 1.5rem; color: white !important; display: flex; align-items: center; gap: 10px; }
-        .navbar-toggler { order: -1; }
-        .navbar-brand { order: 0; margin-left: auto !important; margin-right: 0 !important; }
-        @media (min-width: 992px) {
-            .navbar-toggler { order: 0; }
-            .navbar-brand { order: 0; margin-left: 0 !important; margin-right: auto !important; }
-        }
-        .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; border-radius: 8px; padding: 10px 18px !important; font-size: 0.92rem; transition: all 0.2s; }
-        .nav-link:hover { background: rgba(255,255,255,0.15); color: white !important; }
-        .nav-link.active { background: var(--secondary-yellow); color: var(--primary-blue) !important; font-weight: 700; }
-        .user-info { color: white; display: flex; align-items: center; gap: 12px; background: rgba(255,255,255,0.1); padding: 9px 22px; border-radius: 40px; font-size: 0.9rem; font-weight: 600; }
-        .logout-btn { background: transparent; border: 2px solid rgba(255,255,255,0.7); color: white; border-radius: 30px; padding: 6px 18px; font-weight: 700; font-size: 0.85rem; cursor: pointer; transition: all 0.25s; }
-        .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
-
+        /* Shared navbar styles handled by components.user-navbar */
         /* ── HERO ── */
         .hero {
             background: var(--primary-gradient);
@@ -196,64 +183,38 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         /* ── FOOTER ── */
         .main-content { flex: 1; }
-        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.83rem; }
+        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.83rem; margin-top: auto; }
         .footer-strip strong { color: white; }
 
         /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-    </style>
+    
+    
+        html { background: #1A2A5C; }
+        body { padding-bottom: 0 !important; }
+</style>
 </head>
 <body>
 
     <!-- NAVBAR -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/user/dashboard">
-                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:36px;height:36px;object-fit:contain;"> MSWDO
-            </a>
-            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
-                <span class="navbar-toggler-icon"></span>
-            </button>
-            <div class="collapse navbar-collapse" id="navbarNav">
-                <ul class="navbar-nav me-auto">
-                    <li class="nav-item"><a class="nav-link" href="/user/dashboard">Dashboard</a></li>
-                    <li class="nav-item"><a class="nav-link active" href="/user/programs">Programs</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.profile') }}">User Profile</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.my-requirements') }}">My Requirements</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{{ route('user.announcements') }}">Announcements</a></li>
-                </ul>
-                <div class="d-flex align-items-center gap-3">
-                    <button type="button" class="btn" data-bs-toggle="modal" data-bs-target="#announcementsModal" style="background:rgba(255,255,255,0.1);color:white;border:none;border-radius:50%;width:40px;height:40px;font-weight:700;font-size:1.1rem;display:flex;align-items:center;justify-content:center;padding:0;transition:all 0.3s;position:relative;" title="Notifications">
-                        <i class="bi bi-bell-fill"></i>
-                        @if(isset($notificationCount) && $notificationCount > 0)
-                        <span class="bell-badge" style="position:absolute;top:-4px;right:-4px;background:#dc3545;color:white;border-radius:50%;width:20px;height:20px;font-size:0.7rem;font-weight:800;display:flex;align-items:center;justify-content:center;border:2px solid #2C3E8F;">{{ $notificationCount > 9 ? '9+' : $notificationCount }}</span>
-                        @endif
-                    </button>
-                    <div class="user-info">
-                        <span>{{ Auth::user()->full_name }}</span>
-                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                            @csrf
-                            <button type="submit" class="logout-btn">Logout</button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </nav>
+    @include('components.user-navbar', ['active' => 'programs'])
 
     <!-- HERO -->
     <section class="hero">
         <div class="container">
             <div class="hero-inner">
-                <div class="hero-badge">Member Portal</div>
+                <div class="hero-badge">{{ Auth::user()->municipality }} · Member Portal</div>
                 <h1>Available Programs</h1>
                 <div class="hero-divider"></div>
-                <p>Choose a program below to view its requirements and submit your application for MSWDO assistance.</p>
+                <p>Choose a program below to view its requirements and submit your application for {{ Auth::user()->municipality }} MSWDO assistance.</p>
+                @php
+                    $programCount = isset($municipalityPrograms) ? $municipalityPrograms->count() : (3 + (!empty($canAccessMta) ? 1 : 0) + (!empty($canAccessDayCare) ? 1 : 0));
+                @endphp
                 <div class="hero-stats">
                     <div class="hero-stat">
-                        <div class="stat-val">4</div>
+                        <div class="stat-val">{{ $programCount }}</div>
                         <div class="stat-lbl">Programs</div>
                     </div>
                     <div class="hero-stat">
@@ -283,7 +244,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     <div class="ftab" data-cat="social"     onclick="setCategory(this,'social')"> Social Support</div>
 
                 </div>
-                <div class="result-count" id="resultCount">4 programs</div>
+                <div class="result-count" id="resultCount">{{ $programCount }} programs</div>
             </div>
         </div>
     </div>
@@ -303,6 +264,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
             <div class="prog-grid" id="progGrid">
 
+                @if(!isset($municipalityPrograms) || $municipalityPrograms->contains(fn($p) => $p->program_key === 'PWD_Assistance' && $p->is_active))
                 <!-- 1. PWD Assistance -->
                 <div class="prog-card" data-cat="social" data-title="PWD Assistance Persons with Disability">
                     <div class="accent acc-blue"></div>
@@ -331,6 +293,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 </div>
 
+                @endif
+
+                @if(!isset($municipalityPrograms) || $municipalityPrograms->contains(fn($p) => $p->program_key === 'Solo_Parent' && $p->is_active))
                 <!-- 2. Solo Parent Support -->
                 <div class="prog-card" data-cat="social" data-title="Solo Parent Support Single Parent">
                     <div class="accent acc-blue"></div>
@@ -355,6 +320,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 </div>
 
+                @endif
+
+                @if(!isset($municipalityPrograms) || $municipalityPrograms->contains(fn($p) => in_array($p->program_key, ['AICS_Medical', 'AICS_Burial']) && $p->is_active))
                 <!-- 3. AICS -->
                 <div class="prog-card" data-cat="financial" data-title="AICS Assistance in Crisis Situations Emergency Aid">
                     <div class="accent acc-blue"></div>
@@ -379,7 +347,56 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                     </div>
                 </div>
 
+                @endif
+                @if(!empty($canAccessMta))
+                <!-- 4. Minor Traveling Abroad (MTA) — Liliw only -->
+                <div class="prog-card" data-cat="social" data-title="Minor Traveling Abroad MTA DSWD">
+                    <div class="accent acc-blue"></div>
+                    <div class="prog-body">
+                        <div class="prog-header">
+                            <div class="prog-meta">
+                                <div class="prog-cat cat-social">Social Support</div>
+                                <div class="prog-title">Minor Traveling Abroad (MTA)</div>
+                            </div>
+                        </div>
+                        <div class="prog-desc">Guided application for DSWD Minor Traveling Abroad clearance through the official MTS portal. Available to Liliw residents.</div>
+                        <div class="prog-elig">
+                            <div class="prog-elig-title">Key Eligibility</div>
+                            <ul>
+                                <li>Resident of Liliw</li>
+                                <li>Applying for a minor traveling abroad</li>
+                                <li>Must register and apply at mts.dswd.gov.ph</li>
+                            </ul>
+                        </div>
+                        <a href="{{ route('user.mta-application') }}" class="prog-btn">Apply Now →</a>
+                    </div>
+                </div>
+                @endif
 
+                @if(!empty($canAccessDayCare))
+                <!-- 5. Registration for Day Care Services — Liliw only -->
+                <div class="prog-card" data-cat="social" data-title="Registration for Day Care Services Child Development Center Liliw">
+                    <div class="accent acc-blue"></div>
+                    <div class="prog-body">
+                        <div class="prog-header">
+                            <div class="prog-meta">
+                                <div class="prog-cat cat-social">Early Childhood</div>
+                                <div class="prog-title">Registration for Day Care Services</div>
+                            </div>
+                        </div>
+                        <div class="prog-desc">Enroll your child in the Child Development Center in Liliw for early childhood care, learning, and nutrition.</div>
+                        <div class="prog-elig">
+                            <div class="prog-elig-title">Key Eligibility</div>
+                            <ul>
+                                <li>Resident of Liliw</li>
+                                <li>Children aged 2 to 5 years old</li>
+                                <li>Birth Certificate &amp; Babybook required</li>
+                            </ul>
+                        </div>
+                        <a href="{{ route('user.day-care-registration') }}" class="prog-btn">Register Now →</a>
+                    </div>
+                </div>
+                @endif
 
             </div><!-- /prog-grid -->
 
@@ -401,10 +418,10 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         </div>
     </div>
 
-    <div class="footer-strip">
-        <strong>MSWDO</strong> &mdash; Municipal Social Welfare &amp; Development Office &copy; {{ date('Y') }}
-    </div>
 
+
+
+    <div class="footer-strip"></div>
     @include('components.user-notification-modal')
 
     @include('components.chat-modal')

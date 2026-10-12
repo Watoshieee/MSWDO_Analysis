@@ -14,7 +14,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h2>🚫 Appointment Cancelled</h2>
+            <h2>Appointment Cancelled</h2>
         </div>
         
         <div class="content">

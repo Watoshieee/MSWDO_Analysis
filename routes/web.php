@@ -19,6 +19,10 @@ Route::get('/', function () {
     return redirect('/analysis');
 });
 
+Route::get('/privacy-policy', function () {
+    return view('privacy-policy');
+})->name('privacy.policy');
+
 // ============================================
 // PUBLIC ANALYSIS PAGES
 // ============================================
@@ -81,6 +85,8 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::put('/user/profile', [UserController::class, 'updateProfile'])->name('user.profile.update');
     Route::get('/user/announcements', [UserController::class, 'announcements'])->name('user.announcements');
     Route::get('/user/my-requirements', [UserController::class, 'myRequirements'])->name('user.my-requirements');
+    Route::get('/user/download-app', [UserController::class, 'downloadApp'])->name('user.download-app');
+    Route::get('/user/files/{id}/serve', [UserController::class, 'serveFile'])->name('user.serve-file');
     Route::put('/user/resubmit-requirement/{fileUploadId}', [UserController::class, 'resubmitRequirement'])->name('user.resubmit-requirement');
     Route::post('/user/resubmit-requirement/{fileUploadId}', [UserController::class, 'resubmitRequirement']); // Fallback for browsers that don't support PUT
     Route::get('/user/apply/AICS/aics', [UserController::class, 'aicsCategory'])->name('user.aics-category');
@@ -88,6 +94,24 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::get('/user/apply/AICS/burial', [UserController::class, 'aicsBurial'])->name('user.aics-burial');
     Route::get('/user/apply/{program}', [ApplicationController::class, 'create'])->name('user.apply');
     Route::get('/user/pwd-application', [UserController::class, 'pwdApplication'])->name('user.pwd-application');
+    Route::get('/user/mta-application', [UserController::class, 'mtaApplication'])
+        ->middleware('liliw_only')
+        ->name('user.mta-application');
+    Route::post('/user/mta-upload-requirement', [UserController::class, 'uploadMtaRequirement'])
+        ->middleware('liliw_only')
+        ->name('user.mta-upload-requirement');
+    Route::post('/user/mta-submit-application', [UserController::class, 'submitMtaApplication'])
+        ->middleware('liliw_only')
+        ->name('user.mta-submit-application');
+    Route::get('/user/day-care-registration', [UserController::class, 'dayCareRegistration'])
+        ->middleware('liliw_only')
+        ->name('user.day-care-registration');
+    Route::post('/user/day-care-upload-requirement', [UserController::class, 'uploadDayCareRequirement'])
+        ->middleware('liliw_only')
+        ->name('user.day-care-upload-requirement');
+    Route::post('/user/day-care-register', [UserController::class, 'submitDayCareRegistration'])
+        ->middleware('liliw_only')
+        ->name('user.day-care-register');
     Route::get('/user/pwd-fillable-form', [UserController::class, 'pwdFillableForm'])->name('user.pwd-form');
     Route::post('/user/pwd-fillable-form', [UserController::class, 'pwdFormSubmit'])->name('user.pwd-form.submit');
     Route::get('/user/solo-parent-application', [UserController::class, 'soloParentApplication'])->name('user.solo-parent-application');
@@ -195,6 +219,11 @@ Route::middleware(['auth', 'role:super_admin'])->prefix('superadmin')->name('sup
         Route::delete('/programs/{id}/force-delete', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'forceDeleteProgram'])->name('programs.force-delete');
         Route::post('/programs/{id}', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'updateProgram'])->name('programs.update');
         Route::delete('/programs/{id}', [App\Http\Controllers\SuperAdmin\DataManagementController::class, 'deleteProgram'])->name('programs.delete');
+
+        // Data Export & Analysis Report Routes
+        Route::match(['get', 'post'], '/export/csv', [App\Http\Controllers\Admin\ExportDataController::class, 'exportCsv'])->name('export.csv');
+        Route::match(['get', 'post'], '/export/report', [App\Http\Controllers\Admin\ExportDataController::class, 'exportAnalysisReport'])->name('export.report');
+        Route::match(['get', 'post'], '/export/comparative', [App\Http\Controllers\Admin\ExportDataController::class, 'exportComparative'])->name('export.comparative');
     });
 
     // MUNICIPALITY MANAGEMENT ROUTES
@@ -226,6 +255,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Existing routes
     Route::get('/dashboard', [App\Http\Controllers\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/detailed-analysis', [App\Http\Controllers\AdminController::class, 'detailedAnalysis'])->name('detailed-analysis');
+    Route::get('/detailed-analysis/export/csv', [App\Http\Controllers\AdminController::class, 'exportAnalysisCsv'])->name('detailed-analysis.export.csv');
+    Route::get('/detailed-analysis/export/excel', [App\Http\Controllers\AdminController::class, 'exportAnalysisExcel'])->name('detailed-analysis.export.excel');
     Route::get('/applications', [App\Http\Controllers\AdminController::class, 'applications'])->name('applications');
     Route::post('/applications/{id}/status', [App\Http\Controllers\AdminController::class, 'updateApplicationStatus'])->name('applications.status');
     Route::get('/barangay/{name}', [App\Http\Controllers\AdminController::class, 'barangay'])->name('barangay');
@@ -321,6 +352,18 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::post('/yearly/{id}/archive', [App\Http\Controllers\Admin\DataManagementController::class, 'archiveYearlySummary'])->name('yearly.archive');
             Route::post('/yearly/{id}/restore', [App\Http\Controllers\Admin\DataManagementController::class, 'restoreYearlySummary'])->name('yearly.restore');
             Route::delete('/yearly/{id}/force-delete', [App\Http\Controllers\Admin\DataManagementController::class, 'forceDeleteYearlySummary'])->name('yearly.forceDelete');
+
+            // Data Export & Analysis Report Routes (legacy — kept for existing sub-pages)
+            Route::match(['get', 'post'], '/export/csv', [App\Http\Controllers\Admin\ExportDataController::class, 'exportCsv'])->name('export.csv');
+            Route::match(['get', 'post'], '/export/report', [App\Http\Controllers\Admin\ExportDataController::class, 'exportAnalysisReport'])->name('export.report');
+            Route::match(['get', 'post'], '/export/comparative', [App\Http\Controllers\Admin\ExportDataController::class, 'exportComparative'])->name('export.comparative');
+
+            // ── New municipality-scoped import/export (same UX as super admin) ──
+            Route::get('/export/data-csv',   [App\Http\Controllers\Admin\AdminDataImportExportController::class, 'exportCsv'])->name('export.data-csv');
+            Route::get('/export/data-excel', [App\Http\Controllers\Admin\AdminDataImportExportController::class, 'exportExcel'])->name('export.data-excel');
+            Route::post('/import',           [App\Http\Controllers\Admin\AdminDataImportExportController::class, 'import'])->name('import');
+            Route::post('/import/preview',   [App\Http\Controllers\Admin\AdminDataImportExportController::class, 'previewImport'])->name('import.preview');
+            Route::get('/import/template/{type}', [App\Http\Controllers\Admin\AdminDataImportExportController::class, 'downloadTemplate'])->name('import.template');
         }
     );
 
