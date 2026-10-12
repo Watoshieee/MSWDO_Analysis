@@ -33,7 +33,7 @@ class DataImportExportController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'municipality' => 'nullable|string|max:100',
-            'year'         => 'nullable|integer|min:1990|max:' . (date('Y') + 2),
+            'year'         => 'nullable|string',
             'category'     => 'nullable|string|in:all,municipality,barangay,programs',
         ]);
 
@@ -43,7 +43,8 @@ class DataImportExportController extends Controller
 
         try {
             $municipality = $request->filled('municipality') ? trim($request->municipality) : null;
-            $year         = $request->filled('year') ? (int) $request->year : null;
+            $rawYear      = $request->input('year');
+            $year         = ($rawYear && $rawYear !== 'all') ? (int) $rawYear : null;
             $category     = $request->input('category', 'all');
 
             // Verify municipality exists if provided
@@ -81,7 +82,7 @@ class DataImportExportController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'municipality' => 'nullable|string|max:100',
-            'year'         => 'nullable|integer|min:1990|max:' . (date('Y') + 2),
+            'year'         => 'nullable|string',
             'category'     => 'nullable|string|in:all,municipality,barangay,programs',
         ]);
 
@@ -91,7 +92,8 @@ class DataImportExportController extends Controller
 
         try {
             $municipality = $request->filled('municipality') ? trim($request->municipality) : null;
-            $year         = $request->filled('year') ? (int) $request->year : null;
+            $rawYear      = $request->input('year');
+            $year         = ($rawYear && $rawYear !== 'all') ? (int) $rawYear : null;
             $category     = $request->input('category', 'all');
 
             if ($municipality && !Municipality::where('name', $municipality)->exists()) {
@@ -140,7 +142,7 @@ class DataImportExportController extends Controller
             'csv_file'    => 'required|file|max:10240',
             'import_type' => 'required|in:municipality_data,barangay_data,program_data',
             'import_mode' => 'nullable|in:skip,update',
-            'year'        => 'nullable|integer|min:1990|max:2099',
+            'year'        => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -152,7 +154,8 @@ class DataImportExportController extends Controller
 
         try {
             $mode       = $request->input('import_mode', 'update');
-            $filterYear = $request->filled('year') ? (int) $request->year : null;
+            $rawYear    = $request->input('year');
+            $filterYear = ($rawYear && $rawYear !== 'all') ? (int) $rawYear : null;
 
             $result = $this->importer->importCsv(
                 $request->file('csv_file'),

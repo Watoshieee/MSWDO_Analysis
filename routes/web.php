@@ -255,6 +255,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Existing routes
     Route::get('/dashboard', [App\Http\Controllers\AdminController::class, 'dashboard'])->name('dashboard');
     Route::get('/detailed-analysis', [App\Http\Controllers\AdminController::class, 'detailedAnalysis'])->name('detailed-analysis');
+    Route::get('/detailed-analysis/export/csv', [App\Http\Controllers\AdminController::class, 'exportAnalysisCsv'])->name('detailed-analysis.export.csv');
+    Route::get('/detailed-analysis/export/excel', [App\Http\Controllers\AdminController::class, 'exportAnalysisExcel'])->name('detailed-analysis.export.excel');
     Route::get('/applications', [App\Http\Controllers\AdminController::class, 'applications'])->name('applications');
     Route::post('/applications/{id}/status', [App\Http\Controllers\AdminController::class, 'updateApplicationStatus'])->name('applications.status');
     Route::get('/barangay/{name}', [App\Http\Controllers\AdminController::class, 'barangay'])->name('barangay');

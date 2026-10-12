@@ -1596,7 +1596,7 @@ class AdminController extends Controller
         ]);
     }
 
-    /** Excel workbook export — professional multi-sheet report with non-overlapping native charts. */
+    /** Excel workbook export - clean multi-sheet report without embedded charts (chart objects crash PhpSpreadsheet on some PHP builds). */
     public function exportAnalysisExcel(Request $request)
     {
         $d = $this->buildAnalysisData($request);
@@ -1608,528 +1608,512 @@ class AdminController extends Controller
             ->setCreator('MSWDO System')
             ->setSubject("Detailed Analysis Report");
 
-        // Palette & formatting constants
-        $navy   = '1E2A78';
-        $gold   = 'F5B82E';
-        $bg     = 'F4F6FB';
-        $white  = 'FFFFFF';
+        // -- Shared style helpers ------------------------------------------------
+        $navy  = '1B2B5B';
+        $gold  = 'FDB913';
+        $green = '28A745';
+        $red   = 'C41E24';
+        $blue  = '2C3E8F';
+        $bg    = 'F0F4FF';
+        $white = 'FFFFFF';
+        $gray  = 'E8ECF5';
 
-        $headerFill = function(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $ws, $range) use ($navy, $white) {
-            $ws->getStyle($range)->applyFromArray([
-                'font'      => ['bold' => true, 'color' => ['rgb' => $white], 'size' => 11],
-                'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => $navy]],
-                'alignment' => ['vertical' => 'center'],
-            ]);
+        $headerStyle = [
+            'font'      => ['bold' => true, 'color' => ['rgb' => $white], 'size' => 11],
+            'fill'      => ['fillType' => 'solid', 'startColor' => ['rgb' => $navy]],
+            'alignment' => ['horizontal' => 'center'],
+            'borders'   => ['bottom' => ['borderStyle' => 'thin', 'color' => ['rgb' => 'AAAAAA']]],
+        ];
+        $subHeaderStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => $navy], 'size' => 11],
+            'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => $bg]],
+        ];
+        $altRowStyle = ['fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => $gray]]];
+        $titleStyle  = ['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]]];
+        $boldStyle   = ['font' => ['bold' => true]];
+
+        $setHeader = function($ws, $range) use ($headerStyle) {
+            $ws->getStyle($range)->applyFromArray($headerStyle);
+        };
+        $pct = fn($v, $t) => $t > 0 ? round($v / $t * 100, 1) . '%' : '0.0%';
+
+        // Chart helpers - pass data literals directly to avoid formula parser / calculation crashes
+        $createColumnChart = function($id, $title, array $labels, array $counts, array $colors, $topCell, $bottomCell) {
+            $n = count($counts);
+            if ($n === 0) return null;
+            $val = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_NUMBER, null, null, $n, $counts);
+            $val->setFillColor($colors);
+            $cat = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, $n, $labels)];
+            $lbl = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, 1, [$title])];
+
+            $ds = new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(\PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART, \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED, [0], $lbl, $cat, [$val]);
+            $ds->setPlotDirection(\PhpOffice\PhpSpreadsheet\Chart\DataSeries::DIRECTION_COL);
+
+            $chart = new \PhpOffice\PhpSpreadsheet\Chart\Chart($id, new \PhpOffice\PhpSpreadsheet\Chart\Title($title),
+                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, new \PhpOffice\PhpSpreadsheet\Chart\Layout(), false),
+                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(new \PhpOffice\PhpSpreadsheet\Chart\Layout(), [$ds]), true, 0, null, null);
+            $chart->setTopLeftPosition($topCell);
+            $chart->setBottomRightPosition($bottomCell);
+            return $chart;
         };
 
-        // ══════════════════════════════════════════════════════════════════════
-        // SHEET 1: Summary (Executive Dashboard with Clean Side-by-Side Layout)
-        // ══════════════════════════════════════════════════════════════════════
+        $createPieChart = function($id, $title, array $labels, array $counts, array $colors, $topCell, $bottomCell) {
+            $n = count($counts);
+            if ($n === 0 || array_sum($counts) === 0) return null;
+            $val = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_NUMBER, null, null, $n, $counts);
+            $val->setFillColor($colors);
+            $cat = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, $n, $labels)];
+            $lbl = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, 1, [$title])];
+
+            $ds = new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(\PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART, null, range(0, $n - 1), $lbl, $cat, [$val]);
+            $layout = new \PhpOffice\PhpSpreadsheet\Chart\Layout();
+            $layout->setShowPercent(true);
+            $layout->setShowVal(false);
+
+            $chart = new \PhpOffice\PhpSpreadsheet\Chart\Chart($id, new \PhpOffice\PhpSpreadsheet\Chart\Title($title),
+                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_RIGHT, new \PhpOffice\PhpSpreadsheet\Chart\Layout(), false),
+                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea($layout, [$ds]), true, 0, null, null);
+            $chart->setTopLeftPosition($topCell);
+            $chart->setBottomRightPosition($bottomCell);
+            return $chart;
+        };
+
+        // ----------------------------------------------------------------------
+        // SHEET 1: SUMMARY
+        // ----------------------------------------------------------------------
         $ws1 = $spreadsheet->getActiveSheet()->setTitle('Summary');
 
-        // Title banner
-        $ws1->mergeCells('A1:C1');
-        $ws1->setCellValue('A1', "MSWDO Detailed Analysis Report");
-        $ws1->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 16, 'color' => ['rgb' => $navy]]]);
-        $ws1->setCellValue('A2', "Municipality"); $ws1->setCellValue('B2', $municipality->name);
-        $ws1->setCellValue('A3', "Analysis Year"); $ws1->setCellValue('B3', $analysisYear);
-        $ws1->setCellValue('A4', "Generated Date"); $ws1->setCellValue('B4', now()->format('Y-m-d H:i:s'));
-        $ws1->getStyle('A2:A4')->getFont()->setBold(true);
+        $ws1->mergeCells('A1:F1');
+        $ws1->setCellValue('A1', "MSWDO Analysis Report - {$municipality->name} - {$analysisYear}");
+        $ws1->getStyle('A1')->applyFromArray($titleStyle);
+        $ws1->getRowDimension(1)->setRowHeight(24);
 
-        // KPI Table (A6:C13)
-        $ws1->setCellValue('A6', 'KEY PERFORMANCE INDICATORS');
-        $ws1->getStyle('A6')->applyFromArray(['font' => ['bold' => true, 'size' => 12, 'color' => ['rgb' => $navy]]]);
-        $ws1->mergeCells('A6:C6');
+        $ws1->mergeCells('A2:F2');
+        $ws1->setCellValue('A2', 'Generated: ' . now()->format('F d, Y h:i A'));
+        $ws1->getStyle('A2')->getFont()->setItalic(true)->setColor((new \PhpOffice\PhpSpreadsheet\Style\Color())->setRGB('888888'));
+        $ws1->getRowDimension(2)->setRowHeight(16);
 
-        $ws1->fromArray([['Metric', 'Value', 'Notes']], null, 'A7');
-        $headerFill($ws1, 'A7:C7');
+        // KPI cards (A4:C15)
+        $ws1->setCellValue('A4', 'KEY PERFORMANCE INDICATORS');
+        $ws1->getStyle('A4')->applyFromArray($subHeaderStyle);
 
-        $kpiData = [
-            ['Total Population',   $totalPop > 0 ? $totalPop : null, "Official count for $analysisYear"],
-            ['Total Households',   $totalHH  > 0 ? $totalHH  : null, "Registered households"],
-            ['Applications',       $totalApps,                       "Submitted in $analysisYear"],
-            ['Unique Applicants',  $uniqueApplicants,                "Distinct applicants"],
-            ['Approved Cases',     $approvedApps,                    $approvalRate !== null ? $approvalRate . '% approval rate' : ''],
-            ['Beneficiaries',      $totalBeneficiaries > 0 ? $totalBeneficiaries : null, "Across all programs"],
+        $ws1->fromArray([['Metric', 'Value', 'Notes']], null, 'A5');
+        $setHeader($ws1, 'A5:C5');
+
+        $kpis = [
+            ['Total Population',       $totalPop > 0 ? number_format($totalPop) : 'N/A',   'Registered population'],
+            ['Total Households',        $totalHH  > 0 ? number_format($totalHH)  : 'N/A',   'Registered households'],
+            ['Male Population',         $malePop  > 0 ? number_format($malePop)  : 'N/A',   $totalPop > 0 ? round($malePop/$totalPop*100,1).'% of total' : 'N/A'],
+            ['Female Population',       $femalePop> 0 ? number_format($femalePop): 'N/A',   $totalPop > 0 ? round($femalePop/$totalPop*100,1).'% of total' : 'N/A'],
+            ['Total Applications',      number_format($totalApps),                           "Submitted cases in {$analysisYear}"],
+            ['Unique Applicants',       number_format($uniqueApplicants),                    'Distinct individuals'],
+            ['Approved Applications',   number_format($approvedApps),                        $approvalRate !== null ? "{$approvalRate}% approval rate" : 'N/A'],
+            ['Pending Applications',    number_format($pendingApps),                         $totalApps > 0 ? $pct($pendingApps, $totalApps).' of total' : 'N/A'],
+            ['Rejected Applications',   number_format($rejectedApps),                        $totalApps > 0 ? $pct($rejectedApps, $totalApps).' of total' : 'N/A'],
+            ['Total Beneficiaries',     $totalBeneficiaries > 0 ? number_format($totalBeneficiaries) : 'N/A', 'Across all welfare programs'],
         ];
-
-        $r = 8;
-        foreach ($kpiData as $i => $row) {
-            $ws1->setCellValue("A$r", $row[0]);
-            if ($row[1] !== null) {
-                $ws1->setCellValueExplicit("B$r", $row[1], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-                $ws1->getStyle("B$r")->getNumberFormat()->setFormatCode('#,##0');
-            } else {
-                $ws1->setCellValue("B$r", 'N/A');
-                $ws1->getStyle("B$r")->getFont()->setColor(new \PhpOffice\PhpSpreadsheet\Style\Color('FF7A84A8'));
-            }
-            $ws1->setCellValue("C$r", $row[2]);
-            if ($i % 2 === 0) {
-                $ws1->getStyle("A$r:C$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
-            }
+        $r = 6;
+        foreach ($kpis as $i => $row) {
+            $ws1->fromArray([$row], null, "A{$r}");
+            if ($i % 2 === 0) $ws1->getStyle("A{$r}:C{$r}")->applyFromArray($altRowStyle);
             $r++;
         }
 
-        // Summary Application Status table (A15:C19)
-        $ws1->setCellValue('A15', 'APPLICATION STATUS OVERVIEW');
-        $ws1->getStyle('A15')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
-        $ws1->fromArray([['Status', 'Count', 'Share']], null, 'A16');
-        $headerFill($ws1, 'A16:C16');
-        $ws1->setCellValue('A17', 'Approved'); $ws1->setCellValueExplicit('B17', $approvedApps, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC); $ws1->setCellValueExplicit('C17', $totalApps > 0 ? round($approvedApps / $totalApps * 100, 1) : 0, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-        $ws1->setCellValue('A18', 'Pending');  $ws1->setCellValueExplicit('B18', $pendingApps,  \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC); $ws1->setCellValueExplicit('C18', $totalApps > 0 ? round($pendingApps  / $totalApps * 100, 1) : 0, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-        $ws1->setCellValue('A19', 'Rejected'); $ws1->setCellValueExplicit('B19', $rejectedApps, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC); $ws1->setCellValueExplicit('C19', $totalApps > 0 ? round($rejectedApps / $totalApps * 100, 1) : 0, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-        $ws1->getStyle('B17:B19')->getNumberFormat()->setFormatCode('#,##0');
-        $ws1->getStyle('C17:C19')->getNumberFormat()->setFormatCode('0.0"%"');
-
-        // Chart 1 on Summary: Application Status Pie Chart (Positioned at E6:L18)
-        $statusPieChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
-            'summary_status_chart',
-            new \PhpOffice\PhpSpreadsheet\Chart\Title("Application Status · $analysisYear"),
-            new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
-            new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
-                new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
-                    \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART,
-                    null,
-                    range(0, 2),
-                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Status'])],
-                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', 'Summary!$A$17:$A$19', null, 3)],
-                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', 'Summary!$B$17:$B$19', null, 3)]
-                )
-            ])
-        );
-        $statusPieChart->setTopLeftPosition('E6');
-        $statusPieChart->setBottomRightPosition('L18');
-        $ws1->addChart($statusPieChart);
-
-        // Summary Gender Table (A21:C24) and Gender Chart (E20:L32)
-        $totG = ($malePop ?? 0) + ($femalePop ?? 0);
-        if ($totG > 0) {
-            $ws1->setCellValue('A21', 'GENDER DISTRIBUTION');
-            $ws1->getStyle('A21')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
-            $ws1->fromArray([['Gender', 'Population', 'Share']], null, 'A22');
-            $headerFill($ws1, 'A22:C22');
-            $ws1->setCellValue('A23', 'Male');   $ws1->setCellValueExplicit('B23', $malePop, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);   $ws1->setCellValueExplicit('C23', round($malePop / $totG * 100, 1), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-            $ws1->setCellValue('A24', 'Female'); $ws1->setCellValueExplicit('B24', $femalePop, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC); $ws1->setCellValueExplicit('C24', round($femalePop / $totG * 100, 1), \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-            $ws1->getStyle('B23:B24')->getNumberFormat()->setFormatCode('#,##0');
-            $ws1->getStyle('C23:C24')->getNumberFormat()->setFormatCode('0.0"%"');
-
-            $genderSummaryChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
-                'summary_gender_chart',
-                new \PhpOffice\PhpSpreadsheet\Chart\Title("Gender Distribution · $analysisYear"),
-                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
-                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
-                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
-                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART,
-                        null,
-                        range(0, 1),
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Gender'])],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', 'Summary!$A$23:$A$24', null, 2)],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', 'Summary!$B$23:$B$24', null, 2)]
-                    )
-                ])
-            );
-            $genderSummaryChart->setTopLeftPosition('E20');
-            $genderSummaryChart->setBottomRightPosition('L32');
-            $ws1->addChart($genderSummaryChart);
+        // Application status table (A18:C23)
+        $ws1->setCellValue('A18', 'APPLICATION STATUS OVERVIEW');
+        $ws1->getStyle('A18')->applyFromArray($subHeaderStyle);
+        $ws1->fromArray([['Status', 'Count', 'Share']], null, 'A19');
+        $setHeader($ws1, 'A19:C19');
+        $statusRows = [
+            ['Approved', $approvedApps, $pct($approvedApps, $totalApps)],
+            ['Pending',  $pendingApps,  $pct($pendingApps,  $totalApps)],
+            ['Rejected', $rejectedApps, $pct($rejectedApps, $totalApps)],
+            ['Total',    $totalApps,    '100.0%'],
+        ];
+        $r = 20;
+        foreach ($statusRows as $i => $row) {
+            $ws1->fromArray([$row], null, "A{$r}");
+            if ($i % 2 === 0) $ws1->getStyle("A{$r}:C{$r}")->applyFromArray($altRowStyle);
+            if ($i === 3) $ws1->getStyle("A{$r}:C{$r}")->applyFromArray($boldStyle);
+            $r++;
         }
+
+        // Embedded Chart 1: Application Outcomes Pie Chart on Summary (E4 to L16)
+        $chSummary = $createPieChart('ch_sum_status', 'Application Outcomes',
+            ['Approved', 'Pending', 'Rejected'], [$approvedApps, $pendingApps, $rejectedApps],
+            [$blue, $gold, $red], 'E4', 'L16');
+        if ($chSummary) $ws1->addChart($chSummary);
 
         $ws1->getColumnDimension('A')->setWidth(26);
         $ws1->getColumnDimension('B')->setWidth(18);
-        $ws1->getColumnDimension('C')->setWidth(30);
-        $ws1->getColumnDimension('D')->setWidth(4); // spacer column
-        foreach (['E','F','G','H','I','J','K','L'] as $col) {
-            $ws1->getColumnDimension($col)->setWidth(11);
-        }
+        $ws1->getColumnDimension('C')->setWidth(22);
+        $ws1->getColumnDimension('D')->setWidth(4);
+        foreach (['E','F','G','H','I','J','K','L'] as $col) $ws1->getColumnDimension($col)->setWidth(10);
 
-        // ══════════════════════════════════════════════════════════════════════
-        // SHEET 2: Applications (Clean, Vertically Stacked Non-Overlapping Charts)
-        // ══════════════════════════════════════════════════════════════════════
+        // ----------------------------------------------------------------------
+        // SHEET 2: APPLICATIONS
+        // ----------------------------------------------------------------------
         $ws2 = $spreadsheet->createSheet()->setTitle('Applications');
 
-        $ws2->mergeCells('A1:E1');
-        $ws2->setCellValue('A1', "Application Analysis · $analysisYear · {$municipality->name}");
-        $ws2->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]]]);
+        $ws2->mergeCells('A1:G1');
+        $ws2->setCellValue('A1', "Application Analysis - {$analysisYear} - {$municipality->name}");
+        $ws2->getStyle('A1')->applyFromArray($titleStyle);
 
-        // Status table (A3:C8)
-        $ws2->setCellValue('A3', 'APPLICATION STATUS OVERVIEW');
-        $ws2->getStyle('A3')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
+        // Section 1: Application Status Breakdown (Rows 3 to 8)
+        $ws2->setCellValue('A3', 'APPLICATION STATUS BREAKDOWN');
+        $ws2->getStyle('A3')->applyFromArray($subHeaderStyle);
         $ws2->fromArray([['Status', 'Count', 'Percentage']], null, 'A4');
-        $headerFill($ws2, 'A4:C4');
-
-        $statusData = [
-            ['Approved', $approvedApps, $totalApps > 0 ? round($approvedApps / $totalApps * 100, 1) : 0],
-            ['Pending',  $pendingApps,  $totalApps > 0 ? round($pendingApps  / $totalApps * 100, 1) : 0],
-            ['Rejected', $rejectedApps, $totalApps > 0 ? round($rejectedApps / $totalApps * 100, 1) : 0],
-        ];
-        foreach ($statusData as $i => $row) {
-            $r = $i + 5;
-            $ws2->setCellValue("A$r", $row[0]);
-            $ws2->setCellValueExplicit("B$r", $row[1], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-            $ws2->getStyle("B$r")->getNumberFormat()->setFormatCode('#,##0');
-            $ws2->setCellValueExplicit("C$r", $row[2], \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-            $ws2->getStyle("C$r")->getNumberFormat()->setFormatCode('0.0"%"');
-            if ($i % 2 === 0) $ws2->getStyle("A$r:C$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
-        }
-        $ws2->fromArray([['Total', $totalApps, '100.0%']], null, 'A8');
-        $ws2->getStyle('A8:C8')->applyFromArray(['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => $bg]]]);
-        $ws2->getStyle('B8')->getNumberFormat()->setFormatCode('#,##0');
-
-        // Chart 1: Application Status Pie Chart (Positioned at G4:N17)
-        $statusChart2 = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
-            'app_status_chart_sheet2',
-            new \PhpOffice\PhpSpreadsheet\Chart\Title("Application Status · $analysisYear"),
-            new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
-            new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
-                new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
-                    \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART,
-                    null,
-                    range(0, 2),
-                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Status'])],
-                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', 'Applications!$A$5:$A$7', null, 3)],
-                    [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', 'Applications!$B$5:$B$7', null, 3)]
-                )
-            ])
-        );
-        $statusChart2->setTopLeftPosition('G4');
-        $statusChart2->setBottomRightPosition('N17');
-        $ws2->addChart($statusChart2);
-
-        // By-program table (A10:E...)
-        if ($appsByProgram->isNotEmpty()) {
-            $ws2->setCellValue('A10', 'APPLICATIONS BY WELFARE PROGRAM');
-            $ws2->getStyle('A10')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
-            $ws2->fromArray([['Program', 'Applications', 'Pending', 'Approved', 'Rejected']], null, 'A11');
-            $headerFill($ws2, 'A11:E11');
-
-            $progStartRow = 12;
-            $r = $progStartRow;
-            foreach ($appsByProgram as $prog => $data) {
-                $rowTotal = ($data['pending'] ?? 0) + ($data['approved'] ?? 0) + ($data['rejected'] ?? 0);
-                $ws2->fromArray([[
-                    str_replace('_', ' ', $prog), $rowTotal,
-                    $data['pending'] ?? 0, $data['approved'] ?? 0, $data['rejected'] ?? 0,
-                ]], null, "A$r");
-                $ws2->getStyle("B$r:E$r")->getNumberFormat()->setFormatCode('#,##0');
-                if (($r - $progStartRow) % 2 === 0) $ws2->getStyle("A$r:E$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
-                $r++;
-            }
-            $ws2->fromArray([['Total', $totalApps, $pendingApps, $approvedApps, $rejectedApps]], null, "A$r");
-            $ws2->getStyle("A$r:E$r")->applyFromArray(['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => $bg]]]);
-            $ws2->getStyle("B$r:E$r")->getNumberFormat()->setFormatCode('#,##0');
-
-            // Chart 2: Applications by Program Clustered Column Chart (Positioned at G19:N32 - strictly BELOW Chart 1!)
-            $progEndRow = $r - 1;
-            $progChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
-                'prog_chart',
-                new \PhpOffice\PhpSpreadsheet\Chart\Title("Applications by Program · $analysisYear"),
-                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
-                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
-                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
-                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART,
-                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED,
-                        range(0, 3),
-                        [
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Total Applications']),
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Pending']),
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Approved']),
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Rejected']),
-                        ],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', "Applications!\$A\$$progStartRow:\$A\$$progEndRow", null, $appsByProgram->count())],
-                        [
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Applications!\$B\$$progStartRow:\$B\$$progEndRow", null, $appsByProgram->count()),
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Applications!\$C\$$progStartRow:\$C\$$progEndRow", null, $appsByProgram->count()),
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Applications!\$D\$$progStartRow:\$D\$$progEndRow", null, $appsByProgram->count()),
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Applications!\$E\$$progStartRow:\$E\$$progEndRow", null, $appsByProgram->count()),
-                        ]
-                    )
-                ])
-            );
-            $progChart->setTopLeftPosition('G19');
-            $progChart->setBottomRightPosition('N32');
-            $ws2->addChart($progChart);
-        }
-
-        $ws2->getColumnDimension('A')->setWidth(26);
-        $ws2->getColumnDimension('B')->setWidth(16);
-        $ws2->getColumnDimension('C')->setWidth(14);
-        $ws2->getColumnDimension('D')->setWidth(14);
-        $ws2->getColumnDimension('E')->setWidth(14);
-        $ws2->getColumnDimension('F')->setWidth(4); // spacer column
-        foreach (['G','H','I','J','K','L','M','N'] as $col) {
-            $ws2->getColumnDimension($col)->setWidth(11);
-        }
-
-        // ══════════════════════════════════════════════════════════════════════
-        // SHEET 3: Programs (Social Welfare Beneficiaries & Side Chart)
-        // ══════════════════════════════════════════════════════════════════════
-        $ws3 = $spreadsheet->createSheet()->setTitle('Programs');
-
-        $ws3->mergeCells('A1:C1');
-        $ws3->setCellValue('A1', "Social Welfare Programs · $analysisYear · {$municipality->name}");
-        $ws3->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]]]);
-
-        $ws3->fromArray([['Program', 'Beneficiaries', '% of Largest']], null, 'A3');
-        $headerFill($ws3, 'A3:C3');
-
-        if ($programOverview->isEmpty()) {
-            $ws3->setCellValue('A4', 'No beneficiary records for ' . $analysisYear);
-            $ws3->getStyle('A4')->getFont()->setItalic(true)->getColor()->setRGB('7A84A8');
-        } else {
-            $maxB = $programOverview->max() ?: 1;
-            $r = 4;
-            foreach ($programOverview as $prog => $count) {
-                $pctVal = round($count / $maxB * 100, 1);
-                $ws3->setCellValue("A$r", str_replace('_', ' ', $prog));
-                $ws3->setCellValueExplicit("B$r", $count, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-                $ws3->getStyle("B$r")->getNumberFormat()->setFormatCode('#,##0');
-                $ws3->setCellValueExplicit("C$r", $pctVal, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-                $ws3->getStyle("C$r")->getNumberFormat()->setFormatCode('0.0"%"');
-                if (($r - 4) % 2 === 0) $ws3->getStyle("A$r:C$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
-                $r++;
-            }
-
-            // Horizontal Bar chart for program beneficiaries (Positioned at E3:L18)
-            $progBenefChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
-                'prog_benef_chart',
-                new \PhpOffice\PhpSpreadsheet\Chart\Title("Beneficiaries by Program · $analysisYear"),
-                null,
-                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
-                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
-                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART,
-                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED,
-                        [0],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Beneficiaries'])],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', "Programs!\$A\$4:\$A\$" . ($r-1), null, $programOverview->count())],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Programs!\$B\$4:\$B\$" . ($r-1), null, $programOverview->count())]
-                    )
-                ])
-            );
-            $progBenefChart->setTopLeftPosition('E3');
-            $progBenefChart->setBottomRightPosition('L18');
-            $ws3->addChart($progBenefChart);
-        }
-
-        $ws3->getColumnDimension('A')->setWidth(26);
-        $ws3->getColumnDimension('B')->setWidth(18);
-        $ws3->getColumnDimension('C')->setWidth(16);
-        $ws3->getColumnDimension('D')->setWidth(4); // spacer
-        foreach (['E','F','G','H','I','J','K','L'] as $col) {
-            $ws3->getColumnDimension($col)->setWidth(11);
-        }
-
-        // ══════════════════════════════════════════════════════════════════════
-        // SHEET 4: Demographics (Clean, Vertically Stacked Non-Overlapping Charts)
-        // ══════════════════════════════════════════════════════════════════════
-        $ws4 = $spreadsheet->createSheet()->setTitle('Demographics');
-
-        $ws4->mergeCells('A1:E1');
-        $ws4->setCellValue('A1', "Demographics & Population Trend · {$municipality->name}");
-        $ws4->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]]]);
-
-        // Gender Distribution Table (A3:C7)
-        $ws4->setCellValue('A3', "GENDER DISTRIBUTION · $analysisYear");
-        $ws4->getStyle('A3')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
-        $ws4->fromArray([['Gender', 'Count', 'Percentage']], null, 'A4');
-        $headerFill($ws4, 'A4:C4');
-
-        if ($malePop + $femalePop > 0) {
-            $gT = $malePop + $femalePop;
-            $ws4->fromArray([
-                ['Male',   $malePop,   round($malePop   / $gT * 100, 1)],
-                ['Female', $femalePop, round($femalePop / $gT * 100, 1)],
-                ['Total',  $gT,        100],
-            ], null, 'A5');
-            $ws4->getStyle('B5:B7')->getNumberFormat()->setFormatCode('#,##0');
-            $ws4->getStyle('C5:C6')->getNumberFormat()->setFormatCode('0.0"%"');
-            $ws4->getStyle('A7:C7')->applyFromArray(['font' => ['bold' => true], 'fill' => ['fillType' => 'solid', 'startColor' => ['rgb' => $bg]]]);
-
-            // Chart 1: Gender Distribution (Positioned at G4:N17)
-            $genderChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
-                'gender_chart',
-                new \PhpOffice\PhpSpreadsheet\Chart\Title("Gender Distribution · $analysisYear"),
-                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
-                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
-                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
-                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_PIECHART,
-                        null,
-                        range(0, 1),
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Gender'])],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', 'Demographics!$A$5:$A$6', null, 2)],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', 'Demographics!$B$5:$B$6', null, 2)]
-                    )
-                ])
-            );
-            $genderChart->setTopLeftPosition('G4');
-            $genderChart->setBottomRightPosition('N17');
-            $ws4->addChart($genderChart);
-        } else {
-            $ws4->setCellValue('A5', 'No gender data for ' . $analysisYear);
-            $ws4->getStyle('A5')->getFont()->setItalic(true)->getColor()->setRGB('7A84A8');
-        }
-
-        // Historical Population & Household Trend Table (A10:E...)
-        $ws4->setCellValue('A10', 'HISTORICAL POPULATION & HOUSEHOLD TREND');
-        $ws4->getStyle('A10')->applyFromArray(['font' => ['bold' => true, 'size' => 11, 'color' => ['rgb' => $navy]]]);
-        $ws4->fromArray([['Year', 'Population', 'Households', 'Male', 'Female']], null, 'A11');
-        $headerFill($ws4, 'A11:E11');
-
-        $trendStartRow = 12;
-        $r = $trendStartRow;
-        foreach ($trend as $row) {
-            $ws4->setCellValue("A$r", $row->year);
-            foreach (['total_population' => 'B', 'total_households' => 'C', 'male_population' => 'D', 'female_population' => 'E'] as $field => $col) {
-                if ($row->$field > 0) {
-                    $ws4->setCellValueExplicit("{$col}{$r}", $row->$field, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-                    $ws4->getStyle("{$col}{$r}")->getNumberFormat()->setFormatCode('#,##0');
-                } else {
-                    $ws4->setCellValue("{$col}{$r}", 'N/A');
-                }
-            }
-            if (($r - $trendStartRow) % 2 === 0) $ws4->getStyle("A$r:E$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
+        $setHeader($ws2, 'A4:C4');
+        $r = 5;
+        foreach ([['Approved', $approvedApps], ['Pending', $pendingApps], ['Rejected', $rejectedApps]] as $i => $row) {
+            $ws2->setCellValue("A{$r}", $row[0]);
+            $ws2->setCellValue("B{$r}", $row[1]);
+            $ws2->setCellValue("C{$r}", $pct($row[1], $totalApps));
+            if ($i % 2 === 0) $ws2->getStyle("A{$r}:C{$r}")->applyFromArray($altRowStyle);
             $r++;
         }
+        $ws2->fromArray([['Total', $totalApps, '100.0%']], null, "A{$r}");
+        $ws2->getStyle("A{$r}:C{$r}")->applyFromArray($boldStyle);
 
-        // Chart 2: Trend Chart (Positioned at G19:N33 - strictly BELOW Chart 1!)
-        if ($trend->count() > 0) {
-            $trendEndRow = $r - 1;
-            $trendChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
-                'trend_chart',
-                new \PhpOffice\PhpSpreadsheet\Chart\Title("Historical Population & Households Trend"),
-                new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, null, false),
-                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
-                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
-                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART,
-                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED,
-                        [0, 1],
-                        [
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Population']),
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Households']),
-                        ],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', "Demographics!\$A\$$trendStartRow:\$A\$$trendEndRow", null, $trend->count())],
-                        [
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Demographics!\$B\$$trendStartRow:\$B\$$trendEndRow", null, $trend->count()),
-                            new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Demographics!\$C\$$trendStartRow:\$C\$$trendEndRow", null, $trend->count()),
-                        ]
-                    )
-                ])
-            );
-            $trendChart->setTopLeftPosition('G19');
-            $trendChart->setBottomRightPosition('N33');
-            $ws4->addChart($trendChart);
+        // Embedded Chart 1: Status Pie Chart (placed neatly beside Section 1: E3 to L16)
+        $chAppStatus = $createPieChart('ch_app_status', 'Application Status Distribution',
+            ['Approved', 'Pending', 'Rejected'], [$approvedApps, $pendingApps, $rejectedApps],
+            [$blue, $gold, $red], 'E3', 'L16');
+        if ($chAppStatus) $ws2->addChart($chAppStatus);
+
+        // Section 2: Applications by Program (starts safely at Row 18 below Chart 1)
+        $r = 18;
+        $ws2->setCellValue("A{$r}", 'APPLICATIONS BY WELFARE PROGRAM');
+        $ws2->getStyle("A{$r}")->applyFromArray($subHeaderStyle);
+        $r++;
+        $ws2->fromArray([['Program', 'Total', 'Pending', 'Approved', 'Rejected', 'Share']], null, "A{$r}");
+        $setHeader($ws2, "A{$r}:F{$r}");
+        $r++;
+
+        $appProgLabels = [];
+        $appProgTotals = [];
+        $ws2LastContentRow = 16;
+
+        if ($appsByProgram->isNotEmpty()) {
+            foreach ($appsByProgram as $prog => $data) {
+                $tot = ($data['pending'] ?? 0) + ($data['approved'] ?? 0) + ($data['rejected'] ?? 0);
+                $cleanProg = str_replace('_', ' ', $prog);
+                $appProgLabels[] = $cleanProg;
+                $appProgTotals[] = $tot;
+                $ws2->fromArray([[
+                    $cleanProg,
+                    $tot,
+                    $data['pending']  ?? 0,
+                    $data['approved'] ?? 0,
+                    $data['rejected'] ?? 0,
+                    $pct($tot, $totalApps),
+                ]], null, "A{$r}");
+                $r++;
+            }
+
+            // Embedded Chart 2: Applications by Program Column Chart (placed neatly below Table 2)
+            $chAppProgTop = $r + 2;
+            $chAppProgBottom = $chAppProgTop + 16;
+            $chAppProg = $createColumnChart('ch_app_prog', 'Applications by Program',
+                $appProgLabels, $appProgTotals, array_fill(0, count($appProgTotals), $blue),
+                'A' . $chAppProgTop, 'K' . $chAppProgBottom);
+            if ($chAppProg) {
+                $ws2->addChart($chAppProg);
+                $ws2LastContentRow = $chAppProgBottom;
+            } else {
+                $ws2LastContentRow = $r;
+            }
+        } else {
+            $ws2->setCellValue("A{$r}", 'No application data for this year.');
+            $ws2LastContentRow = max(16, $r);
         }
 
-        $ws4->getColumnDimension('A')->setWidth(20);
-        $ws4->getColumnDimension('B')->setWidth(16);
-        $ws4->getColumnDimension('C')->setWidth(16);
-        $ws4->getColumnDimension('D')->setWidth(16);
-        $ws4->getColumnDimension('E')->setWidth(16);
-        $ws4->getColumnDimension('F')->setWidth(4); // spacer column
-        foreach (['G','H','I','J','K','L','M','N'] as $col) {
-            $ws4->getColumnDimension($col)->setWidth(11);
+        foreach (['A' => 24, 'B' => 12, 'C' => 12, 'D' => 12, 'E' => 12, 'F' => 12] as $col => $w) {
+            $ws2->getColumnDimension($col)->setWidth($w);
+        }
+        foreach (['G','H','I','J','K','L'] as $col) {
+            $ws2->getColumnDimension($col)->setWidth(10);
         }
 
-        // ══════════════════════════════════════════════════════════════════════
-        // SHEET 5: Barangay Data (with Clean Bottom Bar Chart)
-        // ══════════════════════════════════════════════════════════════════════
+        // ----------------------------------------------------------------------
+        // SHEET 3: WELFARE PROGRAMS
+        // ----------------------------------------------------------------------
+        $ws3 = $spreadsheet->createSheet()->setTitle('Welfare Programs');
+
+        $ws3->mergeCells('A1:E1');
+        $ws3->setCellValue('A1', "Social Welfare Programs - {$analysisYear} - {$municipality->name}");
+        $ws3->getStyle('A1')->applyFromArray($titleStyle);
+
+        $ws3->fromArray([['Program', 'Beneficiaries', 'Share (%)']], null, 'A3');
+        $setHeader($ws3, 'A3:C3');
+
+        $progLabels = [];
+        $progCounts = [];
+        $palette = ['1B2B5B', 'FDB913', '28A745', 'C41E24', '6366F1', '0D7377', 'E67E22'];
+
+        $r = 4;
+        $ws3LastContentRow = 18;
+
+        if ($programOverview->isNotEmpty()) {
+            $sumB = $programOverview->sum() ?: 1;
+            foreach ($programOverview as $prog => $count) {
+                $cleanName = str_replace('_', ' ', $prog);
+                $progLabels[] = $cleanName;
+                $progCounts[] = (int) $count;
+                $ws3->fromArray([[
+                    $cleanName,
+                    $count,
+                    round($count / $sumB * 100, 1),
+                ]], null, "A{$r}");
+                if (($r - 4) % 2 === 0) $ws3->getStyle("A{$r}:C{$r}")->applyFromArray($altRowStyle);
+                $r++;
+            }
+            $ws3->fromArray([['Total Beneficiaries', $sumB, '100.0']], null, "A{$r}");
+            $ws3->getStyle("A{$r}:C{$r}")->applyFromArray($boldStyle);
+
+            // Embedded Chart: Beneficiaries by Program Column Chart (placed beside table: E3 to M18)
+            $progColors = array_slice(array_merge($palette, $palette), 0, count($progCounts));
+            $chProg = $createColumnChart('ch_prog_benef', "Beneficiaries by Program ({$analysisYear})",
+                $progLabels, $progCounts, $progColors, 'E3', 'M18');
+            if ($chProg) {
+                $ws3->addChart($chProg);
+                $ws3LastContentRow = max($r, 18);
+            } else {
+                $ws3LastContentRow = $r;
+            }
+        } else {
+            $ws3->setCellValue("A{$r}", 'No beneficiary data for this year.');
+            $ws3LastContentRow = $r;
+        }
+
+        foreach (['A' => 28, 'B' => 16, 'C' => 14, 'D' => 6] as $col => $w) {
+            $ws3->getColumnDimension($col)->setWidth($w);
+        }
+        foreach (['E','F','G','H','I','J','K','L','M'] as $col) {
+            $ws3->getColumnDimension($col)->setWidth(10);
+        }
+
+        // ----------------------------------------------------------------------
+        // SHEET 4: DEMOGRAPHICS
+        // ----------------------------------------------------------------------
+        $ws4 = $spreadsheet->createSheet()->setTitle('Demographics');
+
+        $ws4->mergeCells('A1:F1');
+        $ws4->setCellValue('A1', "Demographics - {$analysisYear} - {$municipality->name}");
+        $ws4->getStyle('A1')->applyFromArray($titleStyle);
+
+        // Section 1: Gender Distribution (Rows 3 to 7)
+        $ws4->setCellValue('A3', 'GENDER DISTRIBUTION');
+        $ws4->getStyle('A3')->applyFromArray($subHeaderStyle);
+        $ws4->fromArray([['Gender', 'Count', 'Percentage']], null, 'A4');
+        $setHeader($ws4, 'A4:C4');
+        $totG = ($malePop ?? 0) + ($femalePop ?? 0);
+        if ($totG > 0) {
+            $ws4->fromArray([
+                ['Male', $malePop, round($malePop/$totG*100, 1)],
+                ['Female', $femalePop, round($femalePop/$totG*100, 1)],
+                ['Total', $totG, '100.0'],
+            ], null, 'A5');
+            $ws4->getStyle("A5:C5")->applyFromArray($altRowStyle);
+            $ws4->getStyle("A7:C7")->applyFromArray($boldStyle);
+
+            // Embedded Chart 1: Gender Pie Chart (placed neatly beside Section 1: E3 to L16)
+            $chGender = $createPieChart('ch_demo_gender', "Gender Distribution ({$analysisYear})",
+                ['Male', 'Female'], [(int)$malePop, (int)$femalePop], [$navy, $gold], 'E3', 'L16');
+            if ($chGender) $ws4->addChart($chGender);
+        } else {
+            $ws4->setCellValue('A5', 'No gender data recorded.');
+        }
+
+        // Section 2: Historical Population & Household Trend (starts safely at Row 18 below Chart 1)
+        $r = 18;
+        $ws4->setCellValue("A{$r}", 'HISTORICAL POPULATION & HOUSEHOLD TREND');
+        $ws4->getStyle("A{$r}")->applyFromArray($subHeaderStyle);
+        $r++;
+        $ws4->fromArray([['Year', 'Population', 'Households', 'Male', 'Female']], null, "A{$r}");
+        $setHeader($ws4, "A{$r}:E{$r}");
+        $r++;
+
+        $trendYears = [];
+        $trendPops  = [];
+        $trendHHs   = [];
+        $ws4LastContentRow = 16;
+
+        if ($trend->isNotEmpty()) {
+            foreach ($trend as $i => $row) {
+                $p = (int)$row->total_population;
+                $h = (int)$row->total_households;
+                $trendYears[] = (string)$row->year;
+                $trendPops[]  = $p;
+                $trendHHs[]   = $h;
+
+                $ws4->fromArray([[
+                    $row->year,
+                    $p > 0 ? $p : 'N/A',
+                    $h > 0 ? $h : 'N/A',
+                    $row->male_population   > 0 ? $row->male_population   : 'N/A',
+                    $row->female_population > 0 ? $row->female_population : 'N/A',
+                ]], null, "A{$r}");
+                if ($i % 2 === 0) $ws4->getStyle("A{$r}:E{$r}")->applyFromArray($altRowStyle);
+                $r++;
+            }
+
+            // Embedded Chart 2: Historical Trend Multi-Series Bar Chart (placed neatly below Table 2)
+            if (count($trendYears) > 0) {
+                $n = count($trendYears);
+                $cats = [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, $n, $trendYears)];
+                $lbl1 = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, 1, ['Population']);
+                $lbl2 = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_STRING, null, null, 1, ['Households']);
+                $sv1  = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_NUMBER, null, null, $n, $trendPops);
+                $sv1->setFillColor($navy);
+                $sv2  = new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues(\PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues::DATASERIES_TYPE_NUMBER, null, null, $n, $trendHHs);
+                $sv2->setFillColor($gold);
+
+                $dsTrend = new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
+                    \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART,
+                    \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED,
+                    [0, 1],
+                    [$lbl1, $lbl2],
+                    $cats,
+                    [$sv1, $sv2]
+                );
+                $dsTrend->setPlotDirection(\PhpOffice\PhpSpreadsheet\Chart\DataSeries::DIRECTION_COL);
+
+                $chTrend = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
+                    'ch_demo_trend',
+                    new \PhpOffice\PhpSpreadsheet\Chart\Title('Historical Population & Household Trend'),
+                    new \PhpOffice\PhpSpreadsheet\Chart\Legend(\PhpOffice\PhpSpreadsheet\Chart\Legend::POSITION_BOTTOM, new \PhpOffice\PhpSpreadsheet\Chart\Layout(), false),
+                    new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(new \PhpOffice\PhpSpreadsheet\Chart\Layout(), [$dsTrend]),
+                    true,
+                    0,
+                    null,
+                    null
+                );
+                $chTrendTop = $r + 2;
+                $chTrendBottom = $chTrendTop + 16;
+                $chTrend->setTopLeftPosition('A' . $chTrendTop);
+                $chTrend->setBottomRightPosition('K' . $chTrendBottom);
+                $ws4->addChart($chTrend);
+                $ws4LastContentRow = $chTrendBottom;
+            } else {
+                $ws4LastContentRow = $r;
+            }
+        } else {
+            $ws4->setCellValue("A{$r}", 'No historical data found.');
+            $ws4LastContentRow = max(16, $r);
+        }
+
+        foreach (['A' => 12, 'B' => 16, 'C' => 16, 'D' => 16, 'E' => 16] as $col => $w) {
+            $ws4->getColumnDimension($col)->setWidth($w);
+        }
+        foreach (['F','G','H','I','J','K','L'] as $col) {
+            $ws4->getColumnDimension($col)->setWidth(10);
+        }
+
+        // ----------------------------------------------------------------------
+        // SHEET 5: BARANGAY DATA
+        // ----------------------------------------------------------------------
         $ws5 = $spreadsheet->createSheet()->setTitle('Barangay Data');
 
         $ws5->mergeCells('A1:I1');
-        $ws5->setCellValue('A1', "Barangay Data · $analysisYear · {$municipality->name}");
-        $ws5->getStyle('A1')->applyFromArray(['font' => ['bold' => true, 'size' => 14, 'color' => ['rgb' => $navy]]]);
+        $ws5->setCellValue('A1', "Barangay Data - {$analysisYear} - {$municipality->name}");
+        $ws5->getStyle('A1')->applyFromArray($titleStyle);
 
-        if ($barangays->isEmpty()) {
-            $ws5->setCellValue('A3', 'No barangay records for ' . $analysisYear);
-            $ws5->getStyle('A3')->getFont()->setItalic(true)->getColor()->setRGB('7A84A8');
-        } else {
-            $ws5->fromArray([['Barangay', 'Population', 'Male', 'Female', 'PWD', 'AICS', 'Solo Parent', '4Ps', 'Senior']], null, 'A3');
-            $headerFill($ws5, 'A3:I3');
+        $ws5->fromArray([['Barangay', 'Population', 'Households', 'PWD', 'AICS', 'Solo Parent', '4Ps', 'Senior', 'Approved Apps']], null, 'A3');
+        $setHeader($ws5, 'A3:I3');
 
-            $bgyStart = 4;
-            $r = $bgyStart;
-            foreach ($barangays as $b) {
-                $pop = ($b->male_population ?? 0) + ($b->female_population ?? 0);
-                $fields = [
-                    $b->name,
-                    $pop > 0 ? $pop : null,
-                    ($b->male_population   ?? 0) > 0 ? $b->male_population   : null,
-                    ($b->female_population ?? 0) > 0 ? $b->female_population : null,
-                    ($b->pwd_count         ?? 0) > 0 ? $b->pwd_count         : null,
-                    ($b->aics_count        ?? 0) > 0 ? $b->aics_count        : null,
-                    ($b->solo_parent_count ?? 0) > 0 ? $b->solo_parent_count : null,
-                    ($b->four_ps_count     ?? 0) > 0 ? $b->four_ps_count     : null,
-                    ($b->senior_count      ?? 0) > 0 ? $b->senior_count      : null,
-                ];
-                $ws5->setCellValue("A$r", $b->name);
-                $cols = ['B','C','D','E','F','G','H','I'];
-                foreach (array_slice($fields, 1) as $k => $val) {
-                    $col = $cols[$k];
-                    if ($val !== null) {
-                        $ws5->setCellValueExplicit("{$col}{$r}", $val, \PhpOffice\PhpSpreadsheet\Cell\DataType::TYPE_NUMERIC);
-                        $ws5->getStyle("{$col}{$r}")->getNumberFormat()->setFormatCode('#,##0');
-                    } else {
-                        $ws5->setCellValue("{$col}{$r}", 'N/A');
-                        $ws5->getStyle("{$col}{$r}")->getFont()->getColor()->setRGB('7A84A8');
-                    }
+        $bgyNames = [];
+        $bgyPops  = [];
+        $ws5LastContentRow = 10;
+        $chBgy = null;
+
+        $r = 4;
+        if ($barangays->isNotEmpty()) {
+            foreach ($barangays as $i => $b) {
+                $pop = (int)($b->total_population ?? (($b->male_population ?? 0) + ($b->female_population ?? 0)));
+                if ($pop > 0) {
+                    $bgyNames[] = $b->name;
+                    $bgyPops[]  = $pop;
                 }
-                if (($r - $bgyStart) % 2 === 0) $ws5->getStyle("A$r:I$r")->getFill()->setFillType('solid')->getStartColor()->setRGB($bg);
+                $ws5->fromArray([[
+                    $b->name,
+                    $pop > 0 ? $pop : 'N/A',
+                    ($b->total_households  ?? 0) > 0 ? $b->total_households  : 'N/A',
+                    ($b->pwd_count         ?? 0) > 0 ? $b->pwd_count         : 'N/A',
+                    ($b->aics_count        ?? 0) > 0 ? $b->aics_count        : 'N/A',
+                    ($b->solo_parent_count ?? 0) > 0 ? $b->solo_parent_count : 'N/A',
+                    ($b->four_ps_count     ?? 0) > 0 ? $b->four_ps_count     : 'N/A',
+                    ($b->senior_count      ?? 0) > 0 ? $b->senior_count      : 'N/A',
+                    ($b->total_approved_applications ?? 0) > 0 ? $b->total_approved_applications : 'N/A',
+                ]], null, "A{$r}");
+                if ($i % 2 === 0) $ws5->getStyle("A{$r}:I{$r}")->applyFromArray($altRowStyle);
                 $r++;
             }
 
-            // Population by barangay bar chart (Positioned cleanly below table)
-            $bgyEndRow = $r - 1;
-            $bgyChart = new \PhpOffice\PhpSpreadsheet\Chart\Chart(
-                'bgy_chart',
-                new \PhpOffice\PhpSpreadsheet\Chart\Title("Population by Barangay · $analysisYear"),
-                null,
-                new \PhpOffice\PhpSpreadsheet\Chart\PlotArea(null, [
-                    new \PhpOffice\PhpSpreadsheet\Chart\DataSeries(
-                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::TYPE_BARCHART,
-                        \PhpOffice\PhpSpreadsheet\Chart\DataSeries::GROUPING_CLUSTERED,
-                        [0],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', null, null, 1, ['Population'])],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('String', "Barangay Data!\$A\$$bgyStart:\$A\$$bgyEndRow", null, $barangays->count())],
-                        [new \PhpOffice\PhpSpreadsheet\Chart\DataSeriesValues('Number', "Barangay Data!\$B\$$bgyStart:\$B\$$bgyEndRow", null, $barangays->count())]
-                    )
-                ])
-            );
-            $bgyChart->setTopLeftPosition('A' . ($r + 3));
-            $bgyChart->setBottomRightPosition('I' . ($r + 20));
-            $ws5->addChart($bgyChart);
+            if (count($bgyNames) > 0) {
+                // Embedded Chart: Barangay Population Column Chart
+                $chBgy = $createColumnChart('ch_bgy_pop', "Barangay Population ({$analysisYear})",
+                    $bgyNames, $bgyPops, array_fill(0, count($bgyPops), $navy),
+                    'A' . ($r + 2), 'J' . ($r + 20));
+                if ($chBgy) {
+                    $ws5->addChart($chBgy);
+                    $ws5LastContentRow = $r + 20;
+                } else {
+                    $ws5LastContentRow = $r;
+                }
+            } else {
+                $ws5LastContentRow = $r;
+            }
+        } else {
+            $ws5->setCellValue('A4', "No barangay records for {$analysisYear}.");
+            $ws5LastContentRow = 10;
         }
 
-        $ws5->getColumnDimension('A')->setWidth(24);
-        foreach (['B','C','D','E','F','G','H','I'] as $col) {
-            $ws5->getColumnDimension($col)->setWidth(16);
+        foreach (['A' => 22, 'B' => 14, 'C' => 14, 'D' => 10, 'E' => 10, 'F' => 14, 'G' => 10, 'H' => 10, 'I' => 14] as $col => $w) {
+            $ws5->getColumnDimension($col)->setWidth($w);
         }
 
-        // ── Footnote on each sheet ──────────────────────────────────────────
-        $footnote = "Note: 'N/A' indicates no record exists for that specific year or barangay.";
-        foreach ([$ws1, $ws2, $ws3, $ws4, $ws5] as $ws) {
-            $lastRow = max(10, $ws->getHighestRow()) + 2;
-            $ws->setCellValue("A$lastRow", $footnote);
-            $ws->getStyle("A$lastRow")->applyFromArray(['font' => ['italic' => true, 'color' => ['rgb' => '7A84A8'], 'size' => 10]]);
+        // -- Footnote on each sheet (placed 2 rows below the lowest content/chart) ----
+        $footnote = "Note: 'N/A' indicates no record exists for that specific year or barangay. Generated by MSWDO System.";
+        
+        $ws1Last = max(16, $ws1->getHighestRow());
+        $sheetMap = [
+            [$ws1, $ws1Last],
+            [$ws2, $ws2LastContentRow],
+            [$ws3, $ws3LastContentRow],
+            [$ws4, $ws4LastContentRow],
+            [$ws5, $ws5LastContentRow],
+        ];
+
+        foreach ($sheetMap as [$ws, $lastRow]) {
+            $fnRow = $lastRow + 2;
+            $ws->setCellValue("A{$fnRow}", $footnote);
+            $ws->getStyle("A{$fnRow}")->getFont()->setItalic(true)->setSize(9)->getColor()->setRGB('888888');
         }
 
-        // ── Set first sheet active ──────────────────────────────────────────
         $spreadsheet->setActiveSheetIndex(0);
 
-        // ── Stream response ─────────────────────────────────────────────────
+        // -- Stream via temp file with embedded charts enabled ------------------
         $filename = 'analysis-' . $municipality->name . '-' . $analysisYear . '.xlsx';
-        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $writer   = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
         $writer->setIncludeCharts(true);
 
-        ob_start();
-        $writer->save('php://output');
-        $content2 = ob_get_clean();
+        $tmpPath = tempnam(sys_get_temp_dir(), 'xlsx_');
+        $writer->save($tmpPath);
 
-        return response($content2, 200, [
-            'Content-Type'        => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
-            'Cache-Control'       => 'max-age=0',
-        ]);
+        // Clear any stray output buffer before streaming binary file
+        while (ob_get_level() > 0) {
+            ob_end_clean();
+        }
+
+        return response()->download($tmpPath, $filename, [
+            'Content-Type'  => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'Cache-Control' => 'max-age=0',
+            'Pragma'        => 'no-cache',
+            'Expires'       => '0',
+        ])->deleteFileAfterSend(true);
     }
-
-    /** Load and date-parse applications for a given municipality. */
+        /** Load and date-parse applications for a given municipality. */
     private function loadApplications(string $municipality)
     {
         $applications = Application::where('municipality', $municipality)
