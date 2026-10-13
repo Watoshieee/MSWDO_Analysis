@@ -128,6 +128,11 @@ Route::middleware(['auth', 'ensure_role:user'])->group(function () {
     Route::post('/user/appointments/{id}/cancel', [\App\Http\Controllers\AppointmentController::class, 'cancel'])->name('user.appointments.cancel');
     Route::post('/user/appointments/{id}/reschedule', [\App\Http\Controllers\AppointmentController::class, 'requestReschedule'])->name('user.appointments.reschedule');
 
+    // Renewal routes (PWD & Solo Parent)
+    Route::post('/user/renewals', [\App\Http\Controllers\RenewalController::class, 'store'])->name('user.renewals.store');
+    Route::get('/user/renewals/{id}/id-file', [\App\Http\Controllers\RenewalController::class, 'serveIdFile'])->name('user.renewals.id-file');
+    Route::post('/user/renewals/{id}/cancel', [\App\Http\Controllers\RenewalController::class, 'cancel'])->name('user.renewals.cancel');
+
     // Chat routes
     Route::get('/chat/admins', [App\Http\Controllers\ChatController::class, 'getAdmins'])->name('chat.admins');
     Route::get('/chat/messages/{adminId}', [App\Http\Controllers\ChatController::class, 'getMessages'])->name('chat.messages');
@@ -316,6 +321,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::patch('/appointments/{id}/restore', [App\Http\Controllers\Admin\AppointmentController::class, 'restore'])->name('admin.appointments.restore');
     Route::delete('/appointments/{id}/force-delete', [App\Http\Controllers\Admin\AppointmentController::class, 'forceDelete'])->name('admin.appointments.force-delete');
     Route::get('/appointments/archived', [App\Http\Controllers\Admin\AppointmentController::class, 'archived'])->name('admin.appointments.archived');
+
+    // Admin Renewal routes (PWD & Solo Parent)
+    Route::get('/renewals', [\App\Http\Controllers\Admin\RenewalAdminController::class, 'index'])->name('renewals.index');
+    Route::get('/renewals/{id}/id-file', [\App\Http\Controllers\Admin\RenewalAdminController::class, 'serveIdFile'])->name('renewals.id-file');
+    Route::post('/renewals/{id}/approve', [\App\Http\Controllers\Admin\RenewalAdminController::class, 'approve'])->name('renewals.approve');
+    Route::post('/renewals/{id}/reject', [\App\Http\Controllers\Admin\RenewalAdminController::class, 'reject'])->name('renewals.reject');
 
     // Chat routes for admin
     Route::get('/chat/users', [App\Http\Controllers\ChatController::class, 'getUsers'])->name('chat.users');

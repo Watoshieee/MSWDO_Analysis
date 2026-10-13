@@ -570,7 +570,14 @@ class UserController extends Controller
             }
         }
 
-        return view('user.pwd-application', compact('user', 'application', 'uploadedFiles', 'pwdRequirements', 'isPwdBeneficiary'));
+        $renewalRequest = \App\Models\RenewalRequest::with('appointment')
+            ->where('user_id', $user->id)->where('program_type', 'PWD')
+            ->where(function ($q) { $q->whereNull('appointment_id')->orWhereHas('appointment'); })
+            ->latest('id')->first();
+        $minDate = \Carbon\Carbon::tomorrow('Asia/Manila')->format('Y-m-d');
+        $maxDate = \Carbon\Carbon::now('Asia/Manila')->addDays(60)->format('Y-m-d');
+
+        return view('user.pwd-application', compact('user', 'application', 'uploadedFiles', 'pwdRequirements', 'isPwdBeneficiary', 'renewalRequest', 'minDate', 'maxDate'));
     }
 
     public function mtaApplication()
@@ -1196,7 +1203,7 @@ class UserController extends Controller
 
         // Load user's active/recent appointment (exclude cancelled and rejected)
         $appointment = Appointment::where('user_id', $user->id)
-            ->where('program_type', 'Solo_Parent')
+            ->whereIn('program_type', ['Solo_Parent', 'Solo_Parent_Renewal'])
             ->whereNotIn('status', ['cancelled', 'rejected'])
             ->orderByRaw("FIELD(status,'pending','confirmed','validated')")
             ->orderBy('appointment_date', 'desc')
@@ -1238,7 +1245,17 @@ class UserController extends Controller
             }
         }
 
-        return view('user.solo-parent-application', compact('appointment', 'minDate', 'maxDate', 'soloParentApplication', 'isSoloParentBeneficiary'));
+        $renewalRequest = \App\Models\RenewalRequest::with('appointment')
+            ->where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->where(function ($q) {
+                $q->whereNull('appointment_id')
+                  ->orWhereHas('appointment');
+            })
+            ->latest('id')
+            ->first();
+
+        return view('user.solo-parent-application', compact('appointment', 'minDate', 'maxDate', 'soloParentApplication', 'isSoloParentBeneficiary', 'renewalRequest'));
     }
 
     public function uploadPwdRequirement(Request $request)

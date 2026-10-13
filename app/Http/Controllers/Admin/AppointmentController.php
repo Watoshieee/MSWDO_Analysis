@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Application;
+use App\Models\RenewalRequest;
 use App\Mail\AppointmentStatusMail;
 use App\Mail\SoloParentEligibilityMail;
 use App\Services\SoloParentCategoryService;
@@ -22,15 +23,15 @@ class AppointmentController extends Controller
     {
         $admin = Auth::user();
 
-        $appointments = Appointment::with('user')
+        $appointments = Appointment::with(['user', 'renewalRequest'])
             ->where('municipality', $admin->municipality)
             ->orderByRaw("FIELD(status, 'pending', 'confirmed', 'validated', 'rejected', 'cancelled')")
             ->orderBy('created_at', 'desc')
             ->get();
 
         return response()->json($appointments->map(function ($a) {
-            // Load linked solo parent application for id_status (Solo_Parent only)
-            $soloApp = ($a->program_type === 'Solo_Parent' && $a->solo_parent_app_id)
+            // Load linked solo parent application for id_status (Solo_Parent & Solo_Parent_Renewal)
+            $soloApp = (in_array($a->program_type, ['Solo_Parent', 'Solo_Parent_Renewal']) && $a->solo_parent_app_id)
                 ? Application::select('id', 'id_status', 'id_ready_at', 'category_code')
                     ->find($a->solo_parent_app_id)
                 : null;
@@ -69,6 +70,15 @@ class AppointmentController extends Controller
                 'reschedule_request_reason'  => $a->reschedule_reason ?? '',
                 'reschedule_status'          => $a->reschedule_status ?? null,
                 'reschedule_admin_notes'     => $a->reschedule_admin_notes ?? '',
+                'renewal'                    => $a->renewalRequest ? [
+                    'id'            => $a->renewalRequest->id,
+                    'program_type'  => $a->renewalRequest->program_type,
+                    'id_file_name'  => $a->renewalRequest->id_file_name,
+                    'id_file_url'   => route('admin.renewals.id-file', $a->renewalRequest->id),
+                    'status'        => $a->renewalRequest->status,
+                    'user_notes'    => $a->renewalRequest->user_notes,
+                    'admin_remarks' => $a->renewalRequest->admin_remarks,
+                ] : null,
             ];
         }));
     }
@@ -79,14 +89,65 @@ class AppointmentController extends Controller
     public function confirm(Request $request, $id)
     {
         $admin = Auth::user();
-        $appt  = Appointment::where('id', $id)
+        $appt  = Appointment::with('renewalRequest')
+            ->where('id', $id)
             ->where('municipality', $admin->municipality)
             ->firstOrFail();
 
-        $appt->update([
-            'status'      => 'confirmed',
-            'admin_notes' => $request->input('admin_notes'),
-        ]);
+        // Renewal appointments require prior ID approval
+        if ($appt->renewalRequest && $appt->renewalRequest->status !== 'approved') {
+            return response()->json([
+                'success' => false,
+                'message' => "Cannot approve appointment: The applicant's renewal ID must be reviewed and approved first."
+            ], 422);
+        }
+
+        $hour = (int) substr($appt->appointment_time, 0, 2);
+        $date = $appt->appointment_date instanceof \Carbon\Carbon ? $appt->appointment_date->format('Y-m-d') : (string) $appt->appointment_date;
+
+        try {
+            Appointment::withHourLock($admin->municipality, $date, $hour, function () use ($admin, $appt, $request, $hour) {
+                \DB::transaction(function () use ($admin, $appt, $request, $hour) {
+                    $hStr = sprintf('%02d', $hour);
+                    $confirmedInHour = Appointment::whereDate('appointment_date', $appt->appointment_date)
+                        ->where('municipality', $admin->municipality)
+                        ->where('id', '!=', $appt->id)
+                        ->whereIn('status', ['confirmed', 'validated'])
+                        ->where(function ($q) use ($hour, $hStr) {
+                            $q->where('appointment_time', 'like', $hStr . ':%')
+                              ->orWhereRaw('HOUR(appointment_time) = ?', [$hour]);
+                        })
+                        ->count();
+
+                    if ($confirmedInHour >= Appointment::maxPerHour()) {
+                        throw new \Exception('Cannot confirm: That hour block already has 5 confirmed appointments. Please reschedule first.');
+                    }
+
+                    $timeNorm = substr(trim($appt->appointment_time), 0, 5);
+                    $confirmedInSlot = Appointment::whereDate('appointment_date', $appt->appointment_date)
+                        ->where('municipality', $admin->municipality)
+                        ->where('id', '!=', $appt->id)
+                        ->whereIn('status', ['confirmed', 'validated'])
+                        ->where(function ($q) use ($appt, $timeNorm) {
+                            $q->where('appointment_time', $appt->appointment_time)
+                              ->orWhere('appointment_time', $timeNorm)
+                              ->orWhere('appointment_time', 'like', $timeNorm . ':%');
+                        })
+                        ->count();
+
+                    if ($confirmedInSlot >= Appointment::maxPerSlot()) {
+                        throw new \Exception('Cannot confirm: That exact time slot is already taken. Please reschedule.');
+                    }
+
+                    $appt->update([
+                        'status'      => 'confirmed',
+                        'admin_notes' => $request->input('admin_notes'),
+                    ]);
+                });
+            });
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
 
 
         // Email user
@@ -136,14 +197,24 @@ class AppointmentController extends Controller
         $appt  = Appointment::with('user')
             ->where('id', $id)
             ->where('municipality', $admin->municipality)
-            ->whereIn('program_type', ['Solo_Parent', 'AICS_Medical', 'AICS_Burial'])
+            ->whereIn('program_type', ['Solo_Parent', 'AICS_Medical', 'AICS_Burial', 'Solo_Parent_Renewal', 'PWD_Renewal'])
             ->where('status', 'confirmed')
             ->firstOrFail();
 
         /** @var Appointment $appt */
 
-        // ── Solo Parent: existing behavior ────────────────────────────────
-        if ($appt->program_type === 'Solo_Parent') {
+        // ── PWD Renewal: mark validated (no requirements workflow) ─────────
+        if ($appt->program_type === 'PWD_Renewal') {
+            $appt->update(['status' => 'validated', 'validated_at' => now(), 'admin_notes' => $request->input('admin_notes', $appt->admin_notes)]);
+            if ($appt->renewalRequest) {
+                $appt->renewalRequest->update(['status' => 'approved', 'reviewed_by' => $admin->id, 'reviewed_at' => now(), 'admin_remarks' => $request->input('admin_notes') ?: 'Renewal validated by admin']);
+            }
+            try { Mail::to($appt->user->email)->send(new AppointmentStatusMail($appt, 'validated')); } catch (\Exception $e) { Log::error('PWD Renewal email: ' . $e->getMessage()); }
+            return response()->json(['success' => true, 'message' => 'PWD renewal appointment marked as validated.']);
+        }
+
+        // ── Solo Parent & Solo Parent Renewal: Assign Category ───
+        if (in_array($appt->program_type, ['Solo_Parent', 'Solo_Parent_Renewal'])) {
             // Prevent duplicate applications
             if ($appt->solo_parent_app_id) {
                 return response()->json(['success' => false, 'message' => 'Already validated.'], 422);
@@ -196,6 +267,10 @@ class AppointmentController extends Controller
                 'validated_at'       => now(),
                 'admin_notes'        => $request->input('admin_notes', $appt->admin_notes),
             ]);
+
+            if ($appt->renewalRequest) {
+                $appt->renewalRequest->update(['status' => 'approved', 'reviewed_by' => $admin->id, 'reviewed_at' => now(), 'admin_remarks' => $request->input('admin_notes') ?: 'Renewal validated by admin']);
+            }
 
             try {
                 Mail::to($appt->user->email)->send(new SoloParentEligibilityMail($appt, $application));
@@ -308,6 +383,10 @@ class AppointmentController extends Controller
             'status'      => 'rejected',
             'admin_notes' => $request->admin_notes,
         ]);
+
+        if ($appt->renewalRequest) {
+            $appt->renewalRequest->update(['status' => 'rejected', 'reviewed_by' => $admin->id, 'reviewed_at' => now(), 'admin_remarks' => $request->admin_notes]);
+        }
 
         // Email user
         try {

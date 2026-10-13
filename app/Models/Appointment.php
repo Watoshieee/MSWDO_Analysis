@@ -42,6 +42,11 @@ class Appointment extends Model
         return $this->belongsTo(\App\Models\Application::class, 'solo_parent_app_id');
     }
 
+    public function renewalRequest()
+    {
+        return $this->hasOne(\App\Models\RenewalRequest::class, 'appointment_id');
+    }
+
     // ── Slot configuration ─────────────────────────────────────────────────────
     /** Office hour blocks (24h), lunch 12:xx excluded */
     public static function officeHours(): array
@@ -62,6 +67,36 @@ class Appointment extends Model
     }
 
     public static function maxPerSlot(): int { return 1; }
+    public static function maxPerHour(): int { return 5; }
+
+    /**
+     * Acquire a serialized lock for an hour block in a municipality.
+     */
+    public static function withHourLock(string $municipality, string $date, int $hour, callable $callback)
+    {
+        $lockKey = sprintf('appt_hour_%s_%s_%02d', strtolower(trim($municipality)), trim($date), $hour);
+        return \Illuminate\Support\Facades\Cache::lock($lockKey, 10)->block(5, $callback);
+    }
+
+    /**
+     * Count active appointments in a specific hour block for a date.
+     */
+    public static function hourCount(string $date, int $hour, ?string $municipality = null): int
+    {
+        $hStr = sprintf('%02d', $hour);
+        $query = static::whereDate('appointment_date', $date)
+            ->whereIn('status', ['pending', 'confirmed', 'validated'])
+            ->where(function ($q) use ($hour, $hStr) {
+                $q->where('appointment_time', 'like', $hStr . ':%')
+                  ->orWhereRaw('HOUR(appointment_time) = ?', [$hour]);
+            });
+
+        if ($municipality) {
+            $query->where('municipality', $municipality);
+        }
+
+        return $query->count();
+    }
 
     /**
      * Count active appointments in a specific date+time slot.
@@ -104,25 +139,33 @@ class Appointment extends Model
 
         $rows = $query->select('appointment_time')->get();
         $counts = [];
+        $hourCounts = [];
         foreach ($rows as $row) {
             $t = substr(trim((string) $row->appointment_time), 0, 5);
             $counts[$t] = ($counts[$t] ?? 0) + 1;
+            $h = (int) substr($t, 0, 2);
+            $hourCounts[$h] = ($hourCounts[$h] ?? 0) + 1;
         }
 
         foreach (static::officeHours() as $h) {
+            $hTaken   = (int) ($hourCounts[$h] ?? 0);
+            $hourFull = $hTaken >= static::maxPerHour();
+
             foreach (range(0, 55, 5) as $m) {
-                $time    = sprintf('%02d:%02d', $h, $m);
-                $taken   = (int) ($counts[$time] ?? 0);
-                $isPast  = $isToday && ($h < $now->hour || ($h === $now->hour && $m <= $now->minute));
-                $slots[] = [
-                    'time'      => $time,
-                    'label'     => Carbon::createFromFormat('H:i', $time)->format('h:i A'),
-                    'hour'      => $h,
-                    'minute'    => $m,
-                    'taken'     => $taken,
-                    'remaining' => max(0, static::maxPerSlot() - $taken),
-                    'full'      => $taken >= static::maxPerSlot() || $isPast,
-                    'past_time' => $isPast,
+                $time     = sprintf('%02d:%02d', $h, $m);
+                $taken    = (int) ($counts[$time] ?? 0);
+                $isPast   = $isToday && ($h < $now->hour || ($h === $now->hour && $m <= $now->minute));
+                $slotFull = $taken >= static::maxPerSlot() || $hourFull || $isPast;
+                $slots[]  = [
+                    'time'       => $time,
+                    'label'      => Carbon::createFromFormat('H:i', $time)->format('h:i A'),
+                    'hour'       => $h,
+                    'minute'     => $m,
+                    'taken'      => $taken,
+                    'hour_taken' => $hTaken,
+                    'remaining'  => $hourFull ? 0 : max(0, static::maxPerSlot() - $taken),
+                    'full'       => $slotFull,
+                    'past_time'  => $isPast,
                 ];
             }
         }

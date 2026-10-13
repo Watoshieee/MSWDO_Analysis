@@ -677,6 +677,7 @@
                     <div class="d-flex">
                         <a href="{{ route('login') }}" class="btn-login me-2">Login</a>
                         <a href="{{ route('register') }}" class="btn-register">Register</a>
+                        <a href="https://www.mediafire.com/file/kg18ebuv1u60wcp/mswdo-app-v1.0.2.apk/file" class="btn-get-app ms-2" target="_blank" rel="noopener noreferrer" aria-label="Download the MSWDO mobile app">&#8681;&nbsp;Get the App</a>
                     </div>
                 @endauth
 
@@ -1841,7 +1842,10 @@
                     transform: translateY(0);
                 }
             }
-        </style>
+    
+        .btn-get-app { display:inline-block; padding:6px 14px; border-radius:20px; background:#FDB913; color:#0D1B3E; font-size:.82rem; font-weight:700; text-decoration:none; transition:background .2s,transform .15s; white-space:nowrap; }
+        .btn-get-app:hover { background:#fff; color:#0D1B3E; transform:scale(1.05); }
+    </style>
         @if(!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin())
             <a href="{{ route('user.dashboard') }}" class="back-dashboard-btn" title="Return to your dashboard">
                 <span class="btn-arrow">&#8592;</span>
