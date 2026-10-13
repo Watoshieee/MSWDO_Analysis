@@ -1374,6 +1374,13 @@
             disabled.</div>
     @endif
 
+    @include('user.partials.renewal-card', [
+        'renewalRequest' => $renewalRequest ?? null,
+        'programType'    => 'Solo_Parent',
+        'minDate'        => $minDate,
+        'maxDate'        => $maxDate,
+    ])
+
     <div class="flex-grow-1 py-3 pb-4">
         <div class="container-fluid px-3 px-lg-4">
 

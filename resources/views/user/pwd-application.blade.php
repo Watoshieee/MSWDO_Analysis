@@ -1324,6 +1324,13 @@
         </div>
     @endif
 
+    @include('user.partials.renewal-card', [
+        'renewalRequest' => $renewalRequest ?? null,
+        'programType'    => 'PWD',
+        'minDate'        => $minDate,
+        'maxDate'        => $maxDate,
+    ])
+
     @if($topNotice)
         <div class="toast-notice" style="top:{{ !empty($isPwdBeneficiary) ? '150px' : '84px' }};">
             {{ $topNotice }}
