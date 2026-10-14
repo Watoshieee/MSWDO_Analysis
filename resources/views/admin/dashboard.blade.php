@@ -944,54 +944,31 @@
                         <span>Organization &amp; Settings</span>
                     </div>
 
-                    {{-- Row 1: Content Management -> Mission, Vision & Strategic Goals --}}
+                    {{-- Consolidated Row: Mission, Vision & Municipality Configuration --}}
                     <div class="lk-row">
                         <span class="ic">
                             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
-                                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
                             </svg>
                         </span>
                         <div style="flex:1">
                             <a href="{{ route('admin.settings', ['tab' => 'vmg']) }}" class="lk-title">
-                                <b>Mission, Vision &amp; Strategic Goals</b>
+                                <b>Mission, Vision &amp; Municipality Configuration</b>
                             </a>
-                            <span class="s">Content Management</span>
+                            <span class="s">Content management, programs, information and UI settings</span>
                             <div class="chip-group">
                                 <a href="{{ route('admin.settings', ['tab' => 'vmg']) }}" class="chip" onclick="if(event.ctrlKey||event.metaKey)return;event.preventDefault();openVMGModal('vmg');" title="Quick edit Vision">Vision</a>
                                 <a href="{{ route('admin.settings', ['tab' => 'vmg']) }}" class="chip" onclick="if(event.ctrlKey||event.metaKey)return;event.preventDefault();openVMGModal('vmg');" title="Quick edit Mission">Mission</a>
                                 <a href="{{ route('admin.settings', ['tab' => 'vmg', 'sub' => 'sg']) }}" class="chip" id="dashChipStrategicGoals" title="Quick edit strategic goals" onclick="if(event.ctrlKey||event.metaKey)return;event.preventDefault();openVMGModal('sg');">
                                     {{ count($visionData['strategic_goals'] ?? []) ?: 4 }} strategic goals
                                 </a>
-                            </div>
-                        </div>
-                        <a href="{{ route('admin.settings', ['tab' => 'vmg']) }}" aria-label="Open Mission, Vision & Strategic Goals" class="lk-arrow">
-                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                                <polyline points="9 6 15 12 9 18"></polyline>
-                            </svg>
-                        </a>
-                    </div>
-
-                    {{-- Row 2: Municipality Configuration -> Programs, Muni Info, UI Colors --}}
-                    <div class="lk-row">
-                        <span class="ic">
-                            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
-                                <circle cx="12" cy="10" r="3"></circle>
-                            </svg>
-                        </span>
-                        <div style="flex:1">
-                            <a href="{{ route('admin.settings') }}" class="lk-title">
-                                <b>Municipality Configuration</b>
-                            </a>
-                            <span class="s">Programs, information and UI settings</span>
-                            <div class="chip-group">
                                 <a href="{{ route('admin.settings', ['tab' => 'programs']) }}" class="chip" title="Manage Programs & Services">{{ $totalPrograms ?: 4 }} programs</a>
                                 <a href="{{ route('admin.settings', ['tab' => 'muni']) }}" class="chip" title="Manage Municipality Information">Municipality info</a>
                                 <a href="{{ route('admin.settings', ['tab' => 'theme']) }}" class="chip" title="Manage Branding & UI Colors">UI &amp; colors</a>
                             </div>
                         </div>
-                        <a href="{{ route('admin.settings') }}" aria-label="Open Municipality Configuration" class="lk-arrow">
+                        <a href="{{ route('admin.settings', ['tab' => 'vmg']) }}" aria-label="Open Organization & Settings" class="lk-arrow">
                             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                                 <polyline points="9 6 15 12 9 18"></polyline>
                             </svg>
