@@ -5,14 +5,17 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Appointment;
 use App\Models\Application;
+use App\Models\RenewalRequest;
 use App\Models\User;
 use App\Mail\AppointmentStatusMail;
 use App\Mail\NewAppointmentAdminMail;
 use App\Services\PhilippineHolidayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class SoloParentApiController extends Controller
@@ -678,6 +681,382 @@ class SoloParentApiController extends Controller
             'success' => true,
             'message' => 'Reschedule request submitted. Awaiting admin approval.',
         ]);
+    }
+
+    // =========================================================================
+    // SOLO PARENT RENEWAL ENDPOINTS
+    // =========================================================================
+
+    /**
+     * GET /api/solo-parent/renewal
+     * Returns the user's most recent Solo Parent renewal request.
+     */
+    public function getRenewal(Request $request)
+    {
+        $user = Auth::user();
+
+        $renewal = RenewalRequest::with('appointment')
+            ->where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->latest('id')
+            ->first();
+
+        if (!$renewal) {
+            return response()->json(['renewal' => null]);
+        }
+
+        return response()->json(['renewal' => $this->_formatRenewal($renewal)]);
+    }
+
+    /**
+     * POST /api/solo-parent/renewal
+     * Submit a new Solo Parent renewal request (requires appointment date/time + ID file upload).
+     */
+    public function submitRenewal(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'id_file'          => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'appointment_date' => 'required|date|after:today',
+            'appointment_time' => ['required', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
+            'user_notes'       => 'nullable|string|max:200',
+        ], [
+            'id_file.required'         => 'Please upload a clear copy of your Valid ID.',
+            'id_file.max'              => 'The uploaded ID file must not exceed 5MB.',
+            'appointment_date.required' => 'Please select an appointment date.',
+            'appointment_time.required' => 'Please select an appointment time slot.',
+            'user_notes.max'           => 'Additional Notes must not exceed 200 characters.',
+        ]);
+
+        $date = $request->appointment_date;
+        $time = $request->appointment_time;
+        $carbon = Carbon::parse($date);
+
+        // Must be a weekday
+        if ($carbon->isWeekend()) {
+            return response()->json(['success' => false, 'message' => 'Appointments can only be scheduled on weekdays (Monday–Friday).'], 422);
+        }
+
+        // Cannot book more than 60 days in advance
+        if ($carbon->isAfter(now()->addDays(60))) {
+            return response()->json(['success' => false, 'message' => 'Appointments cannot be booked more than 60 days in advance.'], 422);
+        }
+
+        // Holiday check
+        $holidayCheck = app(PhilippineHolidayService::class)->isAllowedBookingDate($date);
+        if (!$holidayCheck['allowed']) {
+            return response()->json(['success' => false, 'message' => $holidayCheck['reason']], 422);
+        }
+
+        // Office hour check (8-12 and 1-5)
+        $hour = (int) substr($time, 0, 2);
+        if (!in_array($hour, Appointment::officeHours())) {
+            return response()->json(['success' => false, 'message' => 'Selected time is outside MSWDO office hours (8:00 AM–12:00 PM and 1:00 PM–5:00 PM).'], 422);
+        }
+
+        // Check if there is an existing rejected renewal with a preserved appointment (re-upload path)
+        $existingRejected = RenewalRequest::with('appointment')
+            ->where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->where('status', 'rejected')
+            ->whereHas('appointment', function ($q) {
+                $q->whereNotIn('status', ['rejected', 'cancelled']);
+            })
+            ->latest('id')
+            ->first();
+
+        if ($existingRejected) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You have a rejected renewal with a preserved appointment. Please use the re-upload endpoint to submit your replacement ID.',
+                'code'    => 'USE_REUPLOAD',
+            ], 422);
+        }
+
+        // Prevent duplicate active renewal
+        $existingRenewal = RenewalRequest::where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->whereIn('status', ['pending', 'approved'])
+            ->where(function ($q) {
+                $q->whereNull('appointment_id')
+                  ->orWhereHas('appointment', function ($aq) {
+                      $aq->whereNotIn('status', ['rejected', 'cancelled']);
+                  });
+            })
+            ->first();
+
+        if ($existingRenewal) {
+            $msg = $existingRenewal->status === 'approved'
+                ? 'You already have an approved renewal on record.'
+                : 'You already have a pending renewal request under review. Please wait for the admin decision.';
+            return response()->json(['success' => false, 'message' => $msg], 422);
+        }
+
+        // Hour lock + DB transaction (mirrors website exactly)
+        try {
+            $renewal = Appointment::withHourLock($user->municipality, $date, $hour, function () use ($request, $user, $date, $time, $hour) {
+                return DB::transaction(function () use ($request, $user, $date, $time, $hour) {
+                    $hStr = sprintf('%02d', $hour);
+                    $hourCount = Appointment::whereDate('appointment_date', $date)
+                        ->where('municipality', $user->municipality)
+                        ->whereIn('status', ['pending', 'confirmed', 'validated'])
+                        ->where(function ($q) use ($hour, $hStr) {
+                            $q->where('appointment_time', 'like', $hStr . ':%')
+                              ->orWhereRaw('HOUR(appointment_time) = ?', [$hour]);
+                        })
+                        ->count();
+
+                    if ($hourCount >= Appointment::maxPerHour()) {
+                        throw new \Exception('That hour block has reached its maximum capacity of 5 appointments. Please choose another time.');
+                    }
+
+                    $timeNorm = substr(trim($time), 0, 5);
+                    $slotCount = Appointment::whereDate('appointment_date', $date)
+                        ->where('municipality', $user->municipality)
+                        ->whereIn('status', ['pending', 'confirmed', 'validated'])
+                        ->where(function ($q) use ($time, $timeNorm) {
+                            $q->where('appointment_time', $time)
+                              ->orWhere('appointment_time', $timeNorm)
+                              ->orWhere('appointment_time', 'like', $timeNorm . ':%');
+                        })
+                        ->count();
+
+                    if ($slotCount >= Appointment::maxPerSlot()) {
+                        throw new \Exception('That specific time slot is already taken. Please choose another slot.');
+                    }
+
+                    $file = $request->file('id_file');
+                    $originalName = $file->getClientOriginalName();
+                    $storedPath = $file->store('renewals/solo_parent', 'public');
+
+                    $appt = Appointment::create([
+                        'user_id'          => $user->id,
+                        'municipality'     => $user->municipality,
+                        'appointment_date' => $date,
+                        'appointment_time' => $time,
+                        'interview_type'   => 'face_to_face',
+                        'program_type'     => 'Solo_Parent_Renewal',
+                        'status'           => 'pending',
+                        'user_notes'       => $request->user_notes,
+                    ]);
+
+                    $renewal = RenewalRequest::create([
+                        'user_id'        => $user->id,
+                        'municipality'   => $user->municipality,
+                        'program_type'   => 'Solo_Parent',
+                        'id_file_path'   => $storedPath,
+                        'id_file_name'   => $originalName,
+                        'appointment_id' => $appt->id,
+                        'status'         => 'pending',
+                        'user_notes'     => $request->user_notes,
+                    ]);
+
+                    return $renewal->load('appointment');
+                });
+            });
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
+        }
+
+        // Notify admins (in-app)
+        try {
+            $admins = User::where('role', 'admin')->where('municipality', $user->municipality)->get();
+            $apptDateFormatted = Carbon::parse($date)->format('F d, Y');
+            foreach ($admins as $admin) {
+                DB::table('notifications')->insert([
+                    'user_id'    => $admin->id,
+                    'type'       => 'solo_parent',
+                    'title'      => '🔄 New Solo Parent Renewal Request',
+                    'body'       => $user->full_name . ' submitted a Solo Parent renewal request with appointment on ' . $apptDateFormatted . '.',
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Admin Solo Parent renewal notification failed: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Your renewal request and appointment have been submitted! The admin will review your ID and schedule.',
+            'renewal' => $this->_formatRenewal($renewal),
+        ]);
+    }
+
+    /**
+     * POST /api/solo-parent/renewal/cancel
+     * Cancel a pending Solo Parent renewal request.
+     */
+    public function cancelRenewal(Request $request)
+    {
+        $user = Auth::user();
+
+        $renewal = RenewalRequest::where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->whereIn('status', ['pending'])
+            ->latest('id')
+            ->first();
+
+        if (!$renewal) {
+            return response()->json(['success' => false, 'message' => 'No pending renewal request found to cancel.'], 404);
+        }
+
+        $reason = $request->input('cancel_reason', 'Cancelled by applicant');
+
+        DB::transaction(function () use ($renewal, $reason) {
+            $renewal->update([
+                'status'        => 'cancelled',
+                'admin_remarks' => $reason,
+            ]);
+
+            if ($renewal->appointment) {
+                $renewal->appointment->update([
+                    'status'                    => 'cancelled',
+                    'cancellation_status'       => 'approved',
+                    'cancel_reason'             => $reason,
+                    'cancellation_requested_at' => now(),
+                ]);
+            }
+        });
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Your renewal request has been cancelled and the appointment slot has been released.',
+        ]);
+    }
+
+    /**
+     * POST /api/solo-parent/renewal/reupload
+     * Re-upload a replacement Valid ID after a rejection (appointment is preserved).
+     */
+    public function reuploadRenewalId(Request $request)
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'id_file'    => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'user_notes' => 'nullable|string|max:200',
+        ], [
+            'id_file.required' => 'Please upload a clear copy of your Valid ID.',
+            'id_file.max'      => 'The uploaded ID file must not exceed 5MB.',
+        ]);
+
+        $existingRejected = RenewalRequest::with('appointment')
+            ->where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->where('status', 'rejected')
+            ->whereHas('appointment', function ($q) {
+                $q->whereNotIn('status', ['rejected', 'cancelled']);
+            })
+            ->latest('id')
+            ->first();
+
+        if (!$existingRejected) {
+            return response()->json(['success' => false, 'message' => 'No rejected renewal with a preserved appointment was found.'], 404);
+        }
+
+        // Guard: make sure no newer active renewal already exists
+        $newerActive = RenewalRequest::where('user_id', $user->id)
+            ->where('program_type', 'Solo_Parent')
+            ->where('id', '>', $existingRejected->id)
+            ->whereIn('status', ['pending', 'approved'])
+            ->where(function ($q) {
+                $q->whereNull('appointment_id')
+                  ->orWhereHas('appointment', function ($aq) {
+                      $aq->whereNotIn('status', ['rejected', 'cancelled']);
+                  });
+            })
+            ->first();
+
+        if ($newerActive) {
+            $msg = $newerActive->status === 'approved'
+                ? 'You already have an approved renewal on record.'
+                : 'You already have a pending renewal request under review.';
+            return response()->json(['success' => false, 'message' => $msg], 422);
+        }
+
+        $file = $request->file('id_file');
+        $originalName = $file->getClientOriginalName();
+        $storedPath = $file->store('renewals/solo_parent', 'public');
+
+        // Delete old rejected file from disk
+        $oldPath = $existingRejected->id_file_path;
+        if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+            try {
+                Storage::disk('public')->delete($oldPath);
+            } catch (\Exception $e) {
+                Log::warning('Could not delete old Solo Parent renewal file: ' . $e->getMessage());
+            }
+        }
+
+        DB::transaction(function () use ($existingRejected, $storedPath, $originalName, $request) {
+            $existingRejected->update([
+                'id_file_path'  => $storedPath,
+                'id_file_name'  => $originalName,
+                'status'        => 'pending',
+                'reviewed_by'   => null,
+                'reviewed_at'   => null,
+                'admin_remarks' => null,
+                'user_notes'    => $request->filled('user_notes') ? $request->user_notes : $existingRejected->user_notes,
+            ]);
+
+            if ($request->filled('user_notes') && $existingRejected->appointment) {
+                $existingRejected->appointment->update(['user_notes' => $request->user_notes]);
+            }
+        });
+
+        // Notify admins
+        try {
+            $admins = User::where('role', 'admin')->where('municipality', $user->municipality)->get();
+            $apptDateFormatted = $existingRejected->appointment
+                ? Carbon::parse($existingRejected->appointment->appointment_date)->format('F d, Y')
+                : 'scheduled date';
+            foreach ($admins as $admin) {
+                DB::table('notifications')->insert([
+                    'user_id'    => $admin->id,
+                    'type'       => 'solo_parent',
+                    'title'      => '🔄 Replacement Solo Parent Renewal ID Uploaded',
+                    'body'       => $user->full_name . ' uploaded a replacement Valid ID for Solo Parent renewal. Appointment remains preserved for ' . $apptDateFormatted . '.',
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Admin replacement Solo Parent renewal notification failed: ' . $e->getMessage());
+        }
+
+        $existingRejected->load('appointment');
+        return response()->json([
+            'success' => true,
+            'message' => 'Your replacement Valid ID has been uploaded successfully! Your existing appointment has been preserved.',
+            'renewal' => $this->_formatRenewal($existingRejected),
+        ]);
+    }
+
+    /**
+     * Format a RenewalRequest for mobile API response.
+     */
+    private function _formatRenewal(RenewalRequest $renewal): array
+    {
+        $appt = $renewal->appointment;
+        return [
+            'id'               => $renewal->id,
+            'status'           => $renewal->status,
+            'user_notes'       => $renewal->user_notes,
+            'admin_remarks'    => $renewal->admin_remarks,
+            'created_at'       => $renewal->created_at ? $renewal->created_at->format('M d, Y h:i A') : null,
+            'appointment'      => $appt ? [
+                'id'               => $appt->id,
+                'appointment_date' => $appt->appointment_date,
+                'appointment_time' => $appt->appointment_time,
+                'formatted_date'   => Carbon::parse($appt->appointment_date)->format('F d, Y'),
+                'formatted_time'   => Carbon::parse($appt->appointment_time)->format('h:i A'),
+                'status'           => $appt->status,
+            ] : null,
+        ];
     }
 }
 
