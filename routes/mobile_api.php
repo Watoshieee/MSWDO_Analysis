@@ -74,6 +74,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/requirements/upload', [SoloParentApiController::class, 'uploadRequirement']);
         Route::get('/notifications', [SoloParentApiController::class, 'getNotifications']);
         Route::put('/notifications/{id}/read', [SoloParentApiController::class, 'markNotificationRead']);
+
+        // Solo Parent ID Renewal
+        Route::get('/renewal', [SoloParentApiController::class, 'getRenewal']);
+        Route::post('/renewal', [SoloParentApiController::class, 'submitRenewal']);
+        Route::post('/renewal/cancel', [SoloParentApiController::class, 'cancelRenewal']);
+        Route::post('/renewal/reupload', [SoloParentApiController::class, 'reuploadRenewalId']);
     });
 
     // AICS appointment booking (Medical & Burial)
