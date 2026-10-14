@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Download Mobile App - MSWDO</title>
-    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="icon" type="image/jpeg" href="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}">
     <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
@@ -446,7 +446,7 @@
 
                         <!-- App Icon -->
                         <div class="app-icon-wrapper">
-                            <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWDO App Icon">
+                            <img src="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}" alt="MSWDO App Icon">
                         </div>
                         <div class="app-name">MSWDO Beneficiary App</div>
                         <div class="app-subtitle">Municipal Social Welfare and Development Office</div>
@@ -480,27 +480,19 @@
                             </div>
                         </div>
 
-                        <!-- Download Button -->
-                        @if($appInfo['googlePlayAvailable'] && $appInfo['googlePlayUrl'])
-                            <a href="{{ $appInfo['googlePlayUrl'] }}" target="_blank" rel="noopener" class="download-btn">
-                                <i class="bi bi-google-play"></i>
-                                Get it on Google Play
-                            </a>
-                        @elseif($appInfo['fileExists'])
-                            <a href="{{ asset('downloads/' . $appInfo['fileName']) }}" class="download-btn" download>
-                                <i class="bi bi-download"></i>
-                                Download Mobile App ({{ $appInfo['fileSizeMB'] }} MB)
-                            </a>
-                            <div class="google-play-note">
-                                <i class="bi bi-info-circle-fill"></i>
-                                <span>Google Play Store listing is under review. Direct APK download is available now.</span>
-                            </div>
-                        @else
-                            <button class="download-btn download-btn-disabled" disabled>
-                                <i class="bi bi-exclamation-circle"></i>
-                                Download Currently Unavailable
-                            </button>
-                        @endif
+                        <!-- Download Button - MediaFire APK link -->
+                        <a href="https://www.mediafire.com/file/zkuecbe7kogf387/MSWDO_APPLICATION.apk/file?fbclid=IwY2xjawU8xWZleHRuA2FlbQIxMABwZG9mBWJyaWQRMWVrNlltMUNJZDR6cFNSS2dzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEeNsSxPX_0B9CAckNPjbmdM2zSF7BO8IbX1zRPWa1QcgXjdakiWRj_NEEhtR0_aem_Hi74PFjvsQPgCAeMtiHlVQ"
+                           class="download-btn"
+                           target="_blank"
+                           rel="noopener noreferrer"
+                           id="apk-download-btn">
+                            <i class="bi bi-download"></i>
+                            Download MSWDO App
+                        </a>
+                        <div class="google-play-note mt-2">
+                            <i class="bi bi-info-circle-fill"></i>
+                            <span>Clicking will open MediaFire. Tap <strong>Download</strong> to save the APK to your device.</span>
+                        </div>
 
                         <!-- Back to Dashboard Button -->
                         <a href="{{ route('user.dashboard') }}" class="btn-dashboard">

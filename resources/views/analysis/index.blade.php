@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Statistical Analysis - MSWDO</title>
-    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="icon" type="image/jpeg" href="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}">
     <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -44,6 +44,24 @@
             display: flex;
             align-items: center;
             gap: 10px;
+        }
+
+        .navbar-brand .logo-img-wrap {
+            width: 38px;
+            height: 38px;
+            border-radius: 10px;
+            background: #fff;
+            display: grid;
+            place-items: center;
+            flex: none;
+            overflow: hidden;
+            box-shadow: 0 2px 6px rgba(0,0,0,.18);
+        }
+        .navbar-brand .logo-img-wrap img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            display: block;
         }
 
         .navbar-toggler {
@@ -111,6 +129,36 @@
             background: var(--yellow);
             color: var(--blue);
             border-color: var(--yellow);
+        }
+
+        /* Get the App button — matches design reference */
+        .btn-get-app {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border-radius: 99px;
+            border: 1.5px solid rgba(245, 184, 46, .75);
+            color: var(--yellow);
+            font-weight: 600;
+            font-size: .9rem;
+            white-space: nowrap;
+            text-decoration: none;
+            background: transparent;
+            transition: all .2s ease;
+        }
+        .btn-get-app:hover {
+            background: var(--yellow);
+            color: var(--blue);
+            border-color: var(--yellow);
+        }
+        @media (max-width: 480px) {
+            .btn-get-app {
+                padding: 7px 12px;
+                font-size: .82rem;
+                gap: 5px;
+            }
         }
 
         .btn-login {
@@ -775,9 +823,6 @@
             .hero-muni-list { justify-content: flex-start; }
             .growth-detail-grid { grid-template-columns: 1fr !important; }
         }
-
-        .btn-get-app { display:inline-block; padding:6px 14px; border-radius:20px; background:#FDB913; color:#0D1B3E; font-size:.82rem; font-weight:700; text-decoration:none; transition:background .2s,transform .15s; white-space:nowrap; }
-        .btn-get-app:hover { background:#fff; color:#0D1B3E; transform:scale(1.05); }
     </style>
 </head>
 
@@ -786,9 +831,9 @@
     {{-- NAVBAR --}}
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand" href="/analysis">
-                <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWDO"
-                    style="width:36px;height:36px;object-fit:contain;border-radius:4px;"> MSWDO
+            <a class="navbar-brand" href="/analysis" aria-label="MSWDO home">
+                <span class="logo-img-wrap"><img src="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}" alt="MSWDO logo"></span>
+                MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -859,10 +904,13 @@
                         <li class="nav-item"><a class="nav-link" href="/analysis/demographic">Demographic</a></li>
                         <li class="nav-item"><a class="nav-link active" href="/analysis/programs">Analysis</a></li>
                     </ul>
-                    <div class="d-flex">
+                    <div class="d-flex align-items-center">
+                        <a href="https://www.mediafire.com/file/zkuecbe7kogf387/MSWDO_APPLICATION.apk/file?fbclid=IwY2xjawU8xWZleHRuA2FlbQIxMABwZG9mBWJyaWQRMWVrNlltMUNJZDR6cFNSS2dzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEeNsSxPX_0B9CAckNPjbmdM2zSF7BO8IbX1zRPWa1QcgXjdakiWRj_NEEhtR0_aem_Hi74PFjvsQPgCAeMtiHlVQ" class="btn-get-app me-2" target="_blank" rel="noopener noreferrer" aria-label="Get the App (opens the APK download on MediaFire)">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
+                            <span class="gt">Get the App</span>
+                        </a>
                         <a href="{{ route('login') }}" class="btn-login me-2">Login</a>
                         <a href="{{ route('register') }}" class="btn-register">Register</a>
-                        <a href="https://www.mediafire.com/file/kg18ebuv1u60wcp/mswdo-app-v1.0.2.apk/file" class="btn-get-app ms-2" target="_blank" rel="noopener noreferrer" aria-label="Download the MSWDO mobile app">&#8681;&nbsp;Get the App</a>
                     </div>
                 @endauth
             </div>
@@ -882,7 +930,10 @@
                         covering population, households, and social welfare programs.
                         Supporting MSWDO planning, assessment, and decision-making.
                     </p>
-                    <a href="https://www.mediafire.com/file/kg18ebuv1u60wcp/mswdo-app-v1.0.2.apk/file" class="btn-get-app mt-3 d-inline-block" target="_blank" rel="noopener noreferrer" aria-label="Download the MSWDO mobile app APK">&#8681;&nbsp;Get the App</a>
+                    <a href="https://www.mediafire.com/file/zkuecbe7kogf387/MSWDO_APPLICATION.apk/file?fbclid=IwY2xjawU8xWZleHRuA2FlbQIxMABwZG9mBWJyaWQRMWVrNlltMUNJZDR6cFNSS2dzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEeNsSxPX_0B9CAckNPjbmdM2zSF7BO8IbX1zRPWa1QcgXjdakiWRj_NEEhtR0_aem_Hi74PFjvsQPgCAeMtiHlVQ" class="btn-get-app mt-3 d-inline-block" target="_blank" rel="noopener noreferrer" aria-label="Download the MSWDO mobile app APK">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg>
+                        Get the App
+                    </a>
                 </div>
                 <div class="hero-church-wrap">
                     <div class="hero-muni-list">

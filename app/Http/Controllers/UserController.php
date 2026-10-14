@@ -1678,11 +1678,12 @@ class UserController extends Controller
         extract($this->notificationData($user));
 
         // APK file metadata — update these when releasing a new version
-        $apkFileName = 'mswdo-app-v1.0.2.apk';
+        $apkFileName = 'MSWDO_APPLICATION.apk';
+        $mediafireUrl = 'https://www.mediafire.com/file/zkuecbe7kogf387/MSWDO_APPLICATION.apk/file?fbclid=IwY2xjawU8xWZleHRuA2FlbQIxMABwZG9mBWJyaWQRMWVrNlltMUNJZDR6cFNSS2dzcnRjBmFwcF9pZBAyMjIwMzkxNzg4MjAwODkyAAEeNsSxPX_0B9CAckNPjbmdM2zSF7BO8IbX1zRPWa1QcgXjdakiWRj_NEEhtR0_aem_Hi74PFjvsQPgCAeMtiHlVQ';
         $apkPath = public_path('downloads/' . $apkFileName);
         $apkExists = file_exists($apkPath);
         $apkSize = $apkExists ? filesize($apkPath) : 0;
-        $apkSizeMB = $apkExists ? round($apkSize / (1024 * 1024), 1) : 0;
+        $apkSizeMB = $apkExists ? round($apkSize / (1024 * 1024), 1) : 28.5;
 
         $appInfo = [
             'version' => '1.0.2',
@@ -1695,6 +1696,7 @@ class UserController extends Controller
             'fileExists' => $apkExists,
             'fileSize' => $apkSize,
             'fileSizeMB' => $apkSizeMB,
+            'downloadUrl' => $mediafireUrl,
             // Set to true when Google Play listing is approved
             'googlePlayAvailable' => false,
             'googlePlayUrl' => null,

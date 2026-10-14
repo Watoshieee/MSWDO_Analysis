@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Solo Parent -AICS Category | MSWDO</title>
-    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="icon" type="image/jpeg" href="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}">
     <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css" rel="stylesheet">
@@ -84,7 +84,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         <div class="container">
             <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding:14px 0;position:relative;z-index:2;">
                 <div class="brand">
-                    <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWD">
+                    <img src="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}" alt="MSWD">
                     <span>MSWDO</span>
                 </div>
                 <div class="d-flex align-items-center gap-3">

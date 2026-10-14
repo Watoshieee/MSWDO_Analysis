@@ -126,7 +126,7 @@ html, body {
 .hd-logo img {
     width: 100%;
     height: 100%;
-    object-fit: cover;
+    object-fit: contain;
 }
 .hd-city {
     font-weight: 600;
@@ -521,7 +521,7 @@ html, body {
         <!-- Brand / Identity -->
         <a class="hd-brand" href="{{ route('admin.dashboard') }}" aria-label="MSWDO {{ Auth::user()->municipality ?? 'Municipal' }}, go to dashboard">
             <span class="hd-logo">
-                <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWDO" style="width:100%;height:100%;border-radius:6px;object-fit:cover;">
+                <img src="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}" alt="MSWDO" style="width:100%;height:100%;border-radius:6px;object-fit:cover;">
             </span>
             <span>MSWDO<span class="hd-city"> &bull; {{ Auth::user()->municipality ?? 'Municipal' }}</span></span>
         </a>
@@ -531,7 +531,7 @@ html, body {
             <div class="nv-head">
                 <span class="hd-brand">
                     <span class="hd-logo">
-                        <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWDO" style="width:100%;height:100%;border-radius:6px;object-fit:cover;">
+                        <img src="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}" alt="MSWDO" style="width:100%;height:100%;border-radius:6px;object-fit:cover;">
                     </span>
                     <span>MSWDO<span class="hd-city"> &bull; {{ Auth::user()->municipality ?? 'Municipal' }}</span></span>
                 </span>

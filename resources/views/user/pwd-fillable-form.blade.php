@@ -7,7 +7,7 @@
 <!-- Block any global Chart.js auto-rendering on this page -->
 <script>window.__CHART_BLOCKED__ = true;</script>
 <title>PRPWD Application Form – MSWDO</title>
-    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="icon" type="image/jpeg" href="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}">
     <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
 <style>
 /* ============================

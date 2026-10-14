@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title data-en="Solo Parent Application — MSWDO" data-tl="Solo Parent Application — MSWDO">Solo Parent Application — MSWDO</title>
-    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="icon" type="image/jpeg" href="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}">
     <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -1663,7 +1663,7 @@
         <div class="wrap">
             <div class="topbar">
                 <a class="brand" href="{{ route('user.dashboard') }}" aria-label="MSWDO home">
-                    <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWDO Logo">
+                    <img src="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}" alt="MSWDO Logo">
                     <span>MSWDO</span>
                 </a>
                 <div class="tools">

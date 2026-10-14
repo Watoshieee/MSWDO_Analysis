@@ -15,6 +15,31 @@ use App\Http\Controllers\SuperAdmin\UserController as SuperAdminUserController;
 // ============================================
 // PUBLIC ROUTES
 // ============================================
+
+// Hostinger document root is often public_html (project root), not public/.
+// If Apache cannot find /images/logo_mswdo.jpg as a static file, Laravel serves it.
+Route::get('/images/logo_mswdo.jpg', function () {
+    $candidates = [
+        public_path('images/logo_mswdo.jpg'),
+        base_path('images/logo_mswdo.jpg'),
+        public_path('images/logo_mswdo.png'),
+    ];
+
+    foreach ($candidates as $path) {
+        if (is_file($path)) {
+            $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+            $mime = $ext === 'png' ? 'image/png' : 'image/jpeg';
+
+            return response()->file($path, [
+                'Content-Type' => $mime,
+                'Cache-Control' => 'public, max-age=604800',
+            ]);
+        }
+    }
+
+    abort(404);
+})->name('mswdo.logo');
+
 Route::get('/', function () {
     return redirect('/analysis');
 });

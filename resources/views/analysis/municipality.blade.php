@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{ $municipality->name }} — Barangay Analysis · MSWDO</title>
-    <link rel="icon" type="image/jpeg" href="{{ asset('images/logo_mswdo.jpg') }}">
+    <link rel="icon" type="image/jpeg" href="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}">
     <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
@@ -37,6 +37,8 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         /* ── NAVBAR ── */
         .navbar { background: var(--primary-gradient) !important; box-shadow: 0 4px 24px rgba(44,62,143,0.18); padding: 14px 0; }
         .navbar-brand { font-weight: 800; font-size: 1.5rem; color: white !important; display: flex; align-items: center; gap: 10px; letter-spacing: -.01em; }
+        .navbar-brand .logo-img-wrap { width: 36px; height: 36px; border-radius: 9px; background: #fff; display: grid; place-items: center; flex: none; overflow: hidden; box-shadow: 0 2px 6px rgba(0,0,0,.18); }
+        .navbar-brand .logo-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
         .nav-link { color: rgba(255,255,255,0.88) !important; font-weight: 600; border-radius: 8px; padding: 9px 16px !important; font-size: 0.9rem; transition: all 0.2s; }
         .nav-link:hover, .nav-link.active { background: rgba(255,255,255,0.15); color: white !important; }
         .nav-back-btn {
@@ -215,8 +217,9 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
     <!-- NAVBAR -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-            <a class="navbar-brand" href="/analysis">
-                <img src="{{ asset('images/logo_mswdo.jpg') }}" alt="MSWD" style="width:32px;height:32px;object-fit:contain;" onerror="this.style.display='none'"> MSWDO
+            <a class="navbar-brand" href="/analysis" aria-label="MSWDO home">
+                <span class="logo-img-wrap"><img src="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}" alt="MSWDO logo"></span>
+                MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>

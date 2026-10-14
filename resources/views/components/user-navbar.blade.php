@@ -102,7 +102,8 @@ html,body{margin:0;padding:0}
 .hd a:focus-visible,.hd button:focus-visible{outline:2px solid #f5b82e;outline-offset:2px}
 .hd-brand{display:flex;align-items:center;gap:10px;flex:none;color:#fff;font-size:16px;font-weight:800;white-space:nowrap}
 .hd-brand:hover{text-decoration:none;color:#fff}
-.hd-logo{width:32px;height:32px;border-radius:8px;background:#fff;display:grid;place-items:center;flex:none}
+.hd-logo{width:34px;height:34px;border-radius:8px;background:#fff;display:grid;place-items:center;flex:none;overflow:hidden;box-shadow:0 2px 6px rgba(0,0,0,.18)}
+.hd-logo img{width:100%;height:100%;object-fit:contain;display:block}
 .hd-menu{display:none;place-items:center;width:40px;height:40px;margin-left:-6px;border-radius:10px;border:0;padding:0;background:transparent;color:#fff;cursor:pointer}
 .hd-menu:hover{background:rgba(255,255,255,.14)}
 .nv{display:flex;align-items:center;min-width:0}
@@ -222,9 +223,9 @@ body{padding-bottom:76px !important}
 <header class="hd" id="hd">
 <div class="hd-in">
 <button class="hd-menu" id="nvToggle" type="button" aria-label="Open menu" aria-expanded="false" aria-controls="nv"><svg class="i" aria-hidden="true"><use href="#i-menu"/></svg></button>
-<a class="hd-brand" href="{{ route('user.dashboard') }}" aria-label="MSWDO {{ $municipalityLabel }}, go to dashboard"><span class="hd-logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#d93a3a" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></span><span>MSWDO<span class="hd-city"> &middot; {{ $municipalityLabel }}</span></span></a>
+<a class="hd-brand" href="{{ route('user.dashboard') }}" aria-label="MSWDO {{ $municipalityLabel }}, go to dashboard"><span class="hd-logo"><img src="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}" alt="MSWDO"></span><span>MSWDO<span class="hd-city"> &middot; {{ $municipalityLabel }}</span></span></a>
 <nav class="nv" id="nv" aria-label="Main">
-<div class="nv-head"><span class="hd-brand"><span class="hd-logo"><svg width="18" height="18" viewBox="0 0 24 24" fill="#d93a3a" aria-hidden="true"><path d="M20.8 4.6a5.5 5.5 0 0 0-7.8 0L12 5.7l-1-1.1a5.5 5.5 0 0 0-7.8 7.8l1 1.1L12 21l7.8-7.5 1-1.1a5.5 5.5 0 0 0 0-7.8z"/></svg></span><span>MSWDO<span class="hd-city"> &middot; {{ $municipalityLabel }}</span></span></span><button class="hd-menu" id="nvClose" type="button" aria-label="Close menu"><svg class="i" aria-hidden="true"><use href="#i-close"/></svg></button></div>
+<div class="nv-head"><span class="hd-brand"><span class="hd-logo"><img src="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}" alt="MSWDO"></span><span>MSWDO<span class="hd-city"> &middot; {{ $municipalityLabel }}</span></span></span><button class="hd-menu" id="nvClose" type="button" aria-label="Close menu"><svg class="i" aria-hidden="true"><use href="#i-close"/></svg></button></div>
 <ul class="nv-list">
 <li><a href="{{ route('user.dashboard') }}" {!! $currentActive === 'dashboard' ? 'aria-current="page"' : '' !!}><svg class="i i-sm" aria-hidden="true"><use href="#i-grid"/></svg><span>Dashboard</span></a></li>
 <li><a href="{{ route('user.programs') }}" {!! $currentActive === 'programs' ? 'aria-current="page"' : '' !!}><svg class="i i-sm" aria-hidden="true"><use href="#i-layers"/></svg><span>Programs</span></a></li>

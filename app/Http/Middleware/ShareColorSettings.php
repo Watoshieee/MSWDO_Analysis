@@ -30,6 +30,8 @@ class ShareColorSettings
         View::share('primaryColor', $primaryColor);
         View::share('secondaryColor', $secondaryColor);
         View::share('accentColor', $accentColor);
+        $basePath = rtrim((string) $request->getBasePath(), '/');
+        View::share('mswdoLogoUrl', ($basePath !== '' ? $basePath : '') . '/images/logo_mswdo.jpg');
 
         return $next($request);
     }
