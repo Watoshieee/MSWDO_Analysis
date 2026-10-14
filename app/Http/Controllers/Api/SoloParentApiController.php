@@ -200,7 +200,7 @@ class SoloParentApiController extends Controller
         
         // 1. Check for an active appointment (pending / confirmed / validated)
         $appointment = Appointment::where('user_id', $user->id)
-            ->where('program_type', 'Solo_Parent')
+            ->whereIn('program_type', ['Solo_Parent', 'Solo_Parent_Renewal'])
             ->whereIn('status', ['pending', 'confirmed', 'validated'])
             ->latest()
             ->first();
@@ -217,18 +217,22 @@ class SoloParentApiController extends Controller
                     ->where('id', $appointment->solo_parent_app_id)
                     ->where('user_id', $user->id)
                     ->first();
+            }
 
-                // If linked application does not exist or was deleted/archived:
-                // treat appointment as inactive/orphaned — do NOT return as active workflow.
-                if (!$application) {
-                    $appointment = null;
-                } else if ($application->fileMonitoring) {
-                    $requirements = $this->getRequirements($application);
-                }
-            } elseif ($appointment->status === 'validated') {
-                // A validated eligibility appointment must have an active linked application.
-                // If it has no application, it is orphaned and inactive.
+            // Fallback: If appointment is validated, find latest Solo_Parent application
+            if (!$application && $appointment->status === 'validated') {
+                $application = Application::with('fileMonitoring.fileUploads')
+                    ->where('user_id', $user->id)
+                    ->where('program_type', 'Solo_Parent')
+                    ->latest('id')
+                    ->first();
+            }
+
+            // If validated appointment has no application found, treat as orphaned
+            if (!$application && $appointment->status === 'validated') {
                 $appointment = null;
+            } else if ($application && $application->fileMonitoring) {
+                $requirements = $this->getRequirements($application);
             }
         }
 
@@ -410,6 +414,7 @@ class SoloParentApiController extends Controller
     {
         return [
             'id'                        => $appt->id,
+            'program_type'              => $appt->program_type,
             'appointment_date'          => $appt->appointment_date->format('Y-m-d'),
             'appointment_time'          => $appt->appointment_time,
             'formatted_date'            => $appt->formatted_date,
@@ -1045,11 +1050,14 @@ class SoloParentApiController extends Controller
         return [
             'id'               => $renewal->id,
             'status'           => $renewal->status,
+            'id_file_name'     => $renewal->id_file_name,
+            'id_file_url'      => $renewal->id_file_path ? Storage::url($renewal->id_file_path) : null,
             'user_notes'       => $renewal->user_notes,
             'admin_remarks'    => $renewal->admin_remarks,
             'created_at'       => $renewal->created_at ? $renewal->created_at->format('M d, Y h:i A') : null,
             'appointment'      => $appt ? [
                 'id'               => $appt->id,
+                'program_type'     => $appt->program_type,
                 'appointment_date' => $appt->appointment_date,
                 'appointment_time' => $appt->appointment_time,
                 'formatted_date'   => Carbon::parse($appt->appointment_date)->format('F d, Y'),
