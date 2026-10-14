@@ -267,51 +267,221 @@
             min-width: 28px;
         }
 
+        /* ==========================================================================
+           STANDARDIZED ACTION BUTTON DESIGN SYSTEM (MSWDO)
+           ========================================================================== */
         .btn-action {
-            border: none;
-            border-radius: 8px;
-            padding: 5px 13px;
-            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 5px;
+            height: 32px;
+            min-height: 32px;
+            padding: 0 12px;
+            font-family: 'Inter', sans-serif;
             font-size: 0.78rem;
-            transition: all 0.2s;
+            font-weight: 700;
+            line-height: 1;
+            white-space: nowrap;
+            border-radius: 8px;
+            border: 1px solid transparent;
             cursor: pointer;
-            display: inline-block;
-            text-decoration: none;
+            text-decoration: none !important;
+            transition: all 0.18s ease;
+            user-select: none;
+            vertical-align: middle;
+            box-sizing: border-box;
         }
 
-        .btn-approve {
-            background: #d4edda;
-            color: #155724;
+        .btn-action:focus-visible {
+            outline: 2px solid var(--primary-blue);
+            outline-offset: 2px;
         }
 
-        .btn-approve:hover {
-            background: #28a745;
-            color: white;
-        }
-
-        .btn-decline {
-            background: #FCE8E8;
-            color: #C41E24;
-        }
-
-        .btn-decline:hover {
-            background: #C41E24;
-            color: white;
-        }
-
-        .btn-view {
+        /* 1. Primary Action (Primary Blue / Gradient) - Key progression steps like Mark ID Ready, Mark Eligible */
+        .btn-action-primary,
+        .btn-action.btn-view,
+        .btn-action.btn-primary-action {
             background: var(--primary-gradient);
-            color: white;
+            color: #ffffff !important;
+            border-color: transparent;
+            box-shadow: 0 2px 6px rgba(44, 62, 143, 0.18);
         }
-
-        .btn-view:hover {
-            opacity: 0.88;
-            color: white;
+        .btn-action-primary:hover,
+        .btn-action.btn-view:hover,
+        .btn-action.btn-primary-action:hover {
+            background: linear-gradient(135deg, #233275 0%, #131f45 100%);
+            color: #ffffff !important;
             box-shadow: 0 4px 12px rgba(44, 62, 143, 0.3);
+            transform: translateY(-1px);
+        }
+        .btn-action-primary:active,
+        .btn-action.btn-view:active,
+        .btn-action.btn-primary-action:active {
+            transform: translateY(0);
         }
 
+        /* 2. Success / Approve Action - Green */
+        .btn-action-success,
+        .btn-action.btn-approve,
+        .btn-action.btn-success-action {
+            background: #d4edda;
+            color: #155724 !important;
+            border-color: #c3e6cb;
+        }
+        .btn-action-success:hover,
+        .btn-action.btn-approve:hover,
+        .btn-action.btn-success-action:hover {
+            background: #28a745;
+            color: #ffffff !important;
+            border-color: #28a745;
+            box-shadow: 0 3px 10px rgba(40, 167, 69, 0.25);
+            transform: translateY(-1px);
+        }
+        .btn-action-success:active,
+        .btn-action.btn-approve:active,
+        .btn-action.btn-success-action:active {
+            transform: translateY(0);
+        }
+
+        /* 3. Danger / Reject / Cancel Action - Red */
+        .btn-action-danger,
+        .btn-action.btn-decline,
+        .btn-action.btn-danger-action {
+            background: #FCE8E8;
+            color: #C41E24 !important;
+            border-color: #f5c2c7;
+        }
+        .btn-action-danger:hover,
+        .btn-action.btn-decline:hover,
+        .btn-action.btn-danger-action:hover {
+            background: #C41E24;
+            color: #ffffff !important;
+            border-color: #C41E24;
+            box-shadow: 0 3px 10px rgba(196, 30, 36, 0.25);
+            transform: translateY(-1px);
+        }
+        .btn-action-danger:active,
+        .btn-action.btn-decline:active,
+        .btn-action.btn-danger-action:active {
+            transform: translateY(0);
+        }
+
+        /* 4. Secondary / Info Action - Soft Blue / Indigo (View Documents, View Notes, Reschedule) */
+        .btn-action-secondary,
+        .btn-action.btn-secondary-action,
+        .btn-action.btn-view-action {
+            background: #eef3ff;
+            color: #1e3a8a !important;
+            border-color: #c7d6f5;
+        }
+        .btn-action-secondary:hover,
+        .btn-action.btn-secondary-action:hover,
+        .btn-action.btn-view-action:hover {
+            background: #2C3E8F;
+            color: #ffffff !important;
+            border-color: #2C3E8F;
+            box-shadow: 0 3px 10px rgba(44, 62, 143, 0.22);
+            transform: translateY(-1px);
+        }
+        .btn-action-secondary:active,
+        .btn-action.btn-secondary-action:active,
+        .btn-action.btn-view-action:active {
+            transform: translateY(0);
+        }
+
+        /* 5. Warning / Attention Action - Amber / Gold (View Uploaded ID) */
+        .btn-action-warning,
+        .btn-action.btn-warning-action {
+            background: #fef3c7;
+            color: #92400e !important;
+            border-color: #fcd34d;
+        }
+        .btn-action-warning:hover,
+        .btn-action.btn-warning-action:hover {
+            background: #f59e0b;
+            color: #ffffff !important;
+            border-color: #f59e0b;
+            box-shadow: 0 3px 10px rgba(245, 158, 11, 0.25);
+            transform: translateY(-1px);
+        }
+        .btn-action-warning:active,
+        .btn-action.btn-warning-action:active {
+            transform: translateY(0);
+        }
+
+        /* 6. Neutral Action - Light Slate (Archive) */
+        .btn-action-neutral,
+        .btn-action.btn-neutral-action {
+            background: #f8faff;
+            color: #64748b !important;
+            border-color: #e2e8f0;
+        }
+        .btn-action-neutral:hover,
+        .btn-action.btn-neutral-action:hover {
+            background: #e2e8f0;
+            color: #1e293b !important;
+            border-color: #cbd5e1;
+            transform: translateY(-1px);
+        }
+        .btn-action-neutral:active,
+        .btn-action.btn-neutral-action:active {
+            transform: translateY(0);
+        }
+
+        /* 7. Disabled Action */
+        .btn-action:disabled,
+        .btn-action[disabled],
+        .btn-action.btn-disabled-action {
+            background: #f1f5f9 !important;
+            color: #94a3b8 !important;
+            border-color: #e2e8f0 !important;
+            cursor: not-allowed !important;
+            box-shadow: none !important;
+            transform: none !important;
+            opacity: 0.75;
+        }
+
+        /* Status Badges in Action Column (matching button height and geometry) */
+        .status-badge-soft {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            height: 32px;
+            min-height: 32px;
+            padding: 0 12px;
+            font-size: 0.76rem;
+            font-weight: 700;
+            border-radius: 8px;
+            white-space: nowrap;
+            line-height: 1;
+            box-sizing: border-box;
+        }
+        .status-badge-soft.status-success {
+            background: #dcfce7;
+            color: #15803d;
+            border: 1px solid #bbf7d0;
+        }
+        .status-badge-soft.status-danger {
+            background: #fee2e2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+        .status-badge-soft.status-warning {
+            background: #fff7ed;
+            color: #9a3412;
+            border: 1px solid #ffedd5;
+        }
+        .status-badge-soft.status-info {
+            background: #e0f2fe;
+            color: #0369a1;
+            border: 1px solid #bae6fd;
+        }
+
+        /* Standardized action gap container */
         .action-gap {
             display: flex;
+            align-items: center;
             gap: 6px;
             flex-wrap: wrap;
         }
@@ -665,9 +835,9 @@
                                 <option value="AICS_Medical" {{ request('app_program') === 'AICS_Medical' ? 'selected' : '' }}>AICS Medical</option>
                                 <option value="AICS_Burial" {{ request('app_program') === 'AICS_Burial' ? 'selected' : '' }}>AICS Burial</option>
                             </select>
-                            <button type="submit" class="btn-action btn-view" style="padding:8px 14px;">Filter</button>
-                            <a href="{{ route('admin.requirements') }}" class="btn-action"
-                                style="padding:8px 14px;background:#eef2ff;color:#1e3a8a;border:1px solid #c7d2fe;">Reset</a>
+                            <button type="submit" class="btn-action btn-action-primary" style="height:36px;padding:0 16px;">Filter</button>
+                            <a href="{{ route('admin.requirements') }}" class="btn-action btn-action-neutral"
+                                style="height:36px;padding:0 16px;">Reset</a>
                         </div>
                     </form>
                     @if($applications->count() > 0)
@@ -707,28 +877,39 @@
                                             </td>
                                             <td>
                                                 <div class="action-gap">
+                                                    @if($app->status === 'approved' && $app->program_type === 'Solo_Parent')
+                                                        @if($app->id_status === 'released')
+                                                            <span class="status-badge-soft status-success">Released</span>
+                                                        @elseif($app->id_status === 'ready_for_pickup')
+                                                            <span class="status-badge-soft status-success">ID Ready</span>
+                                                        @elseif($app->id_status === 'processing')
+                                                            <form method="POST" action="{{ route('admin.applications.mark-id-ready', $app->id) }}" style="display:inline;">
+                                                                @csrf
+                                                                <button type="submit" class="btn-action btn-action-primary js-confirm-submit"
+                                                                    data-confirm-title="Mark Solo Parent ID ready?"
+                                                                    data-confirm-message="Notify user that their Solo Parent ID is ready for pick-up?"
+                                                                    data-confirm-ok="Mark ID Ready">
+                                                                    Mark ID Ready
+                                                                </button>
+                                                            </form>
+                                                        @endif
+                                                    @endif
+
                                                     @if($app->status === 'approved' && in_array($app->program_type, ['PWD_Assistance', 'PWD_New', 'PWD_Renewal'], true))
                                                         @if($app->id_status === 'ready_for_pickup')
-                                                            <span class="btn-action"
-                                                                style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:800;">
-                                                                ID Ready
-                                                            </span>
+                                                            <span class="status-badge-soft status-success">ID Ready</span>
                                                         @elseif($app->id_status === 'processing')
-                                                            <form method="POST"
-                                                                action="{{ route('admin.applications.mark-id-ready', $app->id) }}"
-                                                                style="display:inline;">
+                                                            <form method="POST" action="{{ route('admin.applications.mark-id-ready', $app->id) }}" style="display:inline;">
                                                                 @csrf
-                                                                <button type="submit" class="btn-action btn-approve js-confirm-submit"
+                                                                <button type="submit" class="btn-action btn-action-primary js-confirm-submit"
                                                                     data-confirm-title="Mark PWD ID ready?"
                                                                     data-confirm-message="Notify user that PWD ID is ready for pick-up?"
-                                                                    data-confirm-ok="ID Ready">
-                                                                    ID Ready
+                                                                    data-confirm-ok="Mark ID Ready">
+                                                                    Mark ID Ready
                                                                 </button>
                                                             </form>
                                                         @else
-                                                            <form method="POST"
-                                                                action="{{ route('admin.applications.validate-pwd', $app->id) }}"
-                                                                style="display:inline;">
+                                                            <form method="POST" action="{{ route('admin.applications.validate-pwd', $app->id) }}" style="display:inline;">
                                                                 @csrf
                                                                 <button type="submit" class="btn-action btn-approve js-confirm-submit"
                                                                     data-confirm-title="Validate requirements?"
@@ -742,22 +923,12 @@
 
                                                     @if($app->status === 'approved' && in_array($app->program_type, ['AICS_Medical', 'AICS_Burial'], true))
                                                         @if($app->id_status === 'released')
-                                                            <span class="btn-action"
-                                                                style="background:#d1fae5;color:#065f46;border:1px solid #6ee7b7;font-weight:800;">
-                                                                Released
-                                                            </span>
+                                                            <span class="status-badge-soft status-success">Released</span>
                                                         @elseif($app->id_status === 'ready_for_pickup')
-                                                            {{-- Grant ready — admin marks as officially released --}}
-                                                            <span class="btn-action"
-                                                                style="background:#dcfce7;color:#166534;border:1px solid #86efac;font-weight:700;margin-right:4px;">
-                                                                Claim Ready
-                                                            </span>
-                                                            <form method="POST"
-                                                                action="{{ route('admin.applications.mark-released', $app->id) }}"
-                                                                style="display:inline;">
+                                                            <span class="status-badge-soft status-success">Claim Ready</span>
+                                                            <form method="POST" action="{{ route('admin.applications.mark-released', $app->id) }}" style="display:inline;">
                                                                 @csrf
-                                                                <button type="submit" class="btn-action js-confirm-submit"
-                                                                    style="background:linear-gradient(135deg,#16a34a,#064e3b);color:white;"
+                                                                <button type="submit" class="btn-action btn-approve js-confirm-submit"
                                                                     data-confirm-title="Mark as Released?"
                                                                     data-confirm-message="Confirm that the AICS grant has been physically released to the applicant? This will send a confirmation email."
                                                                     data-confirm-ok="Mark Released">
@@ -765,23 +936,19 @@
                                                                 </button>
                                                             </form>
                                                         @elseif($app->id_status === 'processing')
-                                                            <form method="POST"
-                                                                action="{{ route('admin.applications.mark-id-ready', $app->id) }}"
-                                                                style="display:inline;">
+                                                            <form method="POST" action="{{ route('admin.applications.mark-id-ready', $app->id) }}" style="display:inline;">
                                                                 @csrf
-                                                                <button type="submit" class="btn-action btn-view js-confirm-submit"
+                                                                <button type="submit" class="btn-action btn-action-primary js-confirm-submit"
                                                                     data-confirm-title="Mark claim ready?"
                                                                     data-confirm-message="Notify user that AICS grant is ready for pickup?"
-                                                                    data-confirm-ok="Ready">
-                                                                    Claim Ready
+                                                                    data-confirm-ok="Mark Claim Ready">
+                                                                    Mark Claim Ready
                                                                 </button>
                                                             </form>
                                                         @else
-                                                            <form method="POST"
-                                                                action="{{ route('admin.applications.validate-aics', $app->id) }}"
-                                                                style="display:inline;">
+                                                            <form method="POST" action="{{ route('admin.applications.validate-aics', $app->id) }}" style="display:inline;">
                                                                 @csrf
-                                                                <button type="submit" class="btn-action btn-view js-confirm-submit"
+                                                                <button type="submit" class="btn-action btn-action-primary js-confirm-submit"
                                                                     data-confirm-title="Validate AICS requirements?"
                                                                     data-confirm-message="Mark this approved AICS application as validated and notify the user?"
                                                                     data-confirm-ok="Validate">
@@ -791,16 +958,11 @@
                                                         @endif
                                                     @endif
 
-                                                    {{-- VIEW - always show --}}
-                                                    <a href="{{ route('admin.view-requirement', $app->id) }}"
-                                                        class="btn-action btn-view"> View</a>
+                                                    {{-- VIEW DOCUMENTS --}}
+                                                    <a href="{{ route('admin.view-requirement', $app->id) }}" class="btn-action btn-action-secondary">View Documents</a>
 
-                                                    {{-- DELETE / ARCHIVE --}}
-                                                    <button type="button" class="btn-action"
-                                                        style="background:#f8faff;color:#64748b;border:1.5px solid #e2e8f0;font-size:.76rem;"
-                                                        onclick="archiveApp({{ $app->id }}, '{{ addslashes($app->full_name) }}')">
-                                                        Archive
-                                                    </button>
+                                                    {{-- ARCHIVE --}}
+                                                    <button type="button" class="btn-action btn-action-neutral" onclick="archiveApp({{ $app->id }}, '{{ addslashes($app->full_name) }}')">Archive</button>
                                                 </div>
                                             </td>
                                         </tr>
@@ -811,7 +973,7 @@
                         <div class="p-3">{{ $applications->appends(request()->query())->links() }}</div>
                     @else
                         <div class="empty-state">
-                            <div class="empty-num">00</div>
+                            <div class="empty-num">0</div>
                             <p>No applications submitted yet for <strong>{{ $municipality }}</strong>.</p>
                         </div>
                     @endif
@@ -849,6 +1011,7 @@
                         style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
                         <option value="">All programs</option>
                         <option value="Solo_Parent">Solo Parent</option>
+                        <option value="Solo_Parent_Renewal">Solo Parent Renewal</option>
                         <option value="AICS_Medical">AICS Medical</option>
                         <option value="AICS_Burial">AICS Burial</option>
                     </select>
@@ -873,9 +1036,9 @@
                 <button onclick="document.getElementById('notesModal').style.display='none'" style="background:rgba(44,62,143,.08);border:none;color:#1e293b;border-radius:8px;width:32px;height:32px;font-size:1.1rem;cursor:pointer;line-height:1;">&times;</button>
             </div>
             <p id="notesModalApplicant" style="font-size:.8rem;color:#64748b;margin-bottom:12px;"></p>
-            <div id="notesModalBody" style="background:#f8faff;border:1px solid #c7d6f5;border-radius:10px;padding:14px 16px;font-size:.88rem;color:#1e293b;line-height:1.6;white-space:pre-wrap;min-height:60px;"></div>
+            <div id="notesModalBody" style="background:#f8faff;border:1px solid #c7d6f5;border-radius:10px;padding:14px 16px;font-size:.88rem;color:#1e293b;line-height:1.6;white-space:pre-wrap;word-break:break-word;min-height:60px;max-height:50vh;overflow-y:auto;"></div>
             <div style="text-align:right;margin-top:16px;">
-                <button onclick="document.getElementById('notesModal').style.display='none'" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:10px;padding:9px 22px;font-weight:700;cursor:pointer;font-size:.86rem;">Close</button>
+                <button type="button" onclick="document.getElementById('notesModal').style.display='none'" class="btn-action btn-action-neutral" style="height:36px;padding:0 22px;">Close</button>
             </div>
         </div>
     </div>
@@ -891,11 +1054,8 @@
             <textarea id="rejectNotes" rows="3" class="form-control" placeholder="Reason for rejection…"
                 style="border-radius:10px;margin-bottom:16px;"></textarea>
             <div style="display:flex;gap:10px;">
-                <button onclick="submitReject()"
-                    style="background:linear-gradient(135deg,#dc3545,#b91c1c);color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;flex:1;">Send
-                    Rejection</button>
-                <button onclick="closeRejectModal()"
-                    style="background:#f1f5f9;color:#374151;border:none;border-radius:10px;padding:10px 20px;font-weight:600;cursor:pointer;">Cancel</button>
+                <button type="button" onclick="submitReject()" class="btn-action btn-decline" style="height:38px;padding:0 22px;flex:1;">Send Rejection</button>
+                <button type="button" onclick="closeRejectModal()" class="btn-action btn-action-neutral" style="height:38px;padding:0 20px;">Cancel</button>
             </div>
         </div>
     </div>
@@ -946,19 +1106,25 @@
             </div>
 
             <div style="display:flex;gap:10px;justify-content:flex-end;">
-                <button type="button" onclick="closeValidateSoloParentModal()"
-                    style="background:#f1f5f9;color:#374151;border:none;border-radius:10px;padding:10px 20px;font-weight:600;cursor:pointer;font-size:.88rem;">Cancel</button>
-                <button type="button" onclick="submitValidateSoloParent()" id="vspSubmitBtn"
-                    style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;font-size:.88rem;">
-                    Validate Eligibility
-                </button>
+                <button type="button" onclick="closeValidateSoloParentModal()" class="btn-action btn-action-neutral" style="height:38px;padding:0 20px;">Cancel</button>
+                <button type="button" onclick="submitValidateSoloParent()" id="vspSubmitBtn" class="btn-action btn-action-primary" style="height:38px;padding:0 22px;">Validate Eligibility</button>
             </div>
         </div>
     </div>
     <script>
         function openNotesModal(encodedName, encodedNotes) {
             document.getElementById('notesModalApplicant').textContent = 'Applicant: ' + decodeURIComponent(encodedName);
-            document.getElementById('notesModalBody').textContent = decodeURIComponent(encodedNotes);
+            const body = document.getElementById('notesModalBody');
+            const decoded = decodeURIComponent(encodedNotes || '').trim();
+            if (decoded) {
+                body.textContent = decoded;
+                body.style.color = '#1e293b';
+                body.style.fontStyle = 'normal';
+            } else {
+                body.textContent = 'No notes available.';
+                body.style.color = '#94a3b8';
+                body.style.fontStyle = 'italic';
+            }
             document.getElementById('notesModal').style.display = 'flex';
         }
 
@@ -987,7 +1153,14 @@
                 ].map(normalizeText).join(' ');
                 if (term && !hay.includes(term)) return false;
                 if (status && normalizeText(a.status) !== status) return false;
-                if (program && normalizeText(a.program_type) !== program) return false;
+                if (program) {
+                    if (program === 'solo_parent_renewal') {
+                        const isRen = normalizeText(a.program_type) === 'solo_parent_renewal' || !!a.renewal;
+                        if (!isRen) return false;
+                    } else if (normalizeText(a.program_type) !== program) {
+                        return false;
+                    }
+                }
                 return true;
             });
             renderAppointments(filtered);
@@ -995,13 +1168,17 @@
 
         function loadAppointments() {
             fetch('/admin/appointments', { headers: { 'X-Requested-With': 'XMLHttpRequest', 'Accept': 'application/json' } })
-                .then(r => r.json())
+                .then(r => {
+                    if (!r.ok) throw new Error('HTTP ' + r.status);
+                    return r.json();
+                })
                 .then(data => {
                     _allAppointments = Array.isArray(data) ? data : [];
                     applyAppointmentFilters();
                 })
                 .catch(e => {
-                    document.getElementById('apptTableWrap').innerHTML = '<div style="padding:20px;color:#dc3545;">Failed to load appointments.</div>';
+                    console.error('Failed to load appointments:', e);
+                    document.getElementById('apptTableWrap').innerHTML = '<div style="padding:20px;color:#dc3545;font-weight:600;">Failed to load appointments: ' + (e.message || 'Server error') + '</div>';
                 });
         }
 
@@ -1015,6 +1192,7 @@
             let rows = data.map(a => {
                 const progLabels = {
                     'Solo_Parent': { label: 'Solo Parent', color: '#4f46e5', bg: '#ede9fe' },
+                    'Solo_Parent_Renewal': { label: 'Solo Parent Renewal', color: '#7c3aed', bg: '#f5f3ff' },
                     'AICS_Medical': { label: 'AICS Medical', color: '#0891b2', bg: '#e0f2fe' },
                     'AICS_Burial': { label: 'AICS Burial', color: '#7c3aed', bg: '#f5f3ff' },
                 };
@@ -1023,58 +1201,80 @@
 
                 let actions = '';
                 const isSoloParent = a.program_type === 'Solo_Parent';
+                const isRenewal = a.program_type === 'Solo_Parent_Renewal' || !!a.renewal;
+                const isAics = ['AICS_Medical', 'AICS_Burial'].includes(a.program_type);
                 const hasPendingReschedule = a.reschedule_status === 'pending';
                 const hasPendingCancellation = a.cancellation_status === 'pending';
 
                 // If there's a pending cancellation request, show cancellation approve/reject buttons
                 if (hasPendingCancellation) {
                     actions = `
-                        <button onclick="approveCancellation(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">Approve Cancellation</button>
-                        <button onclick="rejectCancellation(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Reject Cancellation</button>`;
+                        <button onclick="approveCancellation(${a.id})" class="btn-action btn-approve">Approve Cancellation</button>
+                        <button onclick="rejectCancellation(${a.id})" class="btn-action btn-decline">Reject Cancellation</button>`;
                 }
                 // If there's a pending reschedule request, only show reschedule approve/reject buttons
                 else if (hasPendingReschedule) {
                     actions = `
-                        <button onclick="approveReschedule(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">Approve Reschedule</button>
-                        <button onclick="rejectReschedule(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Reject Reschedule</button>`;
+                        <button onclick="approveReschedule(${a.id})" class="btn-action btn-approve">Approve Reschedule</button>
+                        <button onclick="rejectReschedule(${a.id})" class="btn-action btn-decline">Reject Reschedule</button>`;
                 } else {
                     // Normal appointment status buttons
                     if (a.status === 'pending') {
-                        actions = `
-                                <button onclick="confirmAppt(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">Approve</button>
-                                <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Reject</button>
-                            `;
-                    } else if (a.status === 'confirmed' || a.status === 'approved') {
-                        if (isSoloParent && a.status === 'confirmed') {
-                            actions = `
-                                    <button onclick="validateAppt(${a.id})" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">Eligible</button>
-                                    <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Reject</button>
+                        if (isRenewal && a.renewal) {
+                            if (a.renewal.status === 'pending') {
+                                actions = `
+                                    <button onclick="approveRenewalId(${a.renewal.id})" class="btn-action btn-approve">Approve ID</button>
+                                    <button onclick="openRejectRenewalIdModal(${a.renewal.id})" class="btn-action btn-decline">Reject ID</button>
+                                    <button disabled title="ID must be approved first before approving appointment" class="btn-action btn-disabled-action">Approve Appointment</button>
                                 `;
-                        } else if (!isSoloParent && a.status === 'confirmed') {
-                            // AICS Medical / AICS Burial — show Validate (interview done) button
-                            const aicsLabel = a.program_type === 'AICS_Burial' ? 'AICS Burial' : 'AICS Medical';
+                            } else if (a.renewal.status === 'approved') {
+                                actions = `
+                                    <span class="status-badge-soft status-success">ID Approved</span>
+                                    <button onclick="confirmAppt(${a.id})" class="btn-action btn-approve">Approve Appointment</button>
+                                    <button onclick="openRejectModal(${a.id})" class="btn-action btn-decline">Reject Appointment</button>
+                                `;
+                            } else if (a.renewal.status === 'rejected') {
+                                actions = `<span class="status-badge-soft status-danger">ID Rejected</span>`;
+                            }
+                        } else {
                             actions = `
-                                    <button onclick="validateAppt(${a.id})" style="background:linear-gradient(135deg,#0891b2,#0e4f6b);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">Validate</button>
-                                    <button onclick="openRejectModal(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Reject</button>
+                                <button onclick="confirmAppt(${a.id})" class="btn-action btn-approve">Approve Appointment</button>
+                                <button onclick="openRejectModal(${a.id})" class="btn-action btn-decline">Reject Appointment</button>
+                            `;
+                        }
+                    } else if (a.status === 'confirmed' || a.status === 'approved') {
+                        if ((isSoloParent || isRenewal) && a.status === 'confirmed') {
+                            actions = `
+                                    <button onclick="validateAppt(${a.id})" class="btn-action btn-action-primary">Mark Eligible</button>
+                                    <button onclick="openRejectModal(${a.id})" class="btn-action btn-decline">Reject Appointment</button>
+                                `;
+                        } else if (isAics && a.status === 'confirmed') {
+                            actions = `
+                                    <button onclick="validateAppt(${a.id})" class="btn-action btn-action-primary">Validate Interview</button>
+                                    <button onclick="openRejectModal(${a.id})" class="btn-action btn-decline">Reject Appointment</button>
                                 `;
                         }
                     } else if (a.status === 'validated') {
-                        const isAics = ['AICS_Medical','AICS_Burial'].includes(a.program_type);
-                        if (a.id_status === 'released') {
-                            actions = `<span style="background:#d1fae5;color:#065f46;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">Released</span>`;
-                        } else if (a.id_status === 'ready_for_pickup' && isAics) {
-                            actions = `<span style="background:#dcfce7;color:#166534;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;margin-right:4px;">Claim Ready</span>
-                                       <button onclick="markReleased(${a.aics_app_id},'${encodeURIComponent(a.user_name)}')" style="background:linear-gradient(135deg,#16a34a,#064e3b);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">Mark Released</button>`;
-                        } else if (a.id_status === 'ready_for_pickup') {
-                            actions = `<span style="background:#d4edda;color:#155724;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">ID Ready</span>`;
-                        } else if (a.id_status === 'processing') {
-                            actions = `<button onclick="markIdReady(${a.solo_parent_app_id},'${encodeURIComponent(a.user_name)}')" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;">ID Ready</button>`;
+                        if (isAics) {
+                            if (a.id_status === 'released') {
+                                actions = `<span class="status-badge-soft status-success">Released</span>`;
+                            } else if (a.id_status === 'ready_for_pickup') {
+                                actions = `<span class="status-badge-soft status-success">Claim Ready</span>
+                                           <button onclick="markReleased(${a.aics_app_id},'${encodeURIComponent(a.user_name)}')" class="btn-action btn-approve">Mark Released</button>`;
+                            } else {
+                                actions = `<span class="status-badge-soft status-info">Validated</span>`;
+                            }
                         } else {
-                            actions = `<span style="background:#fff7ed;color:#9a3412;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;">Waiting Requirements Validation</span>`;
+                            actions = `<span class="status-badge-soft status-info">Validated</span>`;
                         }
                     } else {
                         actions = '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
                     }
+                }
+
+                // Prepend View Uploaded ID button if renewal request is attached
+                if (a.renewal && a.renewal.id_file_url) {
+                    actions = `<button onclick="viewRenewalId('${a.renewal.id_file_url}', '${encodeURIComponent(a.user_name)}', '${a.renewal.program_type}', ${a.renewal.id}, '${a.renewal.status}', '${encodeURIComponent(a.renewal.admin_remarks || '')}')" class="btn-action btn-action-warning">View Uploaded ID</button>` + actions;
                 }
 
                 // Build notes data for modal
@@ -1096,11 +1296,13 @@
                 }
 
                 const notesCell = hasNotes
-                    ? `<button onclick="openNotesModal('${encodeURIComponent(a.user_name)}', '${encodeURIComponent(notesModalContent)}')" style="background:#eef3ff;color:#1e3a8a;border:1px solid #c7d6f5;border-radius:8px;padding:5px 13px;font-size:.76rem;font-weight:700;cursor:pointer;white-space:nowrap;">View Notes</button>`
+                    ? `<button onclick="openNotesModal('${encodeURIComponent(a.user_name)}', '${encodeURIComponent(notesModalContent)}')" class="btn-action btn-action-secondary">View Notes</button>`
                     : '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
 
-                // Always show admin reschedule button
-                actions += `<button onclick="showAdminRescheduleModal(${a.id}, '${encodeURIComponent(a.user_name)}')" style="background:#e0e7ff;color:#3730a3;border:1px solid #a5b4fc;border-radius:8px;padding:5px 14px;font-size:.78rem;font-weight:700;cursor:pointer;margin-left:6px;">Reschedule</button>`;
+                // Reschedule button: hide for applications marked Eligible (status === 'validated')
+                if (a.status !== 'validated') {
+                    actions += `<button onclick="showAdminRescheduleModal(${a.id}, '${encodeURIComponent(a.user_name)}')" class="btn-action btn-action-secondary">Reschedule</button>`;
+                }
 
                 return `<tr>
                         <td style="font-weight:700;">${a.user_name}<br><small style="color:#94a3b8;font-size:.72rem;">${a.user_email}</small></td>
@@ -1110,7 +1312,7 @@
                         <td>${a.interview_type}</td>
                         <td>${a.status_badge}</td>
                         <td>${notesCell}</td>
-                        <td><div style="display:flex;flex-wrap:wrap;gap:5px;align-items:center;">${actions}<button onclick="archiveAppt(${a.id},'${encodeURIComponent(a.user_name)}')" style="background:#f8faff;color:#64748b;border:1.5px solid #e2e8f0;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">Archive</button></div></td>
+                        <td><div class="action-gap">${actions}<button onclick="archiveAppt(${a.id},'${encodeURIComponent(a.user_name)}')" class="btn-action btn-action-neutral">Archive</button></div></td>
                     </tr>`;
             }).join('');
 
@@ -1251,7 +1453,7 @@
 
         function validateAppt(id) {
             const appt = _allAppointments.find(a => a.id === id);
-            const isSoloParent = appt && appt.program_type === 'Solo_Parent';
+            const isSoloParent = appt && ['Solo_Parent', 'Solo_Parent_Renewal'].includes(appt.program_type);
 
             if (isSoloParent) {
                 openValidateSoloParentModal(id, appt);
@@ -1326,29 +1528,23 @@
         }
 
         function rejectReschedule(id) {
-            uiConfirm(
-                'Reject Reschedule Request',
-                'Are you sure you want to reject this reschedule request? Please provide a reason for the rejection.',
-                { okText: 'Continue', cancelText: 'Cancel' }
-            ).then(ok => {
-                if (!ok) return;
-                
-                // Show professional input modal
-                const reason = prompt('Reason for rejection:');
-                if (!reason || !reason.trim()) {
-                    return;
+            openAdminReasonModal({
+                title: 'Reject Reschedule Request',
+                subtitle: 'Appointment Reschedule Review',
+                description: 'Please provide a reason for rejecting this reschedule request.',
+                onSubmit: function(reason) {
+                    showLoading('Rejecting Reschedule', 'Updating request status...');
+                    fetch(`/admin/appointments/${id}/reschedule/reject`, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ admin_notes: reason })
+                    }).then(r => r.json()).then(d => {
+                        uiToast(d.message || 'Reschedule rejected.');
+                        closeAdminReasonModal();
+                        loadAppointments();
+                    }).catch(() => uiToast('Error rejecting reschedule.', 'Error'))
+                        .finally(() => hideLoading());
                 }
-                
-                showLoading('Rejecting Reschedule', 'Updating request status...');
-                fetch(`/admin/appointments/${id}/reschedule/reject`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ admin_notes: reason.trim() })
-                }).then(r => r.json()).then(d => {
-                    uiToast(d.message || 'Reschedule rejected.');
-                    loadAppointments();
-                }).catch(() => uiToast('Error rejecting reschedule.', 'Error'))
-                    .finally(() => hideLoading());
             });
         }
 
@@ -1373,29 +1569,68 @@
         }
 
         function rejectCancellation(id) {
-            uiConfirm(
-                'Reject Cancellation Request',
-                'Reject this cancellation request? Please provide a reason.',
-                { okText: 'Continue', cancelText: 'Cancel' }
-            ).then(ok => {
-                if (!ok) return;
-                
-                const reason = prompt('Reason for rejection:');
-                if (!reason || !reason.trim()) {
-                    return;
+            openAdminReasonModal({
+                title: 'Reject Cancellation Request',
+                subtitle: 'Appointment Cancellation Review',
+                description: 'Please provide a reason for rejecting this cancellation request.',
+                onSubmit: function(reason) {
+                    showLoading('Rejecting Cancellation', 'Updating request status...');
+                    fetch(`/admin/appointments/${id}/cancellation/reject`, {
+                        method: 'POST',
+                        headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
+                        body: JSON.stringify({ admin_notes: reason })
+                    }).then(r => r.json()).then(d => {
+                        uiToast(d.message || 'Cancellation rejected.');
+                        closeAdminReasonModal();
+                        loadAppointments();
+                    }).catch(() => uiToast('Error rejecting cancellation.', 'Error'))
+                        .finally(() => hideLoading());
                 }
-                
-                showLoading('Rejecting Cancellation', 'Updating request status...');
-                fetch(`/admin/appointments/${id}/cancellation/reject`, {
-                    method: 'POST',
-                    headers: { 'X-CSRF-TOKEN': csrfToken, 'Content-Type': 'application/json', 'Accept': 'application/json' },
-                    body: JSON.stringify({ admin_notes: reason.trim() })
-                }).then(r => r.json()).then(d => {
-                    uiToast(d.message || 'Cancellation rejected.');
-                    loadAppointments();
-                }).catch(() => uiToast('Error rejecting cancellation.', 'Error'))
-                    .finally(() => hideLoading());
             });
+        }
+
+
+        // ── Reusable Admin Reason Input Modal ──
+        var _adminReasonCallback = null;
+
+        function openAdminReasonModal(opts) {
+            const title = opts.title || 'Rejection Reason';
+            const subtitle = opts.subtitle || '';
+            const desc = opts.description || 'Please provide a reason.';
+            _adminReasonCallback = opts.onSubmit || null;
+
+            document.getElementById('adminReasonModalTitle').textContent = title;
+            document.getElementById('adminReasonModalSubtitle').textContent = subtitle;
+            document.getElementById('adminReasonModalDesc').textContent = desc;
+            document.getElementById('adminReasonTextarea').value = '';
+            document.getElementById('adminReasonError').style.display = 'none';
+            document.getElementById('adminReasonSubmitBtn').disabled = false;
+            document.getElementById('adminReasonSubmitBtn').textContent = 'Confirm Rejection';
+            document.getElementById('adminReasonModal').style.display = 'flex';
+            setTimeout(() => document.getElementById('adminReasonTextarea').focus(), 100);
+        }
+
+        function closeAdminReasonModal() {
+            document.getElementById('adminReasonModal').style.display = 'none';
+            _adminReasonCallback = null;
+        }
+
+        function submitAdminReason() {
+            const reason = document.getElementById('adminReasonTextarea').value.trim();
+            const errorDiv = document.getElementById('adminReasonError');
+            if (!reason) {
+                errorDiv.textContent = 'Please provide a reason for rejection.';
+                errorDiv.style.display = 'block';
+                document.getElementById('adminReasonTextarea').focus();
+                return;
+            }
+            errorDiv.style.display = 'none';
+            const btn = document.getElementById('adminReasonSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+            if (_adminReasonCallback) {
+                _adminReasonCallback(reason);
+            }
         }
 
         // Load on page ready
@@ -1463,12 +1698,10 @@
                         </div>
                     </div>
                     <div class="modal-footer" style="border:none;padding:16px 24px 20px;gap:8px;">
-                        <button type="button" class="btn" data-bs-dismiss="modal"
-                            style="border-radius:8px;font-weight:700;font-size:0.85rem;border:1.5px solid #C7D6F5;padding:8px 20px;">
+                        <button type="button" class="btn-action btn-action-neutral" data-bs-dismiss="modal" style="height:38px;padding:0 20px;">
                             Cancel
                         </button>
-                        <button type="submit" id="confirmDeclineBtn" class="btn"
-                            style="background:linear-gradient(135deg,#C41E24,#8B0000);color:white;border-radius:8px;font-weight:700;font-size:0.85rem;border:none;padding:8px 22px;">
+                        <button type="submit" id="confirmDeclineBtn" class="btn-action btn-decline" style="height:38px;padding:0 22px;">
                             Confirm Decline
                         </button>
                     </div>
@@ -1791,9 +2024,9 @@
                 <td>${a.status_badge}</td>
                 <td style="font-size:.82rem;color:#94a3b8;">${a.archived_at}</td>
                 <td>
-                    <div style="display:flex;gap:5px;">
-                        <button onclick="restoreAppt(${a.id})" style="background:#d4edda;color:#155724;border:none;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">Restore</button>
-                        <button onclick="forceDeleteAppt(${a.id})" style="background:#f8d7da;color:#721c24;border:none;border-radius:8px;padding:4px 12px;font-size:.76rem;font-weight:700;cursor:pointer;">Delete</button>
+                    <div class="action-gap">
+                        <button onclick="restoreAppt(${a.id})" class="btn-action btn-approve">Restore</button>
+                        <button onclick="forceDeleteAppt(${a.id})" class="btn-action btn-decline">Delete</button>
                     </div>
                 </td>
             </tr>`;
@@ -2102,6 +2335,176 @@
                 .finally(() => hideLoading());
         }
 
+        function viewRenewalId(url, name, prog, renewalId, renewalStatus, adminRemarks) {
+            var _lastRenewalRemarks = decodeURIComponent(adminRemarks || '');
+            const displayName = decodeURIComponent(name);
+            document.getElementById('renewalIdModalApplicant').textContent = displayName + ' (' + (prog === 'PWD' ? 'PWD' : 'Solo Parent') + ' ID)';
+            document.getElementById('renewalIdDownloadLink').href = url;
+            const container = document.getElementById('renewalIdViewerContainer');
+            container.innerHTML = '<div style="padding:40px;color:#64748b;text-align:center;"><div class="spinner-border spinner-border-sm me-2"></div>Loading ID document...</div>';
+
+            const actionsContainer = document.getElementById('renewalIdModalActions');
+            if (actionsContainer) {
+                if (renewalStatus === 'pending' && renewalId) {
+                    actionsContainer.innerHTML = `
+                        <button type="button" onclick="approveRenewalId(${renewalId})" class="btn-action btn-approve">Approve ID</button>
+                        <button type="button" onclick="openRejectRenewalIdModal(${renewalId})" class="btn-action btn-decline">Reject ID</button>
+                    `;
+                } else if (renewalStatus === 'approved') {
+                    actionsContainer.innerHTML = '<span class="status-badge-soft status-success">ID Approved</span>';
+                } else if (renewalStatus === 'rejected') {
+                    actionsContainer.innerHTML = '<span class="status-badge-soft status-danger">ID Rejected</span>';
+                    // Show rejection reason if available from appointment data
+                    if (typeof _lastRenewalRemarks !== 'undefined' && _lastRenewalRemarks) {
+                        const remarkDiv = document.createElement('div');
+                        remarkDiv.style.cssText = 'margin-top:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:.82rem;color:#991b1b;';
+                        remarkDiv.textContent = 'Rejection reason: ' + _lastRenewalRemarks;
+                        actionsContainer.parentElement.appendChild(remarkDiv);
+                    }
+                } else {
+                    actionsContainer.innerHTML = '';
+                }
+            }
+
+            document.getElementById('renewalIdModal').style.display = 'flex';
+
+            const isPdf = url.toLowerCase().includes('.pdf');
+            if (isPdf) {
+                container.innerHTML = `<iframe src="${url}" style="width:100%;height:65vh;border:none;border-radius:8px;"></iframe>`;
+            } else {
+                container.innerHTML = `<img src="${url}" alt="Renewal ID" style="max-width:100%;max-height:65vh;object-fit:contain;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);" onerror="this.onerror=null;this.parentElement.innerHTML='<iframe src=\'' + url + '\' style=\'width:100%;height:65vh;border:none;\'></iframe>';">`;
+            }
+        }
+
+        function closeRenewalIdModal() {
+            document.getElementById('renewalIdModal').style.display = 'none';
+            document.getElementById('renewalIdViewerContainer').innerHTML = '';
+        }
+
+        function approveRenewalId(renewalId) {
+            if (!confirm("Are you sure you want to approve this renewal applicant's ID? Once approved, you can confirm their appointment.")) return;
+            fetch('/admin/renewals/' + renewalId + '/approve', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ admin_remarks: 'Renewal ID approved by admin' })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    uiToast(data.message || 'Renewal ID approved.');
+                    closeRenewalIdModal();
+                    loadAppointments();
+                } else {
+                    alert(data.message || 'Failed to approve renewal ID.');
+                }
+            })
+            .catch(e => {
+                alert('Server error approving renewal ID.');
+            });
+        }
+
+        var _rejectRenewalTargetId = null;
+
+        function openRejectRenewalIdModal(renewalId) {
+            _rejectRenewalTargetId = renewalId;
+            // Try to get applicant name from the renewal ID modal title
+            const nameEl = document.getElementById('renewalIdModalApplicant');
+            document.getElementById('rejectRenewalApplicantName').textContent = nameEl ? nameEl.textContent : 'Applicant';
+            document.getElementById('rejectRenewalReasonSelect').value = '';
+            document.getElementById('rejectRenewalNotes').value = '';
+            document.getElementById('rejectRenewalNotes').placeholder = 'Add details or instructions for the applicant...';
+            document.getElementById('rejectRenewalCommentsLabel').innerHTML = 'Additional Comments <span style="font-size:.75rem;font-weight:400;color:#64748b;">(Optional)</span>';
+            document.getElementById('rejectRenewalError').style.display = 'none';
+            document.getElementById('rejectRenewalSubmitBtn').disabled = false;
+            document.getElementById('rejectRenewalSubmitBtn').textContent = 'Confirm Rejection';
+            document.getElementById('rejectRenewalIdModal').style.display = 'flex';
+        }
+
+        function closeRejectRenewalIdModal() {
+            document.getElementById('rejectRenewalIdModal').style.display = 'none';
+            _rejectRenewalTargetId = null;
+        }
+
+        function onRejectRenewalReasonChange() {
+            const reason = document.getElementById('rejectRenewalReasonSelect').value;
+            const notesField = document.getElementById('rejectRenewalNotes');
+            const label = document.getElementById('rejectRenewalCommentsLabel');
+            document.getElementById('rejectRenewalError').style.display = 'none';
+
+            if (reason && reason !== 'Other') {
+                notesField.value = reason;
+                notesField.placeholder = 'The rejection reason has been auto-filled. You can add more details.';
+                label.innerHTML = 'Additional Comments <span style="font-size:.75rem;font-weight:400;color:#64748b;">(Optional)</span>';
+            } else if (reason === 'Other') {
+                notesField.value = '';
+                notesField.placeholder = 'Please specify the reason for rejection...';
+                label.innerHTML = 'Additional Comments <span style="color:#C41E24;">*</span>';
+            } else {
+                notesField.value = '';
+                notesField.placeholder = 'Add details or instructions for the applicant...';
+                label.innerHTML = 'Additional Comments <span style="font-size:.75rem;font-weight:400;color:#64748b;">(Optional)</span>';
+            }
+        }
+
+        function submitRejectRenewalId() {
+            const reason = document.getElementById('rejectRenewalReasonSelect').value;
+            const notes = document.getElementById('rejectRenewalNotes').value.trim();
+            const errorDiv = document.getElementById('rejectRenewalError');
+
+            if (!reason) {
+                errorDiv.textContent = 'Please select a rejection reason.';
+                errorDiv.style.display = 'block';
+                document.getElementById('rejectRenewalReasonSelect').focus();
+                return;
+            }
+            if (reason === 'Other' && !notes) {
+                errorDiv.textContent = 'Please specify the reason in Additional Comments when selecting "Other".';
+                errorDiv.style.display = 'block';
+                document.getElementById('rejectRenewalNotes').focus();
+                return;
+            }
+            errorDiv.style.display = 'none';
+
+            const finalRemarks = notes || reason;
+            const btn = document.getElementById('rejectRenewalSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Submitting...';
+
+            fetch('/admin/renewals/' + _rejectRenewalTargetId + '/reject', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ admin_remarks: finalRemarks })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    uiToast(data.message || 'Renewal ID rejected.');
+                    closeRejectRenewalIdModal();
+                    closeRenewalIdModal();
+                    loadAppointments();
+                } else {
+                    errorDiv.textContent = data.message || 'Failed to reject renewal ID.';
+                    errorDiv.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Confirm Rejection';
+                }
+            })
+            .catch(e => {
+                errorDiv.textContent = 'Server error rejecting renewal ID. Please try again.';
+                errorDiv.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Confirm Rejection';
+            });
+        }
+
         // Load slots for admin reschedule
         document.addEventListener('DOMContentLoaded', function() {
             const adminRescheduleDate = document.getElementById('adminRescheduleDate');
@@ -2199,8 +2602,117 @@
                 <textarea id="adminRescheduleNotes" rows="2" style="width:100%;border:1.5px solid #c7d2fe;border-radius:10px;padding:12px;font-size:.88rem;font-family:inherit;" placeholder="Reason for rescheduling..."></textarea>
             </div>
             <div style="display:flex;gap:10px;justify-content:flex-end;">
-                <button type="button" onclick="hideAdminRescheduleModal()" style="background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">Cancel</button>
-                <button type="button" onclick="submitAdminReschedule()" style="background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:none;border-radius:8px;padding:10px 20px;font-weight:700;cursor:pointer;">Reschedule</button>
+                <button type="button" onclick="hideAdminRescheduleModal()" class="btn-action btn-action-neutral" style="height:38px;padding:0 20px;">Cancel</button>
+                <button type="button" onclick="submitAdminReschedule()" class="btn-action btn-action-primary" style="height:38px;padding:0 22px;">Confirm Reschedule</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- RENEWAL ID PREVIEW MODAL -->
+    <div id="renewalIdModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;">
+        <div style="background:white;border-radius:16px;width:100%;max-width:850px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.25);overflow:hidden;">
+            <div style="background:linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);color:white;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:1.3rem;">🪪</span>
+                    <div>
+                        <h6 style="margin:0;font-weight:800;font-size:1rem;" id="renewalIdModalApplicant">Applicant Uploaded ID</h6>
+                        <small style="opacity:.85;font-size:.78rem;">MSWDO ID Renewal Review</small>
+                    </div>
+                </div>
+                <button type="button" onclick="closeRenewalIdModal()" style="background:transparent;border:none;color:white;font-size:1.4rem;line-height:1;cursor:pointer;">&times;</button>
+            </div>
+            <div id="renewalIdViewerContainer" style="padding:16px;overflow-y:auto;display:flex;align-items:center;justify-content:center;min-height:300px;background:#f8fafc;">
+            </div>
+            <div style="padding:12px 20px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;background:white;">
+                <a id="renewalIdDownloadLink" href="#" target="_blank" download style="color:#2C3E8F;font-weight:700;font-size:.85rem;text-decoration:none;">
+                    📥 Open / Download Original File
+                </a>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div id="renewalIdModalActions" style="display:flex;align-items:center;gap:8px;"></div>
+                    <button type="button" onclick="closeRenewalIdModal()" class="btn-action btn-action-neutral">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Reject Renewal ID Modal --}}
+    <div id="rejectRenewalIdModal"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(2px);"
+        onclick="if(event.target===this) closeRejectRenewalIdModal()">
+        <div style="background:white;border-radius:16px;padding:0;max-width:480px;width:92%;box-shadow:0 12px 48px rgba(0,0,0,.25);overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#C41E24 0%,#8B1419 100%);color:white;padding:18px 24px;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:1.2rem;">⚠️</span>
+                <div>
+                    <h5 style="font-weight:800;margin:0;font-size:1rem;">Reject Renewal ID</h5>
+                    <small style="opacity:.85;font-size:.78rem;">MSWDO ID Renewal Review</small>
+                </div>
+            </div>
+            <div style="padding:20px 24px;">
+                <div style="font-size:.88rem;color:#475569;margin-bottom:14px;background:#fef2f2;padding:10px 14px;border-radius:10px;border:1px solid #fecaca;">
+                    <strong>Applicant:</strong> <span id="rejectRenewalApplicantName" style="color:#991b1b;font-weight:700;"></span>
+                    <div style="margin-top:4px;font-size:.82rem;color:#1e40af;">The applicant will be notified to re-upload their Valid ID. Their existing appointment date and time will be preserved.</div>
+                </div>
+                <label style="font-size:.85rem;font-weight:700;color:#1e293b;display:block;margin-bottom:6px;">
+                    Rejection Reason <span style="color:#C41E24;">*</span>
+                </label>
+                <select id="rejectRenewalReasonSelect" style="width:100%;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 12px;font-size:.88rem;font-weight:600;margin-bottom:12px;color:#1e293b;background:white;" onchange="onRejectRenewalReasonChange()">
+                    <option value="">-- Select a reason --</option>
+                    <option value="Blurry or unreadable ID photo">Blurry or unreadable ID photo</option>
+                    <option value="ID does not match applicant name">ID does not match applicant name</option>
+                    <option value="Expired ID document">Expired ID document</option>
+                    <option value="Wrong type of ID uploaded">Wrong type of ID uploaded</option>
+                    <option value="Incomplete or cropped ID image">Incomplete or cropped ID image</option>
+                    <option value="Other">Other (specify below)</option>
+                </select>
+                <label style="font-size:.85rem;font-weight:700;color:#1e293b;display:block;margin-bottom:6px;" id="rejectRenewalCommentsLabel">
+                    Additional Comments <span style="font-size:.75rem;font-weight:400;color:#64748b;">(Optional)</span>
+                </label>
+                <textarea id="rejectRenewalNotes" rows="3" placeholder="Add details or instructions for the applicant..."
+                    style="width:100%;border:1.5px solid #fca5a5;border-radius:10px;padding:12px;font-size:.88rem;resize:none;"></textarea>
+                <div id="rejectRenewalError" style="color:#C41E24;font-size:.8rem;margin-top:6px;display:none;"></div>
+            </div>
+            <div style="padding:0 24px 20px;display:flex;gap:10px;">
+                <button type="button" onclick="submitRejectRenewalId()" id="rejectRenewalSubmitBtn" class="btn-action btn-decline" style="height:38px;padding:0 22px;flex:1;">
+                    Confirm Rejection
+                </button>
+                <button type="button" onclick="closeRejectRenewalIdModal()" class="btn-action btn-action-neutral" style="height:38px;padding:0 20px;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    {{-- Reusable Admin Reason Input Modal --}}
+    <div id="adminReasonModal"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(2px);"
+        onclick="if(event.target===this) closeAdminReasonModal()">
+        <div style="background:white;border-radius:16px;padding:0;max-width:460px;width:92%;box-shadow:0 12px 48px rgba(0,0,0,.25);overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#C41E24 0%,#8B1419 100%);color:white;padding:18px 24px;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:1.2rem;">&#9888;&#65039;</span>
+                <div>
+                    <h5 id="adminReasonModalTitle" style="font-weight:800;margin:0;font-size:1rem;">Rejection Reason</h5>
+                    <small id="adminReasonModalSubtitle" style="opacity:.85;font-size:.78rem;"></small>
+                </div>
+            </div>
+            <div style="padding:20px 24px;">
+                <p id="adminReasonModalDesc" style="font-size:.88rem;color:#475569;margin-bottom:14px;line-height:1.5;"></p>
+                <label style="font-size:.85rem;font-weight:700;color:#1e293b;display:block;margin-bottom:6px;">
+                    Reason <span style="color:#C41E24;">*</span>
+                </label>
+                <textarea id="adminReasonTextarea" rows="3" placeholder="Enter the reason for rejection..."
+                    style="width:100%;border:1.5px solid #fca5a5;border-radius:10px;padding:12px;font-size:.88rem;resize:none;box-sizing:border-box;"></textarea>
+                <div id="adminReasonError" style="color:#C41E24;font-size:.8rem;margin-top:6px;display:none;"></div>
+            </div>
+            <div style="padding:0 24px 20px;display:flex;gap:10px;">
+                <button type="button" onclick="submitAdminReason()" id="adminReasonSubmitBtn" class="btn-action btn-decline" style="height:38px;padding:0 22px;flex:1;">
+                    Confirm Rejection
+                </button>
+                <button type="button" onclick="closeAdminReasonModal()" class="btn-action btn-action-neutral" style="height:38px;padding:0 20px;">
+                    Cancel
+                </button>
             </div>
         </div>
     </div>

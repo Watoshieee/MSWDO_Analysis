@@ -1,4 +1,4 @@
-@if(isset($appointment) && $appointment && $appointment->status === 'validated' && isset($soloParentApplication) && $soloParentApplication)
+@if((isset($appointment) && $appointment && $appointment->status === 'validated' && isset($soloParentApplication) && $soloParentApplication) || (isset($soloParentApplication) && $soloParentApplication && $soloParentApplication->category_code))
 @php
     $fm = $soloParentApplication->fileMonitoring;
     $uploads = $fm ? $fm->fileUploads : collect();
@@ -7,311 +7,347 @@
     $catCode = $soloParentApplication->category_code;
     $categoryTitle = $catCode ? (\App\Services\SoloParentCategoryService::getCategories()[$catCode] ?? $catCode) : null;
     $categorized = \App\Services\SoloParentCategoryService::getCategorizedRequirementsForApplication($soloParentApplication);
-    $requirementGroups = $categorized['primary'];
-    $benefitGroups = $categorized['benefit'];
+    $requirementGroups = $categorized['primary'] ?? [];
+    $benefitGroups = $categorized['benefit'] ?? [];
 
     $uploadedByName = $uploads->keyBy('requirement_name');
-    $uploadCols = $uploadCols ?? 'col-lg-6';
     $reqPrefix = $reqPrefix ?? 'req';
+    $uploadAction = route('applications.requirement.upload', $soloParentApplication->id);
+
+    // Count total required and total uploaded
+    $totalPrimary = count($requirementGroups);
+    $totalBenefit = count($benefitGroups);
+    $totalRequirements = $totalPrimary + $totalBenefit;
+
+    $uploadedCount = 0;
+    foreach ($requirementGroups as $g) {
+        foreach ($g['options'] as $opt) {
+            if ($u = $uploadedByName->get($opt['requirement_name'])) {
+                if (in_array($u->status, ['approved', 'pending', 'in_review'])) {
+                    $uploadedCount++;
+                    break;
+                }
+            }
+        }
+    }
+    foreach ($benefitGroups as $g) {
+        foreach ($g['options'] as $opt) {
+            if ($u = $uploadedByName->get($opt['requirement_name'])) {
+                if (in_array($u->status, ['approved', 'pending', 'in_review'])) {
+                    $uploadedCount++;
+                    break;
+                }
+            }
+        }
+    }
+    $initialPct = $totalRequirements > 0 ? round(($uploadedCount / $totalRequirements) * 100) : 0;
 @endphp
 
-<style>
-    .sp-eligible-banner { background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 12px; padding: 16px 20px; margin-bottom: 20px; }
-    .sp-eligible-title  { font-weight: 700; font-size: 0.95rem; color: #15803d; }
-    .sp-eligible-sub    { font-size: 0.82rem; color: #4b5563; margin-top: 3px; }
-
-    .sp-status-msg { border-radius: 10px; padding: 12px 18px; margin-bottom: 16px; font-size: 0.85rem; font-weight: 600; }
-    .sp-status-msg.approved { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
-    .sp-status-msg.rejected { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
-    .sp-status-msg.review   { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
-
-    .sp-req-item { background: white; border: 1px solid #E2E8F0; border-radius: 12px; padding: 14px 16px; border-left: 4px solid #CBD5E1; transition: all 0.2s; }
-    .sp-req-item.approved { border-left-color: #28a745; }
-    .sp-req-item.rejected { border-left-color: #dc3545; }
-    .sp-req-item.pending   { border-left-color: #FDB913; }
-    .sp-req-item.not_uploaded { border-left-color: #E2E8F0; }
-
-    .sp-req-name  { font-weight: 600; font-size: 0.88rem; color: #1E293B; line-height: 1.3; }
-    .sp-req-remark { font-size: 0.78rem; color: #dc3545; margin-top: 5px; padding: 5px 8px; background: #fff5f5; border-radius: 6px; }
-
-    .sp-status-badge { padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; display: inline-block; }
-    .sp-status-approved  { background: #d4edda; color: #155724; }
-    .sp-status-rejected  { background: #f8d7da; color: #721c24; }
-    .sp-status-pending   { background: #FFF3D6; color: #856404; }
-    .sp-status-in_review { background: #d1ecf1; color: #0c5460; }
-
-    .sp-btn-view { background: #2C3E8F; color: white; border: none; padding: 3px 10px; border-radius: 8px; font-size: 0.75rem; font-weight: 600; cursor: pointer; transition: all 0.25s; }
-    .sp-btn-view:hover { background: #1A2A5C; color: white; }
-
-    .sp-reupload-form { background: #FFF3D6; border-radius: 8px; padding: 10px 12px; margin-top: 8px; }
-
-    .sp-upload-all-bar { display: none; background: #EEF2FF; border: 1.5px solid #C7D2FE; border-radius: 12px; padding: 14px 18px; margin-top: 8px; margin-bottom: 16px; align-items: center; justify-content: space-between; gap: 12px; }
-    .sp-upload-all-title { font-weight: 700; font-size: 0.92rem; color: #1E293B; }
-    .sp-upload-all-hint  { font-size: 0.78rem; color: #64748B; margin-top: 2px; }
-
-    .sp-tip { font-size: 0.78rem; color: #64748b; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; padding: 10px 14px; margin-top: 4px; }
-    .sp-waiting-box { background: white; border: 1px solid #E2E8F0; border-radius: 14px; padding: 24px; text-align: center; }
-    .sp-waiting-title { font-weight: 700; font-size: 1rem; color: #1E293B; margin-bottom: 6px; }
-    .sp-waiting-text  { font-size: 0.85rem; color: #64748B; max-width: 520px; margin: 0 auto; line-height: 1.5; }
-</style>
-
-<div class="sp-eligible-banner">
+<div class="sp-eligible-banner mb-3">
     <div class="sp-eligible-title">Congratulations! You passed the eligibility assessment.</div>
     <div class="sp-eligible-sub">Please upload all required documents below to complete your Solo Parent ID application.</div>
 </div>
 
 @if($categoryTitle)
-<div style="font-size:0.85rem;font-weight:600;color:#1E293B;margin-bottom:14px;">
+<div style="font-size:0.9rem;font-weight:700;color:var(--navy);margin-bottom:14px;background:#eef3ff;border:1px solid #c7d2fe;border-radius:10px;padding:10px 14px;">
     <strong>Assigned Category:</strong> Category {{ $catCode }} &mdash; {{ $categoryTitle }}
 </div>
 @endif
 
 @if($overallStatus === 'approved')
-<div class="sp-status-msg approved">All your documents have been approved! Your Solo Parent ID is being processed.</div>
+<div class="sp-status-msg approved mb-3">All your documents have been approved! Your Solo Parent ID is being processed.</div>
 @elseif($overallStatus === 'rejected')
-<div class="sp-status-msg rejected">Some documents need attention. Please resubmit the declined documents below.</div>
+<div class="sp-status-msg rejected mb-3">Some documents need attention. Please resubmit the declined documents below.</div>
 @elseif($overallStatus === 'in_review')
-<div class="sp-status-msg review">Your documents are currently under review. We will notify you of the results.</div>
+<div class="sp-status-msg review mb-3">Your documents are currently under review. We will notify you of the results.</div>
 @endif
 
-<div id="req-scope-{{ $reqPrefix }}">
-<div class="row g-3 mb-3">
-@foreach($requirementGroups as $group)
-    @php
-        $isOr = $group['is_or_group'];
-        $groupUploads = collect();
-        foreach($group['options'] as $opt) {
-            if ($u = $uploadedByName->get($opt['requirement_name'])) {
-                $groupUploads->push($u);
-            }
-        }
-        $primaryUpload = $groupUploads->first();
-        $status = $primaryUpload ? $primaryUpload->status : 'not_uploaded';
-        $hasFile = $primaryUpload && $primaryUpload->file_path;
-        $activeReqName = $primaryUpload ? $primaryUpload->requirement_name : $group['options'][0]['requirement_name'];
-    @endphp
-    <div class="{{ $uploadCols }}">
-        <div class="sp-req-item {{ $status }}" data-req-name="{{ $activeReqName }}">
+{{-- REDESIGNED UPLOAD ALL INTERFACE --}}
+<div class="up" id="upContainer-{{ $reqPrefix }}" data-upload-url="{{ $uploadAction }}" data-total="{{ $totalRequirements }}">
 
-            {{-- Top row: name + badge + view --}}
-            <div class="d-flex align-items-start gap-2">
-                <div style="flex:1;min-width:0;">
-                    <div class="sp-req-name">
-                        {{ $group['group_title'] }}
-                        @if($isOr && $primaryUpload)
-                            <span class="text-muted small fw-normal d-block">Submitted: {{ $primaryUpload->requirement_name }}</span>
-                        @endif
-                    </div>
-                    @if($primaryUpload && $primaryUpload->admin_remarks)
-                        <div class="sp-req-remark"><strong>Remark:</strong> {{ $primaryUpload->admin_remarks }}</div>
+    {{-- 1. Drag & Drop Bulk Zone --}}
+    <label class="up-drop" id="bulkDropZone-{{ $reqPrefix }}" for="bulkFileInput-{{ $reqPrefix }}">
+        <svg class="i" style="width:42px;height:42px;color:var(--navy);"><use href="#i-cloud"/></svg>
+        <b>Drag and drop all your documents here</b>
+        <small>Files fill the empty rows in order. You can replace any file afterwards.</small>
+        <span class="up-pick">Select multiple files</span>
+        <input type="file" multiple accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" class="sr" id="bulkFileInput-{{ $reqPrefix }}">
+    </label>
+
+    <div id="bulkErrorMsg-{{ $reqPrefix }}" class="sp-status-msg rejected" style="display:none;margin:4px 0 0;" role="alert"></div>
+
+    {{-- 2. Summary Progress Bar and Upload All Button --}}
+    <div class="up-bar">
+        <div class="up-sum">
+            <p class="up-count" id="upCount-{{ $reqPrefix }}">
+                {{ $uploadedCount }} of {{ $totalRequirements }} documents added
+                @if($uploadedCount > 0) · {{ $uploadedCount }} uploaded @endif
+            </p>
+            <div class="up-meter">
+                <i id="upMeterFill-{{ $reqPrefix }}" style="width: {{ $initialPct }}%;"></i>
+            </div>
+        </div>
+        <div class="up-btns">
+            <button type="button" class="btn btn-navy" id="uploadAllBtn-{{ $reqPrefix }}" onclick="triggerUploadAll('{{ $reqPrefix }}')" disabled>
+                <svg class="i i-sm"><use href="#i-cloud"/></svg>
+                <span class="up-btn-text">Upload all</span>
+            </button>
+        </div>
+    </div>
+
+    {{-- 3. Document Requirements List --}}
+    <ul class="up-list" id="upList-{{ $reqPrefix }}">
+        @foreach($requirementGroups as $index => $group)
+            @php
+                $isOr = !empty($group['is_or_group']);
+                $groupUploads = collect();
+                foreach($group['options'] as $opt) {
+                    if ($u = $uploadedByName->get($opt['requirement_name'])) {
+                        $groupUploads->push($u);
+                    }
+                }
+                $primaryUpload = $groupUploads->first();
+                $status = $primaryUpload ? $primaryUpload->status : 'not_uploaded';
+                $hasFile = $primaryUpload && $primaryUpload->file_path;
+                $activeReqName = $primaryUpload ? $primaryUpload->requirement_name : $group['options'][0]['requirement_name'];
+
+                $state = match($status) {
+                    'approved', 'pending', 'in_review' => 'uploaded',
+                    'rejected' => 'error',
+                    default => 'empty',
+                };
+                $pillClass = match($status) {
+                    'approved' => 'ok',
+                    'pending', 'in_review' => 'work',
+                    'rejected' => 'bad',
+                    default => '',
+                };
+                $pillText = match($status) {
+                    'approved' => 'Approved',
+                    'pending' => 'Pending Review',
+                    'in_review' => 'In Review',
+                    'rejected' => 'Action Needed',
+                    default => 'Not added',
+                };
+
+                $ext = $hasFile ? strtolower(pathinfo($primaryUpload->file_path, PATHINFO_EXTENSION)) : '';
+                $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'webp']);
+                $fileUrl = $hasFile ? route('user.serve-file', $primaryUpload->id) : '';
+            @endphp
+            <li class="up-row" data-s="{{ $state }}" data-status="{{ $status }}" data-req-name="{{ $activeReqName }}" id="row-{{ $reqPrefix }}-pri-{{ $index }}">
+                {{-- Thumbnail --}}
+                <div class="up-th">
+                    @if($hasFile && $isImage)
+                        <img src="{{ $fileUrl }}" alt="" onclick="openSpFileModal('{{ $fileUrl }}', '{{ addslashes($primaryUpload->requirement_name) }}', '{{ $ext }}')">
+                    @elseif($status === 'approved' || $status === 'pending' || $status === 'in_review')
+                        <svg class="i"><use href="#i-check"/></svg>
+                    @else
+                        <svg class="i"><use href="#i-file"/></svg>
                     @endif
                 </div>
-                <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                    @if($primaryUpload)
-                        <span class="sp-status-badge sp-status-{{ $status }}">{{ ucfirst($status) }}</span>
+
+                {{-- Main Info --}}
+                <div class="up-main">
+                    <div class="up-name">
+                        <span>{{ $group['group_title'] }}</span>
+                        <span class="up-req">REQUIRED</span>
+                    </div>
+
+                    @if($isOr && !$primaryUpload)
+                        <div class="mt-1 mb-1">
+                            <select class="form-select form-select-sm up-or-select" style="max-width:340px;font-size:13px;" onchange="updateRowReqName(this)">
+                                @foreach($group['options'] as $opt)
+                                    <option value="{{ $opt['requirement_name'] }}" {{ $opt['requirement_name'] === $activeReqName ? 'selected' : '' }}>
+                                        {{ $opt['requirement_name'] }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    @elseif($isOr && $primaryUpload)
+                        <span class="text-muted small fw-normal d-block" style="font-size:12.5px;">Submitted: {{ $primaryUpload->requirement_name }}</span>
                     @endif
-                    @if($hasFile)
-                        @php
-                            $ext     = strtolower(pathinfo($primaryUpload->file_path, PATHINFO_EXTENSION));
-                            $fileUrl = route('user.serve-file', $primaryUpload->id);
-                        @endphp
-                        @if(in_array($ext, ['jpg', 'jpeg', 'png', 'webp']))
-                            <img src="{{ $fileUrl }}"
-                                 onclick="openSpFileModal('{{ $fileUrl }}', '{{ addslashes($primaryUpload->requirement_name) }}', '{{ $ext }}')"
-                                 style="width:36px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer;vertical-align:middle;" alt="">
+
+                    <span class="up-meta">
+                        @if($primaryUpload)
+                            {{ $primaryUpload->file_name ?? 'Document uploaded' }} · {{ \Carbon\Carbon::parse($primaryUpload->uploaded_at ?? $primaryUpload->updated_at)->format('M d, Y') }}
                         @else
-                            <button type="button" class="sp-btn-view"
-                                    onclick="openSpFileModal('{{ $fileUrl }}', '{{ addslashes($primaryUpload->requirement_name) }}', '{{ $ext }}')">
+                            JPG, PNG or PDF · max 5MB
+                        @endif
+                    </span>
+
+                    @if($primaryUpload && $primaryUpload->admin_remarks)
+                        <p class="up-err"><strong>Remark:</strong> {{ $primaryUpload->admin_remarks }}</p>
+                    @endif
+
+                    <div class="up-prog" style="display:none;"><i style="width: 0%;"></i></div>
+                    <p class="up-err inline-err" style="display:none;"></p>
+                </div>
+
+                {{-- Action buttons --}}
+                <div class="up-act">
+                    <span class="up-st {{ $pillClass }}">{{ $pillText }}</span>
+
+                    @if($hasFile)
+                        <button type="button" class="sbtn" onclick="openSpFileModal('{{ $fileUrl }}', '{{ addslashes($primaryUpload->requirement_name) }}', '{{ $ext }}')">
+                            View
+                        </button>
+                    @endif
+
+                    {{-- Staged specific upload & remove buttons --}}
+                    <button type="button" class="sbtn pri up-go" style="display:none;" onclick="uploadSingleRow(this)">Upload</button>
+                    <button type="button" class="sbtn ico up-remove" style="display:none;" onclick="clearRowFile(this)" aria-label="Remove file">
+                        <svg class="i i-sm"><use href="#i-x"/></svg>
+                    </button>
+
+                    {{-- File picker label button --}}
+                    <label class="sbtn {{ $state === 'empty' || $state === 'error' ? 'pri' : '' }} chooser-btn">
+                        <span class="chooser-label">
+                            @if($state === 'uploaded') Replace
+                            @elseif($state === 'error') Re-upload
+                            @else Choose file
+                            @endif
+                        </span>
+                        <input type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" class="sr row-file-input" onchange="handleRowFileSelect(this)">
+                    </label>
+                </div>
+            </li>
+        @endforeach
+
+        {{-- Benefit Track Requirements if present --}}
+        @if(!empty($benefitGroups))
+            <li class="pt-3 pb-1" style="list-style:none;">
+                <div style="font-size:0.92rem;font-weight:800;color:var(--navy);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                    <span class="badge bg-success" style="font-size:0.75rem;background:#15803d !important;padding:4px 8px;">BENEFIT TRACK</span>
+                    <span>SOLO PARENT AVAILING SUBSIDY &amp; DISCOUNT &mdash; CODE 1,2</span>
+                </div>
+                <div style="font-size:0.8rem;color:var(--muted);margin-top:2px;line-height:1.45;">
+                    Additional requirements for Solo Parent 10% discount and monthly cash subsidy under RA 11861.
+                </div>
+            </li>
+
+            @foreach($benefitGroups as $bIndex => $group)
+                @php
+                    $isOr = !empty($group['is_or_group']);
+                    $groupUploads = collect();
+                    foreach($group['options'] as $opt) {
+                        if ($u = $uploadedByName->get($opt['requirement_name'])) {
+                            $groupUploads->push($u);
+                        }
+                    }
+                    $primaryUpload = $groupUploads->first();
+                    $status = $primaryUpload ? $primaryUpload->status : 'not_uploaded';
+                    $hasFile = $primaryUpload && $primaryUpload->file_path;
+                    $activeReqName = $primaryUpload ? $primaryUpload->requirement_name : $group['options'][0]['requirement_name'];
+
+                    $state = match($status) {
+                        'approved', 'pending', 'in_review' => 'uploaded',
+                        'rejected' => 'error',
+                        default => 'empty',
+                    };
+                    $pillClass = match($status) {
+                        'approved' => 'ok',
+                        'pending', 'in_review' => 'work',
+                        'rejected' => 'bad',
+                        default => '',
+                    };
+                    $pillText = match($status) {
+                        'approved' => 'Approved',
+                        'pending' => 'Pending Review',
+                        'in_review' => 'In Review',
+                        'rejected' => 'Action Needed',
+                        default => 'Not added',
+                    };
+
+                    $ext = $hasFile ? strtolower(pathinfo($primaryUpload->file_path, PATHINFO_EXTENSION)) : '';
+                    $isImage = in_array($ext, ['jpg', 'jpeg', 'png', 'webp']);
+                    $fileUrl = $hasFile ? route('user.serve-file', $primaryUpload->id) : '';
+                @endphp
+                <li class="up-row" data-s="{{ $state }}" data-status="{{ $status }}" data-req-name="{{ $activeReqName }}" id="row-{{ $reqPrefix }}-ben-{{ $bIndex }}">
+                    {{-- Thumbnail --}}
+                    <div class="up-th">
+                        @if($hasFile && $isImage)
+                            <img src="{{ $fileUrl }}" alt="" onclick="openSpFileModal('{{ $fileUrl }}', '{{ addslashes($primaryUpload->requirement_name) }}', '{{ $ext }}')">
+                        @elseif($status === 'approved' || $status === 'pending' || $status === 'in_review')
+                            <svg class="i"><use href="#i-check"/></svg>
+                        @else
+                            <svg class="i"><use href="#i-file"/></svg>
+                        @endif
+                    </div>
+
+                    {{-- Main Info --}}
+                    <div class="up-main">
+                        <div class="up-name">
+                            <span>{{ $group['group_title'] }}</span>
+                            <span class="up-req">REQUIRED</span>
+                        </div>
+
+                        @if($isOr && !$primaryUpload)
+                            <div class="mt-1 mb-1">
+                                <select class="form-select form-select-sm up-or-select" style="max-width:340px;font-size:13px;" onchange="updateRowReqName(this)">
+                                    @foreach($group['options'] as $opt)
+                                        <option value="{{ $opt['requirement_name'] }}" {{ $opt['requirement_name'] === $activeReqName ? 'selected' : '' }}>
+                                            {{ $opt['requirement_name'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        @elseif($isOr && $primaryUpload)
+                            <span class="text-muted small fw-normal d-block" style="font-size:12.5px;">Submitted: {{ $primaryUpload->requirement_name }}</span>
+                        @endif
+
+                        <span class="up-meta">
+                            @if($primaryUpload)
+                                {{ $primaryUpload->file_name ?? 'Document uploaded' }} · {{ \Carbon\Carbon::parse($primaryUpload->uploaded_at ?? $primaryUpload->updated_at)->format('M d, Y') }}
+                            @else
+                                JPG, PNG or PDF · max 5MB
+                            @endif
+                        </span>
+
+                        @if($primaryUpload && $primaryUpload->admin_remarks)
+                            <p class="up-err"><strong>Remark:</strong> {{ $primaryUpload->admin_remarks }}</p>
+                        @endif
+
+                        <div class="up-prog" style="display:none;"><i style="width: 0%;"></i></div>
+                        <p class="up-err inline-err" style="display:none;"></p>
+                    </div>
+
+                    {{-- Action buttons --}}
+                    <div class="up-act">
+                        <span class="up-st {{ $pillClass }}">{{ $pillText }}</span>
+
+                        @if($hasFile)
+                            <button type="button" class="sbtn" onclick="openSpFileModal('{{ $fileUrl }}', '{{ addslashes($primaryUpload->requirement_name) }}', '{{ $ext }}')">
                                 View
                             </button>
                         @endif
-                    @endif
-                </div>
-            </div>
 
-            {{-- Upload / Re-upload form --}}
-            @if($status === 'rejected')
-                <div class="sp-reupload-form">
-                    <p style="font-size:0.78rem;font-weight:600;margin-bottom:8px;color:#856404;">Re-upload Document</p>
-                    <form action="{{ route('applications.requirement.upload', $soloParentApplication->id) }}"
-                          method="POST" enctype="multipart/form-data"
-                          data-upload-type="single" class="solo-upload-form js-ajax-upload">
-                        @csrf
-                        <input type="hidden" name="requirement_name" value="{{ $primaryUpload->requirement_name }}">
-                        <div class="d-flex gap-2 align-items-center flex-wrap">
-                            <div style="flex:1;min-width:0;">
-                                <input type="file" name="file" class="form-control form-control-sm"
-                                       accept=".jpg,.jpeg,.png,.pdf" required>
-                                <small class="text-muted" style="font-size:0.7rem;">Images: 5MB, PDF: 25MB</small>
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-warning" style="font-weight:600;white-space:nowrap;">Re-upload</button>
-                        </div>
-                    </form>
-                </div>
-            @elseif($status === 'not_uploaded')
-                @if($isOr)
-                    <form action="{{ route('applications.requirement.upload', $soloParentApplication->id) }}"
-                          method="POST" enctype="multipart/form-data"
-                          data-upload-type="single" class="solo-upload-form js-ajax-upload"
-                          style="margin-top:8px;">
-                        @csrf
-                        <div class="mb-1" style="font-size:0.75rem;color:#64748B;">Select one option:</div>
-                        <select name="requirement_name" class="form-select form-select-sm mb-2" required>
-                            @foreach($group['options'] as $opt)
-                                <option value="{{ $opt['requirement_name'] }}">{{ $opt['requirement_name'] }}</option>
-                            @endforeach
-                        </select>
-                        <div class="d-flex gap-2 align-items-center flex-wrap">
-                            <div style="flex:1;min-width:0;">
-                                <input type="file" name="file" class="form-control form-control-sm"
-                                       accept=".jpg,.jpeg,.png,.pdf" required>
-                                <small class="text-muted" style="font-size:0.7rem;">Images: 5MB, PDF: 25MB</small>
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-primary" style="font-weight:600;white-space:nowrap;background:#2C3E8F;border:none;">Upload</button>
-                        </div>
-                    </form>
-                @else
-                    <form action="{{ route('applications.requirement.upload', $soloParentApplication->id) }}"
-                          method="POST" enctype="multipart/form-data"
-                          data-upload-type="single" class="solo-upload-form js-ajax-upload"
-                          style="margin-top:8px;">
-                        @csrf
-                        <input type="hidden" name="requirement_name" value="{{ $activeReqName }}">
-                        <div class="d-flex gap-2 align-items-center flex-wrap">
-                            <div style="flex:1;min-width:0;">
-                                <input type="file" name="file" class="form-control form-control-sm"
-                                       accept=".jpg,.jpeg,.png,.pdf" required>
-                                <small class="text-muted" style="font-size:0.7rem;">Images: 5MB, PDF: 25MB</small>
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-primary" style="font-weight:600;white-space:nowrap;background:#2C3E8F;border:none;">Upload</button>
-                        </div>
-                    </form>
-                @endif
-            @endif
+                        {{-- Staged specific upload & remove buttons --}}
+                        <button type="button" class="sbtn pri up-go" style="display:none;" onclick="uploadSingleRow(this)">Upload</button>
+                        <button type="button" class="sbtn ico up-remove" style="display:none;" onclick="clearRowFile(this)" aria-label="Remove file">
+                            <svg class="i i-sm"><use href="#i-x"/></svg>
+                        </button>
 
-        </div>
-    </div>
-@endforeach
-</div>
-
-@if(!empty($benefitGroups))
-<div class="mt-4 mb-3 pt-3 border-top">
-    <div style="font-size:0.92rem;font-weight:800;color:#1E293B;margin-bottom:4px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-        <span class="badge bg-success" style="font-size:0.75rem;background:#15803d !important;padding:4px 8px;">BENEFIT TRACK</span>
-        <span>SOLO PARENT AVAILING SUBSIDY &amp; DISCOUNT &mdash; CODE 1,2</span>
-    </div>
-    <div style="font-size:0.8rem;color:#64748B;margin-bottom:14px;line-height:1.45;">
-        Additional requirements for Solo Parent 10% discount and monthly cash subsidy under RA 11861.
-    </div>
-
-    <div class="row g-3 mb-3">
-    @foreach($benefitGroups as $group)
-        @php
-            $isOr = $group['is_or_group'];
-            $groupUploads = collect();
-            foreach($group['options'] as $opt) {
-                if ($u = $uploadedByName->get($opt['requirement_name'])) {
-                    $groupUploads->push($u);
-                }
-            }
-            $primaryUpload = $groupUploads->first();
-            $status = $primaryUpload ? $primaryUpload->status : 'not_uploaded';
-            $hasFile = $primaryUpload && $primaryUpload->file_path;
-            $activeReqName = $primaryUpload ? $primaryUpload->requirement_name : $group['options'][0]['requirement_name'];
-        @endphp
-        <div class="{{ $uploadCols }}">
-            <div class="sp-req-item {{ $status }}" data-req-name="{{ $activeReqName }}">
-
-                {{-- Top row: name + badge + view --}}
-                <div class="d-flex align-items-start gap-2">
-                    <div style="flex:1;min-width:0;">
-                        <div class="sp-req-name">
-                            {{ $group['group_title'] }}
-                            @if($isOr && $primaryUpload)
-                                <span class="text-muted small fw-normal d-block">Submitted: {{ $primaryUpload->requirement_name }}</span>
-                            @endif
-                        </div>
-                        @if($primaryUpload && $primaryUpload->admin_remarks)
-                            <div class="sp-req-remark"><strong>Remark:</strong> {{ $primaryUpload->admin_remarks }}</div>
-                        @endif
+                        {{-- File picker label button --}}
+                        <label class="sbtn {{ $state === 'empty' || $state === 'error' ? 'pri' : '' }} chooser-btn">
+                            <span class="chooser-label">
+                                @if($state === 'uploaded') Replace
+                                @elseif($state === 'error') Re-upload
+                                @else Choose file
+                                @endif
+                            </span>
+                            <input type="file" accept=".jpg,.jpeg,.png,.pdf,image/jpeg,image/png,application/pdf" class="sr row-file-input" onchange="handleRowFileSelect(this)">
+                        </label>
                     </div>
-                    <div class="d-flex align-items-center gap-1 flex-shrink-0">
-                        @if($primaryUpload)
-                            <span class="sp-status-badge sp-status-{{ $status }}">{{ ucfirst($status) }}</span>
-                        @endif
-                        @if($hasFile)
-                            @php
-                                $ext     = strtolower(pathinfo($primaryUpload->file_path, PATHINFO_EXTENSION));
-                                $fileUrl = route('user.serve-file', $primaryUpload->id);
-                            @endphp
-                            @if(in_array($ext, ['jpg', 'jpeg', 'png', 'webp']))
-                                <img src="{{ $fileUrl }}"
-                                     onclick="openSpFileModal('{{ $fileUrl }}', '{{ addslashes($primaryUpload->requirement_name) }}', '{{ $ext }}')"
-                                     style="width:36px;height:36px;object-fit:cover;border-radius:6px;cursor:pointer;vertical-align:middle;" alt="">
-                            @else
-                                <button type="button" class="sp-btn-view"
-                                        onclick="openSpFileModal('{{ $fileUrl }}', '{{ addslashes($primaryUpload->requirement_name) }}', '{{ $ext }}')">
-                                    View
-                                </button>
-                            @endif
-                        @endif
-                    </div>
-                </div>
+                </li>
+            @endforeach
+        @endif
+    </ul>
 
-                {{-- Upload / Re-upload form --}}
-                @if($status === 'rejected')
-                    <div class="sp-reupload-form">
-                        <p style="font-size:0.78rem;font-weight:600;margin-bottom:8px;color:#856404;">Re-upload Document</p>
-                        <form action="{{ route('applications.requirement.upload', $soloParentApplication->id) }}"
-                              method="POST" enctype="multipart/form-data"
-                              data-upload-type="single" class="solo-upload-form js-ajax-upload">
-                            @csrf
-                            <input type="hidden" name="requirement_name" value="{{ $primaryUpload->requirement_name }}">
-                            <div class="d-flex gap-2 align-items-center flex-wrap">
-                                <div style="flex:1;min-width:0;">
-                                    <input type="file" name="file" class="form-control form-control-sm"
-                                           accept=".jpg,.jpeg,.png,.pdf" required>
-                                    <small class="text-muted" style="font-size:0.7rem;">Images: 5MB, PDF: 25MB</small>
-                                </div>
-                                <button type="submit" class="btn btn-sm btn-warning" style="font-weight:600;white-space:nowrap;">Re-upload</button>
-                            </div>
-                        </form>
-                    </div>
-                @elseif($status === 'not_uploaded')
-                    <form action="{{ route('applications.requirement.upload', $soloParentApplication->id) }}"
-                          method="POST" enctype="multipart/form-data"
-                          data-upload-type="single" class="solo-upload-form js-ajax-upload"
-                          style="margin-top:8px;">
-                        @csrf
-                        <input type="hidden" name="requirement_name" value="{{ $activeReqName }}">
-                        <div class="d-flex gap-2 align-items-center flex-wrap">
-                            <div style="flex:1;min-width:0;">
-                                <input type="file" name="file" class="form-control form-control-sm"
-                                       accept=".jpg,.jpeg,.png,.pdf" required>
-                                <small class="text-muted" style="font-size:0.7rem;">Images: 5MB, PDF: 25MB</small>
-                            </div>
-                            <button type="submit" class="btn btn-sm btn-primary" style="font-weight:600;white-space:nowrap;background:#2C3E8F;border:none;">Upload</button>
-                        </div>
-                    </form>
-                @endif
+    {{-- 4. Tip Box --}}
+    <p class="up-tip mt-2">
+        <b>Tip: </b>Upload clear, readable scanned copies or photos. Accepted formats: PDF, JPG, PNG. Max size: 5MB per file.
+    </p>
 
-            </div>
-        </div>
-    @endforeach
-    </div>
-</div>
-@endif
-<div id="uploadAllBar-{{ $reqPrefix }}" class="sp-upload-all-bar">
-    <div>
-        <div class="sp-upload-all-title">Upload All Selected Files</div>
-        <div id="uploadAllStatus-{{ $reqPrefix }}" class="sp-upload-all-hint">Select files in the rows above, then click Upload All to submit them all at once.</div>
-    </div>
-    <button type="button" id="uploadAllBtn-{{ $reqPrefix }}" onclick="uploadAllFiles('{{ $reqPrefix }}')" class="btn btn-sm btn-primary" style="font-weight:600;white-space:nowrap;background:#2C3E8F;border:none;">Upload All</button>
-</div>
-
-<div class="sp-tip">
-    <strong>Tip:</strong> Upload clear, readable scanned copies or photos. Accepted formats: PDF, JPG, PNG. Max size: 5MB for photos, 25MB for PDF.
-</div>
 </div>
 
 @elseif(isset($appointment) && $appointment && $appointment->status === 'confirmed')

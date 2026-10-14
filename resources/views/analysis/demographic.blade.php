@@ -930,10 +930,12 @@
                 <div class="col-lg-5">
                     <div class="chart-card h-100">
                         <h5>Age Group Breakdown</h5>
-                        <p class="chart-sub">Combined across all municipalities</p>
+                        <p class="chart-sub">Combined across all municipalities &mdash; {{ $selectedYear }}</p>
+                        @php $ageDataPresent = ($totalYouth + $totalAdult + $totalSenior) > 0; @endphp
+                        @if($ageDataPresent)
                         <div class="age-bar-row">
                             <div class="age-bar-label">
-                                <span>Youth (0–19 years)</span>
+                                <span>Youth (0&ndash;19 years)</span>
                                 <span
                                     style="color:var(--primary-blue);font-weight:700;">{{ number_format($totalYouth) }}
                                     &nbsp;({{ $youthPct }}%)</span>
@@ -945,7 +947,7 @@
                         </div>
                         <div class="age-bar-row">
                             <div class="age-bar-label">
-                                <span>Adults (20–59 years)</span>
+                                <span>Adults (20&ndash;59 years)</span>
                                 <span
                                     style="color:var(--secondary-yellow);font-weight:700;">{{ number_format($totalAdult) }}
                                     &nbsp;({{ $adultPct }}%)</span>
@@ -965,14 +967,25 @@
                                 <div class="age-bar-fill" style="width:{{ $seniorPct }}%;background:#28a745;"></div>
                             </div>
                         </div>
+                        @else
+                        <div style="padding:18px 0;color:#94a3b8;font-size:0.88rem;">
+                            <i class="bi bi-info-circle me-1"></i>
+                            Age-group data (0&ndash;19, 20&ndash;59, 60+) is not recorded for <strong>{{ $selectedYear }}</strong>.
+                            Select a year with complete data or update the records to see the breakdown.
+                        </div>
+                        @endif
                         <hr style="margin:22px 0;">
                         @foreach($demographicData as $name => $data)
-                            @php $colors2 = $colors; @endphp
+                            @php
+                                $colors2 = $colors;
+                                $muniAgePresent = ($data['age_0_19'] + $data['age_20_59'] + $data['age_60_100']) > 0;
+                            @endphp
                             <div style="margin-bottom:10px;">
                                 <div
                                     style="font-size:0.85rem;font-weight:700;color:{{ $colors2[$name] ?? '#333' }};margin-bottom:6px;">
                                     {{ $name }}
                                 </div>
+                                @if($muniAgePresent)
                                 <div style="display:flex;gap:6px;">
                                     <div
                                         style="flex:{{ $data['age_0_19'] }};background:#E5EEFF;border-radius:4px;height:8px;">
@@ -984,6 +997,9 @@
                                         style="flex:{{ $data['age_60_100'] }};background:#e8f5e9;border-radius:4px;height:8px;">
                                     </div>
                                 </div>
+                                @else
+                                <span style="font-size:0.78rem;color:#94a3b8;">Age data not recorded</span>
+                                @endif
                             </div>
                         @endforeach
                         <div style="display:flex;gap:18px;margin-top:12px;font-size:0.76rem;color:#64748b;">
@@ -1588,9 +1604,11 @@
             });
 
             // ===== POPULATION TREND LINE CHART =====
+            // Use null (not 0) for missing years so Chart.js renders a gap instead
+            // of a misleading drop-to-zero. spanGaps: false makes the gap visible.
             const popDatasets = MUNIS.map(muni => ({
                 label: muni,
-                data: YEARS.map(yr => POP_TREND[muni]?.[yr] ?? 0),
+                data: YEARS.map(yr => POP_TREND[muni]?.[yr] ?? null),
                 borderColor: COLORS[muni],
                 backgroundColor: COLORS[muni] + '22',
                 fill: true,
@@ -1598,6 +1616,7 @@
                 borderWidth: 3,
                 pointRadius: 5,
                 pointHoverRadius: 8,
+                spanGaps: false,
             }));
             new Chart(document.getElementById('popTrendChart'), {
                 type: 'line',
@@ -1615,22 +1634,32 @@
             // ===== GENDER PIE CHART =====
             const totalMale = MUNIS.reduce((s, m) => s + (DEMO[m]?.male ?? 0), 0);
             const totalFemale = MUNIS.reduce((s, m) => s + (DEMO[m]?.female ?? 0), 0);
-            if (document.getElementById('genderPieChart')) {
-                new Chart(document.getElementById('genderPieChart'), {
-                    type: 'doughnut',
-                    data: {
-                        labels: ['Male', 'Female'],
-                        datasets: [{ data: [totalMale, totalFemale], backgroundColor: ['#2C3E8F', '#FDB913'], borderWidth: 0, hoverOffset: 8 }]
-                    },
-                    options: {
-                        responsive: true, maintainAspectRatio: false,
-                        plugins: {
-                            legend: { position: 'bottom' },
-                            tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw.toLocaleString()}` } }
+            const genderPieEl = document.getElementById('genderPieChart');
+            if (genderPieEl) {
+                if (totalMale + totalFemale > 0) {
+                    new Chart(genderPieEl, {
+                        type: 'doughnut',
+                        data: {
+                            labels: ['Male', 'Female'],
+                            datasets: [{ data: [totalMale, totalFemale], backgroundColor: ['#2C3E8F', '#FDB913'], borderWidth: 0, hoverOffset: 8 }]
                         },
-                        cutout: '60%'
-                    }
-                });
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            plugins: {
+                                legend: { position: 'bottom' },
+                                tooltip: { callbacks: { label: ctx => `${ctx.label}: ${ctx.raw.toLocaleString()}` } }
+                            },
+                            cutout: '60%'
+                        }
+                    });
+                } else {
+                    // Gender data not recorded for this year — show N/A message instead of empty chart
+                    genderPieEl.style.display = 'none';
+                    const msg = document.createElement('div');
+                    msg.style.cssText = 'padding:32px 0;text-align:center;color:#94a3b8;font-size:0.88rem;';
+                    msg.innerHTML = '<i class="bi bi-gender-ambiguous" style="font-size:2rem;display:block;margin-bottom:8px;"></i>Gender data not recorded for this year.';
+                    genderPieEl.parentNode.appendChild(msg);
+                }
             }
 
             // ===== GENDER BAR CHART =====

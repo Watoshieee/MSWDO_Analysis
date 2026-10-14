@@ -159,8 +159,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
 
     <div class="footer-strip"></div>
-    @include('components.chat-modal')
-    @include('components.chatbot-widget')
+    @include('components.user-dock-chat')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         let currentLang = 'en';

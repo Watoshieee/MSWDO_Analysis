@@ -69,7 +69,18 @@ class AppointmentController extends Controller
             'appointment_date' => 'required|date|after:today',
             'appointment_time' => ['required', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
             'interview_type'   => 'required|in:face_to_face,online',
-            'user_notes'       => 'nullable|string|max:500',
+            'user_notes'       => [
+                'nullable',
+                'string',
+                function ($attribute, $value, $fail) {
+                    if (!empty($value)) {
+                        $wordCount = count(preg_split('/\s+/', trim($value), -1, PREG_SPLIT_NO_EMPTY));
+                        if ($wordCount > 200) {
+                            $fail('Additional Notes must not exceed 200 words (currently ' . $wordCount . ' words).');
+                        }
+                    }
+                },
+            ],
             'program_type'     => 'nullable|in:' . $allowed,
         ]);
 

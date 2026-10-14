@@ -370,12 +370,14 @@ class AnalysisController extends Controller
             $benefTrend[$name] = [];
             foreach ($allYears as $yr) {
                 $row = $summariesByMuni[$name][$yr] ?? null;
-                $populationTrend[$name][$yr] = $row ? (int) $row->total_population : 0;
-                $householdsTrend[$name][$yr] = $row ? (int) $row->total_households : 0;
+                // Use null for missing rows: distinguishes "no record" from a genuine zero entry.
+                // Chart.js treats null as a gap (spanGaps: false); the insight logic skips null years.
+                $populationTrend[$name][$yr] = $row ? (int) $row->total_population : null;
+                $householdsTrend[$name][$yr] = $row ? (int) $row->total_households : null;
                 $benefTrend[$name][$yr] = $row
                     ? ((int) $row->total_pwd + (int) $row->total_aics + (int) $row->total_solo_parent
                         + (int) $row->total_4ps + (int) $row->total_senior)
-                    : 0;
+                    : null;
             }
         }
 
@@ -428,44 +430,131 @@ class AnalysisController extends Controller
         // Highest population
         arsort($pops);
         $highPop = key($pops);
-        // Fastest growing (biggest absolute increase last 2 years)
+        // Fastest growing: compare only pairs of years that both have non-null, non-zero
+        // population values. Skips municipalities with insufficient recorded data.
         $growthMap = [];
+        $growthYearLabels = [];
         foreach ($coreNames as $n) {
-            $yrs = array_keys($populationTrend[$n]);
-            if (count($yrs) >= 2) {
-                $last = $populationTrend[$n][end($yrs)];
-                $prev = $populationTrend[$n][$yrs[count($yrs) - 2]];
-                $growthMap[$n] = $last - $prev;
-            } else {
-                $growthMap[$n] = 0;
+            $trend = $populationTrend[$n];
+            // Build list of years with a real (non-null, positive) population value
+            $realYrs = array_keys(array_filter($trend, fn($v) => $v !== null && $v > 0));
+            if (count($realYrs) >= 2) {
+                $lastYr = end($realYrs);
+                $prevYr = $realYrs[count($realYrs) - 2];
+                $growthMap[$n] = $trend[$lastYr] - $trend[$prevYr];
+                $growthYearLabels[$n] = "{$prevYr}–{$lastYr}";
             }
+            // If fewer than 2 real years exist, exclude from comparison entirely
         }
-        arsort($growthMap);
-        $fastestGrowing = key($growthMap);
+
+        $fastestGrowing = null;
+        $fastestGrowingInsight = null;
+        if (!empty($growthMap)) {
+            arsort($growthMap);
+            $fastestGrowing = key($growthMap);
+            $fgAbsGrowth = $growthMap[$fastestGrowing];
+            $fgYears = $growthYearLabels[$fastestGrowing] ?? '';
+            if ($fgAbsGrowth > 0) {
+                $fastestGrowingInsight = "{$fastestGrowing} recorded the largest absolute population increase"
+                    . " ({$fgYears}): +" . number_format($fgAbsGrowth) . " persons based on available records.";
+            } elseif ($fgAbsGrowth < 0) {
+                $fastestGrowingInsight = "All municipalities with comparable records show population decline or no change"
+                    . " in the most recent available period. {$fastestGrowing}: "
+                    . number_format($fgAbsGrowth) . " persons ({$fgYears}).";
+            } else {
+                $fastestGrowingInsight = "No population change was recorded between the most recent available years"
+                    . " for municipalities with sufficient data ({$fgYears}).";
+            }
+        } else {
+            $fastestGrowingInsight = "Population growth trend could not be calculated: fewer than two years"
+                . " of recorded population data are available for comparison.";
+        }
+
         // Highest beneficiaries
         arsort($bens);
         $highBen = key($bens);
-        // Dominant age group (across all 3)
-        $totAge0 = array_sum(array_map(fn($d) => $d['age_0_19'], $demographicData));
-        $totAge20 = array_sum(array_map(fn($d) => $d['age_20_59'], $demographicData));
+
+        // Dominant age group — only emit a conclusion when age data actually exists
+        $totAge0  = array_sum(array_map(fn($d) => $d['age_0_19'],   $demographicData));
+        $totAge20 = array_sum(array_map(fn($d) => $d['age_20_59'],  $demographicData));
         $totAge60 = array_sum(array_map(fn($d) => $d['age_60_100'], $demographicData));
-        $domAgeGroup = $totAge0 >= $totAge20 && $totAge0 >= $totAge60
-            ? 'Youth (0-19)'
-            : ($totAge20 >= $totAge0 && $totAge20 >= $totAge60 ? 'Working Age (20-59)' : 'Senior (60+)');
-        // Gender imbalance
-        $totalMale = array_sum(array_map(fn($d) => $d['male'], $demographicData));
+        $ageDataAvailable = ($totAge0 + $totAge20 + $totAge60) > 0;
+        if ($ageDataAvailable) {
+            if ($totAge0 >= $totAge20 && $totAge0 >= $totAge60) {
+                $domAgeGroup = 'Youth (0–19)';
+            } elseif ($totAge20 >= $totAge0 && $totAge20 >= $totAge60) {
+                $domAgeGroup = 'Working Age (20–59)';
+            } else {
+                $domAgeGroup = 'Senior (60+)';
+            }
+            $ageInsight = "The {$domAgeGroup} bracket is the largest age segment across all municipalities"
+                . " ({$selectedYear}): Youth " . number_format($totAge0)
+                . ", Adults " . number_format($totAge20)
+                . ", Seniors " . number_format($totAge60) . ".";
+        } else {
+            $ageInsight = "Age-group data (0–19, 20–59, 60+) is not available for {$selectedYear}."
+                . " No age-distribution conclusion can be drawn from the current records.";
+        }
+
+        // Gender distribution — only emit counts and comparisons when gender data exists.
+        // A stored zero is treated as missing, not as a confirmed zero population.
+        $totalMale   = array_sum(array_map(fn($d) => $d['male'],   $demographicData));
         $totalFemale = array_sum(array_map(fn($d) => $d['female'], $demographicData));
-        $genderNote = ($totalMale + $totalFemale) > 0
-            ? ($totalMale > $totalFemale ? 'Male-dominant' : ($totalFemale > $totalMale ? 'Female-dominant' : 'Balanced'))
-            : 'No gender data';
+        $genderDataAvailable = ($totalMale + $totalFemale) > 0;
+        if ($genderDataAvailable) {
+            if ($totalMale > $totalFemale) {
+                $genderLabel = 'Male-leading';
+            } elseif ($totalFemale > $totalMale) {
+                $genderLabel = 'Female-leading';
+            } else {
+                $genderLabel = 'Equal (tie)';
+            }
+            $genderGap = abs($totalMale - $totalFemale);
+            // Per-municipality gender leaders
+            $muniGenderNotes = [];
+            foreach ($demographicData as $mn => $md) {
+                $m = $md['male'];
+                $f = $md['female'];
+                if ($m + $f > 0) {
+                    if ($m > $f) {
+                        $muniGenderNotes[] = "{$mn}: male-leading by " . number_format($m - $f);
+                    } elseif ($f > $m) {
+                        $muniGenderNotes[] = "{$mn}: female-leading by " . number_format($f - $m);
+                    } else {
+                        $muniGenderNotes[] = "{$mn}: equal";
+                    }
+                } else {
+                    $muniGenderNotes[] = "{$mn}: N/A";
+                }
+            }
+            $genderInsight = "Overall gender distribution ({$selectedYear}): {$genderLabel}."
+                . " Male: " . number_format($totalMale)
+                . ", Female: " . number_format($totalFemale)
+                . ", gap: " . number_format($genderGap) . " persons."
+                . " By municipality — " . implode('; ', $muniGenderNotes) . ".";
+        } else {
+            $genderInsight = "Gender breakdown (male/female) is not recorded for {$selectedYear}."
+                . " No gender distribution conclusion can be drawn from the current data.";
+        }
+
+        // Household size note
+        $hhNotes = [];
+        foreach ($coreNames as $cn) {
+            $avg = $demographicData[$cn]['avg_hh_size'] ?? 0;
+            $hhNotes[] = $avg > 0 ? "{$cn}: {$avg}" : "{$cn}: N/A";
+        }
 
         $insights = [
-            "$highPop has the largest population at " . number_format($demographicData[$highPop]['total']) . " in {$selectedYear}, making it the most populous municipality in this dataset.",
-            "$fastestGrowing shows the highest population growth between available years indicating strong community expansion and increasing demand for social services.",
-            "$highBen leads in registered beneficiaries with " . number_format($demographicData[$highBen]['beneficiaries']) . " representing " . $demographicData[$highBen]['beneficiaries_pct'] . "% of its total population.",
-            "The $domAgeGroup age bracket is the dominant age segment across all municipalities, which should guide targeted program prioritization.",
-            "Overall gender distribution is $genderNote. Male: " . number_format($totalMale) . ", Female: " . number_format($totalFemale) . " a gap of " . number_format(abs($totalMale - $totalFemale)) . " persons.",
-            "Average household sizes: " . implode(', ', array_map(fn($n) => "$n: {$demographicData[$n]['avg_hh_size']}", $coreNames)) . " persons per household.",
+            "{$highPop} has the largest recorded population at "
+                . number_format($demographicData[$highPop]['total'])
+                . " in {$selectedYear}.",
+            $fastestGrowingInsight,
+            "{$highBen} leads in registered beneficiaries with "
+                . number_format($demographicData[$highBen]['beneficiaries'])
+                . " — " . $demographicData[$highBen]['beneficiaries_pct'] . "% of its total population ({$selectedYear}).",
+            $ageInsight,
+            $genderInsight,
+            "Average household size ({$selectedYear}): " . implode(', ', $hhNotes) . " persons per household.",
         ];
 
         return view('analysis.demographic', compact(

@@ -498,7 +498,6 @@
             <div class="col-md-4 col-sm-6">
                 <a href="{{ $p['url'] ?? route('user.apply', $p['key']) }}" style="display:block;height:100%;">
                     <div class="program-card">
-                        <span class="prog-num">{{ $p['num'] }}</span>
                         <div class="prog-title">{{ $p['title'] }}</div>
                         <div class="prog-sub">{{ $p['sub'] }}</div>
                         <button class="apply-btn">Apply Now &rarr;</button>
@@ -566,82 +565,31 @@
             <div class="col-lg-5">
                 <div class="row g-4">
 
-                    {{-- Quick Links --}}
+                    {{-- Chat to Admin / Support Feature Card (Preserves Chat to Admin feature) --}}
                     <div class="col-12">
                         <div class="panel-card">
                             <div class="panel-header">
-                                Quick Actions
-                                <span class="ph-badge">Shortcuts</span>
+                                Need Assistance?
+                                <span class="ph-badge">Helpdesk</span>
                             </div>
                             <div class="panel-body">
-                                <a href="/user/programs" class="quick-link">
-                                    <div class="ql-num">01</div>
-                                    <div class="ql-text">
-                                        <strong>Browse Programs</strong>
-                                        <span>View all available MSWDO programs</span>
+                                <div style="display:flex;align-items:center;gap:14px;margin-bottom:14px;">
+                                    <div style="width:44px;height:44px;border-radius:12px;background:var(--bg-soft-blue);color:var(--primary-blue);display:grid;place-items:center;font-size:1.3rem;flex-shrink:0;">
+                                        <i class="bi bi-headset"></i>
                                     </div>
-                                    <span class="ql-arrow">&rsaquo;</span>
-                                </a>
-                                <a href="{{ route('user.my-requirements') }}" class="quick-link">
-                                    <div class="ql-num">02</div>
-                                    <div class="ql-text">
-                                        <strong>My Requirements</strong>
-                                        <span>Upload and manage your documents</span>
+                                    <div>
+                                        <div style="font-weight:800;font-size:0.95rem;color:var(--primary-blue);">Chat with MSWDO Staff</div>
+                                        <div style="font-size:0.8rem;color:var(--text-mid);line-height:1.45;">Have questions regarding your application or documents? Message our staff directly or consult our AI assistant.</div>
                                     </div>
-                                    <span class="ql-arrow">&rsaquo;</span>
-                                </a>
-                                <a href="{{ route('user.pwd-application') }}" class="quick-link" style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border:1px solid rgba(44,62,143,.15);">
-                                    <div class="ql-num">03</div>
-                                    <div class="ql-text">
-                                        <strong style="color:var(--primary-blue);">PWD Application (Apply)</strong>
-                                        <span>Guide, forms &amp; verification tool</span>
-                                    </div>
-                                    <span class="ql-arrow" style="color:var(--primary-blue);">&rsaquo;</span>
-                                </a>
-                                @if(!empty($canAccessMta))
-                                <a href="{{ route('user.mta-application') }}" class="quick-link" style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border:1px solid rgba(44,62,143,.15);">
-                                    <div class="ql-num">MTA</div>
-                                    <div class="ql-text">
-                                        <strong style="color:var(--primary-blue);">Minor Traveling Abroad (MTA)</strong>
-                                        <span>DSWD MTS application guide for Liliw</span>
-                                    </div>
-                                    <span class="ql-arrow" style="color:var(--primary-blue);">&rsaquo;</span>
-                                </a>
-                                @endif
-                                @if(!empty($canAccessDayCare))
-                                <a href="{{ route('user.day-care-registration') }}" class="quick-link" style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border:1px solid rgba(44,62,143,.15);">
-                                    <div class="ql-num">DC</div>
-                                    <div class="ql-text">
-                                        <strong style="color:var(--primary-blue);">Day Care Services (Register)</strong>
-                                        <span>Child Development Center registration for Liliw</span>
-                                    </div>
-                                    <span class="ql-arrow" style="color:var(--primary-blue);">&rsaquo;</span>
-                                </a>
-                                @endif
-                                <a href="{{ route('user.solo-parent-application') }}" class="quick-link" style="background:linear-gradient(135deg,#f0f5ff,#e8f0fe);border:1px solid rgba(44,62,143,.15);">
-                                    <div class="ql-num">04</div>
-                                    <div class="ql-text">
-                                        <strong style="color:var(--primary-blue);">Solo Parent ID (Apply)</strong>
-                                        <span>Step-by-step application guide</span>
-                                    </div>
-                                    <span class="ql-arrow" style="color:var(--primary-blue);">&rsaquo;</span>
-                                </a>
-                                <a href="/user/announcements" class="quick-link">
-                                    <div class="ql-num">05</div>
-                                    <div class="ql-text">
-                                        <strong>Announcements</strong>
-                                        <span>Stay updated with MSWDO news</span>
-                                    </div>
-                                    <span class="ql-arrow">&rsaquo;</span>
-                                </a>
-                                <a href="/analysis" class="quick-link">
-                                    <div class="ql-num">06</div>
-                                    <div class="ql-text">
-                                        <strong>Public Analysis</strong>
-                                        <span>View demographic &amp; program data</span>
-                                    </div>
-                                    <span class="ql-arrow">&rsaquo;</span>
-                                </a>
+                                </div>
+                                <div class="d-flex flex-column gap-2">
+                                    <button type="button" class="btn w-100" data-open-chat data-chat-tab="staff" style="background:var(--primary-gradient);color:white;border:none;border-radius:10px;padding:10px 18px;font-weight:700;font-size:0.88rem;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 14px rgba(44,62,143,0.2);">
+                                        <i class="bi bi-chat-dots-fill"></i> Chat to Admin / Staff
+                                    </button>
+                                    <button type="button" class="btn w-100" data-open-chat data-chat-tab="ai" style="background:var(--bg-soft-blue);color:var(--primary-blue);border:1px solid rgba(44,62,143,0.2);border-radius:10px;padding:9px 18px;font-weight:700;font-size:0.84rem;display:flex;align-items:center;justify-content:center;gap:8px;">
+                                        <i class="bi bi-stars"></i> Ask AI Assistant
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -718,8 +666,10 @@
         }
 
         // Mark notifications as viewed when modal is opened
-        document.getElementById('announcementsModal').addEventListener('show.bs.modal', function () {
-            fetch('{{ route('user.mark-notifications-viewed') }}', {
+        const annModal = document.getElementById('announcementsModal');
+        if (annModal) {
+            annModal.addEventListener('show.bs.modal', function () {
+                fetch('{{ route('user.mark-notifications-viewed') }}', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -735,7 +685,8 @@
                       }
                   }
               });
-        });
+            });
+        }
     </script>
 </body>
 </html>

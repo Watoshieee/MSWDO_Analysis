@@ -27,11 +27,115 @@ class RenewalController extends Controller
         }
 
         $request->validate([
-            'program_type'     => 'required|in:PWD,Solo_Parent',
-            'id_file'          => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'program_type' => 'required|in:PWD,Solo_Parent',
+            'id_file'      => 'required|file|mimes:jpg,jpeg,png,pdf|max:5120',
+            'user_notes'   => 'nullable|string|max:200',
+        ], [
+            'id_file.required' => 'Please upload a clear copy of your Valid ID.',
+            'id_file.max'      => 'The uploaded ID file must not exceed 5MB.',
+            'user_notes.max'   => 'Additional Notes must not exceed 200 characters.',
+        ]);
+
+        // Check if there is an existing rejected renewal request with a preserved appointment
+        $existingRejected = RenewalRequest::with('appointment')
+            ->where('user_id', $user->id)
+            ->where('program_type', $request->program_type)
+            ->where('status', 'rejected')
+            ->whereHas('appointment', function ($q) {
+                $q->whereNotIn('status', ['rejected', 'cancelled']);
+            })
+            ->latest('id')
+            ->first();
+
+        if ($existingRejected) {
+            // Guard against a newer active renewal request already submitted for this user & program
+            $newerActive = RenewalRequest::where('user_id', $user->id)
+                ->where('program_type', $request->program_type)
+                ->where('id', '>', $existingRejected->id)
+                ->whereIn('status', ['pending', 'approved'])
+                ->where(function ($q) {
+                    $q->whereNull('appointment_id')
+                      ->orWhereHas('appointment', function ($aq) {
+                          $aq->whereNotIn('status', ['rejected', 'cancelled']);
+                      });
+                })
+                ->first();
+
+            if ($newerActive) {
+                $msg = $newerActive->status === 'approved'
+                    ? 'You already have an approved renewal on record.'
+                    : 'You already have a pending renewal request under review. Please wait for the admin decision.';
+                return back()->with('renewal_error', $msg);
+            }
+
+            // Store uploaded replacement ID file securely
+            $file = $request->file('id_file');
+            $originalName = $file->getClientOriginalName();
+            $subFolder = 'renewals/' . strtolower($request->program_type);
+            $storedPath = $file->store($subFolder, 'public');
+
+            // Safely delete previous rejected file from disk if it exists
+            $oldPath = $existingRejected->id_file_path;
+            if ($oldPath && Storage::disk('public')->exists($oldPath)) {
+                try {
+                    Storage::disk('public')->delete($oldPath);
+                } catch (\Exception $e) {
+                    Log::warning('Could not delete old renewal file: ' . $e->getMessage());
+                }
+            }
+
+            // Update existing renewal request and preserve the linked appointment
+            DB::transaction(function () use ($existingRejected, $storedPath, $originalName, $request) {
+                $existingRejected->update([
+                    'id_file_path'  => $storedPath,
+                    'id_file_name'  => $originalName,
+                    'status'        => 'pending',
+                    'reviewed_by'   => null,
+                    'reviewed_at'   => null,
+                    'admin_remarks' => null,
+                    'user_notes'    => $request->filled('user_notes') ? $request->user_notes : $existingRejected->user_notes,
+                ]);
+
+                if ($request->filled('user_notes') && $existingRejected->appointment) {
+                    $existingRejected->appointment->update([
+                        'user_notes' => $request->user_notes,
+                    ]);
+                }
+            });
+
+            // Notify admins of replacement ID upload
+            try {
+                $admins = User::where('role', 'admin')
+                    ->where('municipality', $user->municipality)
+                    ->get();
+
+                $progLabel = $request->program_type === 'PWD' ? 'PWD' : 'Solo Parent';
+                $apptDateFormatted = $existingRejected->appointment ? Carbon::parse($existingRejected->appointment->appointment_date)->format('F d, Y') : 'scheduled date';
+                foreach ($admins as $admin) {
+                    DB::table('notifications')->insert([
+                        'user_id'    => $admin->id,
+                        'type'       => strtolower($request->program_type),
+                        'title'      => '🔄 Replacement ' . $progLabel . ' Renewal ID Uploaded',
+                        'body'       => $user->full_name . ' uploaded a replacement Valid ID for ' . $progLabel . ' renewal. Appointment remains preserved for ' . $apptDateFormatted . '.',
+                        'is_read'    => false,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Admin replacement renewal ID notification failed: ' . $e->getMessage());
+            }
+
+            return back()->with('renewal_success', 'Your replacement Valid ID has been uploaded successfully! Your existing appointment has been preserved.');
+        }
+
+        // Fresh renewal: validate appointment date and time
+        $request->validate([
             'appointment_date' => 'required|date|after:today',
-            'appointment_time' => ['required', 'regex:/^([01]\d|2[0-3]):[0-5]\d$/'],
-            'user_notes'       => 'nullable|string|max:500',
+            'appointment_time' => ['required', 'regex:/^([01]\\d|2[0-3]):[0-5]\\d$/'],
+        ], [
+            'appointment_date.required' => 'Please select an appointment date.',
+            'appointment_time.required' => 'Please select an appointment time slot.',
         ]);
 
         $date = $request->appointment_date;

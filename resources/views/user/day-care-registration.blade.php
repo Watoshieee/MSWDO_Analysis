@@ -1152,5 +1152,6 @@
         }
         checkFormValidity();
     </script>
+    @include('components.user-dock-chat')
 </body>
 </html>

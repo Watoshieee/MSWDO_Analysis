@@ -6,6 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\RenewalRequest;
 use App\Models\Appointment;
 use App\Mail\AppointmentStatusMail;
+use App\Mail\RenewalIdApprovedMail;
+use App\Services\OneSignalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -144,21 +146,62 @@ class RenewalAdminController extends Controller
             'admin_remarks' => $remarks,
         ]);
 
-        // Send bell notification to user
+        $progLabel = $renewal->program_type === 'PWD' ? 'PWD' : 'Solo Parent';
+        $notifType = $renewal->program_type === 'PWD' ? 'pwd' : 'solo_parent';
+
+        // Determine next step supported by existing workflow
+        $appt = $renewal->appointment;
+        if ($appt && $appt->status === 'confirmed') {
+            $formattedDate = Carbon::parse($appt->appointment_date)->format('F d, Y');
+            $formattedTime = Carbon::parse($appt->appointment_time)->format('h:i A');
+            $nextStep = "Your renewal appointment is confirmed for {$formattedDate} at {$formattedTime}. Please bring your existing ID card, supporting documents, and appointment slip on your scheduled date.";
+        } elseif ($appt) {
+            $formattedDate = Carbon::parse($appt->appointment_date)->format('F d, Y');
+            $formattedTime = Carbon::parse($appt->appointment_time)->format('h:i A');
+            $nextStep = "Your renewal appointment on {$formattedDate} at {$formattedTime} is awaiting final confirmation by the admin. Please keep your existing ID card and documents ready.";
+        } else {
+            $nextStep = "Please check your portal dashboard for further instructions.";
+        }
+
+        $notifTitle = '✅ ' . $progLabel . ' Renewal ID Approved';
+        $notifBody  = 'Your ' . $progLabel . ' renewal Valid ID has been approved by MSWDO. ' . $nextStep;
+
+        // In-app & Push notification (failures must not reverse approval)
         try {
-            $progLabel = $renewal->program_type === 'PWD' ? 'PWD' : 'Solo Parent';
-            $notifType = $renewal->program_type === 'PWD' ? 'pwd' : 'solo_parent';
-            DB::table('notifications')->insert([
+            $notifId = DB::table('notifications')->insertGetId([
                 'user_id'    => $renewal->user_id,
                 'type'       => $notifType,
-                'title'      => '✅ ' . $progLabel . ' Renewal ID Approved',
-                'body'       => 'Your ' . $progLabel . ' renewal ID has been verified and approved by MSWDO. Your appointment is now awaiting final confirmation.',
+                'title'      => $notifTitle,
+                'body'       => $notifBody,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-        } catch (\Exception $e) {
-            Log::error('Renewal ID approval notification failed: ' . $e->getMessage());
+
+            if (class_exists(OneSignalService::class)) {
+                OneSignalService::sendPush(
+                    $renewal->user_id,
+                    $notifTitle,
+                    $notifBody,
+                    $notifType,
+                    $notifId,
+                    [
+                        'renewal_id'   => $renewal->id,
+                        'program_type' => $renewal->program_type,
+                    ]
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::error('Renewal ID approval in-app notification failed: ' . $e->getMessage());
+        }
+
+        // Email notification (failures must not reverse approval)
+        if ($renewal->user && !empty($renewal->user->email)) {
+            try {
+                Mail::to($renewal->user->email)->send(new RenewalIdApprovedMail($renewal));
+            } catch (\Throwable $e) {
+                Log::error('Renewal ID approval email failed: ' . $e->getMessage());
+            }
         }
 
         return response()->json([
@@ -196,33 +239,18 @@ class RenewalAdminController extends Controller
                 'admin_remarks' => $remarks,
             ]);
 
-            // Reject appointment — held slot is immediately released
-            if ($renewal->appointment) {
-                $renewal->appointment->update([
-                    'status'      => 'rejected',
-                    'admin_notes' => $remarks,
-                ]);
-            }
+            // Note: Appointment is preserved (not rejected/cancelled) so user can re-upload a replacement ID
         });
 
-        // Send email to user
-        if ($renewal->appointment) {
-            try {
-                Mail::to($renewal->user->email)->send(new AppointmentStatusMail($renewal->appointment, 'rejected'));
-            } catch (\Exception $e) {
-                Log::error('Renewal rejection email failed: ' . $e->getMessage());
-            }
-        }
-
-        // Send bell notification
+        // Send bell notification to user
         try {
             $progLabel = $renewal->program_type === 'PWD' ? 'PWD' : 'Solo Parent';
             $notifType = $renewal->program_type === 'PWD' ? 'pwd' : 'solo_parent';
             DB::table('notifications')->insert([
                 'user_id'    => $renewal->user_id,
                 'type'       => $notifType,
-                'title'      => '❌ ' . $progLabel . ' Renewal Request Rejected',
-                'body'       => 'Your ' . $progLabel . ' renewal request was not approved. Reason: ' . $remarks,
+                'title'      => '❌ ' . $progLabel . ' Renewal ID Rejected',
+                'body'       => 'Your Valid ID was rejected. Reason: ' . $remarks . '. Please upload a new Valid ID. Your existing appointment has been preserved.',
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -231,6 +259,9 @@ class RenewalAdminController extends Controller
             Log::error('Renewal rejection notification failed: ' . $e->getMessage());
         }
 
-        return response()->json(['success' => true, 'message' => 'Renewal request rejected. The appointment slot has been released.']);
+        return response()->json([
+            'success' => true,
+            'message' => 'Renewal ID rejected. The user has been notified to upload a replacement Valid ID while their appointment is preserved.'
+        ]);
     }
 }

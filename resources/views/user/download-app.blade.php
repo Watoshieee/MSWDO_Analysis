@@ -599,6 +599,9 @@
     </script>
 
 
-    <div class="footer-strip"></div>
+    @include('components.user-notification-modal')
+@include('components.chat-modal')
+@include('components.chatbot-widget')
+<div class="footer-strip"></div>
 </body>
 </html>
