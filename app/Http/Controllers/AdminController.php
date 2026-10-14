@@ -314,10 +314,33 @@ class AdminController extends Controller
             ->get();
 
         // PWD Renewal ID Verification requests (no appointment — pending admin ID review)
-        $pwdRenewalRequests = \App\Models\RenewalRequest::with('user')
+        $pwdRenewalsQuery = \App\Models\RenewalRequest::with('user')
             ->where('municipality', $municipality)
             ->where('program_type', 'PWD')
-            ->whereNull('appointment_id')
+            ->whereNull('appointment_id');
+
+        if ($request->filled('app_program')) {
+            $progFilter = $request->input('app_program');
+            if ($progFilter !== 'PWD_Renewal') {
+                $pwdRenewalsQuery->whereRaw('1 = 0');
+            }
+        }
+
+        if ($request->filled('app_status')) {
+            $pwdRenewalsQuery->where('status', $request->input('app_status'));
+        }
+
+        if ($request->filled('app_search')) {
+            $search = trim((string) $request->input('app_search'));
+            $pwdRenewalsQuery->whereHas('user', function ($q) use ($search) {
+                $q->where('full_name', 'like', '%' . $search . '%')
+                    ->orWhere('contact_number', 'like', '%' . $search . '%')
+                    ->orWhere('phone_number', 'like', '%' . $search . '%')
+                    ->orWhere('barangay', 'like', '%' . $search . '%');
+            });
+        }
+
+        $pwdRenewalRequests = $pwdRenewalsQuery
             ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
             ->orderBy('created_at', 'desc')
             ->get();

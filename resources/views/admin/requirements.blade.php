@@ -624,6 +624,47 @@
             opacity: 0.92;
         }
 
+        .ui-btn-danger {
+            background: linear-gradient(135deg, #dc2626, #b91c1c);
+            color: #fff;
+        }
+
+        .ui-btn-danger:hover {
+            background: linear-gradient(135deg, #b91c1c, #991b1b);
+        }
+
+        .ui-btn-success {
+            background: linear-gradient(135deg, #16a34a, #15803d);
+            color: #fff;
+        }
+
+        .ui-btn-success:hover {
+            background: linear-gradient(135deg, #15803d, #166534);
+        }
+
+        .ui-btn-warning {
+            background: linear-gradient(135deg, #f59e0b, #d97706);
+            color: #fff;
+        }
+
+        .ui-btn-warning:hover {
+            background: linear-gradient(135deg, #d97706, #b45309);
+        }
+
+        .btn-doc-tool {
+            transition: all 0.15s ease;
+        }
+
+        .btn-doc-tool:hover {
+            background: #f8fafc !important;
+            border-color: #94a3b8 !important;
+            color: #0f172a !important;
+        }
+
+        .btn-doc-tool:active {
+            transform: scale(0.96);
+        }
+
         /* Client-side toast — matches components/admin-notification (navy + yellow timer + close) */
         .ui-toast {
             position: fixed;
@@ -975,40 +1016,76 @@
 
                                     {{-- PWD Renewal ID Verification rows --}}
                                     @foreach($pwdRenewalRequests as $rr)
-                                    <tr style="background:{{ $rr->status === 'pending' ? '#fffbeb' : '#fff' }};">
+                                    @php
+                                        $rrName = $rr->user->full_name ?? 'Applicant';
+                                        $rrContact = $rr->user->contact_number ?? $rr->user->phone_number ?? '—';
+                                        $rrBarangay = $rr->user->barangay ?? '—';
+                                        $rrDate = $rr->created_at->format('M j, Y');
+                                        $rrFullDate = $rr->created_at->format('M j, Y h:i A');
+                                        $rrFileUrl = route('admin.renewals.id-file', $rr->id);
+                                    @endphp
+                                    <tr id="pwd-renewal-row-{{ $rr->id }}" style="background:{{ $rr->status === 'pending' ? '#fffbeb' : '#fff' }};">
                                         <td>
-                                            <div style="font-weight:700;color:#1e293b;">{{ $rr->user->full_name ?? 'N/A' }}</div>
-                                            <div style="font-size:.72rem;color:#94a3b8;">{{ $rr->user->contact_number ?? $rr->user->phone_number ?? '—' }}</div>
+                                            <div style="font-weight:700;color:#1e293b;">{{ $rrName }}</div>
+                                            <div style="font-size:.72rem;color:#94a3b8;">{{ $rrContact }}</div>
                                         </td>
                                         <td>
                                             <span class="prog-tag" style="background:#fff3d6;color:#92400e;border:1.5px solid #fde68a;">PWD Renewal - ID Verification</span>
                                         </td>
-                                        <td style="font-size:.85rem;color:#475569;">{{ $rr->user->barangay ?? '—' }}</td>
-                                        <td style="font-size:.82rem;color:#64748b;">{{ $rr->created_at->format('M j, Y') }}</td>
-                                        <td>
+                                        <td style="font-size:.85rem;color:#475569;">{{ $rrBarangay }}</td>
+                                        <td style="font-size:.82rem;color:#64748b;">{{ $rrDate }}</td>
+                                        <td id="pwd-renewal-status-cell-{{ $rr->id }}">
                                             @if($rr->status === 'pending')
                                                 <span class="status-pill status-pending">Pending Review</span>
                                             @elseif($rr->status === 'approved')
                                                 <span class="status-pill status-approved">ID Approved</span>
                                             @elseif($rr->status === 'rejected')
                                                 <span class="status-pill status-rejected">ID Rejected</span>
+                                                @if(!empty($rr->admin_remarks))
+                                                    <div style="font-size:0.72rem;color:#991b1b;margin-top:3px;max-width:200px;line-height:1.2;" title="{{ $rr->admin_remarks }}">
+                                                        Reason: {{ Str::limit($rr->admin_remarks, 45) }}
+                                                    </div>
+                                                @endif
                                             @else
                                                 <span class="status-pill">{{ ucfirst($rr->status) }}</span>
                                             @endif
                                         </td>
                                         <td>
-                                            <div class="action-gap">
-                                                {{-- View ID → opens modal (Approve/Reject inside modal only) --}}
+                                            <div class="action-gap" id="pwd-renewal-actions-{{ $rr->id }}">
+                                                {{-- Review / View ID modal button --}}
                                                 <button type="button" class="btn-action btn-action-secondary"
-                                                    onclick="openPwdIdModal({{ $rr->id }}, '{{ route('admin.renewals.id-file', $rr->id) }}', '{{ addslashes($rr->user->full_name ?? '') }}', '{{ $rr->status }}', '{{ addslashes($rr->admin_remarks ?? '') }}')"
-                                                    style="background:#e5eeff;color:#2C3E8F;border:1.5px solid #c7d6f5;">
-                                                    View ID
+                                                    onclick="openPwdIdModal({{ $rr->id }}, '{{ $rrFileUrl }}', '{{ addslashes($rrName) }}', '{{ $rr->status }}', '{{ addslashes($rr->admin_remarks ?? '') }}', '{{ addslashes($rrBarangay) }}', '{{ addslashes($rrContact) }}', '{{ $rrFullDate }}', '{{ addslashes($rr->user_notes ?? '') }}')"
+                                                    style="background:{{ $rr->status === 'pending' ? '#e0e7ff' : '#f8fafc' }};color:{{ $rr->status === 'pending' ? '#1e3a8a' : '#334155' }};border:1.5px solid {{ $rr->status === 'pending' ? '#c7d2fe' : '#cbd5e1' }};font-weight:700;">
+                                                    👁️ {{ $rr->status === 'pending' ? 'Review ID' : 'View ID' }}
                                                 </button>
+
+                                                @if($rr->status === 'pending')
+                                                    {{-- Quick Approve --}}
+                                                    <button type="button" class="btn-action btn-approve"
+                                                        onclick="openPwdApproveModal({{ $rr->id }}, '{{ addslashes($rrName) }}')"
+                                                        title="Approve PWD Renewal ID" style="padding:0 12px;">
+                                                        ✓ Approve
+                                                    </button>
+                                                    {{-- Quick Decline --}}
+                                                    <button type="button" class="btn-action btn-decline"
+                                                        onclick="openPwdDeclineModal({{ $rr->id }}, '{{ addslashes($rrName) }}')"
+                                                        title="Decline PWD Renewal ID" style="padding:0 12px;">
+                                                        ✕ Decline
+                                                    </button>
+                                                @elseif($rr->status === 'rejected')
+                                                    {{-- Re-approve option in case admin wants to override --}}
+                                                    <button type="button" class="btn-action btn-approve"
+                                                        onclick="openPwdApproveModal({{ $rr->id }}, '{{ addslashes($rrName) }}')"
+                                                        title="Re-approve PWD Renewal ID" style="padding:0 10px;font-size:0.75rem;">
+                                                        Re-approve
+                                                    </button>
+                                                @endif
+
                                                 {{-- Archive --}}
                                                 <form method="POST" action="{{ route('admin.renewals.archive', $rr->id) }}"
                                                       class="gcm-form" style="display:inline;"
                                                       data-gcm-title="Archive renewal request?"
-                                                      data-gcm-message="Archive the renewal request for &quot;{{ addslashes($rr->user->full_name ?? '') }}&quot;? It will be moved to the archive."
+                                                      data-gcm-message="Archive the renewal request for &quot;{{ addslashes($rrName) }}&quot;? It will be moved to the archive."
                                                       data-gcm-confirm="Archive"
                                                       data-gcm-class="warning">
                                                     @csrf
@@ -1030,89 +1107,623 @@
                 </div>
             </div>
 
-            {{-- PWD Renewal: View ID Modal --}}
-            <div id="pwdIdModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center;padding:16px;">
-                <div style="background:white;border-radius:20px;width:100%;max-width:720px;max-height:90vh;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.3);display:flex;flex-direction:column;">
-                    <div style="background:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%);color:white;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;">
-                        <div>
-                        <div style="font-weight:800;font-size:1.05rem;">PWD Old ID - Verification</div>
-                            <div id="pwdIdModalName" style="font-size:.82rem;opacity:.8;margin-top:2px;"></div>
+            {{-- PWD Renewal: Interactive ID Verification Modal --}}
+            <div id="pwdIdModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.7);z-index:99999;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;">
+                <div style="background:#ffffff;border-radius:20px;width:100%;max-width:880px;max-height:92vh;display:flex;flex-direction:column;box-shadow:0 25px 60px rgba(0,0,0,0.3);overflow:hidden;border:1px solid rgba(255,255,255,0.2);">
+                    
+                    <!-- Header -->
+                    <div style="background:linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);color:white;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid rgba(255,255,255,0.1);">
+                        <div style="display:flex;align-items:center;gap:12px;">
+                            <div style="width:42px;height:42px;border-radius:12px;background:rgba(255,255,255,0.15);display:flex;align-items:center;justify-content:center;font-size:1.35rem;border:1px solid rgba(255,255,255,0.25);">
+                                🪪
+                            </div>
+                            <div>
+                                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                    <h5 style="margin:0;font-weight:800;font-size:1.1rem;letter-spacing:-0.01em;" id="pwdIdModalApplicant">PWD Renewal ID Verification</h5>
+                                    <span id="pwdIdModalBadge" class="status-pill status-pending" style="font-size:0.75rem;padding:2px 10px;">Pending Review</span>
+                                </div>
+                                <small style="opacity:0.85;font-size:0.8rem;color:#e2e8f0;">Review uploaded previous PWD ID to verify identity for renewal</small>
+                            </div>
                         </div>
-                        <button onclick="document.getElementById('pwdIdModal').style.display='none'" style="background:transparent;border:none;color:white;font-size:1.5rem;cursor:pointer;line-height:1;">&times;</button>
+                        <button type="button" onclick="closePwdIdModal()" style="background:rgba(255,255,255,0.12);border:none;color:white;border-radius:10px;width:34px;height:34px;font-size:1.4rem;line-height:1;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;" onmouseover="this.style.background='rgba(255,255,255,0.22)'" onmouseout="this.style.background='rgba(255,255,255,0.12)'">&times;</button>
                     </div>
-                    <div style="flex:1;overflow:auto;padding:20px;">
-                        <iframe id="pwdIdFrame" src="" style="width:100%;height:460px;border:1.5px solid #e2e8f0;border-radius:12px;" title="PWD ID Preview"></iframe>
-                        <div id="pwdIdRemarks" style="display:none;margin-top:14px;background:#fff8e6;border-left:4px solid #FDB913;border-radius:0 8px 8px 0;padding:12px 16px;font-size:.88rem;color:#856404;"></div>
+
+                    <!-- Applicant Details Strip -->
+                    <div style="background:#f8fafc;padding:12px 24px;border-bottom:1px solid #e2e8f0;display:grid;grid-template-columns:repeat(auto-fit, minmax(170px, 1fr));gap:12px;font-size:0.82rem;">
+                        <div>
+                            <span style="color:#64748b;font-weight:600;display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;">Applicant Name</span>
+                            <strong id="pwdIdInfoName" style="color:#1e293b;font-size:0.88rem;">—</strong>
+                        </div>
+                        <div>
+                            <span style="color:#64748b;font-weight:600;display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;">Contact Number</span>
+                            <strong id="pwdIdInfoContact" style="color:#1e293b;font-size:0.88rem;">—</strong>
+                        </div>
+                        <div>
+                            <span style="color:#64748b;font-weight:600;display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;">Barangay</span>
+                            <strong id="pwdIdInfoBarangay" style="color:#1e293b;font-size:0.88rem;">—</strong>
+                        </div>
+                        <div>
+                            <span style="color:#64748b;font-weight:600;display:block;font-size:0.72rem;text-transform:uppercase;letter-spacing:0.04em;">Date Submitted</span>
+                            <strong id="pwdIdInfoDate" style="color:#1e293b;font-size:0.88rem;">—</strong>
+                        </div>
                     </div>
-                    <div id="pwdIdActions" style="padding:16px 20px;border-top:1px solid #e2e8f0;display:flex;gap:12px;justify-content:flex-end;"></div>
+
+                    <!-- Optional User Notes Alert -->
+                    <div id="pwdIdUserNotesContainer" style="display:none;padding:10px 24px;background:#f0fdf4;border-bottom:1px solid #bbf7d0;font-size:0.83rem;color:#166534;">
+                        <strong>📝 Applicant Note:</strong> <span id="pwdIdUserNotesText"></span>
+                    </div>
+
+                    <!-- Previous Rejection Remarks Alert -->
+                    <div id="pwdIdRemarks" style="display:none;padding:12px 24px;background:#fef2f2;border-bottom:1px solid #fecaca;font-size:0.84rem;color:#991b1b;">
+                        <div style="display:flex;align-items:flex-start;gap:8px;">
+                            <span style="font-size:1.1rem;line-height:1;">⚠️</span>
+                            <div>
+                                <strong>Previous Rejection Remarks:</strong>
+                                <div id="pwdIdRemarksText" style="margin-top:2px;color:#7f1d1d;"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Document Viewer Controls Toolbar -->
+                    <div style="background:#f1f5f9;padding:8px 24px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #e2e8f0;flex-wrap:wrap;gap:8px;">
+                        <div style="display:flex;align-items:center;gap:6px;">
+                            <button type="button" class="btn-doc-tool" onclick="zoomPwdId(0.2)" title="Zoom In" style="background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:5px 10px;font-size:0.82rem;font-weight:700;color:#334155;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                                <span>🔍+</span> Zoom In
+                            </button>
+                            <button type="button" class="btn-doc-tool" onclick="zoomPwdId(-0.2)" title="Zoom Out" style="background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:5px 10px;font-size:0.82rem;font-weight:700;color:#334155;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                                <span>🔍-</span> Zoom Out
+                            </button>
+                            <button type="button" class="btn-doc-tool" onclick="rotatePwdId()" title="Rotate 90 degrees" style="background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:5px 10px;font-size:0.82rem;font-weight:700;color:#334155;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                                <span>🔄</span> Rotate
+                            </button>
+                            <button type="button" class="btn-doc-tool" onclick="resetPwdIdView()" title="Reset View" style="background:#fff;border:1px solid #cbd5e1;border-radius:8px;padding:5px 10px;font-size:0.82rem;font-weight:700;color:#334155;cursor:pointer;display:flex;align-items:center;gap:4px;">
+                                <span>⟲</span> Reset
+                            </button>
+                        </div>
+                        <div>
+                            <a id="pwdIdDownloadLink" href="#" target="_blank" download style="color:#2C3E8F;font-weight:700;font-size:0.82rem;text-decoration:none;display:flex;align-items:center;gap:5px;background:#e0e7ff;padding:5px 12px;border-radius:8px;transition:background .2s;" onmouseover="this.style.background='#c7d2fe'" onmouseout="this.style.background='#e0e7ff'">
+                                <span>📥</span> Open Original / Download
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Document Viewer Content Area -->
+                    <div id="pwdIdViewerViewport" style="flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;background:#0f172a;min-height:360px;max-height:56vh;position:relative;padding:20px;">
+                        <div id="pwdIdLoadingSpinner" style="display:none;color:#94a3b8;font-size:0.9rem;text-align:center;">
+                            <div class="spinner-border text-light mb-2" role="status"></div>
+                            <div>Loading ID document...</div>
+                        </div>
+                        <img id="pwdIdImage" src="" alt="PWD Renewal ID" style="max-width:100%;max-height:52vh;object-fit:contain;border-radius:8px;box-shadow:0 8px 30px rgba(0,0,0,0.5);transition:transform 0.15s ease-out;transform-origin:center center;display:none;">
+                        <iframe id="pwdIdPdfFrame" src="" style="width:100%;height:52vh;border:none;border-radius:8px;display:none;background:#fff;" title="PWD ID PDF Preview"></iframe>
+                    </div>
+
+                    <!-- Modal Footer Actions -->
+                    <div style="padding:16px 24px;border-top:1px solid #e2e8f0;background:#ffffff;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+                        <div id="pwdIdStatusNotice" style="font-size:0.84rem;color:#64748b;font-weight:600;display:flex;align-items:center;gap:6px;">
+                            <!-- Filled dynamically -->
+                        </div>
+                        <div id="pwdIdActions" style="display:flex;align-items:center;gap:10px;">
+                            <!-- Filled dynamically -->
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            {{-- PWD Renewal: Reject Remarks Modal --}}
-            <div id="pwdRejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100000;align-items:center;justify-content:center;padding:16px;">
-                <div style="background:white;border-radius:20px;padding:32px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
-                    <h4 style="font-weight:800;color:#1e293b;margin:0 0 8px;">Reject PWD Renewal ID</h4>
-                    <p style="color:#64748b;font-size:.88rem;margin:0 0 20px;">Provide a reason so the user can resubmit a correct ID.</p>
-                    <form id="pwdRejectForm" method="POST" action="">
-                        @csrf
-                        <textarea name="admin_remarks" rows="3" required placeholder="e.g. ID photo is blurry, expired ID, not a valid PWD ID..."
-                            style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px;font-size:.88rem;resize:none;outline:none;font-family:inherit;box-sizing:border-box;"></textarea>
-                        <div style="display:flex;gap:12px;margin-top:16px;justify-content:flex-end;">
-                            <button type="button" onclick="document.getElementById('pwdRejectModal').style.display='none'"
-                                style="background:#f1f5f9;color:#475569;border:none;border-radius:10px;padding:10px 22px;font-weight:700;cursor:pointer;">Cancel</button>
-                            <button type="submit"
-                                style="background:#dc2626;color:white;border:none;border-radius:10px;padding:10px 22px;font-weight:700;cursor:pointer;">Confirm Reject</button>
+            {{-- PWD Renewal: Approve Confirmation Modal --}}
+            <div id="pwdApproveConfirmModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:100001;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px;">
+                <div style="background:#ffffff;border-radius:18px;max-width:480px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.3);overflow:hidden;border:1px solid #e2e8f0;">
+                    <div style="background:linear-gradient(135deg, #15803d 0%, #166534 100%);color:white;padding:18px 24px;display:flex;align-items:center;gap:12px;">
+                        <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1.25rem;">
+                            ✓
                         </div>
-                    </form>
+                        <div>
+                            <h5 style="margin:0;font-weight:800;font-size:1.05rem;">Approve PWD Renewal ID</h5>
+                            <small style="opacity:0.85;font-size:0.78rem;">MSWDO PWD ID Renewal Approval</small>
+                        </div>
+                    </div>
+                    <div style="padding:22px 24px;">
+                        <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:12px 16px;margin-bottom:16px;">
+                            <div style="font-size:0.88rem;color:#166534;">
+                                Approve renewal ID for: <strong id="pwdApproveApplicantName" style="color:#14532d;font-size:0.95rem;"></strong>
+                            </div>
+                            <div style="font-size:0.78rem;color:#15803d;margin-top:4px;line-height:1.45;">
+                                The applicant will receive an in-app notification and email confirmation, authorizing them to submit renewal requirements.
+                            </div>
+                        </div>
+
+                        <label style="font-size:0.83rem;font-weight:700;color:#1e293b;display:block;margin-bottom:6px;">
+                            Approval Note / Remarks <span style="font-size:0.75rem;font-weight:400;color:#64748b;">(Optional)</span>
+                        </label>
+                        <input type="text" id="pwdApproveRemarksInput" value="Valid PWD ID verified and approved." style="width:100%;border:1.5px solid #cbd5e1;border-radius:10px;padding:10px 14px;font-size:0.88rem;color:#1e293b;outline:none;font-family:inherit;box-sizing:border-box;" placeholder="Optional remarks for applicant...">
+                        <div id="pwdApproveError" style="color:#dc2626;font-size:0.8rem;margin-top:6px;display:none;"></div>
+                    </div>
+                    <div style="padding:14px 24px 20px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #f1f5f9;background:#f8fafc;">
+                        <button type="button" onclick="closePwdApproveConfirmModal()" class="btn-action btn-action-neutral" style="height:40px;padding:0 20px;font-size:0.86rem;">
+                            Cancel
+                        </button>
+                        <button type="button" id="pwdApproveConfirmBtn" onclick="executePwdApproval()" style="background:linear-gradient(135deg, #16a34a, #15803d);color:white;border:none;border-radius:10px;padding:0 24px;font-weight:700;font-size:0.88rem;cursor:pointer;height:40px;display:flex;align-items:center;gap:6px;box-shadow:0 3px 12px rgba(22,163,74,0.3);transition:transform .15s;">
+                            <span>✓</span> Confirm Approval
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            {{-- PWD Renewal: Decline / Reject Modal --}}
+            <div id="pwdDeclineModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:100001;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px;">
+                <div style="background:#ffffff;border-radius:18px;max-width:520px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.3);overflow:hidden;border:1px solid #e2e8f0;">
+                    <div style="background:linear-gradient(135deg, #dc2626 0%, #991b1b 100%);color:white;padding:18px 24px;display:flex;align-items:center;gap:12px;">
+                        <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1.25rem;">
+                            ⚠️
+                        </div>
+                        <div>
+                            <h5 style="margin:0;font-weight:800;font-size:1.05rem;">Decline PWD Renewal ID</h5>
+                            <small style="opacity:0.85;font-size:0.78rem;">MSWDO PWD ID Renewal Review</small>
+                        </div>
+                    </div>
+
+                    <div style="padding:22px 24px;">
+                        <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:12px 16px;margin-bottom:18px;">
+                            <div style="font-size:0.88rem;color:#991b1b;">
+                                Applicant: <strong id="pwdDeclineApplicantName" style="color:#7f1d1d;font-size:0.95rem;"></strong>
+                            </div>
+                            <div style="font-size:0.78rem;color:#b91c1c;margin-top:4px;line-height:1.45;">
+                                The applicant will receive a notification with the rejection reason below so they can re-upload a clear and valid PWD ID.
+                            </div>
+                        </div>
+
+                        <!-- Standard reason dropdown -->
+                        <div style="margin-bottom:14px;">
+                            <label style="font-size:0.83rem;font-weight:700;color:#1e293b;display:block;margin-bottom:6px;">
+                                Select Rejection Reason <span style="color:#dc2626;">*</span>
+                            </label>
+                            <select id="pwdDeclineReasonSelect" onchange="onPwdDeclineReasonChange()" style="width:100%;border:1.5px solid #cbd5e1;border-radius:10px;padding:10px 12px;font-size:0.88rem;font-weight:600;color:#1e293b;background:#ffffff;outline:none;">
+                                <option value="">-- Choose a standard reason --</option>
+                                <option value="Blurry, glare, or unreadable ID photo">📷 Blurry, glare, or unreadable ID photo</option>
+                                <option value="Expired PWD ID document">📅 Expired PWD ID document</option>
+                                <option value="ID name does not match applicant profile">👤 ID name does not match applicant profile</option>
+                                <option value="Wrong document uploaded (Not an official PWD ID)">📄 Wrong document uploaded (Not an official PWD ID)</option>
+                                <option value="Incomplete ID image (Cropped, cut off edges, or missing details)">✂️ Incomplete ID image (Cropped or missing details)</option>
+                                <option value="Damaged, defaced, or illegible card">🚫 Damaged or defaced ID card</option>
+                                <option value="Other">✍️ Other (specify custom reason below)</option>
+                            </select>
+                        </div>
+
+                        <!-- Detailed instructions for the user -->
+                        <div style="margin-bottom:6px;">
+                            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+                                <label id="pwdDeclineRemarksLabel" style="font-size:0.83rem;font-weight:700;color:#1e293b;margin:0;">
+                                    Instructions / Reason for Applicant <span style="color:#dc2626;">*</span>
+                                </label>
+                                <span id="pwdDeclineCharCount" style="font-size:0.75rem;color:#94a3b8;font-weight:600;">0/500</span>
+                            </div>
+                            <textarea id="pwdDeclineRemarksText" rows="3" maxlength="500" placeholder="Explain what is wrong and how the applicant can correct their submission..." oninput="updatePwdDeclineCharCount()" style="width:100%;border:1.5px solid #cbd5e1;border-radius:10px;padding:12px;font-size:0.88rem;color:#1e293b;outline:none;font-family:inherit;box-sizing:border-box;resize:none;line-height:1.45;"></textarea>
+                        </div>
+
+                        <div id="pwdDeclineError" style="color:#dc2626;font-size:0.8rem;margin-top:6px;display:none;background:#fef2f2;border:1px solid #fecaca;padding:8px 12px;border-radius:8px;"></div>
+                    </div>
+
+                    <div style="padding:14px 24px 20px;display:flex;gap:10px;justify-content:flex-end;border-top:1px solid #f1f5f9;background:#f8fafc;">
+                        <button type="button" onclick="closePwdDeclineModal()" class="btn-action btn-action-neutral" style="height:40px;padding:0 20px;font-size:0.86rem;">
+                            Cancel
+                        </button>
+                        <button type="button" id="pwdDeclineSubmitBtn" onclick="executePwdDecline()" style="background:linear-gradient(135deg, #dc2626, #b91c1c);color:white;border:none;border-radius:10px;padding:0 24px;font-weight:700;font-size:0.88rem;cursor:pointer;height:40px;display:flex;align-items:center;gap:6px;box-shadow:0 3px 12px rgba(220,38,38,0.3);transition:transform .15s;">
+                            <span>✕</span> Confirm Decline
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <script>
-                function openPwdIdModal(id, fileUrl, name, status, remarks) {
-                    document.getElementById('pwdIdFrame').src = fileUrl;
-                    document.getElementById('pwdIdModalName').textContent = name;
+                // PWD ID Verification State
+                let _currentPwdId = null;
+                let _currentPwdName = '';
+                let _pwdZoom = 1;
+                let _pwdRotate = 0;
+
+                function openPwdIdModal(id, fileUrl, name, status, remarks, barangay = '—', contact = '—', date = '—', userNotes = '') {
+                    _currentPwdId = id;
+                    _currentPwdName = name;
+                    _pwdZoom = 1;
+                    _pwdRotate = 0;
+
+                    document.getElementById('pwdIdModalApplicant').textContent = (name || 'Applicant') + ' - PWD Renewal ID';
+                    document.getElementById('pwdIdInfoName').textContent = name || '—';
+                    document.getElementById('pwdIdInfoContact').textContent = contact || '—';
+                    document.getElementById('pwdIdInfoBarangay').textContent = barangay || '—';
+                    document.getElementById('pwdIdInfoDate').textContent = date || '—';
+                    document.getElementById('pwdIdDownloadLink').href = fileUrl;
+
+                    // Status Badge in modal header
+                    const badgeEl = document.getElementById('pwdIdModalBadge');
+                    if (status === 'approved') {
+                        badgeEl.className = 'status-pill status-approved';
+                        badgeEl.textContent = '✓ ID Approved';
+                    } else if (status === 'rejected') {
+                        badgeEl.className = 'status-pill status-rejected';
+                        badgeEl.textContent = '✕ ID Rejected';
+                    } else {
+                        badgeEl.className = 'status-pill status-pending';
+                        badgeEl.textContent = 'Pending Review';
+                    }
+
+                    // Optional User Notes
+                    const notesBox = document.getElementById('pwdIdUserNotesContainer');
+                    const notesText = document.getElementById('pwdIdUserNotesText');
+                    if (userNotes && userNotes.trim()) {
+                        notesText.textContent = userNotes;
+                        notesBox.style.display = 'block';
+                    } else {
+                        notesBox.style.display = 'none';
+                    }
+
+                    // Previous Rejection Remarks
                     const rmkEl = document.getElementById('pwdIdRemarks');
-                    if (remarks) {
-                        rmkEl.textContent = 'Admin Remarks: ' + remarks;
+                    const rmkText = document.getElementById('pwdIdRemarksText');
+                    if (remarks && remarks.trim()) {
+                        rmkText.textContent = remarks;
                         rmkEl.style.display = 'block';
                     } else {
                         rmkEl.style.display = 'none';
                     }
-                    const actEl = document.getElementById('pwdIdActions');
+
+                    // Document Viewer Setup
+                    const spinner = document.getElementById('pwdIdLoadingSpinner');
+                    const img = document.getElementById('pwdIdImage');
+                    const pdfFrame = document.getElementById('pwdIdPdfFrame');
+
+                    img.style.display = 'none';
+                    pdfFrame.style.display = 'none';
+                    spinner.style.display = 'block';
+
+                    const isPdf = fileUrl.toLowerCase().includes('.pdf');
+                    if (isPdf) {
+                        spinner.style.display = 'none';
+                        pdfFrame.src = fileUrl;
+                        pdfFrame.style.display = 'block';
+                    } else {
+                        img.src = fileUrl;
+                        img.style.transform = 'scale(1) rotate(0deg)';
+                        img.onload = function() {
+                            spinner.style.display = 'none';
+                            img.style.display = 'block';
+                        };
+                        img.onerror = function() {
+                            spinner.style.display = 'none';
+                            pdfFrame.src = fileUrl;
+                            pdfFrame.style.display = 'block';
+                        };
+                    }
+
+                    // Dynamic Actions & Notice Footer
+                    const noticeEl = document.getElementById('pwdIdStatusNotice');
+                    const actionsEl = document.getElementById('pwdIdActions');
+
                     if (status === 'pending') {
-                        actEl.innerHTML = `
-                            <form id="pwdApproveForm" method="POST" action="/admin/renewals/${id}/approve">
-                                <input type="hidden" name="_token" value="{{ csrf_token() }}">
-                                <button type="button" onclick="handlePwdApprove()" style="background:#16a34a;color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;">Approve ID</button>
-                            </form>
-                            <button type="button" onclick="document.getElementById('pwdIdModal').style.display='none';openPwdRejectModal(${id})"
-                                style="background:#dc2626;color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;">Reject ID</button>
+                        noticeEl.innerHTML = '<span style="color:#d97706;font-size:0.95rem;">⚠️</span> Verify that this ID belongs to the applicant and is a valid PWD ID.';
+                        actionsEl.innerHTML = `
+                            <button type="button" class="btn-action btn-approve" onclick="openPwdApproveModal(${id}, '${escapeJs(name)}')" style="padding:0 18px;height:38px;font-size:0.86rem;">
+                                <span>✓</span> Approve ID
+                            </button>
+                            <button type="button" class="btn-action btn-decline" onclick="openPwdDeclineModal(${id}, '${escapeJs(name)}')" style="padding:0 18px;height:38px;font-size:0.86rem;">
+                                <span>✕</span> Decline ID
+                            </button>
+                            <button type="button" onclick="closePwdIdModal()" class="btn-action btn-action-neutral" style="padding:0 18px;height:38px;font-size:0.86rem;">
+                                Close
+                            </button>
+                        `;
+                    } else if (status === 'approved') {
+                        noticeEl.innerHTML = '<span style="color:#16a34a;font-weight:700;">✓ This renewal ID has been verified and approved.</span>';
+                        actionsEl.innerHTML = `
+                            <button type="button" onclick="closePwdIdModal()" class="btn-action btn-action-neutral" style="padding:0 20px;height:38px;font-size:0.86rem;">
+                                Close
+                            </button>
+                        `;
+                    } else if (status === 'rejected') {
+                        noticeEl.innerHTML = '<span style="color:#dc2626;font-weight:700;">✕ This renewal ID was declined. The applicant can resubmit.</span>';
+                        actionsEl.innerHTML = `
+                            <button type="button" class="btn-action btn-approve" onclick="openPwdApproveModal(${id}, '${escapeJs(name)}')" style="padding:0 18px;height:38px;font-size:0.86rem;">
+                                <span>✓</span> Re-evaluate & Approve
+                            </button>
+                            <button type="button" onclick="closePwdIdModal()" class="btn-action btn-action-neutral" style="padding:0 20px;height:38px;font-size:0.86rem;">
+                                Close
+                            </button>
                         `;
                     } else {
-                        actEl.innerHTML = `<span style="font-size:.88rem;color:#64748b;font-weight:600;">This ID has already been <strong>${status}</strong>.</span>`;
+                        noticeEl.innerHTML = `<span style="color:#64748b;">Status: ${status}</span>`;
+                        actionsEl.innerHTML = `
+                            <button type="button" onclick="closePwdIdModal()" class="btn-action btn-action-neutral" style="padding:0 20px;height:38px;font-size:0.86rem;">
+                                Close
+                            </button>
+                        `;
                     }
+
                     document.getElementById('pwdIdModal').style.display = 'flex';
                 }
-                function openPwdRejectModal(id) {
-                    document.getElementById('pwdRejectForm').action = '/admin/renewals/' + id + '/reject';
-                    document.getElementById('pwdRejectModal').style.display = 'flex';
+
+                function closePwdIdModal() {
+                    document.getElementById('pwdIdModal').style.display = 'none';
+                    document.getElementById('pwdIdImage').src = '';
+                    document.getElementById('pwdIdPdfFrame').src = '';
+                    _currentPwdId = null;
                 }
 
-                async function handlePwdApprove() {
-                    const ok = await uiConfirm({
-                        title:       'Approve PWD Renewal ID?',
-                        message:     'Approve this PWD renewal ID? The applicant will be notified and allowed to proceed with their requirements.',
-                        confirmText: 'Approve',
-                        cancelText:  'Cancel',
-                        confirmClass:'default'
+                function zoomPwdId(delta) {
+                    _pwdZoom = Math.max(0.5, Math.min(3.0, _pwdZoom + delta));
+                    const img = document.getElementById('pwdIdImage');
+                    if (img) img.style.transform = `scale(${_pwdZoom}) rotate(${_pwdRotate}deg)`;
+                }
+
+                function rotatePwdId() {
+                    _pwdRotate = (_pwdRotate + 90) % 360;
+                    const img = document.getElementById('pwdIdImage');
+                    if (img) img.style.transform = `scale(${_pwdZoom}) rotate(${_pwdRotate}deg)`;
+                }
+
+                function resetPwdIdView() {
+                    _pwdZoom = 1;
+                    _pwdRotate = 0;
+                    const img = document.getElementById('pwdIdImage');
+                    if (img) img.style.transform = 'scale(1) rotate(0deg)';
+                }
+
+                // ── PWD APPROVE MODAL & LOGIC ──────────────────────────────────────
+                function openPwdApproveModal(id, name) {
+                    _currentPwdId = id;
+                    _currentPwdName = name;
+                    document.getElementById('pwdApproveApplicantName').textContent = name;
+                    document.getElementById('pwdApproveRemarksInput').value = 'Valid PWD ID verified and approved.';
+                    document.getElementById('pwdApproveError').style.display = 'none';
+                    const btn = document.getElementById('pwdApproveConfirmBtn');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>✓</span> Confirm Approval';
+                    document.getElementById('pwdApproveConfirmModal').style.display = 'flex';
+                }
+
+                function closePwdApproveConfirmModal() {
+                    document.getElementById('pwdApproveConfirmModal').style.display = 'none';
+                }
+
+                function executePwdApproval() {
+                    if (!_currentPwdId) return;
+                    const remarks = document.getElementById('pwdApproveRemarksInput').value.trim() || 'Valid PWD ID verified and approved.';
+                    const btn = document.getElementById('pwdApproveConfirmBtn');
+                    const errEl = document.getElementById('pwdApproveError');
+                    errEl.style.display = 'none';
+
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Approving...';
+
+                    const token = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+
+                    fetch('/admin/renewals/' + _currentPwdId + '/approve', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': token,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ admin_remarks: remarks })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            closePwdApproveConfirmModal();
+                            closePwdIdModal();
+                            if (typeof uiToast === 'function') {
+                                uiToast(data.message || 'PWD Renewal ID approved successfully!', 'MSWDO Admin');
+                            }
+                            updatePwdRowInTable(_currentPwdId, 'approved', remarks);
+                        } else {
+                            errEl.textContent = data.message || 'Failed to approve renewal ID.';
+                            errEl.style.display = 'block';
+                            btn.disabled = false;
+                            btn.innerHTML = '<span>✓</span> Confirm Approval';
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Approval error:', err);
+                        errEl.textContent = 'Server error processing approval. Please try again.';
+                        errEl.style.display = 'block';
+                        btn.disabled = false;
+                        btn.innerHTML = '<span>✓</span> Confirm Approval';
                     });
-                    if (!ok) return;
-                    const form = document.getElementById('pwdApproveForm');
-                    if (form) {
-                        const btn = form.querySelector('button');
-                        if (btn) btn.disabled = true;
-                        form.submit();
+                }
+
+                // ── PWD DECLINE MODAL & LOGIC ──────────────────────────────────────
+                function openPwdDeclineModal(id, name) {
+                    _currentPwdId = id;
+                    _currentPwdName = name;
+                    document.getElementById('pwdDeclineApplicantName').textContent = name;
+                    document.getElementById('pwdDeclineReasonSelect').value = '';
+                    document.getElementById('pwdDeclineRemarksText').value = '';
+                    document.getElementById('pwdDeclineError').style.display = 'none';
+                    updatePwdDeclineCharCount();
+                    const btn = document.getElementById('pwdDeclineSubmitBtn');
+                    btn.disabled = false;
+                    btn.innerHTML = '<span>✕</span> Confirm Decline';
+                    document.getElementById('pwdDeclineModal').style.display = 'flex';
+                }
+
+                function closePwdDeclineModal() {
+                    document.getElementById('pwdDeclineModal').style.display = 'none';
+                }
+
+                function onPwdDeclineReasonChange() {
+                    const sel = document.getElementById('pwdDeclineReasonSelect').value;
+                    const txt = document.getElementById('pwdDeclineRemarksText');
+                    document.getElementById('pwdDeclineError').style.display = 'none';
+
+                    if (sel && sel !== 'Other') {
+                        if (sel.includes('Blurry')) {
+                            txt.value = 'Blurry or unreadable ID photo. Please take a clear, well-lit photo of your PWD ID showing your name, photo, and ID number without glare or shadows.';
+                        } else if (sel.includes('Expired')) {
+                            txt.value = 'The uploaded PWD ID document appears to be expired. Please ensure you upload your most recent official PWD card or valid certificate.';
+                        } else if (sel.includes('match')) {
+                            txt.value = 'The name on the uploaded PWD ID card does not match the applicant profile name registered in this account.';
+                        } else if (sel.includes('Wrong document')) {
+                            txt.value = 'The uploaded file is not an official PWD ID card. Please upload a clear photo of your official government-issued PWD card.';
+                        } else if (sel.includes('Incomplete')) {
+                            txt.value = 'Incomplete ID image. Parts of the ID card are cropped or cut off. Please upload a photo showing the entire card.';
+                        } else if (sel.includes('Damaged')) {
+                            txt.value = 'The ID card photo shows significant damage or defacement that obscures critical details.';
+                        } else {
+                            txt.value = sel;
+                        }
+                    } else if (sel === 'Other') {
+                        txt.value = '';
+                        txt.placeholder = 'Please write a specific, clear explanation for why the renewal ID was declined...';
                     }
+                    updatePwdDeclineCharCount();
+                }
+
+                function updatePwdDeclineCharCount() {
+                    const txt = document.getElementById('pwdDeclineRemarksText');
+                    const counter = document.getElementById('pwdDeclineCharCount');
+                    if (txt && counter) {
+                        counter.textContent = `${txt.value.length}/500`;
+                    }
+                }
+
+                function executePwdDecline() {
+                    if (!_currentPwdId) return;
+                    const reason = document.getElementById('pwdDeclineReasonSelect').value;
+                    const remarks = document.getElementById('pwdDeclineRemarksText').value.trim();
+                    const errEl = document.getElementById('pwdDeclineError');
+
+                    if (!reason) {
+                        errEl.textContent = 'Please choose a rejection reason from the dropdown.';
+                        errEl.style.display = 'block';
+                        document.getElementById('pwdDeclineReasonSelect').focus();
+                        return;
+                    }
+                    if (!remarks) {
+                        errEl.textContent = 'Please enter detailed instructions/remarks for the applicant.';
+                        errEl.style.display = 'block';
+                        document.getElementById('pwdDeclineRemarksText').focus();
+                        return;
+                    }
+
+                    errEl.style.display = 'none';
+                    const btn = document.getElementById('pwdDeclineSubmitBtn');
+                    btn.disabled = true;
+                    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status"></span> Declining...';
+
+                    const token = document.querySelector('meta[name="csrf-token"]')?.content || '{{ csrf_token() }}';
+
+                    fetch('/admin/renewals/' + _currentPwdId + '/reject', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': token,
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify({ admin_remarks: remarks })
+                    })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            closePwdDeclineModal();
+                            closePwdIdModal();
+                            if (typeof uiToast === 'function') {
+                                uiToast(data.message || 'PWD Renewal ID declined. Applicant has been notified.', 'MSWDO Admin');
+                            }
+                            updatePwdRowInTable(_currentPwdId, 'rejected', remarks);
+                        } else {
+                            errEl.textContent = data.message || 'Failed to decline renewal ID.';
+                            errEl.style.display = 'block';
+                            btn.disabled = false;
+                            btn.innerHTML = '<span>✕</span> Confirm Decline';
+                        }
+                    })
+                    .catch(err => {
+                        console.error('Decline error:', err);
+                        errEl.textContent = 'Server error processing decline. Please try again.';
+                        errEl.style.display = 'block';
+                        btn.disabled = false;
+                        btn.innerHTML = '<span>✕</span> Confirm Decline';
+                    });
+                }
+
+                // In-place dynamic table updater for zero-refresh feedback
+                function updatePwdRowInTable(id, status, remarks) {
+                    const row = document.getElementById('pwd-renewal-row-' + id);
+                    const statusCell = document.getElementById('pwd-renewal-status-cell-' + id);
+                    const actionsCell = document.getElementById('pwd-renewal-actions-' + id);
+
+                    if (row) {
+                        row.style.background = '#ffffff';
+                    }
+
+                    if (statusCell) {
+                        if (status === 'approved') {
+                            statusCell.innerHTML = '<span class="status-pill status-approved">ID Approved</span>';
+                        } else if (status === 'rejected') {
+                            const escRemarks = escapeHtml(remarks);
+                            const trunc = escRemarks.length > 45 ? escRemarks.substring(0, 42) + '...' : escRemarks;
+                            statusCell.innerHTML = `
+                                <span class="status-pill status-rejected">ID Rejected</span>
+                                <div style="font-size:0.72rem;color:#991b1b;margin-top:3px;max-width:200px;line-height:1.2;" title="${escRemarks}">
+                                    Reason: ${trunc}
+                                </div>
+                            `;
+                        }
+                    }
+
+                    if (actionsCell) {
+                        const fileUrl = `/admin/renewals/${id}/id-file`;
+                        const safeName = escapeJs(_currentPwdName);
+                        const safeRemarks = escapeJs(remarks || '');
+                        const archiveRoute = `/admin/renewals/${id}/archive`;
+
+                        if (status === 'approved') {
+                            actionsCell.innerHTML = `
+                                <button type="button" class="btn-action btn-action-secondary"
+                                    onclick="openPwdIdModal(${id}, '${fileUrl}', '${safeName}', 'approved', '${safeRemarks}')"
+                                    style="background:#f8fafc;color:#334155;border:1.5px solid #cbd5e1;">
+                                    👁️ View ID
+                                </button>
+                                <form method="POST" action="${archiveRoute}" class="gcm-form" style="display:inline;"
+                                      data-gcm-title="Archive renewal request?"
+                                      data-gcm-message="Archive the renewal request for &quot;${escapeHtml(_currentPwdName)}&quot;? It will be moved to the archive."
+                                      data-gcm-confirm="Archive" data-gcm-class="warning">
+                                    <input type="hidden" name="_token" value="${document.querySelector('meta[name=\"csrf-token\"]')?.content || ''}">
+                                    <input type="hidden" name="_method" value="DELETE">
+                                    <button type="submit" class="btn-action btn-archive" style="background:#f1f5f9;color:#475569;border:1.5px solid #cbd5e1;">Archive</button>
+                                </form>
+                            `;
+                        } else if (status === 'rejected') {
+                            actionsCell.innerHTML = `
+                                <button type="button" class="btn-action btn-action-secondary"
+                                    onclick="openPwdIdModal(${id}, '${fileUrl}', '${safeName}', 'rejected', '${safeRemarks}')"
+                                    style="background:#f8fafc;color:#334155;border:1.5px solid #cbd5e1;">
+                                    👁️ View ID
+                                </button>
+                                <button type="button" class="btn-action btn-approve"
+                                    onclick="openPwdApproveModal(${id}, '${safeName}')"
+                                    title="Re-approve PWD Renewal ID" style="padding:0 10px;font-size:0.75rem;">
+                                    Re-approve
+                                </button>
+                                <form method="POST" action="${archiveRoute}" class="gcm-form" style="display:inline;"
+                                      data-gcm-title="Archive renewal request?"
+                                      data-gcm-message="Archive the renewal request for &quot;${escapeHtml(_currentPwdName)}&quot;? It will be moved to the archive."
+                                      data-gcm-confirm="Archive" data-gcm-class="warning">
+                                    <input type="hidden" name="_token" value="${document.querySelector('meta[name=\"csrf-token\"]')?.content || ''}">
+                                    <input type="hidden" name="_method" value="DELETE">
+                                    <button type="submit" class="btn-action btn-archive" style="background:#f1f5f9;color:#475569;border:1.5px solid #cbd5e1;">Archive</button>
+                                </form>
+                            `;
+                        }
+                    }
+                }
+
+                function escapeHtml(str) {
+                    if (!str) return '';
+                    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+                }
+
+                function escapeJs(str) {
+                    if (!str) return '';
+                    return String(str).replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/\n/g, '\\n').replace(/\r/g, '');
                 }
 
                 // Wire all .gcm-form elements to custom confirm modal
@@ -2339,6 +2950,11 @@
         // Promise-based confirm dialog to replace browser confirm()
         let __uiConfirmResolve = null;
         function uiConfirm(title, message, opts = {}) {
+            if (typeof title === 'object' && title !== null) {
+                opts = title;
+                message = opts.message || '';
+                title = opts.title || 'Confirm';
+            }
             const backdrop = document.getElementById('uiConfirmBackdrop');
             const t = document.getElementById('uiConfirmTitle');
             const m = document.getElementById('uiConfirmMessage');
@@ -2347,8 +2963,17 @@
 
             t.textContent = title || 'Confirm';
             m.textContent = (message || '').replace(/\\n/g, '\n');
-            ok.textContent = opts.okText || 'OK';
+            ok.textContent = opts.confirmText || opts.okText || 'OK';
             cancel.textContent = opts.cancelText || 'Cancel';
+
+            ok.className = 'ui-btn ui-btn-primary';
+            if (opts.confirmClass === 'danger') {
+                ok.className = 'ui-btn ui-btn-danger';
+            } else if (opts.confirmClass === 'success') {
+                ok.className = 'ui-btn ui-btn-success';
+            } else if (opts.confirmClass === 'warning') {
+                ok.className = 'ui-btn ui-btn-warning';
+            }
 
             backdrop.style.display = 'flex';
             backdrop.classList.add('show');
@@ -3083,81 +3708,6 @@
         </div>
     </div>
 
-    <!-- RENEWAL ID PREVIEW MODAL -->
-    <div id="renewalIdModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;">
-        <div style="background:white;border-radius:16px;width:100%;max-width:850px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.25);overflow:hidden;">
-            <div style="background:linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);color:white;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;">
-                <div style="display:flex;align-items:center;gap:10px;">
-                    <span style="font-size:1.3rem;">🪪</span>
-                    <div>
-                        <h6 style="margin:0;font-weight:800;font-size:1rem;" id="renewalIdModalApplicant">Applicant Uploaded ID</h6>
-                        <small style="opacity:.85;font-size:.78rem;">MSWDO ID Renewal Review</small>
-                    </div>
-                </div>
-                <button type="button" onclick="closeRenewalIdModal()" style="background:transparent;border:none;color:white;font-size:1.4rem;line-height:1;cursor:pointer;">&times;</button>
-            </div>
-            <div id="renewalIdViewerContainer" style="padding:16px;overflow-y:auto;display:flex;align-items:center;justify-content:center;min-height:300px;background:#f8fafc;">
-            </div>
-            <div style="padding:12px 20px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;background:white;">
-                <a id="renewalIdDownloadLink" href="#" target="_blank" download style="color:#2C3E8F;font-weight:700;font-size:.85rem;text-decoration:none;">
-                    📥 Open / Download Original File
-                </a>
-                <div style="display:flex;align-items:center;gap:8px;">
-                    <div id="renewalIdModalActions" style="display:flex;align-items:center;gap:8px;"></div>
-                    <button type="button" onclick="closeRenewalIdModal()" style="background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:8px 18px;font-weight:700;cursor:pointer;font-size:.85rem;">
-                        Close
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {{-- Reject Renewal ID Modal --}}
-    <div id="rejectRenewalIdModal"
-        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(2px);"
-        onclick="if(event.target===this) closeRejectRenewalIdModal()">
-        <div style="background:white;border-radius:16px;padding:0;max-width:480px;width:92%;box-shadow:0 12px 48px rgba(0,0,0,.25);overflow:hidden;">
-            <div style="background:linear-gradient(135deg,#C41E24 0%,#8B1419 100%);color:white;padding:18px 24px;display:flex;align-items:center;gap:10px;">
-                <span style="font-size:1.2rem;">⚠️</span>
-                <div>
-                    <h5 style="font-weight:800;margin:0;font-size:1rem;">Reject Renewal ID</h5>
-                    <small style="opacity:.85;font-size:.78rem;">MSWDO ID Renewal Review</small>
-                </div>
-            </div>
-            <div style="padding:20px 24px;">
-                <div style="font-size:.88rem;color:#475569;margin-bottom:14px;background:#fef2f2;padding:10px 14px;border-radius:10px;border:1px solid #fecaca;">
-                    <strong>Applicant:</strong> <span id="rejectRenewalApplicantName" style="color:#991b1b;font-weight:700;"></span>
-                    <div style="margin-top:4px;font-size:.82rem;color:#1e40af;">The applicant will be notified to re-upload their Valid ID. Their existing appointment date and time will be preserved.</div>
-                </div>
-                <label style="font-size:.85rem;font-weight:700;color:#1e293b;display:block;margin-bottom:6px;">
-                    Rejection Reason <span style="color:#C41E24;">*</span>
-                </label>
-                <select id="rejectRenewalReasonSelect" style="width:100%;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 12px;font-size:.88rem;font-weight:600;margin-bottom:12px;color:#1e293b;background:white;" onchange="onRejectRenewalReasonChange()">
-                    <option value="">-- Select a reason --</option>
-                    <option value="Blurry or unreadable ID photo">Blurry or unreadable ID photo</option>
-                    <option value="ID does not match applicant name">ID does not match applicant name</option>
-                    <option value="Expired ID document">Expired ID document</option>
-                    <option value="Wrong type of ID uploaded">Wrong type of ID uploaded</option>
-                    <option value="Incomplete or cropped ID image">Incomplete or cropped ID image</option>
-                    <option value="Other">Other (specify below)</option>
-                </select>
-                <label style="font-size:.85rem;font-weight:700;color:#1e293b;display:block;margin-bottom:6px;" id="rejectRenewalCommentsLabel">
-                    Additional Comments <span style="font-size:.75rem;font-weight:400;color:#64748b;">(Optional)</span>
-                </label>
-                <textarea id="rejectRenewalNotes" rows="3" placeholder="Add details or instructions for the applicant..."
-                    style="width:100%;border:1.5px solid #fca5a5;border-radius:10px;padding:12px;font-size:.88rem;resize:none;box-sizing:border-box;"></textarea>
-                <div id="rejectRenewalError" style="color:#C41E24;font-size:.8rem;margin-top:6px;display:none;"></div>
-            </div>
-            <div style="padding:0 24px 20px;display:flex;gap:10px;">
-                <button type="button" onclick="submitRejectRenewalId()" id="rejectRenewalSubmitBtn" style="height:38px;padding:0 22px;flex:1;background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">
-                    Confirm Rejection
-                </button>
-                <button type="button" onclick="closeRejectRenewalIdModal()" style="height:38px;padding:0 20px;background:#e2e8f0;color:#64748b;border:none;border-radius:8px;font-weight:700;cursor:pointer;">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    </div>
 </body>
 
 </html>
