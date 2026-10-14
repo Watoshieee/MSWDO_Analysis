@@ -253,7 +253,7 @@ class RenewalAdminController extends Controller
             $bodyText = $renewal->appointment_id
                 ? 'Your Valid ID was rejected. Reason: ' . $remarks . '. Please upload a new Valid ID. Your existing appointment has been preserved.'
                 : 'Your PWD renewal ID was rejected. Reason: ' . $remarks . '. Please upload a new valid PWD ID to resubmit.';
-            DB::table('notifications')->insert([
+            $notifId = DB::table('notifications')->insertGetId([
                 'user_id'    => $renewal->user_id,
                 'type'       => $notifType,
                 'title'      => $progLabel . ' Renewal ID Rejected',
@@ -262,6 +262,17 @@ class RenewalAdminController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            if (class_exists(OneSignalService::class)) {
+                OneSignalService::sendPush(
+                    $renewal->user_id,
+                    $progLabel . ' Renewal ID Rejected',
+                    $bodyText,
+                    $notifType,
+                    $notifId,
+                    ['renewal_id' => $renewal->id, 'program_type' => $renewal->program_type, 'reason' => $remarks]
+                );
+            }
         } catch (\Exception $e) {
             Log::error('Renewal rejection notification failed: ' . $e->getMessage());
         }

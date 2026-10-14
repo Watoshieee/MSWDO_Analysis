@@ -1058,7 +1058,7 @@ class SoloParentApiController extends Controller
             'appointment'      => $appt ? [
                 'id'               => $appt->id,
                 'program_type'     => $appt->program_type,
-                'appointment_date' => $appt->appointment_date,
+                'appointment_date' => $appt->appointment_date instanceof Carbon ? $appt->appointment_date->format('Y-m-d') : (string) $appt->appointment_date,
                 'appointment_time' => $appt->appointment_time,
                 'formatted_date'   => Carbon::parse($appt->appointment_date)->format('F d, Y'),
                 'formatted_time'   => Carbon::parse($appt->appointment_time)->format('h:i A'),
