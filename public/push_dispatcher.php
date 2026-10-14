@@ -31,47 +31,38 @@
  * ═══════════════════════════════════════════════════════════════════
  */
 
+// ── Bootstrap Laravel configuration & environment ────────────────────────────
+require_once __DIR__ . '/../vendor/autoload.php';
+$app = require_once __DIR__ . '/../bootstrap/app.php';
+$app->make(\Illuminate\Contracts\Console\Kernel::class)->bootstrap();
+
 // ── Security: block direct browser access ───────────────────────────────────
-if (PHP_SAPI !== 'cli' && !isset($_GET['cron_key'])) {
-    http_response_code(403);
-    exit('Forbidden');
-}
-if (isset($_GET['cron_key']) && $_GET['cron_key'] !== 'REPLACE_WITH_SECURE_RANDOM_KEY') {
-    http_response_code(403);
-    exit('Invalid key');
-}
+// Browser execution must fail closed unless a non-empty configured secret exists and hash_equals() validates cron_key.
+if (PHP_SAPI !== 'cli') {
+    $cronKey = env('PUSH_DISPATCHER_KEY', env('CRON_KEY'));
+    $providedKey = (string) ($_GET['cron_key'] ?? '');
 
-// ── Configuration ────────────────────────────────────────────────────────────
-define('ONESIGNAL_APP_ID',   '3db6828d-49af-4f5a-8d89-ff0b90749aec');
-define('ONESIGNAL_API_KEY',  'REPLACE_WITH_YOUR_ONESIGNAL_REST_API_KEY');  // Set directly on Hostinger, never commit real key
-define('ONESIGNAL_API_URL',  'https://api.onesignal.com/notifications');   // v2 key endpoint
-define('BATCH_SIZE', 50); // Max notifications to process per run
-
-// ── Database connection ──────────────────────────────────────────────────────
-// Load from Laravel's .env so we don't hardcode credentials
-$envPath = __DIR__ . '/../.env';
-$env = [];
-if (file_exists($envPath)) {
-    foreach (file($envPath, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES) as $line) {
-        if (str_starts_with(trim($line), '#') || !str_contains($line, '=')) continue;
-        [$k, $v] = explode('=', $line, 2);
-        $env[trim($k)] = trim($v, " \t\n\r\0\x0B\"'");
+    if (empty($cronKey) || !hash_equals((string) $cronKey, $providedKey)) {
+        http_response_code(403);
+        exit('Forbidden');
     }
 }
 
-$dbHost = $env['DB_HOST']     ?? '127.0.0.1';
-$dbPort = $env['DB_PORT']     ?? '3306';
-$dbName = $env['DB_DATABASE'] ?? '';
-$dbUser = $env['DB_USERNAME'] ?? '';
-$dbPass = $env['DB_PASSWORD'] ?? '';
+// ── Configuration ────────────────────────────────────────────────────────────
+define('ONESIGNAL_APP_ID',   config('services.onesignal.app_id', env('ONESIGNAL_APP_ID', 'bfcb1a3e-1938-4806-9e03-4e39974f57e7')));
+define('ONESIGNAL_API_KEY',  config('services.onesignal.api_key', env('ONESIGNAL_API_KEY', '')));
+define('ONESIGNAL_API_URL',  'https://api.onesignal.com/notifications');   // v2 key endpoint
+define('BATCH_SIZE', 50); // Max notifications to process per run
 
+if (empty(ONESIGNAL_API_KEY)) {
+    echo '[PushDispatcher] Missing ONESIGNAL_API_KEY in .env. Dispatch skipped.' . PHP_EOL;
+    exit(0);
+}
+
+// ── Database connection ──────────────────────────────────────────────────────
 try {
-    $pdo = new PDO(
-        "mysql:host={$dbHost};port={$dbPort};dbname={$dbName};charset=utf8mb4",
-        $dbUser, $dbPass,
-        [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]
-    );
-} catch (PDOException $e) {
+    $pdo = \Illuminate\Support\Facades\DB::connection()->getPdo();
+} catch (\Throwable $e) {
     error_log('[PushDispatcher] DB connection failed: ' . $e->getMessage());
     exit(1);
 }
@@ -151,7 +142,7 @@ function sendOneSignalPush(string $userId, string $title, string $body, string $
         'headings'          => ['en' => $title],
         'contents'          => ['en' => $body],
         'data'              => ['type' => $type, 'notification_id' => $notifId],
-        'android_channel_id'=> 'mswdo_updates',
+        'existing_android_channel_id' => 'mswdo_updates',
         // Android notification priority
         'priority'          => 10,
         // Badge increment (iOS)

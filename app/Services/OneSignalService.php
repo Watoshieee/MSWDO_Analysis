@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Log;
 class OneSignalService
 {
     private const API_URL = 'https://api.onesignal.com/notifications';
-    private const DEFAULT_APP_ID = '3db6828d-49af-4f5a-8d89-ff0b90749aec';
+    private const DEFAULT_APP_ID = 'bfcb1a3e-1938-4806-9e03-4e39974f57e7';
     private const ANDROID_CHANNEL_ID = 'mswdo_updates';
     private const ANDROID_ACCENT_COLOR = 'FF1A5276';
     private const TIMEOUT_SECONDS = 3;
@@ -60,7 +60,7 @@ class OneSignalService
                 'type'            => $type,
                 'notification_id' => $notificationId,
             ], $extraData),
-            'android_channel_id'   => self::ANDROID_CHANNEL_ID,
+            'existing_android_channel_id' => self::ANDROID_CHANNEL_ID,
             'priority'             => 10,
             'ios_badgeType'        => 'Increase',
             'ios_badgeCount'       => 1,
@@ -117,7 +117,7 @@ class OneSignalService
             'headings'             => ['en' => $cleanTitle],
             'contents'             => ['en' => $body],
             'data'                 => array_merge(['type' => $type], $extraData),
-            'android_channel_id'   => self::ANDROID_CHANNEL_ID,
+            'existing_android_channel_id' => self::ANDROID_CHANNEL_ID,
             'priority'             => 10,
             'ios_badgeType'        => 'Increase',
             'ios_badgeCount'       => 1,
