@@ -1003,6 +1003,10 @@
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                     Key Insights
                 </a>
+                <a href="#recommendations-analysis" class="nav-pill-link jump-link">
+                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+                    Recommendations
+                </a>
             </div>
         </div>
     </div>
@@ -1506,7 +1510,7 @@
                             @if($hasTopProgram)
                                 {{ number_format($progTotals[$topProgram]) }} total beneficiaries
                             @elseif(!empty($progTotals))
-                                All recorded program totals are 0 for {{ $selectedYear }}
+                                No usable annual counts (stored 0 is N/A) for {{ $selectedYear }}
                             @else
                                 No program data for {{ $selectedYear }}
                             @endif
@@ -1545,7 +1549,7 @@
                         <div class="chart-box" style="height:265px;"><canvas id="benefTrend"></canvas></div>
                         <div style="margin-top:auto;padding-top:10px;border-top:1px solid #f1f5f9;display:flex;align-items:center;gap:6px;font-size:.74rem;color:#94a3b8;line-height:1.4;">
                             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:3px;flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                            <span>Note: Only recorded beneficiary data are shown. Missing years are treated as N/A, not zero.</span>
+                            <span>Note: Only usable annual counts are shown. Missing records and stored 0 are N/A, not zero beneficiaries.</span>
                         </div>
                     </div>
                 </div>
@@ -1594,6 +1598,7 @@
                     </tbody>
                 </table>
             </div>
+            <p style="font-size:.74rem;color:#94a3b8;margin:10px 0 0;">Totals use known annual counts only. Any N/A cell (missing record or stored 0) means the total does not represent all three municipalities.</p>
         </div>
     </section>
 
@@ -1702,7 +1707,7 @@
                         <ul class="rep-list">
                             <li>Title, reporting period, dataset, municipalities and date generated</li>
                             <li>Data summary and tables: beneficiaries by program, municipality summary, yearly totals</li>
-                            <li>Methodology, AHP and WSM status, and limitations / missing-data notes</li>
+                            <li>Methodology, AHP-weighted ranking, recommendations, and limitations / missing-data notes</li>
                         </ul>
                     </div>
                 </div>
@@ -1757,35 +1762,53 @@
                 </div>
                 <div class="col-lg-6">
                     <div class="card-base h-100" style="border-top:4px solid #FDB913;">
-                        <h6 style="font-weight:700;color:var(--blue);">AHP &amp; WSM Results</h6>
+                        <h6 style="font-weight:700;color:var(--blue);">AHP-Weighted Comparative Ranking</h6>
                         <div>
                             <span class="rep-badge">AHP: {{ $repMcdm['status'] }}</span>
-                            <span class="rep-badge">WSM: {{ $repMcdm['status'] }}</span>
                         </div>
-                        <p style="font-size:.86rem;color:#334155;line-height:1.6;margin:0;">{{ $repMcdm['reason'] }}</p>
-                        <div class="rep-sub">Data available now</div>
-                        <ul class="rep-list">
-                            @foreach($repMcdm['available'] as $item)
-                                <li>{{ $item }}</li>
-                            @endforeach
-                        </ul>
-                        <div class="rep-sub">Needed before AHP and WSM can be calculated</div>
-                        <ol class="rep-list">
-                            @foreach($repMcdm['missing'] as $item)
-                                <li>{{ $item }}</li>
-                            @endforeach
-                        </ol>
-                        <details class="rep-details">
-                            <summary>How the calculations will work once inputs are supplied</summary>
-                            <div class="rep-sub">AHP</div>
-                            <ol class="rep-list">
-                                @foreach($repMcdm['ahp_steps'] as $item)
+                        <p style="font-size:.86rem;color:#334155;line-height:1.6;margin:0;">{{ $repMcdm['score_label'] ?? 'AHP-weighted comparative score based on beneficiary counts' }}</p>
+                        <p style="font-size:.86rem;color:#334155;line-height:1.6;margin:8px 0 0;">{{ $repMcdm['disclaimer'] ?? $repMcdm['reason'] }}</p>
+                        @if(!empty($repMcdm['ranking_rows']))
+                            <div class="table-responsive mt-3">
+                                <table class="table table-sm mb-0" style="background:transparent;">
+                                    <thead>
+                                        <tr>
+                                            <th>Rank</th>
+                                            <th>Municipality</th>
+                                            <th class="text-end">Score</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach($repMcdm['ranking_rows'] as $row)
+                                            <tr>
+                                                <td>{{ $row['rank'] }}</td>
+                                                <td>{{ $row['municipality'] }}</td>
+                                                <td class="text-end">{{ number_format($row['score'], 2) }}</td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                        @if(!empty($repMcdm['missing']))
+                            <div class="rep-sub">Required annual values that are N/A</div>
+                            <ul class="rep-list">
+                                @foreach($repMcdm['missing'] as $item)
                                     <li>{{ $item }}</li>
                                 @endforeach
-                            </ol>
-                            <div class="rep-sub">WSM</div>
+                            </ul>
+                        @endif
+                        <div class="rep-sub">Approved criteria weights</div>
+                        <ul class="rep-list">
+                            @foreach(($repMcdm['raw_weights'] ?? []) as $type => $raw)
+                                <li>{{ str_replace('_', ' ', $type) }}: raw {{ $raw }}, effective {{ number_format($repMcdm['weights'][$type] ?? 0, 6) }}</li>
+                            @endforeach
+                        </ul>
+                        <details class="rep-details">
+                            <summary>AHP calculation details</summary>
+                            <div class="rep-sub">Methodology</div>
                             <ol class="rep-list">
-                                @foreach($repMcdm['wsm_steps'] as $item)
+                                @foreach(($repMcdm['ahp_steps'] ?? []) as $item)
                                     <li>{{ $item }}</li>
                                 @endforeach
                             </ol>
@@ -1869,7 +1892,7 @@
     </script>
     @endif {{-- end report section --}}
 
-    {{-- SECTION 5: KEY INSIGHTS --}}
+    {{-- SECTION 5: KEY INSIGHTS (max 10) --}}
     <section class="section-wrap dark" id="key-insights-analysis" style="scroll-margin-top:110px;">
         <div class="container">
             <h2 class="sec-title light"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Key Insights</h2>
@@ -1885,6 +1908,30 @@
                         </div>
                     </div>
                 @endforeach
+            </div>
+        </div>
+    </section>
+
+    {{-- SECTION 6: RECOMMENDATIONS --}}
+    <section class="section-wrap" id="recommendations-analysis" style="scroll-margin-top:110px;">
+        <div class="container">
+            <h2 class="sec-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Recommendations</h2>
+            <div class="row g-3">
+                @forelse(($recommendations ?? []) as $i => $rec)
+                    <div class="col-md-6">
+                        <div class="rec-card">
+                            <div style="font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;">
+                                Recommendation {{ $i + 1 }}</div>
+                            <p style="font-size:.88rem;color:#475569;margin:0;line-height:1.65;">{{ $rec }}</p>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-12">
+                        <div class="rec-card">
+                            <p style="font-size:.88rem;color:#475569;margin:0;line-height:1.65;">No recommendations for the selected year.</p>
+                        </div>
+                    </div>
+                @endforelse
             </div>
         </div>
     </section>
