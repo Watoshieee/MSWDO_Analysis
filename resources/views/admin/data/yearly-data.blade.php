@@ -595,7 +595,11 @@
                                                         data-bs-target="#editModal{{ $row->id }}">Edit</button>
                                                     <form method="POST"
                                                         action="{{ route('admin.data.yearly.archive', $row->id) }}"
-                                                        onsubmit="return confirm('Archive the {{ $row->year }} record? You can restore it later.')">
+                                                        class="gcm-form"
+                                                        data-gcm-title="Archive record?"
+                                                        data-gcm-message="Archive the {{ $row->year }} record? You can restore it later from the archive."
+                                                        data-gcm-confirm="Archive"
+                                                        data-gcm-class="warning">
                                                         @csrf
                                                         <button type="submit" class="btn-del"
                                                             style="background:rgba(245,158,11,.1);color:#b45309;border-color:rgba(245,158,11,.3);">Archive</button>
@@ -900,7 +904,11 @@
                                                 {{-- Permanently Delete --}}
                                                 <form method="POST"
                                                     action="{{ route('admin.data.yearly.forceDelete', $archived->id) }}"
-                                                    onsubmit="return confirm('Permanently delete the {{ $archived->year }} record? This CANNOT be undone.')">
+                                                    class="gcm-form"
+                                                    data-gcm-title="Permanently delete record?"
+                                                    data-gcm-message="Permanently delete the {{ $archived->year }} record? This CANNOT be undone and the data will be lost forever."
+                                                    data-gcm-confirm="Delete Forever"
+                                                    data-gcm-class="danger">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn-del">Delete Forever</button>

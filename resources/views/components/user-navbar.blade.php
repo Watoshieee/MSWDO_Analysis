@@ -93,7 +93,10 @@ Included with: @include('components.user-navbar', ['active' => 'programs'])
 .dock a svg.i-lg, .dock button svg.i-lg, .cx-panel svg.i-lg { width: 32px; height: 32px; }
 
 /* nav: redesigned header + navigation */
-.hd{position:sticky;top:0;z-index:60;padding-top:env(safe-area-inset-top,0px);background:linear-gradient(90deg,#1a2470,#243088);color:#fff;border-bottom:1px solid rgba(255,255,255,.1);transition:box-shadow .2s}
+html,body{margin:0;padding:0}
+.hd-extras{position:absolute!important;left:0;top:0;width:0!important;height:0!important;margin:0!important;padding:0!important;overflow:visible;border:0;pointer-events:none}
+.hd-extras .cx-panel.on,.hd-extras .cx-scrim.on,.hd-extras #globalConfirmModal,.hd-extras .dock{pointer-events:auto}
+.hd{position:sticky;top:0;z-index:60;margin:0;padding:0;flex:none;align-self:stretch;background:linear-gradient(90deg,#1a2470,#243088);color:#fff;border-bottom:1px solid rgba(255,255,255,.1);transition:box-shadow .2s}
 .hd.stuck{box-shadow:0 6px 18px rgba(20,27,77,.28)}
 .hd-in{max-width:1280px;margin:0 auto;padding:0 32px;height:60px;box-sizing:border-box;display:flex;align-items:center;gap:8px}
 .hd a:focus-visible,.hd button:focus-visible{outline:2px solid #f5b82e;outline-offset:2px}
@@ -227,7 +230,7 @@ body{padding-bottom:76px !important}
 <li><a href="{{ route('user.programs') }}" {!! $currentActive === 'programs' ? 'aria-current="page"' : '' !!}><svg class="i i-sm" aria-hidden="true"><use href="#i-layers"/></svg><span>Programs</span></a></li>
 <li><a href="{{ route('user.my-requirements') }}" {!! $currentActive === 'my-requirements' ? 'aria-current="page"' : '' !!}><svg class="i i-sm" aria-hidden="true"><use href="#i-upload"/></svg><span>My Requirements</span></a></li>
 <li><a href="{{ route('user.announcements') }}" {!! $currentActive === 'announcements' ? 'aria-current="page"' : '' !!}><svg class="i i-sm" aria-hidden="true"><use href="#i-news"/></svg><span>Announcements</span></a></li>
-<li><a href="/analysis" {!! $currentActive === 'analysis' ? 'aria-current="page"' : '' !!}><svg class="i i-sm" aria-hidden="true"><use href="#i-chart"/></svg><span>Public Analysis</span></a></li>
+
 </ul>
 <div class="nv-foot"><div class="pm-who"><span class="pm-av">{{ $initials }}</span><div><b>{{ $fullName }}</b><span>Member &middot; {{ $municipalityLabel }}</span></div></div><a href="{{ route('user.profile') }}"><svg class="i i-sm" aria-hidden="true"><use href="#i-user"/></svg>My Profile</a><a class="out" href="{{ route('logout') }}" onclick="event.preventDefault(); document.getElementById('logout-form-nav').submit();"><svg class="i i-sm" aria-hidden="true"><use href="#i-out"/></svg>Log out</a></div>
 </nav>
@@ -244,16 +247,7 @@ body{padding-bottom:76px !important}
 </div>
 </header>
 
-<!-- quick actions: icon-only on desktop, labeled tab bar on mobile -->
-<nav class="dock" id="dock" aria-label="Quick actions">
-<a href="{{ route('user.programs') }}" aria-label="Browse Programs"><svg class="i" aria-hidden="true"><use href="#i-grid"/></svg><span class="lbl">Programs</span><span class="tip"><b>Browse Programs</b><small>View all available MSWDO programs</small></span></a>
-<a href="{{ route('user.my-requirements') }}" aria-label="My Requirements"><svg class="i" aria-hidden="true"><use href="#i-upload"/></svg><span class="lbl">Documents</span><span class="tip"><b>My Requirements</b><small>Upload and manage your documents</small></span></a>
-<a href="{{ route('user.announcements') }}" aria-label="Announcements"><svg class="i" aria-hidden="true"><use href="#i-news"/></svg><span class="lbl">News</span><span class="tip"><b>Announcements</b><small>Stay updated with MSWDO news</small></span></a>
-<a href="/analysis" aria-label="Public Analysis"><svg class="i" aria-hidden="true"><use href="#i-chart"/></svg><span class="lbl">Analysis</span><span class="tip"><b>Public Analysis</b><small>View demographic &amp; program data</small></span></a>
-<a href="{{ route('user.download-app') }}" aria-label="Mobile App"><svg class="i" aria-hidden="true"><use href="#i-phone"/></svg><span class="lbl">App</span><span class="tip"><b>Mobile App</b><small>Download for Android</small></span></a>
-<button class="ask" type="button" data-open-chat data-chat-tab="ai" aria-label="Need help? Ask the assistant" aria-haspopup="dialog"><svg class="i" aria-hidden="true"><use href="#i-spark"/></svg><span class="lbl">Help</span><span class="tip"><b>Need help?</b><small>Ask the AI assistant or MSWDO staff</small></span></button>
-</nav>
-
+<div class="hd-extras">
 <!-- chat: two-channel slide-over drawer (AI assistant + MSWDO staff) -->
 <div class="cx-scrim" id="cxScrim"></div>
 <section class="cx-panel" id="cxPanel" role="dialog" aria-modal="true" aria-labelledby="cxTitle" aria-hidden="true">
@@ -460,3 +454,7 @@ body{padding-bottom:76px !important}
   seed(); setTab('ai'); badge();
 })();
 </script>
+
+{{-- Global Confirm Modal (replaces all browser confirm() dialogs) --}}
+@include('components.confirm-modal')
+</div>

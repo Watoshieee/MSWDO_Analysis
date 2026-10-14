@@ -785,6 +785,5 @@ function doSubmit() {
     f.submit();
 }
 </script>
-    @include('components.user-dock-chat')
 </body>
 </html>

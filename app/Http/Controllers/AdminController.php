@@ -305,6 +305,23 @@ class AdminController extends Controller
             ->orderBy('deleted_at', 'desc')
             ->get();
 
+        // Archived PWD renewal ID-verification requests
+        $archivedRenewals = \App\Models\RenewalRequest::onlyTrashed()
+            ->with('user')
+            ->where('municipality', $municipality)
+            ->where('program_type', 'PWD')
+            ->orderBy('deleted_at', 'desc')
+            ->get();
+
+        // PWD Renewal ID Verification requests (no appointment — pending admin ID review)
+        $pwdRenewalRequests = \App\Models\RenewalRequest::with('user')
+            ->where('municipality', $municipality)
+            ->where('program_type', 'PWD')
+            ->whereNull('appointment_id')
+            ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
+            ->orderBy('created_at', 'desc')
+            ->get();
+
         extract($this->adminNotifData($admin));
 
         return view('admin.requirements', compact(
@@ -314,7 +331,9 @@ class AdminController extends Controller
             'adminNewUploads',
             'adminNewAppointments',
             'adminNotifCount',
-            'archivedApplications'
+            'archivedApplications',
+            'archivedRenewals',
+            'pwdRenewalRequests'
         ));
     }
 

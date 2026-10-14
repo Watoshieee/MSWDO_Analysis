@@ -47,11 +47,36 @@
     --hd-gold-h: #ffc94d;
 }
 
+html, body {
+    margin: 0;
+    padding: 0;
+}
+.hd-extras {
+    position: absolute !important;
+    left: 0;
+    top: 0;
+    width: 0 !important;
+    height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    border: 0;
+    pointer-events: none;
+    flex: none;
+}
+.hd-extras .cx-panel.on,
+.hd-extras .cx-scrim.on,
+.hd-extras #globalConfirmModal {
+    pointer-events: auto;
+}
 .hd {
     position: sticky;
     top: 0;
     z-index: 1000;
-    padding-top: env(safe-area-inset-top, 0px);
+    margin: 0;
+    padding: 0;
+    flex: none;
+    align-self: stretch;
     background: linear-gradient(90deg, var(--hd-navy), #243088);
     color: #fff;
     border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -643,6 +668,7 @@
     </div>
 </header>
 
+<div class="hd-extras">
 <script>
 /* =====================================================================
    NAVBAR DYNAMIC & RESPONSIVE CONTROLLER
@@ -810,6 +836,9 @@
 })();
 </script>
 
-
 {{-- Shared Admin Chat Drawer (Available across all admin pages) --}}
 @include('components.admin-chat-drawer')
+
+{{-- Global Confirm Modal (replaces all browser confirm() dialogs) --}}
+@include('components.confirm-modal')
+</div>

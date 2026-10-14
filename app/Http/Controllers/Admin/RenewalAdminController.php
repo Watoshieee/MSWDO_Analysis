@@ -7,6 +7,7 @@ use App\Models\RenewalRequest;
 use App\Models\Appointment;
 use App\Mail\AppointmentStatusMail;
 use App\Mail\RenewalIdApprovedMail;
+use App\Mail\RenewalIdRejectedMail;
 use App\Services\OneSignalService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -163,10 +164,15 @@ class RenewalAdminController extends Controller
             $nextStep = "Please check your portal dashboard for further instructions.";
         }
 
-        $notifTitle = '✅ ' . $progLabel . ' Renewal ID Approved';
+        // For PWD no-appointment renewal: tell user to proceed with requirements
+        if (!$renewal->appointment_id) {
+            $nextStep = 'Your PWD ID has been verified! You may now proceed to your PWD application and submit your requirements.';
+        }
+
+        $notifTitle = $progLabel . ' Renewal ID Approved';
         $notifBody  = 'Your ' . $progLabel . ' renewal Valid ID has been approved by MSWDO. ' . $nextStep;
 
-        // In-app & Push notification (failures must not reverse approval)
+        // In-app & Push notification
         try {
             $notifId = DB::table('notifications')->insertGetId([
                 'user_id'    => $renewal->user_id,
@@ -185,17 +191,14 @@ class RenewalAdminController extends Controller
                     $notifBody,
                     $notifType,
                     $notifId,
-                    [
-                        'renewal_id'   => $renewal->id,
-                        'program_type' => $renewal->program_type,
-                    ]
+                    ['renewal_id' => $renewal->id, 'program_type' => $renewal->program_type]
                 );
             }
         } catch (\Throwable $e) {
-            Log::error('Renewal ID approval in-app notification failed: ' . $e->getMessage());
+            Log::error('Renewal ID approval notification failed: ' . $e->getMessage());
         }
 
-        // Email notification (failures must not reverse approval)
+        // Email
         if ($renewal->user && !empty($renewal->user->email)) {
             try {
                 Mail::to($renewal->user->email)->send(new RenewalIdApprovedMail($renewal));
@@ -204,10 +207,11 @@ class RenewalAdminController extends Controller
             }
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Renewal ID approved successfully. You may now review and approve the appointment.'
-        ]);
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Renewal ID approved successfully.']);
+        }
+
+        return redirect()->route('admin.requirements')->with('success', 'PWD renewal ID approved. User has been notified.');
     }
 
     /**
@@ -246,11 +250,14 @@ class RenewalAdminController extends Controller
         try {
             $progLabel = $renewal->program_type === 'PWD' ? 'PWD' : 'Solo Parent';
             $notifType = $renewal->program_type === 'PWD' ? 'pwd' : 'solo_parent';
+            $bodyText = $renewal->appointment_id
+                ? 'Your Valid ID was rejected. Reason: ' . $remarks . '. Please upload a new Valid ID. Your existing appointment has been preserved.'
+                : 'Your PWD renewal ID was rejected. Reason: ' . $remarks . '. Please upload a new valid PWD ID to resubmit.';
             DB::table('notifications')->insert([
                 'user_id'    => $renewal->user_id,
                 'type'       => $notifType,
-                'title'      => '❌ ' . $progLabel . ' Renewal ID Rejected',
-                'body'       => 'Your Valid ID was rejected. Reason: ' . $remarks . '. Please upload a new Valid ID. Your existing appointment has been preserved.',
+                'title'      => $progLabel . ' Renewal ID Rejected',
+                'body'       => $bodyText,
                 'is_read'    => false,
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -259,9 +266,96 @@ class RenewalAdminController extends Controller
             Log::error('Renewal rejection notification failed: ' . $e->getMessage());
         }
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Renewal ID rejected. The user has been notified to upload a replacement Valid ID while their appointment is preserved.'
-        ]);
+        // Send rejection email
+        $renewal->load('user');
+        if ($renewal->user && !empty($renewal->user->email)) {
+            try {
+                Mail::to($renewal->user->email)->send(new RenewalIdRejectedMail($renewal));
+            } catch (\Throwable $e) {
+                Log::error('Renewal ID rejection email failed: ' . $e->getMessage());
+            }
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json(['success' => true, 'message' => 'Renewal ID rejected. User has been notified.']);
+        }
+
+        return redirect()->route('admin.requirements')->with('success', 'PWD renewal ID rejected. User has been notified.');
+    }
+
+    /**
+     * Archive (soft delete) a renewal request (DELETE /admin/renewals/{id}/archive)
+     */
+    public function archive($id)
+    {
+        $admin = Auth::user();
+        if (!$admin || $admin->role !== 'admin') {
+            abort(403);
+        }
+
+        $renewal = RenewalRequest::with('user')
+            ->where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->firstOrFail();
+
+        $name = $renewal->user->full_name ?? 'applicant';
+        $renewal->delete(); // soft delete via SoftDeletes trait
+
+        return redirect()->route('admin.requirements')
+            ->with('success', 'Renewal request for "' . $name . '" has been archived.');
+    }
+
+    /**
+     * Restore an archived renewal request (PATCH /admin/renewals/{id}/restore)
+     */
+    public function restore($id)
+    {
+        $admin = Auth::user();
+        if (!$admin || $admin->role !== 'admin') {
+            abort(403);
+        }
+
+        $renewal = RenewalRequest::onlyTrashed()
+            ->with('user')
+            ->where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->firstOrFail();
+
+        $renewal->restore();
+
+        return redirect()->route('admin.requirements')
+            ->with('success', 'Renewal request for "' . ($renewal->user->full_name ?? 'applicant') . '" has been restored.');
+    }
+
+    /**
+     * Permanently delete an archived renewal request (DELETE /admin/renewals/{id}/force-delete)
+     */
+    public function forceDelete($id)
+    {
+        $admin = Auth::user();
+        if (!$admin || $admin->role !== 'admin') {
+            abort(403);
+        }
+
+        $renewal = RenewalRequest::onlyTrashed()
+            ->with('user')
+            ->where('id', $id)
+            ->where('municipality', $admin->municipality)
+            ->firstOrFail();
+
+        $name = $renewal->user->full_name ?? 'applicant';
+
+        if (!empty($renewal->id_file_path)) {
+            try {
+                Storage::disk('public')->delete($renewal->id_file_path);
+            } catch (\Throwable $e) {
+                Log::warning('Failed to delete renewal ID file: ' . $e->getMessage());
+            }
+        }
+
+        $renewal->forceDelete();
+
+        return redirect()->route('admin.requirements')
+            ->with('success', 'Renewal request for "' . $name . '" has been permanently deleted.');
     }
 }

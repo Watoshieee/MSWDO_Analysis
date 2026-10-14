@@ -457,10 +457,14 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 </div>
             @elseif($allApproved)
                 <div style="margin-bottom:10px;font-size:.88rem;color:#155724;">✔ All documents are approved. You may now mark the Solo Parent ID as ready for pickup.</div>
-                <form action="{{ route('admin.applications.mark-id-ready', $application->id) }}" method="POST" class="d-inline" id="markIdReadyForm">
+                <form action="{{ route('admin.applications.mark-id-ready', $application->id) }}" method="POST"
+                      class="d-inline gcm-form" id="markIdReadyForm"
+                      data-gcm-title="Mark ID as Ready for Pickup?"
+                      data-gcm-message="Mark this Solo Parent ID as ready for pickup? The applicant will be notified to collect their ID."
+                      data-gcm-confirm="Mark as Ready"
+                      data-gcm-class="default">
                     @csrf
-                    <button type="submit" class="btn btn-success fw-bold" style="border-radius:8px;padding:8px 22px;"
-                        onclick="return confirm('Mark this Solo Parent ID as ready for pickup and notify the applicant?')">
+                    <button type="submit" class="btn btn-success fw-bold" style="border-radius:8px;padding:8px 22px;">
                         Mark ID as Ready for Pickup
                     </button>
                 </form>

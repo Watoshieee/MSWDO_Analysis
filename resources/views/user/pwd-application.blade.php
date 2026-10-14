@@ -1324,12 +1324,6 @@
         </div>
     @endif
 
-    @include('user.partials.renewal-card', [
-        'renewalRequest' => $renewalRequest ?? null,
-        'programType'    => 'PWD',
-        'minDate'        => $minDate,
-        'maxDate'        => $maxDate,
-    ])
 
     @if($topNotice)
         <div class="toast-notice" style="top:{{ !empty($isPwdBeneficiary) ? '150px' : '84px' }};">
@@ -1340,7 +1334,83 @@
     <div class="flex-grow-1 py-3 pb-4">
         <div class="container-fluid px-3 px-lg-4">
 
-            {{-- ═══ MONITOR VIEW (shown after wizard or when application exists) ═══ --}}
+            {{-- ── CHOICE PICKER: New vs Renewal ── --}}
+            <div id="stepChoicePwd" style="max-width:760px;margin:0 auto 24px;display:none;">
+
+                <div style="background:white;border-radius:20px;border:1px solid #E2E8F0;box-shadow:0 8px 32px rgba(44,62,143,.08);padding:32px;">
+                    <h2 style="font-size:1.4rem;font-weight:900;color:#1E293B;margin:0 0 6px;">What would you like to do?</h2>
+                    <p style="color:#64748b;font-size:.9rem;margin:0 0 24px;">Choose whether you are applying for a new PWD ID or renewing an existing one.</p>
+
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+                        {{-- New Application --}}
+                        <label id="optPwdNew" onclick="selectPwdKind('new')" style="border:2px solid #E2E8F0;border-radius:16px;padding:22px;cursor:pointer;transition:all .2s;position:relative;background:#fff;">
+                            <input type="radio" name="pwdKind" value="new" checked style="position:absolute;opacity:0;">
+                            <span id="tickPwdNew" style="position:absolute;top:14px;right:14px;width:22px;height:22px;border-radius:50%;background:var(--primary-blue);display:none;align-items:center;justify-content:center;">
+                                <svg width="12" height="12" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                            </span>
+                            <span style="display:inline-flex;width:46px;height:46px;border-radius:12px;background:#E5EEFF;align-items:center;justify-content:center;margin-bottom:12px;">
+                                <svg width="22" height="22" fill="none" stroke="#2C3E8F" stroke-width="2" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" y1="8" x2="19" y2="14"/><line x1="16" y1="11" x2="22" y2="11"/></svg>
+                            </span>
+                            <h3 style="font-size:1.05rem;font-weight:800;color:#1E293B;margin:0 0 6px;">New Application</h3>
+                            <p style="font-size:.82rem;color:#64748b;margin:0 0 10px;">I am applying for a PWD ID for the first time. Follow the steps and upload your documents.</p>
+                            <span style="display:inline-block;background:#E5EEFF;color:#2C3E8F;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">First-time applicant</span>
+                        </label>
+
+                        {{-- Renewal --}}
+                        <label id="optPwdRenewal" onclick="selectPwdKind('renewal')" style="border:2px solid #E2E8F0;border-radius:16px;padding:22px;cursor:pointer;transition:all .2s;position:relative;background:#fff;">
+                            <input type="radio" name="pwdKind" value="renewal" style="position:absolute;opacity:0;">
+                            <span id="tickPwdRenewal" style="position:absolute;top:14px;right:14px;width:22px;height:22px;border-radius:50%;background:var(--primary-blue);display:none;align-items:center;justify-content:center;">
+                                <svg width="12" height="12" fill="none" stroke="white" stroke-width="3" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>
+                            </span>
+                            <span style="display:inline-flex;width:46px;height:46px;border-radius:12px;background:#FFF3D6;align-items:center;justify-content:center;margin-bottom:12px;">
+                                <svg width="22" height="22" fill="none" stroke="#FDB913" stroke-width="2" viewBox="0 0 24 24"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
+                            </span>
+                            <h3 style="font-size:1.05rem;font-weight:800;color:#1E293B;margin:0 0 6px;">Renewal</h3>
+                            <p style="font-size:.82rem;color:#64748b;margin:0 0 10px;">I already have a PWD ID, even an expired one. Upload it and wait for admin approval — no appointment needed.</p>
+                            <span style="display:inline-block;background:#FFF3D6;color:#92400e;border-radius:20px;padding:3px 12px;font-size:.75rem;font-weight:700;">Existing or expired ID</span>
+                        </label>
+                    </div>
+
+                    <div style="margin-top:24px;display:flex;align-items:center;gap:16px;">
+                        <button onclick="handlePwdChoiceContinue()" style="background:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%);color:white;border:none;border-radius:12px;padding:13px 32px;font-weight:800;font-size:.95rem;cursor:pointer;display:inline-flex;align-items:center;gap:8px;transition:opacity .2s;" type="button">
+                            Continue
+                            <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+                        </button>
+                        <p style="color:#64748b;font-size:.82rem;margin:0;">Not sure? If you already have a PWD ID, choose Renewal.</p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- ── RENEWAL FLOW (no appointment, just ID upload → admin review) ── --}}
+            <div id="flowPwdRenew" style="display:none;max-width:760px;margin:0 auto;">
+                @include('user.partials.renewal-card', [
+                    'renewalRequest' => $renewalRequest ?? null,
+                    'programType'    => 'PWD',
+                    'noAppointment'  => true,
+                    'minDate'        => $minDate,
+                    'maxDate'        => $maxDate,
+                ])
+
+                {{-- After renewal ID is approved, show message to proceed to new application wizard --}}
+                @if(isset($renewalRequest) && $renewalRequest && $renewalRequest->status === 'approved')
+                    <div style="background:#ecfdf5;border:1.5px solid #a7f3d0;border-radius:16px;padding:22px 26px;margin-top:16px;">
+                        <div style="display:flex;align-items:flex-start;gap:14px;">
+                            <div style="font-size:1.8rem;">🎉</div>
+                            <div>
+                                <div style="font-weight:800;font-size:1.05rem;color:#065f46;margin-bottom:4px;">Your PWD ID has been verified!</div>
+                                <p style="font-size:.88rem;color:#047857;margin:0 0 14px;">Your renewal ID was approved by admin. You may now proceed to submit your requirements — the process is the same as a new application.</p>
+                                <button onclick="proceedToNewApplication()" type="button" style="background:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%);color:white;border:none;border-radius:10px;padding:11px 28px;font-weight:800;font-size:.88rem;cursor:pointer;">
+                                    Proceed to Application →
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+
+            {{-- ── NEW APPLICATION FLOW (wizard + monitor) ── --}}
+            <div id="flowPwdNew" style="display:none;">
+
             <div id="pwd-monitor-view" style="display:none;">
                 <div class="monitor-card">
                     <div class="monitor-header">
@@ -1926,6 +1996,8 @@
                 </div>
             </div>{{-- /pwd-wizard-view --}}
 
+            </div>{{-- /flowPwdNew --}}
+
         </div>
     </div>
     </div>
@@ -1969,13 +2041,81 @@
         </div>
     </div>
 
-    @include('components.user-dock-chat')
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const WIZARD_STEPS = @json($wizardSteps);
         const HAS_APPLICATION = @json($hasApplication);
         const IS_BENEFICIARY = @json(!empty($isPwdBeneficiary));
         const UPLOAD_NOTICE = @json((bool) session('upload_success'));
+        const HAS_RENEWAL_REQUEST = @json(isset($renewalRequest) && $renewalRequest ? true : false);
+        const RENEWAL_STATUS = @json(isset($renewalRequest) && $renewalRequest ? $renewalRequest->status : '');
+
+        let currentPwdKind = sessionStorage.getItem('pwdKind') || 'new';
+
+        function selectPwdKind(kind) {
+            currentPwdKind = kind;
+            const optNew = document.getElementById('optPwdNew');
+            const optRenewal = document.getElementById('optPwdRenewal');
+            const tickNew = document.getElementById('tickPwdNew');
+            const tickRenewal = document.getElementById('tickPwdRenewal');
+            if (!optNew) return;
+            if (kind === 'new') {
+                optNew.style.borderColor = '#2C3E8F';
+                optNew.style.background = '#f0f5ff';
+                optRenewal.style.borderColor = '#E2E8F0';
+                optRenewal.style.background = '#fff';
+                tickNew.style.display = 'inline-flex';
+                tickRenewal.style.display = 'none';
+            } else {
+                optRenewal.style.borderColor = '#2C3E8F';
+                optRenewal.style.background = '#f0f5ff';
+                optNew.style.borderColor = '#E2E8F0';
+                optNew.style.background = '#fff';
+                tickRenewal.style.display = 'inline-flex';
+                tickNew.style.display = 'none';
+            }
+        }
+
+        function handlePwdChoiceContinue() {
+            sessionStorage.setItem('pwdKind', currentPwdKind);
+            const stepChoice = document.getElementById('stepChoicePwd');
+            if (stepChoice) stepChoice.style.display = 'none';
+            if (currentPwdKind === 'renewal') {
+                showPwdRenewFlow();
+            } else {
+                showPwdNewFlow();
+            }
+        }
+
+        function showPwdRenewFlow() {
+            document.getElementById('flowPwdRenew').style.display = 'block';
+            document.getElementById('flowPwdNew').style.display = 'none';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function showPwdNewFlow() {
+            document.getElementById('flowPwdRenew').style.display = 'none';
+            document.getElementById('flowPwdNew').style.display = 'block';
+            if (shouldShowMonitor()) {
+                showMonitorView(false);
+            } else {
+                const saved = sessionStorage.getItem('pwdWizardStep');
+                if (saved !== null) {
+                    const idx = parseInt(saved, 10);
+                    if (!isNaN(idx) && idx >= 0 && idx < WIZARD_STEPS.length) {
+                        goToStep(idx, false);
+                        return;
+                    }
+                }
+                showWizardView();
+            }
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function proceedToNewApplication() {
+            sessionStorage.setItem('pwdKind', 'new');
+            showPwdNewFlow();
+        }
         const WIZARD_META = {
             overview: {
                 titleEn: 'Step 1 — Overview',
@@ -2117,18 +2257,29 @@
                 });
             });
 
-            if (shouldShowMonitor()) {
+            // Determine initial view — always start from chooser unless there's an active application/renewal
+            sessionStorage.removeItem('pwdKind'); // always clear so chooser is fresh every visit
+
+            if (IS_BENEFICIARY || HAS_APPLICATION || UPLOAD_NOTICE) {
+                // Already submitted an application — go directly to monitor (track progress)
+                document.getElementById('flowPwdNew').style.display = 'block';
+                document.getElementById('flowPwdRenew').style.display = 'none';
+                const stepChoice = document.getElementById('stepChoicePwd');
+                if (stepChoice) stepChoice.style.display = 'none';
                 showMonitorView(false);
+            } else if (HAS_RENEWAL_REQUEST && (RENEWAL_STATUS === 'pending' || RENEWAL_STATUS === 'approved' || RENEWAL_STATUS === 'rejected')) {
+                // Has a PWD renewal ID submission (pending/approved/rejected) — go to renewal flow
+                // Rejected: shows rejection reason and resubmission form
+                document.getElementById('flowPwdRenew').style.display = 'block';
+                document.getElementById('flowPwdNew').style.display = 'none';
+                const stepChoice = document.getElementById('stepChoicePwd');
+                if (stepChoice) stepChoice.style.display = 'none';
             } else {
-                const saved = sessionStorage.getItem('pwdWizardStep');
-                if (saved !== null) {
-                    const idx = parseInt(saved, 10);
-                    if (!isNaN(idx) && idx >= 0 && idx < WIZARD_STEPS.length) {
-                        goToStep(idx, false);
-                    }
-                } else {
-                    goToStep(0, false);
-                }
+                // No existing application or renewal — always show the chooser
+                const stepChoice = document.getElementById('stepChoicePwd');
+                if (stepChoice) stepChoice.style.display = 'block';
+                // Highlight "New Application" as default selected
+                selectPwdKind('new');
             }
 
             var savedPwdScroll = parseInt(sessionStorage.getItem('pwdScrollRestore') || '0', 10);
@@ -2140,6 +2291,8 @@
                 setTimeout(() => window.scrollTo(0, savedPwdScroll), 250);
             }
         });
+
+
 
         function openFileModal(fileUrl, fileName, fileExt) {
             const container = document.getElementById('fileViewerContainer');

@@ -1,46 +1,108 @@
 @php
     $pType = $programType ?? 'PWD';
     $pLabel = $pType === 'PWD' ? 'PWD' : 'Solo Parent';
+    $noAppointment = $noAppointment ?? false; // PWD renewal: no appointment needed
     $minD = $minDate ?? \Carbon\Carbon::tomorrow('Asia/Manila')->format('Y-m-d');
     $maxD = $maxDate ?? \Carbon\Carbon::now('Asia/Manila')->addDays(60)->format('Y-m-d');
     $linkedAppt = (isset($renewalRequest) && $renewalRequest) ? ($renewalRequest->appointment ?? null) : null;
     if (!$linkedAppt && isset($appointment) && $appointment) {
         $linkedAppt = $appointment;
     }
-    $hasActiveRenewal = isset($renewalRequest) && $renewalRequest && in_array($renewalRequest->status, ['pending', 'approved']) && (!$renewalRequest->appointment_id || $linkedAppt);
-    $hasRejectedRenewalWithAppt = isset($renewalRequest) && $renewalRequest && $renewalRequest->status === 'rejected' && $linkedAppt && !in_array($linkedAppt->status, ['rejected', 'cancelled']);
+    // For no-appointment mode: active renewal means status is pending/approved (no appointment required)
+    if ($noAppointment) {
+        $hasActiveRenewal = isset($renewalRequest) && $renewalRequest && in_array($renewalRequest->status, ['pending', 'approved']);
+        $hasRejectedRenewalWithAppt = false; // No appointment to preserve
+    } else {
+        $hasActiveRenewal = isset($renewalRequest) && $renewalRequest && in_array($renewalRequest->status, ['pending', 'approved']) && (!$renewalRequest->appointment_id || $linkedAppt);
+        $hasRejectedRenewalWithAppt = isset($renewalRequest) && $renewalRequest && $renewalRequest->status === 'rejected' && $linkedAppt && !in_array($linkedAppt->status, ['rejected', 'cancelled']);
+    }
 @endphp
 
-{{-- Flash notices --}}
+{{-- Toast styles (fixed top-right) --}}
+@if(session('renewal_success') || session('renewal_error') || $errors->any())
+<style>
+.rc-toast {
+    position: fixed;
+    top: 88px;
+    right: 24px;
+    z-index: 99999;
+    max-width: 440px;
+    width: calc(100% - 48px);
+    border-radius: 14px;
+    padding: 14px 18px 17px;
+    box-shadow: 0 8px 28px rgba(0,0,0,.22);
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    animation: rcSlideIn .35s cubic-bezier(.22,1,.36,1) both;
+    overflow: hidden;
+}
+.rc-toast.ok  { background: #1a2470; color: #fff; border: 1px solid rgba(255,255,255,.15); }
+.rc-toast.err { background: #7f1d1d; color: #fff; border: 1px solid rgba(255,255,255,.15); }
+.rc-toast-bar {
+    position: absolute;
+    bottom: 0; left: 0;
+    height: 3px;
+    background: #f5b82e;
+    width: 100%;
+    transform-origin: left;
+    animation: rcBar 5s linear forwards;
+}
+.rc-toast-close {
+    background: transparent;
+    border: none;
+    color: rgba(255,255,255,.7);
+    font-size: 1.2rem;
+    cursor: pointer;
+    line-height: 1;
+    margin-left: auto;
+    flex-shrink: 0;
+    padding: 0;
+}
+@keyframes rcSlideIn {
+    from { opacity:0; transform: translateX(32px); }
+    to   { opacity:1; transform: translateX(0); }
+}
+@keyframes rcBar {
+    from { transform: scaleX(1); }
+    to   { transform: scaleX(0); }
+}
+</style>
+
 @if(session('renewal_success'))
-    <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius:12px;font-size:.9rem;font-weight:600;background:#d4edda;border-color:#c3e6cb;color:#155724;box-shadow:0 4px 12px rgba(21,87,36,.12);margin-bottom:20px;">
-        <span style="margin-right:8px;">✅</span> {{ session('renewal_success') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="rc-toast ok" id="rcToast" role="status" aria-live="polite">
+        <span style="font-size:1.3rem;flex-shrink:0;">✅</span>
+        <span style="font-size:.88rem;font-weight:600;line-height:1.45;">{{ session('renewal_success') }}</span>
+        <button class="rc-toast-close" onclick="document.getElementById('rcToast').remove()" aria-label="Close">&times;</button>
+        <div class="rc-toast-bar"></div>
     </div>
+    <script>setTimeout(()=>{ const t=document.getElementById('rcToast'); if(t) t.remove(); }, 5200);</script>
 @endif
 
 @if(session('renewal_error'))
-    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius:12px;font-size:.9rem;font-weight:600;background:#f8d7da;border-color:#f5c6cb;color:#721c24;box-shadow:0 4px 12px rgba(114,28,36,.12);margin-bottom:20px;">
-        <span style="margin-right:8px;">⚠️</span> {{ session('renewal_error') }}
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    <div class="rc-toast err" id="rcToastErr" role="alert">
+        <span style="font-size:1.3rem;flex-shrink:0;">⚠️</span>
+        <span style="font-size:.88rem;font-weight:600;line-height:1.45;">{{ session('renewal_error') }}</span>
+        <button class="rc-toast-close" onclick="document.getElementById('rcToastErr').remove()" aria-label="Close">&times;</button>
+        <div class="rc-toast-bar"></div>
     </div>
+    <script>setTimeout(()=>{ const t=document.getElementById('rcToastErr'); if(t) t.remove(); }, 5200);</script>
 @endif
 
 @if($errors->any())
-    <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius:12px;font-size:.9rem;font-weight:600;background:#f8d7da;border-color:#f5c6cb;color:#721c24;box-shadow:0 4px 12px rgba(114,28,36,.12);margin-bottom:20px;">
-        <div style="display:flex;align-items:flex-start;gap:8px;">
-            <span style="font-size:1.1rem;">⚠️</span>
-            <div>
-                <strong style="display:block;margin-bottom:4px;">Please correct the following:</strong>
-                <ul style="margin:0;padding-left:18px;">
-                    @foreach($errors->all() as $err)
-                        <li>{{ $err }}</li>
-                    @endforeach
-                </ul>
-            </div>
+    <div class="rc-toast err" id="rcToastValid" role="alert">
+        <span style="font-size:1.3rem;flex-shrink:0;">⚠️</span>
+        <div style="font-size:.88rem;font-weight:600;line-height:1.5;">
+            <strong style="display:block;margin-bottom:2px;">Please correct the following:</strong>
+            <ul style="margin:0;padding-left:16px;">
+                @foreach($errors->all() as $err)<li>{{ $err }}</li>@endforeach
+            </ul>
         </div>
-        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        <button class="rc-toast-close" onclick="document.getElementById('rcToastValid').remove()" aria-label="Close">&times;</button>
+        <div class="rc-toast-bar"></div>
     </div>
+    <script>setTimeout(()=>{ const t=document.getElementById('rcToastValid'); if(t) t.remove(); }, 7000);</script>
+@endif
 @endif
 
 {{-- Active Renewal Status Card --}}
@@ -63,6 +125,7 @@
 
         <div class="card-body" style="padding:24px;">
             <div class="row g-3">
+                @if(!$noAppointment)
                 <div class="col-md-4">
                     <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px;">
                         <small style="color:#64748B;font-weight:700;font-size:.72rem;letter-spacing:.5px;text-transform:uppercase;">Scheduled Date</small>
@@ -80,6 +143,9 @@
                     </div>
                 </div>
                 <div class="col-md-4">
+                @else
+                <div class="col-md-12">
+                @endif
                     <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:12px;padding:14px 16px;">
                         <small style="color:#64748B;font-weight:700;font-size:.72rem;letter-spacing:.5px;text-transform:uppercase;">Uploaded ID File</small>
                         <div style="margin-top:4px;">
@@ -106,9 +172,19 @@
             @if($renewalRequest->status === 'pending')
                 <div style="margin-top:20px;padding-top:16px;border-top:1px solid #E2E8F0;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
                     <span style="color:#64748B;font-size:.85rem;">
-                        ℹ️ Your renewal appointment is currently pending MSWDO admin approval. Once approved, you will receive an email and notification.
+                        @if($noAppointment)
+                            ℹ️ Your old PWD ID is currently being reviewed by the MSWDO admin. You will be notified once it is approved or rejected.
+                        @else
+                            ℹ️ Your renewal appointment is currently pending MSWDO admin approval. Once approved, you will receive an email and notification.
+                        @endif
                     </span>
-                    <form method="POST" action="{{ route('user.renewals.cancel', $renewalRequest->id) }}" onsubmit="return confirm('Are you sure you want to cancel this renewal request? This will release your appointment slot.');">
+                    <form method="POST" action="{{ route('user.renewals.cancel', $renewalRequest->id) }}"
+                          class="gcm-form"
+                          data-gcm-title="Cancel renewal request?"
+                          data-gcm-message="Are you sure you want to cancel this renewal request? This action cannot be undone."
+                          data-gcm-confirm="Cancel Request"
+                          data-gcm-cancel="Keep It"
+                          data-gcm-class="danger">
                         @csrf
                         <input type="hidden" name="cancel_reason" value="Applicant requested cancellation">
                         <button type="submit" style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:8px;padding:7px 18px;font-weight:700;font-size:.82rem;cursor:pointer;">
@@ -249,8 +325,8 @@
         </div>
     </div>
 
-{{-- Past rejected or cancelled renewal notice --}}
-@elseif(isset($renewalRequest) && $renewalRequest && in_array($renewalRequest->status, ['rejected', 'cancelled']))
+{{-- Past rejected or cancelled renewal notice (only for appointment-based renewals like Solo Parent) --}}
+@elseif(isset($renewalRequest) && $renewalRequest && in_array($renewalRequest->status, ['rejected', 'cancelled']) && !$noAppointment)
     <div class="alert alert-warning mb-4" style="border-radius:14px;border:1.5px solid #fde68a;background:#fffbeb;color:#92400e;padding:16px 20px;">
         <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
             <div>
@@ -267,6 +343,19 @@
     </div>
 @endif
 
+{{-- PWD Renewal: Show rejection reason before the resubmission form (noAppointment mode) --}}
+@if($noAppointment && isset($renewalRequest) && $renewalRequest && $renewalRequest->status === 'rejected')
+    <div style="border-radius:14px;border:1.5px solid #fca5a5;background:#fef2f2;color:#991b1b;padding:16px 20px;margin-bottom:16px;">
+        <div style="font-weight:700;font-size:.95rem;margin-bottom:4px;">Your PWD renewal ID was not accepted.</div>
+        @if($renewalRequest->admin_remarks)
+            <div style="font-size:.88rem;margin-top:6px;padding:10px 14px;background:white;border-left:4px solid #dc2626;border-radius:0 8px 8px 0;color:#7f1d1d;">
+                <strong>Reason:</strong> {{ $renewalRequest->admin_remarks }}
+            </div>
+        @endif
+        <div style="margin-top:8px;font-size:.85rem;color:#7f1d1d;">Please upload a new, clear copy of your valid PWD ID below.</div>
+    </div>
+@endif
+
 {{-- Renewal Submission Form (shown when no active pending/approved renewal) --}}
 @if(!$hasActiveRenewal && !$hasRejectedRenewalWithAppt)
     <div id="renewalFormContainer" class="card mb-4" style="border:none;border-radius:16px;box-shadow:0 4px 20px rgba(44,62,143,.08);overflow:hidden;border:1.5px solid #c7d6f5;">
@@ -277,7 +366,13 @@
                 </div>
                 <div>
                     <h5 style="margin:0;font-weight:800;font-size:1.15rem;letter-spacing:-0.2px;">Request {{ $pLabel }} ID Renewal</h5>
-                    <small style="opacity:.85;font-size:.82rem;">Upload your existing ID and choose an appointment slot for validation</small>
+                    <small style="opacity:.85;font-size:.82rem;">
+                        @if($noAppointment)
+                            Upload your existing ID for admin review. No appointment needed.
+                        @else
+                            Upload your existing ID and choose an appointment slot for validation
+                        @endif
+                    </small>
                 </div>
             </div>
             <span style="background:rgba(253,185,19,.2);color:#FDB913;border-radius:20px;padding:4px 12px;font-size:.75rem;font-weight:700;">
@@ -290,13 +385,18 @@
                 📋 <strong>Renewal Requirements:</strong>
                 <ul style="margin:6px 0 0 18px;padding:0;color:#1e3a8a;">
                     <li>Upload a clear photo or PDF scan of your current or expired <strong>{{ $pLabel }} ID</strong> (Max 5MB).</li>
-                    <li>Appointments are available on <strong>weekdays (Monday–Friday)</strong> between <strong>8:00 AM–12:00 PM</strong> and <strong>1:00 PM–5:00 PM</strong>.</li>
-                    <li>Maximum of <strong>5 appointments per hour</strong> are accepted to prevent office overcrowding.</li>
-                    <li>Your selected appointment will be confirmed once the MSWDO admin reviews and approves your uploaded ID.</li>
+                    @if($noAppointment)
+                        <li>Your uploaded ID will be reviewed by the MSWDO admin. Once <strong>approved</strong>, you can proceed to submit your requirements — same as a new application.</li>
+                        <li>No appointment booking is required for PWD ID renewal.</li>
+                    @else
+                        <li>Appointments are available on <strong>weekdays (Monday–Friday)</strong> between <strong>8:00 AM–12:00 PM</strong> and <strong>1:00 PM–5:00 PM</strong>.</li>
+                        <li>Maximum of <strong>5 appointments per hour</strong> are accepted to prevent office overcrowding.</li>
+                        <li>Your selected appointment will be confirmed once the MSWDO admin reviews and approves your uploaded ID.</li>
+                    @endif
                 </ul>
             </div>
 
-            <form id="renewalSubmitForm" method="POST" action="{{ route('user.renewals.store') }}" enctype="multipart/form-data">
+            <form id="renewalSubmitForm" method="POST" action="{{ route('user.renewals.store') }}" enctype="multipart/form-data" {!! $noAppointment ? 'data-no-appointment="1"' : '' !!}>
                 @csrf
                 <input type="hidden" name="program_type" value="{{ $pType }}">
 
@@ -328,7 +428,8 @@
                         </div>
                     </div>
 
-                    {{-- Appointment Date Selection --}}
+                    {{-- Appointment Date Selection (hidden for no-appointment programs like PWD) --}}
+                    @if(!$noAppointment)
                     <div class="col-md-6">
                         <label class="form-label" style="font-weight:700;font-size:.88rem;color:#1E293B;">
                             Select Appointment Date <span style="color:#dc2626;">*</span>
@@ -343,7 +444,7 @@
                             <label class="form-label" style="font-weight:700;font-size:.88rem;color:#1E293B;">
                                 Select Appointment Time Slot <span style="color:#dc2626;">*</span>
                             </label>
-                            <input type="hidden" name="appointment_time" id="apptTime-renew" required>
+                            <input type="hidden" name="appointment_time" id="apptTime-renew">
 
                             <button type="button" id="timePickerBtn-renew" class="sp-timepicker-btn" onclick="openClockModal('renew')" disabled>
                                 <span class="sp-timepicker-icon">🕐</span>
@@ -352,6 +453,7 @@
                             <div id="slotMsg-renew" class="sp-hint" style="font-size:.78rem;margin-top:6px;min-height:18px;"></div>
                         </div>
                     </div>
+                    @endif
 
                     {{-- User Notes with 200-Character Limit & Live Counter --}}
                     <div class="col-12">
@@ -519,11 +621,12 @@
 
         // Form submit validation
         document.getElementById('renewalSubmitForm')?.addEventListener('submit', function(e) {
+            const noAppt = this.dataset.noAppointment === '1';
             const time = document.getElementById('apptTime-renew')?.value;
             const file = document.getElementById('renewalIdFileInput')?.files[0];
             const notes = document.getElementById('userNotes-renew')?.value;
 
-            if (!time) {
+            if (!noAppt && !time) {
                 e.preventDefault();
                 alert('Please select an appointment time slot.');
                 return;
@@ -542,6 +645,28 @@
             btn.disabled = true;
             btn.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Submitting Request...';
         });
+
+    // Wire .gcm-form to global custom confirm modal
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('.gcm-form').forEach(function (form) {
+            form.addEventListener('submit', async function (e) {
+                e.preventDefault();
+                if (typeof uiConfirm !== 'function') { form.submit(); return; }
+                const ok = await uiConfirm({
+                    title:        form.dataset.gcmTitle   || 'Confirm Action',
+                    message:      form.dataset.gcmMessage || 'Are you sure?',
+                    confirmText:  form.dataset.gcmConfirm || 'Confirm',
+                    cancelText:   form.dataset.gcmCancel  || 'Cancel',
+                    confirmClass: form.dataset.gcmClass   || 'default',
+                });
+                if (ok) {
+                    const btn = form.querySelector('[type="submit"]');
+                    if (btn) btn.disabled = true;
+                    form.submit();
+                }
+            });
+        });
+    });
     </script>
 
 @if(empty($hasClockModal))

@@ -129,6 +129,71 @@ class RenewalController extends Controller
             return back()->with('renewal_success', 'Your replacement Valid ID has been uploaded successfully! Your existing appointment has been preserved.');
         }
 
+        // ── PWD renewal: no appointment needed — just store ID upload and wait for admin review ──
+        if ($request->program_type === 'PWD') {
+            // Prevent duplicate active renewal for PWD
+            $existingRenewal = RenewalRequest::where('user_id', $user->id)
+                ->where('program_type', 'PWD')
+                ->whereIn('status', ['pending', 'approved'])
+                ->first();
+
+            if ($existingRenewal) {
+                $msg = $existingRenewal->status === 'approved'
+                    ? 'You already have an approved PWD renewal on record.'
+                    : 'You already have a pending PWD renewal under review. Please wait for the admin decision.';
+                return back()->with('renewal_error', $msg);
+            }
+
+            // Store uploaded ID file
+            $file = $request->file('id_file');
+            $originalName = $file->getClientOriginalName();
+            $storedPath = $file->store('renewals/pwd', 'public');
+
+            $renewal = RenewalRequest::create([
+                'user_id'        => $user->id,
+                'municipality'   => $user->municipality,
+                'program_type'   => 'PWD',
+                'id_file_path'   => $storedPath,
+                'id_file_name'   => $originalName,
+                'appointment_id' => null,
+                'status'         => 'pending',
+                'user_notes'     => $request->user_notes,
+            ]);
+
+            // Notify admins (in-app)
+            try {
+                $admins = User::where('role', 'admin')->where('municipality', $user->municipality)->get();
+                foreach ($admins as $admin) {
+                    DB::table('notifications')->insert([
+                        'user_id'    => $admin->id,
+                        'type'       => 'pwd',
+                        'title'      => 'New PWD Renewal Request',
+                        'body'       => $user->full_name . ' submitted a PWD renewal request. Please review and verify the uploaded ID.',
+                        'is_read'    => false,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            } catch (\Exception $e) {
+                Log::error('Admin PWD renewal notification failed: ' . $e->getMessage());
+            }
+
+            // Notify user via email that their ID was received
+            try {
+                if (!empty($user->email)) {
+                    \Illuminate\Support\Facades\Mail::to($user->email)->send(
+                        new \App\Mail\PwdRenewalSubmittedMail($renewal->load('user'))
+                    );
+                }
+            } catch (\Throwable $e) {
+                Log::error('PWD renewal submission email failed: ' . $e->getMessage());
+            }
+
+            return back()->with('renewal_success', 'Your PWD ID has been submitted for review. The admin will verify your ID. Once approved, you can proceed with your application requirements.');
+        }
+
+        // ── Solo Parent renewal: appointment required ──
+
         // Fresh renewal: validate appointment date and time
         $request->validate([
             'appointment_date' => 'required|date|after:today',
@@ -277,6 +342,7 @@ class RenewalController extends Controller
 
         return back()->with('renewal_success', 'Your renewal request and appointment have been submitted! The admin will review your ID and schedule.');
     }
+
 
     /**
      * User views their own uploaded ID document (GET /user/renewals/{id}/id-file)

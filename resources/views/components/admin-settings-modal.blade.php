@@ -166,8 +166,15 @@
         .catch(() => showSettingsToast('Network error.', 'danger'));
     }
 
-    function resetModalColors() {
-        if (!confirm('Reset all colors to default values?')) return;
+    async function resetModalColors() {
+        const ok = await uiConfirm({
+            title:       'Reset colors to default?',
+            message:     'Reset all colors to their default values? Your current customization will be lost.',
+            confirmText: 'Reset',
+            cancelText:  'Keep Current',
+            confirmClass:'warning'
+        });
+        if (!ok) return;
 
         fetch('/admin/settings/reset', {
             method: 'POST',

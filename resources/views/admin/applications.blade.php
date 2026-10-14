@@ -234,10 +234,15 @@
                                             <td>
                                                 <div class="action-gap">
                                                     @if($app->status !== 'approved')
-                                                        <form method="POST" action="{{ route('admin.applications.status', $app->id) }}" style="display:inline;">
+                                                        <form method="POST" action="{{ route('admin.applications.status', $app->id) }}"
+                                                              class="gcm-form" style="display:inline;"
+                                                              data-gcm-title="Approve application?"
+                                                              data-gcm-message="Approve this application for {{ addslashes($app->full_name ?? '') }}? The applicant will be notified."
+                                                              data-gcm-confirm="Approve"
+                                                              data-gcm-class="default">
                                                             @csrf
                                                             <input type="hidden" name="status" value="approved">
-                                                            <button type="submit" class="btn-action btn-approve" onclick="return confirm('Approve this application?')">✔ Approve</button>
+                                                            <button type="submit" class="btn-action btn-approve">Approve</button>
                                                         </form>
                                                     @endif
                                                     @if($app->status !== 'rejected')
@@ -360,6 +365,28 @@
             }
             new bootstrap.Modal(document.getElementById('filePreviewModal')).show();
         }
+
+        // Wire .gcm-form to global custom confirm modal
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('.gcm-form').forEach(function (form) {
+                form.addEventListener('submit', async function (e) {
+                    e.preventDefault();
+                    if (typeof uiConfirm !== 'function') { form.submit(); return; }
+                    const ok = await uiConfirm({
+                        title:        form.dataset.gcmTitle   || 'Confirm Action',
+                        message:      form.dataset.gcmMessage || 'Are you sure?',
+                        confirmText:  form.dataset.gcmConfirm || 'Confirm',
+                        cancelText:   form.dataset.gcmCancel  || 'Cancel',
+                        confirmClass: form.dataset.gcmClass   || 'default',
+                    });
+                    if (ok) {
+                        const btn = form.querySelector('[type="submit"]');
+                        if (btn) btn.disabled = true;
+                        form.submit();
+                    }
+                });
+            });
+        });
     </script>
 </body>
 </html>

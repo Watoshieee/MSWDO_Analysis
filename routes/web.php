@@ -327,6 +327,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/renewals/{id}/id-file', [\App\Http\Controllers\Admin\RenewalAdminController::class, 'serveIdFile'])->name('renewals.id-file');
     Route::post('/renewals/{id}/approve', [\App\Http\Controllers\Admin\RenewalAdminController::class, 'approve'])->name('renewals.approve');
     Route::post('/renewals/{id}/reject', [\App\Http\Controllers\Admin\RenewalAdminController::class, 'reject'])->name('renewals.reject');
+    Route::delete('/renewals/{id}/archive', [\App\Http\Controllers\Admin\RenewalAdminController::class, 'archive'])->name('renewals.archive');
+    Route::patch('/renewals/{id}/restore', [\App\Http\Controllers\Admin\RenewalAdminController::class, 'restore'])->name('renewals.restore');
+    Route::delete('/renewals/{id}/force-delete', [\App\Http\Controllers\Admin\RenewalAdminController::class, 'forceDelete'])->name('renewals.force-delete');
 
     // Chat routes for admin
     Route::get('/chat/users', [App\Http\Controllers\ChatController::class, 'getUsers'])->name('chat.users');

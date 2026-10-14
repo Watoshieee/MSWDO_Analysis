@@ -794,11 +794,16 @@
                             onmouseout="this.style.background='rgba(253,185,19,0.2)'">
                             ⚙️ Solo Parent Requirements
                         </a>
+                        @php
+                            $archivedAppCount = isset($archivedApplications) ? $archivedApplications->count() : 0;
+                            $archivedRenewalCount = isset($archivedRenewals) ? $archivedRenewals->count() : 0;
+                            $archivedTotalCount = $archivedAppCount + $archivedRenewalCount;
+                        @endphp
                         <button type="button" onclick="document.getElementById('archiveModal').style.display='flex'"
                             style="background:rgba(255,255,255,0.12);border:1.5px solid rgba(255,255,255,0.3);color:white;border-radius:20px;padding:5px 16px;font-size:0.8rem;font-weight:700;cursor:pointer;display:flex;align-items:center;gap:6px;transition:all .2s;"
                             onmouseover="this.style.background='rgba(255,255,255,0.22)'"
                             onmouseout="this.style.background='rgba(255,255,255,0.12)'">
-                            Archived ({{ isset($archivedApplications) ? $archivedApplications->count() : 0 }})
+                            Archived ({{ $archivedTotalCount }})
                         </button>
                         <span
                             style="font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.15);padding:4px 12px;border-radius:20px;">
@@ -840,7 +845,7 @@
                                 style="height:36px;padding:0 16px;">Reset</a>
                         </div>
                     </form>
-                    @if($applications->count() > 0)
+                    @if($applications->count() > 0 || $pwdRenewalRequests->count() > 0)
                         <div class="table-responsive">
                             <table class="table mb-0">
                                 <thead>
@@ -967,18 +972,170 @@
                                             </td>
                                         </tr>
                                     @endforeach
+
+                                    {{-- PWD Renewal ID Verification rows --}}
+                                    @foreach($pwdRenewalRequests as $rr)
+                                    <tr style="background:{{ $rr->status === 'pending' ? '#fffbeb' : '#fff' }};">
+                                        <td>
+                                            <div style="font-weight:700;color:#1e293b;">{{ $rr->user->full_name ?? 'N/A' }}</div>
+                                            <div style="font-size:.72rem;color:#94a3b8;">{{ $rr->user->contact_number ?? $rr->user->phone_number ?? '—' }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="prog-tag" style="background:#fff3d6;color:#92400e;border:1.5px solid #fde68a;">PWD Renewal - ID Verification</span>
+                                        </td>
+                                        <td style="font-size:.85rem;color:#475569;">{{ $rr->user->barangay ?? '—' }}</td>
+                                        <td style="font-size:.82rem;color:#64748b;">{{ $rr->created_at->format('M j, Y') }}</td>
+                                        <td>
+                                            @if($rr->status === 'pending')
+                                                <span class="status-pill status-pending">Pending Review</span>
+                                            @elseif($rr->status === 'approved')
+                                                <span class="status-pill status-approved">ID Approved</span>
+                                            @elseif($rr->status === 'rejected')
+                                                <span class="status-pill status-rejected">ID Rejected</span>
+                                            @else
+                                                <span class="status-pill">{{ ucfirst($rr->status) }}</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            <div class="action-gap">
+                                                {{-- View ID → opens modal (Approve/Reject inside modal only) --}}
+                                                <button type="button" class="btn-action btn-action-secondary"
+                                                    onclick="openPwdIdModal({{ $rr->id }}, '{{ route('admin.renewals.id-file', $rr->id) }}', '{{ addslashes($rr->user->full_name ?? '') }}', '{{ $rr->status }}', '{{ addslashes($rr->admin_remarks ?? '') }}')"
+                                                    style="background:#e5eeff;color:#2C3E8F;border:1.5px solid #c7d6f5;">
+                                                    View ID
+                                                </button>
+                                                {{-- Archive --}}
+                                                <form method="POST" action="{{ route('admin.renewals.archive', $rr->id) }}"
+                                                      class="gcm-form" style="display:inline;"
+                                                      data-gcm-title="Archive renewal request?"
+                                                      data-gcm-message="Archive the renewal request for &quot;{{ addslashes($rr->user->full_name ?? '') }}&quot;? It will be moved to the archive."
+                                                      data-gcm-confirm="Archive"
+                                                      data-gcm-class="warning">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn-action btn-archive"
+                                                            style="background:#f1f5f9;color:#475569;border:1.5px solid #cbd5e1;">
+                                                        Archive
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>
                         <div class="p-3">{{ $applications->appends(request()->query())->links() }}</div>
-                    @else
-                        <div class="empty-state">
-                            <div class="empty-num">0</div>
-                            <p>No applications submitted yet for <strong>{{ $municipality }}</strong>.</p>
-                        </div>
                     @endif
                 </div>
             </div>
+
+            {{-- PWD Renewal: View ID Modal --}}
+            <div id="pwdIdModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:99999;align-items:center;justify-content:center;padding:16px;">
+                <div style="background:white;border-radius:20px;width:100%;max-width:720px;max-height:90vh;overflow:hidden;box-shadow:0 24px 64px rgba(0,0,0,.3);display:flex;flex-direction:column;">
+                    <div style="background:linear-gradient(135deg,#2C3E8F 0%,#1A2A5C 100%);color:white;padding:18px 24px;display:flex;align-items:center;justify-content:space-between;">
+                        <div>
+                        <div style="font-weight:800;font-size:1.05rem;">PWD Old ID - Verification</div>
+                            <div id="pwdIdModalName" style="font-size:.82rem;opacity:.8;margin-top:2px;"></div>
+                        </div>
+                        <button onclick="document.getElementById('pwdIdModal').style.display='none'" style="background:transparent;border:none;color:white;font-size:1.5rem;cursor:pointer;line-height:1;">&times;</button>
+                    </div>
+                    <div style="flex:1;overflow:auto;padding:20px;">
+                        <iframe id="pwdIdFrame" src="" style="width:100%;height:460px;border:1.5px solid #e2e8f0;border-radius:12px;" title="PWD ID Preview"></iframe>
+                        <div id="pwdIdRemarks" style="display:none;margin-top:14px;background:#fff8e6;border-left:4px solid #FDB913;border-radius:0 8px 8px 0;padding:12px 16px;font-size:.88rem;color:#856404;"></div>
+                    </div>
+                    <div id="pwdIdActions" style="padding:16px 20px;border-top:1px solid #e2e8f0;display:flex;gap:12px;justify-content:flex-end;"></div>
+                </div>
+            </div>
+
+            {{-- PWD Renewal: Reject Remarks Modal --}}
+            <div id="pwdRejectModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:100000;align-items:center;justify-content:center;padding:16px;">
+                <div style="background:white;border-radius:20px;padding:32px;max-width:480px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,.3);">
+                    <h4 style="font-weight:800;color:#1e293b;margin:0 0 8px;">Reject PWD Renewal ID</h4>
+                    <p style="color:#64748b;font-size:.88rem;margin:0 0 20px;">Provide a reason so the user can resubmit a correct ID.</p>
+                    <form id="pwdRejectForm" method="POST" action="">
+                        @csrf
+                        <textarea name="admin_remarks" rows="3" required placeholder="e.g. ID photo is blurry, expired ID, not a valid PWD ID..."
+                            style="width:100%;border:1.5px solid #e2e8f0;border-radius:10px;padding:12px;font-size:.88rem;resize:none;outline:none;font-family:inherit;box-sizing:border-box;"></textarea>
+                        <div style="display:flex;gap:12px;margin-top:16px;justify-content:flex-end;">
+                            <button type="button" onclick="document.getElementById('pwdRejectModal').style.display='none'"
+                                style="background:#f1f5f9;color:#475569;border:none;border-radius:10px;padding:10px 22px;font-weight:700;cursor:pointer;">Cancel</button>
+                            <button type="submit"
+                                style="background:#dc2626;color:white;border:none;border-radius:10px;padding:10px 22px;font-weight:700;cursor:pointer;">Confirm Reject</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <script>
+                function openPwdIdModal(id, fileUrl, name, status, remarks) {
+                    document.getElementById('pwdIdFrame').src = fileUrl;
+                    document.getElementById('pwdIdModalName').textContent = name;
+                    const rmkEl = document.getElementById('pwdIdRemarks');
+                    if (remarks) {
+                        rmkEl.textContent = 'Admin Remarks: ' + remarks;
+                        rmkEl.style.display = 'block';
+                    } else {
+                        rmkEl.style.display = 'none';
+                    }
+                    const actEl = document.getElementById('pwdIdActions');
+                    if (status === 'pending') {
+                        actEl.innerHTML = `
+                            <form id="pwdApproveForm" method="POST" action="/admin/renewals/${id}/approve">
+                                <input type="hidden" name="_token" value="{{ csrf_token() }}">
+                                <button type="button" onclick="handlePwdApprove()" style="background:#16a34a;color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;">Approve ID</button>
+                            </form>
+                            <button type="button" onclick="document.getElementById('pwdIdModal').style.display='none';openPwdRejectModal(${id})"
+                                style="background:#dc2626;color:white;border:none;border-radius:10px;padding:10px 24px;font-weight:700;cursor:pointer;">Reject ID</button>
+                        `;
+                    } else {
+                        actEl.innerHTML = `<span style="font-size:.88rem;color:#64748b;font-weight:600;">This ID has already been <strong>${status}</strong>.</span>`;
+                    }
+                    document.getElementById('pwdIdModal').style.display = 'flex';
+                }
+                function openPwdRejectModal(id) {
+                    document.getElementById('pwdRejectForm').action = '/admin/renewals/' + id + '/reject';
+                    document.getElementById('pwdRejectModal').style.display = 'flex';
+                }
+
+                async function handlePwdApprove() {
+                    const ok = await uiConfirm({
+                        title:       'Approve PWD Renewal ID?',
+                        message:     'Approve this PWD renewal ID? The applicant will be notified and allowed to proceed with their requirements.',
+                        confirmText: 'Approve',
+                        cancelText:  'Cancel',
+                        confirmClass:'default'
+                    });
+                    if (!ok) return;
+                    const form = document.getElementById('pwdApproveForm');
+                    if (form) {
+                        const btn = form.querySelector('button');
+                        if (btn) btn.disabled = true;
+                        form.submit();
+                    }
+                }
+
+                // Wire all .gcm-form elements to custom confirm modal
+                document.addEventListener('DOMContentLoaded', function () {
+                    document.querySelectorAll('.gcm-form').forEach(function (form) {
+                        form.addEventListener('submit', async function (e) {
+                            e.preventDefault();
+                            const ok = await uiConfirm({
+                                title:        form.dataset.gcmTitle   || 'Confirm Action',
+                                message:      form.dataset.gcmMessage || 'Are you sure?',
+                                confirmText:  form.dataset.gcmConfirm || 'Confirm',
+                                cancelText:   form.dataset.gcmCancel  || 'Cancel',
+                                confirmClass: form.dataset.gcmClass   || 'default',
+                            });
+                            if (ok) {
+                                const btn = form.querySelector('[type="submit"]');
+                                if (btn) btn.disabled = true;
+                                form.submit();
+                            }
+                        });
+                    });
+                });
+            </script>
 
             <div class="panel-card" style="margin-top:28px;">
                 <div class="panel-header" style="display:flex;align-items:center;justify-content:space-between;">
@@ -1826,7 +1983,7 @@
                 <div>
                     <div style="color:white;font-weight:800;font-size:1rem;">Archived Applications</div>
                     <div style="color:rgba(255,255,255,.7);font-size:.8rem;margin-top:2px;">
-                        {{ isset($archivedApplications) ? $archivedApplications->count() : 0 }} archived record(s)
+                        {{ $archivedTotalCount }} archived record(s)
                         &mdash; restore or permanently delete
                     </div>
                 </div>
@@ -1837,7 +1994,7 @@
             </div>
             {{-- Modal body --}}
             <div style="overflow-y:auto;padding:0;">
-                @if(isset($archivedApplications) && $archivedApplications->count() > 0)
+                @if($archivedTotalCount > 0)
                     <table class="table mb-0" style="font-size:.85rem;">
                         <thead>
                             <tr>
@@ -1887,6 +2044,51 @@
                                                 <button type="submit" class="btn-action btn-decline js-confirm-submit"
                                                     data-confirm-title="Permanently delete?"
                                                     data-confirm-message="Permanently delete this application? This cannot be undone."
+                                                    data-confirm-ok="Delete" style="font-size:.76rem;">
+                                                    Delete
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            @endforeach
+                            @foreach($archivedRenewals ?? [] as $rr)
+                                <tr style="background:#fffbeb;">
+                                    <td>
+                                        <div style="font-weight:700;color:#475569;">{{ $rr->user->full_name ?? 'N/A' }}</div>
+                                        <div style="font-size:.72rem;color:#94a3b8;">{{ $rr->user->phone_number ?? $rr->user->mobile_number ?? '—' }}</div>
+                                    </td>
+                                    <td>
+                                        <span class="prog-tag" style="background:#fff3d6;color:#92400e;border:1.5px solid #fde68a;">
+                                            PWD Renewal - ID Verification
+                                        </span>
+                                    </td>
+                                    <td style="color:#94a3b8;">{{ $rr->user->barangay ?? '—' }}</td>
+                                    <td style="color:#94a3b8;font-size:.8rem;">
+                                        {{ $rr->created_at ? $rr->created_at->format('M j, Y') : '—' }}
+                                    </td>
+                                    <td style="color:#94a3b8;font-size:.8rem;">
+                                        {{ $rr->deleted_at ? $rr->deleted_at->format('M j, Y') : '—' }}
+                                    </td>
+                                    <td>
+                                        <div class="action-gap">
+                                            <form method="POST" action="{{ route('admin.renewals.restore', $rr->id) }}"
+                                                style="display:inline;">
+                                                @csrf @method('PATCH')
+                                                <button type="submit" class="btn-action btn-approve js-confirm-submit"
+                                                    data-confirm-title="Restore renewal request?"
+                                                    data-confirm-message="Restore this PWD renewal request?" data-confirm-ok="Restore"
+                                                    style="font-size:.76rem;">
+                                                    Restore
+                                                </button>
+                                            </form>
+                                            <form method="POST"
+                                                action="{{ route('admin.renewals.force-delete', $rr->id) }}"
+                                                style="display:inline;">
+                                                @csrf @method('DELETE')
+                                                <button type="submit" class="btn-action btn-decline js-confirm-submit"
+                                                    data-confirm-title="Permanently delete?"
+                                                    data-confirm-message="Permanently delete this PWD renewal request? This cannot be undone."
                                                     data-confirm-ok="Delete" style="font-size:.76rem;">
                                                     Delete
                                                 </button>

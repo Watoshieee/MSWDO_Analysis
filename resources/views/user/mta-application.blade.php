@@ -1042,6 +1042,5 @@
 
         goToStep({{ !empty($uploadedCount) ? 2 : 0 }});
     </script>
-    @include('components.user-dock-chat')
 </body>
 </html>

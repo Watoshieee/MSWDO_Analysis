@@ -301,7 +301,11 @@
                                                     </form>
                                                 @endif
                                                 <form method="POST" action="{{ route('admin.announcements.destroy', $ann) }}"
-                                                    onsubmit="return confirm('Delete this announcement permanently?');">
+                                                    class="gcm-form"
+                                                    data-gcm-title="Delete announcement?"
+                                                    data-gcm-message="Delete this announcement permanently? This action cannot be undone."
+                                                    data-gcm-confirm="Delete"
+                                                    data-gcm-class="danger">
                                                     @csrf @method('DELETE')
                                                     <button class="btn-act btn-del">Delete</button>
                                                 </form>

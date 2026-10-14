@@ -652,7 +652,6 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 </div>
 
 @include('components.user-notification-modal')
-@include('components.user-dock-chat')
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 <script>
 const AICS_STORAGE_KEY = @json($aicsStorageKey);
