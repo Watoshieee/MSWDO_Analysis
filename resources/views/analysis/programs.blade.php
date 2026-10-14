@@ -627,6 +627,10 @@
             background: #EEF5FF;
         }
 
+        .vmg-dyn-track .col-md-4 {
+            min-width: 0;
+        }
+
         .vmg-dyn-card {
             background: #fff !important;
             border-radius: 16px;
@@ -634,6 +638,9 @@
             height: 100%;
             box-shadow: 0 4px 24px rgba(44, 62, 143, .1);
             position: relative;
+            min-width: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
         }
 
         .vmg-dyn-icon {
@@ -661,6 +668,9 @@
             color: #334155;
             line-height: 1.78;
             margin: 0;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            min-width: 0;
         }
 
         /* ===== DYNAMIC STRATEGIC GOALS SLIDER ===== */

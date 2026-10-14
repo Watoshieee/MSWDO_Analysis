@@ -811,7 +811,7 @@
                         <div class="p-3">{{ $applications->appends(request()->query())->links() }}</div>
                     @else
                         <div class="empty-state">
-                            <div class="empty-num">00</div>
+                            <div class="empty-num">0</div>
                             <p>No applications submitted yet for <strong>{{ $municipality }}</strong>.</p>
                         </div>
                     @endif
@@ -1075,6 +1075,11 @@
                     } else {
                         actions = '<span style="color:#94a3b8;font-size:.78rem;">—</span>';
                     }
+                }
+
+                                // Prepend View Uploaded ID button if renewal request is attached
+                if (a.renewal && a.renewal.id_file_url) {
+                    actions = `<button onclick="viewRenewalId('${a.renewal.id_file_url}', '${encodeURIComponent(a.user_name)}', '${a.renewal.program_type}', ${a.renewal.id}, '${a.renewal.status}', '${encodeURIComponent(a.renewal.admin_remarks || '')}')" style="background:linear-gradient(135deg,#f59e0b,#d97706);color:white;border:none;border-radius:8px;padding:5px 12px;font-size:.78rem;font-weight:700;cursor:pointer;margin-right:6px;">View Uploaded ID</button>` + actions;
                 }
 
                 // Build notes data for modal
@@ -2176,6 +2181,170 @@
                 });
             }
         });
+        function viewRenewalId(url, name, prog, renewalId, renewalStatus, adminRemarks) {
+            var _lastRenewalRemarks = decodeURIComponent(adminRemarks || '');
+            const displayName = decodeURIComponent(name);
+            document.getElementById('renewalIdModalApplicant').textContent = displayName + ' (' + (prog === 'PWD' ? 'PWD' : 'Solo Parent') + ' ID)';
+            document.getElementById('renewalIdDownloadLink').href = url;
+            const container = document.getElementById('renewalIdViewerContainer');
+            container.innerHTML = '<div style="padding:40px;color:#64748b;text-align:center;"><div class="spinner-border spinner-border-sm me-2"></div>Loading ID document...</div>';
+
+            const actionsContainer = document.getElementById('renewalIdModalActions');
+            if (actionsContainer) {
+                if (renewalStatus === 'pending' && renewalId) {
+                    actionsContainer.innerHTML = `
+                        <button type="button" onclick="approveRenewalId(${renewalId})" style="background:linear-gradient(135deg,#059669,#047857);color:white;border:none;border-radius:8px;padding:8px 18px;font-weight:700;cursor:pointer;font-size:.85rem;">Approve ID</button>
+                        <button type="button" onclick="openRejectRenewalIdModal(${renewalId})" style="background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;border:none;border-radius:8px;padding:8px 18px;font-weight:700;cursor:pointer;font-size:.85rem;">Reject ID</button>
+                    `;
+                } else if (renewalStatus === 'approved') {
+                    actionsContainer.innerHTML = '<span style="background:#ecfdf5;color:#047857;border-radius:20px;padding:4px 14px;font-size:.8rem;font-weight:700;">ID Approved</span>';
+                } else if (renewalStatus === 'rejected') {
+                    actionsContainer.innerHTML = '<span style="background:#fef2f2;color:#b91c1c;border-radius:20px;padding:4px 14px;font-size:.8rem;font-weight:700;">ID Rejected</span>';
+                    if (_lastRenewalRemarks) {
+                        const remarkDiv = document.createElement('div');
+                        remarkDiv.style.cssText = 'margin-top:8px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:10px 14px;font-size:.82rem;color:#991b1b;';
+                        remarkDiv.textContent = 'Rejection reason: ' + _lastRenewalRemarks;
+                        actionsContainer.parentElement.appendChild(remarkDiv);
+                    }
+                } else {
+                    actionsContainer.innerHTML = '';
+                }
+            }
+
+            document.getElementById('renewalIdModal').style.display = 'flex';
+
+            const isPdf = url.toLowerCase().includes('.pdf');
+            if (isPdf) {
+                container.innerHTML = `<iframe src="${url}" style="width:100%;height:65vh;border:none;border-radius:8px;"></iframe>`;
+            } else {
+                container.innerHTML = `<img src="${url}" alt="Renewal ID" style="max-width:100%;max-height:65vh;object-fit:contain;border-radius:8px;box-shadow:0 4px 12px rgba(0,0,0,0.1);" onerror="this.onerror=null;this.parentElement.innerHTML='<iframe src=\'${url}\' style=\'width:100%;height:65vh;border:none;\'></iframe>';">`;
+            }
+        }
+
+        function closeRenewalIdModal() {
+            document.getElementById('renewalIdModal').style.display = 'none';
+            document.getElementById('renewalIdViewerContainer').innerHTML = '';
+        }
+
+        function approveRenewalId(renewalId) {
+            if (!confirm("Are you sure you want to approve this renewal applicant's ID? Once approved, you can confirm their appointment.")) return;
+            const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
+            fetch('/admin/renewals/' + renewalId + '/approve', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ admin_remarks: 'Renewal ID approved by admin' })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    if (typeof uiToast === 'function') { uiToast(data.message || 'Renewal ID approved.'); } else { alert(data.message || 'Renewal ID approved.'); }
+                    closeRenewalIdModal();
+                    loadAppointments();
+                } else {
+                    alert(data.message || 'Failed to approve renewal ID.');
+                }
+            })
+            .catch(e => {
+                alert('Server error approving renewal ID.');
+            });
+        }
+
+        var _rejectRenewalTargetId = null;
+
+        function openRejectRenewalIdModal(renewalId) {
+            _rejectRenewalTargetId = renewalId;
+            const nameEl = document.getElementById('renewalIdModalApplicant');
+            document.getElementById('rejectRenewalApplicantName').textContent = nameEl ? nameEl.textContent : 'Applicant';
+            document.getElementById('rejectRenewalReasonSelect').value = '';
+            document.getElementById('rejectRenewalNotes').value = '';
+            document.getElementById('rejectRenewalCommentsLabel').innerHTML = 'Additional Comments <span style="font-size:.75rem;font-weight:400;color:#64748b;">(Optional)</span>';
+            document.getElementById('rejectRenewalError').style.display = 'none';
+            document.getElementById('rejectRenewalSubmitBtn').disabled = false;
+            document.getElementById('rejectRenewalSubmitBtn').textContent = 'Confirm Rejection';
+            document.getElementById('rejectRenewalIdModal').style.display = 'flex';
+        }
+
+        function closeRejectRenewalIdModal() {
+            document.getElementById('rejectRenewalIdModal').style.display = 'none';
+            _rejectRenewalTargetId = null;
+        }
+
+        function onRejectRenewalReasonChange() {
+            const val = document.getElementById('rejectRenewalReasonSelect').value;
+            const label = document.getElementById('rejectRenewalCommentsLabel');
+            if (val === 'Other') {
+                label.innerHTML = 'Specify Reason <span style="color:#C41E24;">*</span>';
+            } else {
+                label.innerHTML = 'Additional Comments <span style="font-size:.75rem;font-weight:400;color:#64748b;">(Optional)</span>';
+            }
+        }
+
+        function submitRejectRenewalId() {
+            if (!_rejectRenewalTargetId) return;
+            const selectVal = document.getElementById('rejectRenewalReasonSelect').value.trim();
+            const notesVal  = document.getElementById('rejectRenewalNotes').value.trim();
+            const errorDiv  = document.getElementById('rejectRenewalError');
+
+            let finalRemarks = selectVal;
+            if (selectVal === 'Other') {
+                if (!notesVal) {
+                    errorDiv.textContent = 'Please specify the reason in the text box below.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                finalRemarks = notesVal;
+            } else if (!selectVal) {
+                if (!notesVal) {
+                    errorDiv.textContent = 'Please select a reason or enter comments.';
+                    errorDiv.style.display = 'block';
+                    return;
+                }
+                finalRemarks = notesVal;
+            } else if (notesVal) {
+                finalRemarks = selectVal + ' — ' + notesVal;
+            }
+
+            errorDiv.style.display = 'none';
+            const btn = document.getElementById('rejectRenewalSubmitBtn');
+            btn.disabled = true;
+            btn.textContent = 'Rejecting...';
+
+            const csrfToken = document.querySelector('meta[name="csrf-token"]') ? document.querySelector('meta[name="csrf-token"]').content : '{{ csrf_token() }}';
+
+            fetch('/admin/renewals/' + _rejectRenewalTargetId + '/reject', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': csrfToken,
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({ admin_remarks: finalRemarks })
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    if (typeof uiToast === 'function') { uiToast(data.message || 'Renewal ID rejected.'); } else { alert(data.message || 'Renewal ID rejected.'); }
+                    closeRejectRenewalIdModal();
+                    closeRenewalIdModal();
+                    loadAppointments();
+                } else {
+                    errorDiv.textContent = data.message || 'Failed to reject renewal ID.';
+                    errorDiv.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = 'Confirm Rejection';
+                }
+            })
+            .catch(e => {
+                errorDiv.textContent = 'Server error rejecting renewal ID. Please try again.';
+                errorDiv.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = 'Confirm Rejection';
+            });
+        }
     </script>
 
     {{-- Admin Reschedule Modal --}}
@@ -2205,6 +2374,81 @@
         </div>
     </div>
 
+    <!-- RENEWAL ID PREVIEW MODAL -->
+    <div id="renewalIdModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(4px);padding:16px;">
+        <div style="background:white;border-radius:16px;width:100%;max-width:850px;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 20px 40px rgba(0,0,0,0.25);overflow:hidden;">
+            <div style="background:linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);color:white;padding:16px 22px;display:flex;align-items:center;justify-content:space-between;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                    <span style="font-size:1.3rem;">🪪</span>
+                    <div>
+                        <h6 style="margin:0;font-weight:800;font-size:1rem;" id="renewalIdModalApplicant">Applicant Uploaded ID</h6>
+                        <small style="opacity:.85;font-size:.78rem;">MSWDO ID Renewal Review</small>
+                    </div>
+                </div>
+                <button type="button" onclick="closeRenewalIdModal()" style="background:transparent;border:none;color:white;font-size:1.4rem;line-height:1;cursor:pointer;">&times;</button>
+            </div>
+            <div id="renewalIdViewerContainer" style="padding:16px;overflow-y:auto;display:flex;align-items:center;justify-content:center;min-height:300px;background:#f8fafc;">
+            </div>
+            <div style="padding:12px 20px;border-top:1px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;background:white;">
+                <a id="renewalIdDownloadLink" href="#" target="_blank" download style="color:#2C3E8F;font-weight:700;font-size:.85rem;text-decoration:none;">
+                    📥 Open / Download Original File
+                </a>
+                <div style="display:flex;align-items:center;gap:8px;">
+                    <div id="renewalIdModalActions" style="display:flex;align-items:center;gap:8px;"></div>
+                    <button type="button" onclick="closeRenewalIdModal()" style="background:#e2e8f0;color:#64748b;border:none;border-radius:8px;padding:8px 18px;font-weight:700;cursor:pointer;font-size:.85rem;">
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {{-- Reject Renewal ID Modal --}}
+    <div id="rejectRenewalIdModal"
+        style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;backdrop-filter:blur(2px);"
+        onclick="if(event.target===this) closeRejectRenewalIdModal()">
+        <div style="background:white;border-radius:16px;padding:0;max-width:480px;width:92%;box-shadow:0 12px 48px rgba(0,0,0,.25);overflow:hidden;">
+            <div style="background:linear-gradient(135deg,#C41E24 0%,#8B1419 100%);color:white;padding:18px 24px;display:flex;align-items:center;gap:10px;">
+                <span style="font-size:1.2rem;">⚠️</span>
+                <div>
+                    <h5 style="font-weight:800;margin:0;font-size:1rem;">Reject Renewal ID</h5>
+                    <small style="opacity:.85;font-size:.78rem;">MSWDO ID Renewal Review</small>
+                </div>
+            </div>
+            <div style="padding:20px 24px;">
+                <div style="font-size:.88rem;color:#475569;margin-bottom:14px;background:#fef2f2;padding:10px 14px;border-radius:10px;border:1px solid #fecaca;">
+                    <strong>Applicant:</strong> <span id="rejectRenewalApplicantName" style="color:#991b1b;font-weight:700;"></span>
+                    <div style="margin-top:4px;font-size:.82rem;color:#1e40af;">The applicant will be notified to re-upload their Valid ID. Their existing appointment date and time will be preserved.</div>
+                </div>
+                <label style="font-size:.85rem;font-weight:700;color:#1e293b;display:block;margin-bottom:6px;">
+                    Rejection Reason <span style="color:#C41E24;">*</span>
+                </label>
+                <select id="rejectRenewalReasonSelect" style="width:100%;border:1.5px solid #fca5a5;border-radius:10px;padding:10px 12px;font-size:.88rem;font-weight:600;margin-bottom:12px;color:#1e293b;background:white;" onchange="onRejectRenewalReasonChange()">
+                    <option value="">-- Select a reason --</option>
+                    <option value="Blurry or unreadable ID photo">Blurry or unreadable ID photo</option>
+                    <option value="ID does not match applicant name">ID does not match applicant name</option>
+                    <option value="Expired ID document">Expired ID document</option>
+                    <option value="Wrong type of ID uploaded">Wrong type of ID uploaded</option>
+                    <option value="Incomplete or cropped ID image">Incomplete or cropped ID image</option>
+                    <option value="Other">Other (specify below)</option>
+                </select>
+                <label style="font-size:.85rem;font-weight:700;color:#1e293b;display:block;margin-bottom:6px;" id="rejectRenewalCommentsLabel">
+                    Additional Comments <span style="font-size:.75rem;font-weight:400;color:#64748b;">(Optional)</span>
+                </label>
+                <textarea id="rejectRenewalNotes" rows="3" placeholder="Add details or instructions for the applicant..."
+                    style="width:100%;border:1.5px solid #fca5a5;border-radius:10px;padding:12px;font-size:.88rem;resize:none;box-sizing:border-box;"></textarea>
+                <div id="rejectRenewalError" style="color:#C41E24;font-size:.8rem;margin-top:6px;display:none;"></div>
+            </div>
+            <div style="padding:0 24px 20px;display:flex;gap:10px;">
+                <button type="button" onclick="submitRejectRenewalId()" id="rejectRenewalSubmitBtn" style="height:38px;padding:0 22px;flex:1;background:linear-gradient(135deg,#dc2626,#b91c1c);color:white;border:none;border-radius:8px;font-weight:700;cursor:pointer;">
+                    Confirm Rejection
+                </button>
+                <button type="button" onclick="closeRejectRenewalIdModal()" style="height:38px;padding:0 20px;background:#e2e8f0;color:#64748b;border:none;border-radius:8px;font-weight:700;cursor:pointer;">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
 </body>
 
 </html>
