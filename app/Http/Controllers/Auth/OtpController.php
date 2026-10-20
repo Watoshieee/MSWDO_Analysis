@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Auth;
 use App\Http\Controllers\Controller;
 use App\Mail\NewUserIdVerificationAdminMail;
 use App\Models\User;
+use App\Services\AdminNotificationService;
 use App\Services\DeviceRegistrationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -159,7 +160,7 @@ class OtpController extends Controller
 
             // Check if existing OTP is still valid — don't spam
             $otpExpiresAt = session('pending_otp_expires_at');
-            if ($otpExpiresAt && now()->lt(\Carbon\Carbon::parse($otpExpiresAt))) {
+            if ($otpExpiresAt && now()->lt(Carbon::parse($otpExpiresAt))) {
                 return back()->with('warning', 'Your current OTP is still valid. Please check your email.');
             }
 
@@ -227,6 +228,7 @@ class OtpController extends Controller
 
     private function notifyAdminsOfPendingIdVerification(User $user): void
     {
+        // ── Email admins (existing behaviour) ────────────────────────────
         try {
             $admins = User::where('role', 'admin')
                 ->where('municipality', $user->municipality)
@@ -237,7 +239,14 @@ class OtpController extends Controller
                 Mail::to($admin->email)->send(new NewUserIdVerificationAdminMail($user));
             }
         } catch (Exception $e) {
-            Log::error('Failed to send admin ID verification notification: ' . $e->getMessage());
+            Log::error('Failed to send admin ID verification email: ' . $e->getMessage());
+        }
+
+        // ── Admin bell notification + Windows desktop push ────────────────
+        try {
+            AdminNotificationService::newUserRegistration($user);
+        } catch (Exception $e) {
+            Log::error('Failed to create admin bell/push notification for new registration: ' . $e->getMessage());
         }
     }
 }

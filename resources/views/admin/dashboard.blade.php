@@ -1257,6 +1257,7 @@
         }
     </script>
 
+    @include('components.admin-notification-modal')
 
 </body>
 </html>

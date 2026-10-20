@@ -445,6 +445,21 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
             Route::get('/compare', [App\Http\Controllers\Admin\YearlyComparisonController::class, 'compare'])->name('compare');
         }
     );
+
+    // ── Web Push (VAPID) Subscription Management ───────────────────────────────
+    Route::prefix('push')->name('push.')->group(function () {
+        Route::get('/vapid-key', [App\Http\Controllers\AdminNotificationController::class, 'vapidPublicKey'])->name('vapid-key');
+        Route::post('/subscribe',   [App\Http\Controllers\AdminNotificationController::class, 'subscribe'])->name('subscribe');
+        Route::post('/unsubscribe', [App\Http\Controllers\AdminNotificationController::class, 'unsubscribe'])->name('unsubscribe');
+    });
+
+    // ── Admin Bell Notification API ────────────────────────────────────────────
+    Route::prefix('notifications')->name('notifications.')->group(function () {
+        Route::get('/',             [App\Http\Controllers\AdminNotificationController::class, 'index'])->name('index');
+        Route::get('/count',        [App\Http\Controllers\AdminNotificationController::class, 'unreadCount'])->name('count');
+        Route::post('/read-all',    [App\Http\Controllers\AdminNotificationController::class, 'markAllRead'])->name('read-all');
+        Route::post('/{id}/read',   [App\Http\Controllers\AdminNotificationController::class, 'markRead'])->name('read');
+    });
 });
 // ============================================
 // BARANGAY ANALYSIS ROUTES

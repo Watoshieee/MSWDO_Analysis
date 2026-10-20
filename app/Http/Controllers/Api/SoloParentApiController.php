@@ -9,6 +9,7 @@ use App\Models\RenewalRequest;
 use App\Models\User;
 use App\Mail\AppointmentStatusMail;
 use App\Mail\NewAppointmentAdminMail;
+use App\Services\AdminNotificationService;
 use App\Services\PhilippineHolidayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -127,7 +128,7 @@ class SoloParentApiController extends Controller
             'user_notes'       => $request->user_notes,
         ]);
 
-        // Notify admins
+        // Notify admins by email
         $admins = User::where('role', 'admin')
             ->where('municipality', $user->municipality)
             ->get();
@@ -143,8 +144,15 @@ class SoloParentApiController extends Controller
             }
         }
 
-        // Send push notification
+        // Send push notification to user
         $this->sendPushNotification($user->id, 'Appointment Booked', 'Your Solo Parent appointment has been submitted and is pending admin confirmation.');
+
+        // Windows push notification to admin
+        try {
+            AdminNotificationService::newAppointment($appt);
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::newAppointment (SoloParent API) failed: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Appointment booked successfully! The admin will confirm your schedule.',
@@ -864,7 +872,7 @@ class SoloParentApiController extends Controller
             return response()->json(['success' => false, 'message' => $e->getMessage()], 422);
         }
 
-        // Notify admins (in-app)
+        // Notify admins (in-app bell)
         try {
             $admins = User::where('role', 'admin')->where('municipality', $user->municipality)->get();
             $apptDateFormatted = Carbon::parse($date)->format('F d, Y');
@@ -881,6 +889,15 @@ class SoloParentApiController extends Controller
             }
         } catch (\Exception $e) {
             Log::error('Admin Solo Parent renewal notification failed: ' . $e->getMessage());
+        }
+
+        // Windows push notification to admin
+        try {
+            if (isset($renewal)) {
+                AdminNotificationService::newRenewal($renewal);
+            }
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::newRenewal (SoloParent API) failed: ' . $e->getMessage());
         }
 
         return response()->json([

@@ -7,6 +7,7 @@ use App\Models\Application;
 use App\Models\User;
 use App\Mail\AppointmentStatusMail;
 use App\Mail\NewAppointmentAdminMail;
+use App\Services\AdminNotificationService;
 use App\Services\PhilippineHolidayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -159,6 +160,13 @@ class AppointmentController extends Controller
             }
         }
 
+        // Windows push notification for new appointment booking
+        try {
+            AdminNotificationService::newAppointment($appt);
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::newAppointment failed: ' . $e->getMessage());
+        }
+
         return back()->with('appt_success', 'Appointment booked! The admin will confirm your schedule.');
     }
 
@@ -271,6 +279,13 @@ class AppointmentController extends Controller
             } catch (\Exception $e) {
                 Log::error('Admin reschedule bell notification failed: ' . $e->getMessage());
             }
+        }
+
+        // Windows push notification for reschedule request
+        try {
+            AdminNotificationService::appointmentReschedule($appt);
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::appointmentReschedule failed: ' . $e->getMessage());
         }
 
         return back()->with('appt_success', 'Reschedule request submitted. Waiting for admin approval.');

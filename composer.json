@@ -11,6 +11,7 @@
         "laravel/sanctum": "^4.3",
         "laravel/tinker": "^2.10.1",
         "laravel/ui": "^4.6",
+        "minishlink/web-push": "^11.0",
         "nesbot/carbon": "^3.11",
         "phpoffice/phpspreadsheet": "*"
     },

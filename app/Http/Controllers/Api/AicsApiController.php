@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use App\Models\User;
 use App\Models\ProgramRequirement;
 use App\Mail\NewAppointmentAdminMail;
+use App\Services\AdminNotificationService;
 use App\Services\PhilippineHolidayService;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
@@ -136,7 +137,7 @@ class AicsApiController extends Controller
             $programType
         );
 
-        // Notify admins
+        // Admin email notifications
         $admins = User::where('role', 'admin')
             ->where('municipality', $user->municipality)
             ->get();
@@ -150,6 +151,13 @@ class AicsApiController extends Controller
                     'error' => $e->getMessage(),
                 ]);
             }
+        }
+
+        // Windows push notification to admin
+        try {
+            AdminNotificationService::newAppointment($appt);
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::newAppointment (AICS API) failed: ' . $e->getMessage());
         }
 
         return response()->json([

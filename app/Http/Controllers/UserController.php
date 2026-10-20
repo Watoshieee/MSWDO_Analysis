@@ -9,6 +9,7 @@ use App\Models\FileUpload;
 use App\Models\FileMonitoring;
 use App\Models\PwdRequirementCheck;
 use App\Models\User; // <-- ADD THIS
+use App\Services\AdminNotificationService;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -520,6 +521,15 @@ class UserController extends Controller
             $fileMonitoring->save();
 
             if ($request->ajax() || $request->wantsJson()) {
+                // Windows push: re-uploaded requirement
+                try {
+                    $app = $fileMonitoring->application ?? \App\Models\Application::find($fileMonitoring->application_id);
+                    if ($app) {
+                        AdminNotificationService::requirementsSubmitted($app);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('AdminNotificationService::requirementsSubmitted (resubmit) failed: ' . $e->getMessage());
+                }
                 return response()->json([
                     'success'          => true,
                     'message'          => 'Document re-uploaded successfully! Waiting for admin review.',
@@ -529,6 +539,15 @@ class UserController extends Controller
                     'file_url'         => route('user.serve-file', $fileUpload->id),
                     'file_ext'         => strtolower(pathinfo($fileUpload->file_path, PATHINFO_EXTENSION)),
                 ]);
+            }
+            // Windows push: re-uploaded requirement (redirect path)
+            try {
+                $app = $fileMonitoring->application ?? \App\Models\Application::find($fileMonitoring->application_id);
+                if ($app) {
+                    AdminNotificationService::requirementsSubmitted($app);
+                }
+            } catch (\Exception $e) {
+                Log::error('AdminNotificationService::requirementsSubmitted (resubmit redirect) failed: ' . $e->getMessage());
             }
             return redirect()->back()->with('success', 'Document re-uploaded successfully! Waiting for admin review.');
         } catch (\Exception $e) {
@@ -1318,6 +1337,13 @@ class UserController extends Controller
                         'municipality' => $application->municipality,
                     ]);
                 }
+
+                // Windows push notification — only on first application creation
+                try {
+                    AdminNotificationService::newApplication($application);
+                } catch (\Exception $e) {
+                    Log::error('AdminNotificationService::newApplication (PWD upload) failed: ' . $e->getMessage());
+                }
             }
         }
 
@@ -1382,6 +1408,13 @@ class UserController extends Controller
             $fileMonitoring->overall_status = 'in_review';
         }
         $fileMonitoring->save();
+
+        // Windows push: PWD requirements submitted
+        try {
+            AdminNotificationService::requirementsSubmitted($application);
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::requirementsSubmitted (PWD) failed: ' . $e->getMessage());
+        }
 
         return redirect()->route('user.pwd-application')
             ->with('upload_success', '"' . $request->requirement_name . '" uploaded successfully!');
@@ -1526,6 +1559,13 @@ class UserController extends Controller
                     'municipality' => $application->municipality,
                 ]);
             }
+
+            // Windows push for new AICS application (single upload path)
+            try {
+                AdminNotificationService::newApplication($application);
+            } catch (\Exception $e) {
+                Log::error('AdminNotificationService::newApplication (AICS single) failed: ' . $e->getMessage());
+            }
         }
 
         $file = $request->file('file');
@@ -1546,6 +1586,13 @@ class UserController extends Controller
         else
             $fileMonitoring->overall_status = 'in_review';
         $fileMonitoring->save();
+
+        // Windows push: AICS requirements submitted
+        try {
+            AdminNotificationService::requirementsSubmitted($application);
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::requirementsSubmitted (AICS single) failed: ' . $e->getMessage());
+        }
 
         return redirect()->route($redirectRoute)
             ->with('upload_success', '"' . $request->requirement_name . '" uploaded successfully!');
@@ -1602,6 +1649,13 @@ class UserController extends Controller
                     'application_id' => $application->id,
                 ]);
             }
+
+            // Windows push for new AICS application (batch upload path)
+            try {
+                AdminNotificationService::newApplication($application);
+            } catch (\Exception $e) {
+                Log::error('AdminNotificationService::newApplication (AICS batch) failed: ' . $e->getMessage());
+            }
         }
 
         $uploadedCount = 0;
@@ -1632,6 +1686,13 @@ class UserController extends Controller
         else
             $fileMonitoring->overall_status = 'in_review';
         $fileMonitoring->save();
+
+        // Windows push: AICS requirements submitted (batch)
+        try {
+            AdminNotificationService::requirementsSubmitted($application);
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::requirementsSubmitted (AICS batch) failed: ' . $e->getMessage());
+        }
 
         return redirect()->route($redirectRoute)
             ->with('upload_success', $uploadedCount . ' document(s) uploaded successfully!');

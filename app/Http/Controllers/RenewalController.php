@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\RenewalRequest;
 use App\Models\Appointment;
 use App\Models\User;
+use App\Services\AdminNotificationService;
 use App\Services\PhilippineHolidayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -189,6 +190,13 @@ class RenewalController extends Controller
                 Log::error('PWD renewal submission email failed: ' . $e->getMessage());
             }
 
+            // Windows push notification for PWD renewal ID submission
+            try {
+                AdminNotificationService::newRenewal($renewal);
+            } catch (\Exception $e) {
+                Log::error('AdminNotificationService::newRenewal (PWD) failed: ' . $e->getMessage());
+            }
+
             return back()->with('renewal_success', 'Your PWD ID has been submitted for review. The admin will verify your ID. Once approved, you can proceed with your application requirements.');
         }
 
@@ -338,6 +346,15 @@ class RenewalController extends Controller
             }
         } catch (\Exception $e) {
             Log::error('Admin renewal notification failed: ' . $e->getMessage());
+        }
+
+        // Windows push notification for Solo Parent renewal
+        try {
+            if (isset($data['renewal'])) {
+                AdminNotificationService::newRenewal($data['renewal']);
+            }
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::newRenewal (Solo Parent) failed: ' . $e->getMessage());
         }
 
         return back()->with('renewal_success', 'Your renewal request and appointment have been submitted! The admin will review your ID and schedule.');

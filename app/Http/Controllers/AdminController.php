@@ -98,6 +98,17 @@ class AdminController extends Controller
             // If notifications table doesn't exist yet, ignore
         }
 
+        // ── Unread admin bell notifications (new registrations, renewals, etc.) ──
+        try {
+            $adminBellUnread = \DB::table('admin_notifications')
+                ->where('admin_id', $user->id)
+                ->where('is_read', false)
+                ->count();
+            $adminNotifCount += $adminBellUnread;
+        } catch (\Exception $e) {
+            // Table not yet migrated — ignore gracefully
+        }
+
         return compact('adminNewApplications', 'adminNewAppointments', 'adminNewUploads', 'adminNotifCount');
     }
 
@@ -1396,7 +1407,7 @@ class AdminController extends Controller
     /** Shared data-gathering helper for both export methods. */
     private function buildAnalysisData(Request $request): array
     {
-        $user         = \Illuminate\Support\Facades\Auth::user();
+        $user         = Auth::user();
         $municipality = Municipality::where('name', $user->municipality)->first();
         $muniYear     = (int) ($municipality->year ?? date('Y'));
 

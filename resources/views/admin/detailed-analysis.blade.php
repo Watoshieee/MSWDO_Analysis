@@ -1685,5 +1685,6 @@ document.getElementById('vrTabs')?.addEventListener('click', e => {
     btn.focus();
 });
 </script>
+@include('components.admin-notification-modal')
 </body>
 </html>

@@ -45,4 +45,10 @@ return [
         'app_id'  => env('ONESIGNAL_APP_ID', 'bfcb1a3e-1938-4806-9e03-4e39974f57e7'),
         'api_key' => env('ONESIGNAL_API_KEY', ''),
     ],
+
+    'vapid' => [
+        'public_key'  => env('VAPID_PUBLIC_KEY', ''),
+        'private_key' => env('VAPID_PRIVATE_KEY', ''),
+        'subject'     => env('VAPID_SUBJECT', 'mailto:admin@mswdo.gov.ph'),
+    ],
 ];

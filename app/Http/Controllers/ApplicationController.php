@@ -9,6 +9,7 @@ use App\Models\ProgramRequirement;
 use App\Models\FileMonitoring;
 use App\Models\FileUpload;
 use App\Mail\NewApplicationNotification;
+use App\Services\AdminNotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
@@ -253,6 +254,13 @@ public function uploadBatch(Request $request)
         // Notify municipality admin(s) via email
         $this->notifyAdmins($application);
 
+        // Windows push notification
+        try {
+            AdminNotificationService::newApplication($application);
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::newApplication (uploadBatch) failed: ' . $e->getMessage());
+        }
+
         return response()->json([
             'success' => true,
             'message' => 'Application submitted successfully! Your documents are now pending review.'
@@ -397,6 +405,13 @@ public function uploadBatch(Request $request)
         // Notify municipality admin(s) via email
         $this->notifyAdmins($application);
 
+        // Windows push notification
+        try {
+            AdminNotificationService::newApplication($application);
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::newApplication failed: ' . $e->getMessage());
+        }
+
         return redirect()->route('applications.show', $application->id)
             ->with('success', 'Application created successfully!');
     }
@@ -452,6 +467,13 @@ public function uploadBatch(Request $request)
 
             // Notify municipality admin(s) via email
             $this->notifyAdmins($application);
+
+            // Windows push notification
+            try {
+                AdminNotificationService::newApplication($application);
+            } catch (\Exception $e) {
+                Log::error('AdminNotificationService::newApplication (Solo Parent) failed: ' . $e->getMessage());
+            }
 
             Log::info('Application created successfully with ID: ' . $application->id);
 
@@ -740,6 +762,16 @@ public function uploadBatch(Request $request)
         $fileMonitoring->updateOverallStatus();
         $this->notifyAdminsOfUpload($fileMonitoring);
 
+        // Windows push notification for requirements submission
+        try {
+            $app = $fileMonitoring->application ?? Application::find($fileMonitoring->application_id);
+            if ($app) {
+                AdminNotificationService::requirementsSubmitted($app);
+            }
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::requirementsSubmitted (batch) failed: ' . $e->getMessage());
+        }
+
         return redirect()->back()->with('success', "\u2705 {$uploadedCount} file(s) uploaded successfully.");
     }
 
@@ -781,6 +813,16 @@ public function uploadBatch(Request $request)
 
         $fileMonitoring->updateOverallStatus();
         $this->notifyAdminsOfUpload($fileMonitoring);
+
+        // Windows push notification for requirements submission
+        try {
+            $app = $fileMonitoring->application ?? Application::find($fileMonitoring->application_id);
+            if ($app) {
+                AdminNotificationService::requirementsSubmitted($app);
+            }
+        } catch (\Exception $e) {
+            Log::error('AdminNotificationService::requirementsSubmitted (single) failed: ' . $e->getMessage());
+        }
 
         $scroll    = (int) $request->input('scroll', 0);
         $backUrl   = url()->previous();
