@@ -41,6 +41,7 @@ class User extends Authenticatable
         'status',
         'valid_id_path',
         'valid_id_filename',
+        'valid_id_type',
         'id_verification_status',
         'id_verified_at',
         'id_verified_by',

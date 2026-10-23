@@ -107,6 +107,7 @@
 
         /* ── FIELD MESSAGE ── */
         .field-msg { font-size: 0.73rem; margin-top: 3px; min-height: 16px; display: flex; align-items: center; gap: 4px; }
+        .field-msg:empty { display: none; }
         .field-msg.ok  { color: var(--success); }
         .field-msg.err { color: var(--danger); }
         .field-msg.hint{ color: #94a3b8; }
@@ -169,10 +170,84 @@
 
         .section-label { font-size: 0.72rem; font-weight: 800; color: #94a3b8; letter-spacing: .08em; text-transform: uppercase; margin: 14px 0 10px; }
 
+        /* ── FIELD COLUMNS (Date of Birth, Address, Valid ID) ── */
+        .field-row > div {
+            min-width: 0;
+        }
+        .field-col {
+            display: flex;
+            flex-direction: column;
+            min-width: 0;
+            width: 100%;
+        }
+        .field-col-item {
+            min-width: 0;
+            width: 100%;
+        }
+        .field-col-item + .field-col-item {
+            margin-top: 16px;
+        }
+        .field-col-item.muni-item .field-wrap {
+            margin-bottom: 0;
+        }
+        .field-col-item.brgy-item {
+            margin-top: 14px;
+        }
+        .field-col select.form-input {
+            width: 100%;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            overflow: hidden;
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 12px center;
+            padding-right: 32px;
+        }
+        .field-col input[type="file"].form-input {
+            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
+            display: block;
+            min-width: 0;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            color: #475569;
+            cursor: pointer;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        .field-col input[type="file"].form-input::file-selector-button {
+            font-family: 'Inter', sans-serif;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--primary-blue);
+            background: #EEF2FF;
+            border: 1px solid #C7D2FE;
+            border-radius: 7px;
+            padding: 5px 11px;
+            margin-right: 10px;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            flex-shrink: 0;
+        }
+        .field-col input[type="file"].form-input::file-selector-button:hover {
+            background: #E0E7FF;
+            border-color: #A5B4FC;
+        }
+        .field-col .field-msg {
+            display: block;
+            max-width: 100%;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
         @media (max-width: 720px) {
             .left-panel { display: none; }
             .right-panel { padding: 28px 20px; }
             .field-row { grid-template-columns: 1fr; }
+            .field-col + .field-col { margin-top: 16px; }
         }
 
         /* ── MODAL STYLES ── */
@@ -413,61 +488,95 @@
                     </div>
                 </div>
 
-                <div class="field-row" style="margin-top:8px;">
-                    <div>
-                        <label class="field-label" for="birthdate">Date of Birth <span class="req">*</span></label>
-                        <div class="field-wrap">
-                            <input type="date" id="birthdate" name="birthdate"
-                                   class="form-input @error('birthdate') invalid @enderror"
-                                   value="{{ old('birthdate') }}"
-                                   min="{{ now()->subYears(150)->format('Y-m-d') }}"
-                                   max="{{ now()->subYears(18)->format('Y-m-d') }}"
-                                   onchange="calculateAge()">
+                <div class="field-row" style="margin-top: 16px; align-items: start;">
+                    <!-- Left column: Date of Birth, Municipality, Barangay -->
+                    <div class="field-col">
+                        <div class="field-col-item">
+                            <label class="field-label" for="birthdate">Date of Birth <span class="req">*</span></label>
+                            <div class="field-wrap">
+                                <input type="date" id="birthdate" name="birthdate"
+                                       class="form-input @error('birthdate') invalid @enderror"
+                                       value="{{ old('birthdate') }}"
+                                       min="{{ now()->subYears(150)->format('Y-m-d') }}"
+                                       max="{{ now()->subYears(18)->format('Y-m-d') }}"
+                                       onchange="calculateAge()">
+                            </div>
+                            <div id="age-display"></div>
+                            @error('birthdate')<div class="field-msg err">{{ $message }}</div>@enderror
                         </div>
-                        <div id="age-display"></div>
-                        @error('birthdate')<div class="field-msg err">{{ $message }}</div>@enderror
-                    </div>
-                    <div>
-                        <label class="field-label" for="valid_id">Valid ID <span class="req">*</span></label>
-                        <div class="field-wrap">
-                            <input type="file" id="valid_id" name="valid_id" accept=".jpg,.jpeg,.png,.pdf"
-                                   class="form-input @error('valid_id') invalid @enderror"
-                                   onchange="validateValidId()">
-                        </div>
-                        <div id="msg_valid_id" class="field-msg hint">Accepted formats: JPG, PNG, PDF. Max size: 5 MB.</div>
-                        @error('valid_id')<div class="field-msg err">{{ $message }}</div>@enderror
-                    </div>
-                </div>
 
-                <div class="field-row" style="margin-top:8px;">
-                    <div>
-                        <label class="field-label" for="municipality">Municipality <span class="req">*</span></label>
-                        <div class="field-wrap">
-                            <select id="municipality" name="municipality"
-                                    class="form-input @error('municipality') invalid @enderror"
-                                    onchange="populateBarangays()">
-                                <option value="" disabled {{ old('municipality') ? '' : 'selected' }} hidden>Select Municipality</option>
-                                @foreach($municipalities as $muni)
-                                    <option value="{{ $muni->name }}" {{ old('municipality') == $muni->name ? 'selected' : '' }}>
-                                        {{ $muni->name }}
-                                    </option>
-                                @endforeach
-                            </select>
+                        <div class="field-col-item muni-item">
+                            <label class="field-label" for="municipality">Municipality <span class="req">*</span></label>
+                            <div class="field-wrap">
+                                <select id="municipality" name="municipality"
+                                        class="form-input @error('municipality') invalid @enderror"
+                                        onchange="populateBarangays()">
+                                    <option value="" disabled {{ old('municipality') ? '' : 'selected' }} hidden>Select Municipality</option>
+                                    @foreach($municipalities as $muni)
+                                        <option value="{{ $muni->name }}" {{ old('municipality') == $muni->name ? 'selected' : '' }}>
+                                            {{ $muni->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @error('municipality')<div class="field-msg err">{{ $message }}</div>@enderror
                         </div>
-                        <div id="msg_municipality" class="field-msg hint"></div>
-                        @error('municipality')<div class="field-msg err">{{ $message }}</div>@enderror
+
+                        <div class="field-col-item brgy-item">
+                            <label class="field-label" for="barangay">Barangay <span class="req">*</span></label>
+                            <div class="field-wrap">
+                                <select id="barangay" name="barangay"
+                                        class="form-input @error('barangay') invalid @enderror"
+                                        disabled>
+                                    <option value="" disabled selected hidden>Select Barangay</option>
+                                </select>
+                            </div>
+                            <div id="msg_barangay" class="field-msg hint">Select your municipality first.</div>
+                            @error('barangay')<div class="field-msg err">{{ $message }}</div>@enderror
+                        </div>
                     </div>
-                    <div>
-                        <label class="field-label" for="barangay">Barangay <span class="req">*</span></label>
-                        <div class="field-wrap">
-                            <select id="barangay" name="barangay"
-                                    class="form-input @error('barangay') invalid @enderror"
-                                    disabled>
-                                <option value="" disabled selected hidden>Select Barangay</option>
-                            </select>
+
+                    <!-- Right column: Valid ID Type, Upload Valid ID -->
+                    <div class="field-col">
+                        <div class="field-col-item">
+                            <label class="field-label" for="valid_id_type">Valid ID Type <span class="req">*</span></label>
+                            <div class="field-wrap">
+                                <select id="valid_id_type" name="valid_id_type"
+                                        class="form-input @error('valid_id_type') invalid @enderror"
+                                        onchange="validateIdType()">
+                                    <option value="" disabled {{ old('valid_id_type') ? '' : 'selected' }} hidden>Select your valid ID type</option>
+                                    @foreach([
+                                        'Philippine National ID (PhilID)',
+                                        'Philippine Passport',
+                                        "Driver's License",
+                                        'UMID',
+                                        'SSS ID',
+                                        'PhilHealth ID',
+                                        'Postal ID',
+                                        "Voter's ID",
+                                        'PRC ID',
+                                        'Senior Citizen ID',
+                                        'PWD ID',
+                                        'Other Government-Issued ID',
+                                    ] as $idType)
+                                        <option value="{{ $idType }}" {{ old('valid_id_type') == $idType ? 'selected' : '' }}>{{ $idType }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div id="msg_valid_id_type" class="field-msg hint">Select the type of ID you will upload.</div>
+                            @error('valid_id_type')<div class="field-msg err">{{ $message }}</div>@enderror
                         </div>
-                        <div id="msg_barangay" class="field-msg hint">Select your municipality first.</div>
-                        @error('barangay')<div class="field-msg err">{{ $message }}</div>@enderror
+
+                        <div class="field-col-item">
+                            <label class="field-label" for="valid_id">Upload Valid ID <span class="req">*</span></label>
+                            <div class="field-wrap">
+                                <input type="file" id="valid_id" name="valid_id" accept=".jpg,.jpeg,.png,.pdf"
+                                       class="form-input @error('valid_id') invalid @enderror"
+                                       onchange="validateValidId()">
+                            </div>
+                            <div id="msg_valid_id" class="field-msg hint">Accepted formats: JPG, PNG, PDF. Max size: 5 MB.</div>
+                            @error('valid_id')<div class="field-msg err">{{ $message }}</div>@enderror
+                        </div>
                     </div>
                 </div>
 
@@ -724,6 +833,7 @@
         const el = document.getElementById(id);
         if (!el) return;
         el.textContent = text;
+        el.title = text;
         el.className = 'field-msg ' + type;
     }
     function markInput(id, state) {
@@ -838,27 +948,39 @@
         markInput('mobile_number','valid');
     }
 
+    function validateIdType() {
+        const v = document.getElementById('valid_id_type').value;
+        if (!v) { setMsg('msg_valid_id_type','hint','Select the type of ID you will upload.'); markInput('valid_id_type',''); return; }
+        setMsg('msg_valid_id_type','ok','✓ ' + v + ' selected'); markInput('valid_id_type','valid');
+    }
+
     function validateValidId() {
         const input = document.getElementById('valid_id');
         const file = input.files[0];
         if (!file) {
             setMsg('msg_valid_id', 'hint', 'Accepted formats: JPG, PNG, PDF. Max size: 5 MB.');
             markInput('valid_id', '');
+            input.removeAttribute('title');
             return;
         }
         const allowed = ['image/jpeg', 'image/jpg', 'image/png', 'application/pdf'];
         if (!allowed.includes(file.type)) {
             setMsg('msg_valid_id', 'err', 'Only JPG, PNG, or PDF files are allowed.');
             markInput('valid_id', 'invalid');
+            input.removeAttribute('title');
             return;
         }
         if (file.size > 5 * 1024 * 1024) {
             setMsg('msg_valid_id', 'err', 'File must not exceed 5 MB.');
             markInput('valid_id', 'invalid');
+            input.removeAttribute('title');
             return;
         }
         setMsg('msg_valid_id', 'ok', '✓ ' + file.name + ' selected');
         markInput('valid_id', 'valid');
+        input.title = file.name;
+        const msgEl = document.getElementById('msg_valid_id');
+        if (msgEl) msgEl.title = '✓ ' + file.name + ' selected';
     }
 
     // ── Age calculator ──
@@ -952,6 +1074,7 @@
         validateLastName();
         validateEmail();
         validateMobile();
+        validateIdType();
         validateValidId();
 
         // Run synchronous username format check only (AJAX availability check is non-blocking)
