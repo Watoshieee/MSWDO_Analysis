@@ -607,9 +607,39 @@
                 height: 300px;
             }
         }
-    
+
         html { background: #1A2A5C; }
         body { padding-bottom: 0 !important; }
+
+        /* Get the App button */
+        .btn-get-app {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 8px 18px;
+            border-radius: 99px;
+            border: 1.5px solid rgba(245, 184, 46, .75);
+            color: #f5b82e;
+            font-weight: 600;
+            font-size: .9rem;
+            white-space: nowrap;
+            text-decoration: none;
+            background: transparent;
+            transition: all .2s ease;
+        }
+        .btn-get-app:hover {
+            background: #f5b82e;
+            color: #172066;
+            border-color: #f5b82e;
+        }
+        @media (max-width: 480px) {
+            .btn-get-app {
+                padding: 7px 12px;
+                font-size: .82rem;
+                gap: 5px;
+            }
+        }
 </style>
 </head>
 
@@ -1893,35 +1923,6 @@
                 }
             }
     
-        /* Get the App button — matches design reference */
-        .btn-get-app {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 8px 18px;
-            border-radius: 99px;
-            border: 1.5px solid rgba(245, 184, 46, .75);
-            color: #f5b82e;
-            font-weight: 600;
-            font-size: .9rem;
-            white-space: nowrap;
-            text-decoration: none;
-            background: transparent;
-            transition: all .2s ease;
-        }
-        .btn-get-app:hover {
-            background: #f5b82e;
-            color: #172066;
-            border-color: #f5b82e;
-        }
-        @media (max-width: 480px) {
-            .btn-get-app {
-                padding: 7px 12px;
-                font-size: .82rem;
-                gap: 5px;
-            }
-        }
     </style>
         @if(!Auth::user()->isAdmin() && !Auth::user()->isSuperAdmin())
             <a href="{{ route('user.dashboard') }}" class="back-dashboard-btn" title="Return to your dashboard">

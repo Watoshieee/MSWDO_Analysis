@@ -99,6 +99,10 @@ class RegisterController extends Controller
                     'required', 'string',
                     'exists:barangays,name',
                 ],
+                'valid_id_type' => [
+                    'required', 'string',
+                    'in:Philippine National ID (PhilID),Philippine Passport,Driver\'s License,UMID,SSS ID,PhilHealth ID,Postal ID,Voter\'s ID,PRC ID,Senior Citizen ID,PWD ID,Other Government-Issued ID',
+                ],
                 'valid_id' => [
                     'required', 'file',
                     'mimes:jpeg,jpg,png,pdf',
@@ -120,6 +124,8 @@ class RegisterController extends Controller
                 'birthdate.after'         => 'Birthdate cannot be more than 150 years ago.',
                 'municipality.in'         => 'Please select a valid municipality.',
                 'barangay.exists'         => 'Please select a valid barangay.',
+                'valid_id_type.required'   => 'Please select your valid ID type.',
+                'valid_id_type.in'         => 'Please select a valid ID type from the list.',
                 'valid_id.required'       => 'Please upload a valid government-issued ID.',
                 'valid_id.mimes'          => 'Valid ID must be a JPG, PNG, or PDF file.',
                 'valid_id.max'            => 'Valid ID file must not exceed 5 MB.',
@@ -154,6 +160,7 @@ class RegisterController extends Controller
                     'must_change_password' => true,
                     'valid_id_path'        => $validIdPath,
                     'valid_id_filename'    => $validIdFilename,
+                    'valid_id_type'        => $validated['valid_id_type'],
                 ],
                 'pending_otp'            => (string) $otp,
                 'pending_otp_expires_at' => $otpExpiresAt,

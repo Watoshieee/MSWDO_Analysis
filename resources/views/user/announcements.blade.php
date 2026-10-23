@@ -31,30 +31,30 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         /* ── HERO ── */
         .hero {
             background: var(--primary-gradient);
-            color: white; padding: 56px 0 52px;
+            color: white; padding: 54px 0 46px;
             position: relative; overflow: hidden;
         }
         .hero::before {
-            content: ''; position: absolute; top: -100px; right: -100px;
-            width: 400px; height: 400px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(253,185,19,0.12) 0%, transparent 70%);
+            content: ''; position: absolute; top: -80px; right: -80px;
+            width: 320px; height: 320px; border-radius: 50%;
+            background: rgba(253,185,19,0.10);
         }
         .hero::after {
-            content: ''; position: absolute; bottom: -80px; left: -60px;
-            width: 280px; height: 280px; border-radius: 50%;
-            background: rgba(255,255,255,0.04);
+            content: ''; position: absolute; bottom: -60px; left: -40px;
+            width: 220px; height: 220px; border-radius: 50%;
+            background: rgba(255,255,255,0.05);
         }
         .hero-inner { position: relative; z-index: 2; }
         .hero-badge {
             display: inline-block; background: rgba(253,185,19,0.18);
             color: var(--secondary-yellow); border: 1px solid rgba(253,185,19,0.35);
             border-radius: 30px; padding: 5px 18px;
-            font-size: 0.72rem; font-weight: 800; letter-spacing: 0.12em;
-            text-transform: uppercase; margin-bottom: 14px;
+            font-size: 0.75rem; font-weight: 800; letter-spacing: 0.1em;
+            text-transform: uppercase; margin-bottom: 16px;
         }
-        .hero h1 { font-size: 2.5rem; font-weight: 900; line-height: 1.15; margin-bottom: 6px; }
-        .hero-divider { width: 50px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; margin: 14px 0 16px; }
-        .hero p { opacity: 0.85; font-size: 0.97rem; max-width: 520px; line-height: 1.7; margin-bottom: 0; }
+        .hero h1 { font-size: 2.4rem; font-weight: 900; line-height: 1.15; margin-bottom: 8px; }
+        .hero-divider { width: 50px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; margin: 14px 0; }
+        .hero p { opacity: 0.84; font-size: 0.97rem; max-width: 600px; line-height: 1.7; margin: 0; }
 
         /* ── FILTER BAR (sticky) ── */
         .filter-bar {
@@ -150,8 +150,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .pagination .page-item.active .page-link { background: var(--primary-blue); border-color: var(--primary-blue); }
 
         /* ── FOOTER ── */
-        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.83rem; margin-top: auto; }
-        .footer-strip strong { color: white; }
+        .footer-strip { background: var(--primary-gradient); color: white; text-align: center; padding: 18px; font-size: 0.85rem; margin-top: auto; }
     
     
         html { background: #1A2A5C; }
@@ -182,14 +181,12 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
                 <span class="filter-label">Filter by:</span>
 
                 <select name="type" class="filter-select">
-                    <option value="">All Types</option>
                     @foreach($types as $val => $label)
                         <option value="{{ $val }}" {{ request('type') === $val ? 'selected' : '' }}>{{ $label }}</option>
                     @endforeach
                 </select>
 
                 <select name="program" class="filter-select">
-                    <option value="">All Programs</option>
                     @foreach($programs as $val => $label)
                         @if($val !== 'all')
                             <option value="{{ $val }}" {{ request('program') === $val ? 'selected' : '' }}>{{ $label }}</option>

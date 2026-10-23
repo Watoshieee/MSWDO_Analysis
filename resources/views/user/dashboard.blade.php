@@ -38,29 +38,29 @@
         /* ── HERO BANNER ── */
         .hero-banner {
             background: var(--primary-gradient);
-            color: white; padding: 56px 0 50px;
+            color: white; padding: 32px 0 28px;
             position: relative; overflow: hidden;
         }
-        .hero-banner::before { content: ''; position: absolute; top: -90px; right: -90px; width: 360px; height: 360px; border-radius: 50%; background: rgba(253,185,19,0.10); }
-        .hero-banner::after  { content: ''; position: absolute; bottom: -60px; left: -50px; width: 240px; height: 240px; border-radius: 50%; background: rgba(255,255,255,0.04); }
+        .hero-banner::before { content: ''; position: absolute; top: -80px; right: -80px; width: 320px; height: 320px; border-radius: 50%; background: rgba(253,185,19,0.10); }
+        .hero-banner::after  { content: ''; position: absolute; bottom: -60px; left: -40px; width: 220px; height: 220px; border-radius: 50%; background: rgba(255,255,255,0.05); }
         .hero-inner { position: relative; z-index: 2; }
         .hero-badge {
             display: inline-block; background: rgba(253,185,19,0.18);
             color: var(--secondary-yellow); border: 1px solid rgba(253,185,19,0.35);
             border-radius: 30px; padding: 5px 18px; font-size: 0.75rem; font-weight: 800;
-            letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 18px;
+            letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px;
         }
-        .hero-banner h1 { font-size: 2.5rem; font-weight: 900; margin-bottom: 6px; line-height: 1.15; }
+        .hero-banner h1 { font-size: 2.4rem; font-weight: 900; margin-bottom: 8px; line-height: 1.15; }
         .hero-banner h1 em { color: var(--secondary-yellow); font-style: normal; }
-        .hero-divider { width: 50px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; margin: 16px 0; }
-        .hero-banner p { opacity: 0.84; font-size: 0.97rem; margin: 0; max-width: 580px; line-height: 1.7; }
-        .hero-pills { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 24px; }
+        .hero-divider { width: 50px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; margin: 14px 0; }
+        .hero-banner p { opacity: 0.84; font-size: 0.93rem; margin: 0; max-width: 600px; line-height: 1.6; }
+        .hero-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
         .hero-pill {
-            display: inline-flex; align-items: center; gap: 8px;
+            display: inline-flex; align-items: center; gap: 7px;
             background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.22);
-            border-radius: 30px; padding: 9px 20px; font-size: 0.87rem; font-weight: 600; color: white;
+            border-radius: 30px; padding: 5px 14px; font-size: 0.8rem; font-weight: 600; color: white;
         }
-        .hero-pill .pill-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--secondary-yellow); flex-shrink: 0; }
+        .hero-pill .pill-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--secondary-yellow); flex-shrink: 0; }
 
         /* ── STAT CARDS - NO HOVER ANIMATION ── */
 .stat-card {
@@ -356,8 +356,7 @@
         .main-content { flex: 1; padding-bottom: 0; margin-bottom: 0; }
 
         /* Footer */
-        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.84rem; margin-top: auto; }
-        .footer-strip strong { color: white; }
+        .footer-strip { background: var(--primary-gradient); color: white; text-align: center; padding: 18px; font-size: 0.85rem; margin-top: auto; }
 
         /* Session alerts */
         .session-alert { border-radius: 14px; border: none; font-size: 0.9rem; }

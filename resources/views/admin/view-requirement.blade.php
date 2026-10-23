@@ -31,10 +31,51 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .logout-btn { background:transparent; border:2px solid rgba(255,255,255,.8); color:white; border-radius:30px; padding:6px 18px; font-weight:700; font-size:.88rem; cursor:pointer; transition:all .3s; }
         .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
 
-        /* HERO */
-        .page-hero { background: var(--primary-gradient); border-radius:18px; padding:28px 32px; color:white; margin-bottom:24px; }
-        .page-hero h1 { font-size:1.5rem; font-weight:800; margin:0 0 4px; }
-        .page-hero p  { margin:0; opacity:.82; font-size:.9rem; }
+        /* HERO — matches .top-banner / .banner-inner on admin dashboard */
+        .page-hero {
+            background: var(--primary-gradient);
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(26, 36, 112, 0.15);
+            margin-bottom: 24px;
+        }
+        .page-hero-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 18px 32px 20px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .page-hero-badge {
+            display: inline-block;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            color: var(--secondary-yellow);
+            border: 1px solid rgba(245, 184, 46, .5);
+            border-radius: 99px;
+            padding: 3px 10px;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .page-hero h1 {
+            margin: 0 0 2px;
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.01em;
+        }
+        .page-hero p {
+            margin: 0;
+            font-size: 12.5px;
+            color: #d3d9f5;
+        }
+        @media (max-width: 900px) {
+            .page-hero-inner { padding-left: 16px; padding-right: 16px; }
+        }
 
         /* CARDS */
         .info-card { background:white; border-radius:16px; border:1px solid var(--border-light); padding:24px 28px; box-shadow:0 2px 12px rgba(0,0,0,.04); margin-bottom:22px; }
@@ -360,22 +401,23 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
     @include('components.admin-navbar')
 
+    {{-- Hero — full-width, outside the container --}}
+    <div class="page-hero">
+        <div class="page-hero-inner">
+            <div>
+                <span class="page-hero-badge">Requirements Review</span>
+                <h1>{{ $application->full_name }}</h1>
+                <p>{{ str_replace('_', ' ', $application->program_type) }} &mdash; Reviewing submitted documents</p>
+            </div>
+            <a href="{{ route('admin.requirements') }}" class="btn btn-light btn-sm fw-bold px-4" style="border-radius:30px;flex-shrink:0;">
+                &larr; Back to List
+            </a>
+        </div>
+    </div>
+
     <div class="container mt-4 pb-5">
 
         @include('components.admin-notification')
-
-        {{-- Hero --}}
-        <div class="page-hero">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1> {{ $application->full_name }}</h1>
-                    <p>{{ str_replace('_', ' ', $application->program_type) }} &mdash; Reviewing submitted documents</p>
-                </div>
-                <a href="{{ route('admin.requirements') }}" class="btn btn-light btn-sm fw-bold px-4" style="border-radius:30px;">
-                    Back to List
-                </a>
-            </div>
-        </div>
 
         {{-- Applicant Info --}}
         <div class="info-card mb-4">

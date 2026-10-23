@@ -19,6 +19,7 @@
             --text-dark: #1E293B;
             --text-mid: #475569;
             --text-light: #94a3b8;
+            --accent-gold: {{ $adminSecondaryColor ?? '#f5b82e' }};
         }
         * { box-sizing: border-box; }
         body { background: var(--bg-light); font-family: 'Inter', sans-serif; color: var(--text-dark); display: flex; flex-direction: column; min-height: 100vh; }
@@ -40,18 +41,74 @@
         .logout-btn { background: transparent; border: 2px solid rgba(255,255,255,0.8); color: white; border-radius: 30px; padding: 6px 18px; font-weight: 700; transition: all 0.3s; font-size: 0.88rem; cursor: pointer; }
         .logout-btn:hover { background: var(--secondary-yellow); color: var(--primary-blue); border-color: var(--secondary-yellow); }
 
-        /* ── HERO ── */
-        .hero-banner { background: var(--primary-gradient); color: white; padding: 44px 0 38px; position: relative; overflow: hidden; }
-        .hero-banner::before { content: ''; position: absolute; top: -80px; right: -80px; width: 340px; height: 340px; border-radius: 50%; background: rgba(253,185,19,0.09); }
-        .hero-banner::after  { content: ''; position: absolute; bottom: -60px; left: -40px; width: 230px; height: 230px; border-radius: 50%; background: rgba(255,255,255,0.05); }
-        .hero-inner { position: relative; z-index: 2; }
-        .hero-badge { display: inline-block; background: rgba(253,185,19,0.18); color: var(--secondary-yellow); border: 1px solid rgba(253,185,19,0.35); border-radius: 30px; padding: 4px 16px; font-size: 0.72rem; font-weight: 800; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 10px; }
-        .hero-banner h1 { font-size: 2rem; font-weight: 900; margin-bottom: 4px; }
-        .hero-divider { width: 44px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; margin: 10px 0 8px; }
-        .hero-banner p { opacity: 0.82; font-size: 0.85rem; margin: 0; }
-        .muni-badge-lg { background: rgba(253,185,19,0.18); border: 1px solid rgba(253,185,19,0.35); color: var(--secondary-yellow); border-radius: 12px; padding: 14px 24px; text-align: center; }
-        .muni-badge-lg .muni-name { font-size: 1.35rem; font-weight: 900; display: block; }
-        .muni-badge-lg .muni-sub  { font-size: 0.72rem; opacity: 0.75; font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; }
+        /* ── Top banner (Standardized with Dashboard) ── */
+        .top-banner {
+            background: linear-gradient(135deg, var(--primary-navy, {{ $adminPrimaryColor ?? '#2C3E8F' }}) 0%, #243088 100%) !important;
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(26, 36, 112, 0.15);
+        }
+        .banner-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 18px 32px 20px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        .banner-badge {
+            display: inline-block;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            color: var(--accent-gold, {{ $adminSecondaryColor ?? '#f5b82e' }});
+            border: 1px solid rgba(245, 184, 46, .5);
+            border-radius: 99px;
+            padding: 3px 10px;
+            text-transform: uppercase;
+        }
+        .banner-title {
+            margin: 6px 0 2px;
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.01em;
+            line-height: 1.25;
+        }
+        .banner-sub {
+            margin: 0;
+            font-size: 12.5px;
+            color: #d3d9f5;
+        }
+        .top-banner .muni-tag {
+            border: 1px solid rgba(245, 184, 46, .45);
+            background: rgba(245, 184, 46, .1);
+            border-radius: 10px;
+            padding: 8px 18px;
+            text-align: center;
+        }
+        .top-banner .muni-tag-name {
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--accent-gold, {{ $adminSecondaryColor ?? '#f5b82e' }});
+            line-height: 1.2;
+        }
+        .top-banner .muni-tag-label {
+            font-size: 9.5px;
+            letter-spacing: .14em;
+            color: var(--accent-gold, {{ $adminSecondaryColor ?? '#f5b82e' }});
+            font-weight: 600;
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+        @media (max-width: 768px) {
+            .banner-inner {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
+        }
 
         /* ── MAIN ── */
         .main-content { flex: 1; }
@@ -104,9 +161,9 @@
         .badge-active   { background: #d4edda; color: #155724; font-size: 0.68rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; }
         .badge-inactive { background: #f1f5f9; color: #94a3b8; font-size: 0.68rem; font-weight: 800; padding: 3px 10px; border-radius: 20px; }
 
-        /* ── MUNI TAG ── */
-        .muni-tag { background: #E5EEFF; color: var(--primary-blue); font-size: 0.7rem; font-weight: 700; padding: 2px 9px; border-radius: 20px; display: inline-block; }
-        .muni-all { background: #FFF3D6; color: #856404; }
+        /* ── MUNI TAG (Table) ── */
+        .ann-table .muni-tag { background: #E5EEFF; color: var(--primary-blue); font-size: 0.7rem; font-weight: 700; padding: 2px 9px; border-radius: 20px; display: inline-block; border: none; }
+        .ann-table .muni-all { background: #FFF3D6; color: #856404; }
 
         /* ── ACTION BUTTONS ── */
         .btn-act { font-size: 0.76rem; font-weight: 700; padding: 5px 12px; border-radius: 8px; border: none; cursor: pointer; transition: opacity 0.15s; }
@@ -132,27 +189,20 @@
     {{-- ── NAVBAR ── --}}
 @include('components.admin-navbar')
 
-    {{-- ── HERO BANNER ── --}}
-    <section class="hero-banner">
-        <div class="container">
-            <div class="hero-inner">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <div class="hero-badge">Admin Panel</div>
-                        <h1>Announcements</h1>
-                        <div class="hero-divider"></div>
-                        <p>Post and manage announcements for residents in your municipality.</p>
-                    </div>
-                    <div class="col-md-4 d-none d-md-flex justify-content-end">
-                        <div class="muni-badge-lg">
-                            <span class="muni-name">{{ Auth::user()->municipality ?? 'All' }}</span>
-                            <span class="muni-sub">Municipality</span>
-                        </div>
-                    </div>
-                </div>
+    {{-- ── Top Hero Banner (Standardized with Dashboard) ── --}}
+    <div class="top-banner">
+        <div class="banner-inner">
+            <div>
+                <span class="banner-badge">ANNOUNCEMENTS</span>
+                <h1 class="banner-title">Announcements</h1>
+                <p class="banner-sub">Post and manage announcements for residents in your municipality.</p>
+            </div>
+            <div class="muni-tag">
+                <div class="muni-tag-name">{{ Auth::user()->municipality ?? 'All' }}</div>
+                <div class="muni-tag-label">MUNICIPALITY</div>
             </div>
         </div>
-    </section>
+    </div>
 
     {{-- ── MAIN CONTENT ── --}}
     <div class="main-content">

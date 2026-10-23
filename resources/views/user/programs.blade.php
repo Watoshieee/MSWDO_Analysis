@@ -33,21 +33,21 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
         .hero {
             background: var(--primary-gradient);
             color: white;
-            padding: 56px 0 52px;
+            padding: 22px 0 18px;
             position: relative;
             overflow: hidden;
         }
         .hero::before {
             content: '';
-            position: absolute; top: -100px; right: -100px;
-            width: 400px; height: 400px; border-radius: 50%;
-            background: radial-gradient(circle, rgba(253,185,19,0.12) 0%, transparent 70%);
+            position: absolute; top: -80px; right: -80px;
+            width: 320px; height: 320px; border-radius: 50%;
+            background: rgba(253,185,19,0.10);
         }
         .hero::after {
             content: '';
-            position: absolute; bottom: -80px; left: -60px;
-            width: 280px; height: 280px; border-radius: 50%;
-            background: rgba(255,255,255,0.04);
+            position: absolute; bottom: -60px; left: -40px;
+            width: 220px; height: 220px; border-radius: 50%;
+            background: rgba(255,255,255,0.05);
         }
         .hero-inner { position: relative; z-index: 2; }
         .hero-badge {
@@ -56,18 +56,18 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
             color: var(--secondary-yellow);
             border: 1px solid rgba(253,185,19,0.35);
             border-radius: 30px; padding: 5px 18px;
-            font-size: 0.72rem; font-weight: 800;
-            letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 14px;
+            font-size: 0.75rem; font-weight: 800;
+            letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 16px;
         }
-        .hero h1 { font-size: 2.5rem; font-weight: 900; line-height: 1.15; margin-bottom: 6px; }
-        .hero-divider { width: 50px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; margin: 14px 0 16px; }
-        .hero p { opacity: 0.85; font-size: 0.97rem; max-width: 520px; line-height: 1.7; margin-bottom: 28px; }
+        .hero h1 { font-size: 2.4rem; font-weight: 900; line-height: 1.15; margin-bottom: 8px; }
+        .hero-divider { width: 50px; height: 4px; background: var(--secondary-yellow); border-radius: 2px; margin: 14px 0; }
+        .hero p { opacity: 0.84; font-size: 0.93rem; max-width: 600px; line-height: 1.6; margin-bottom: 10px; }
 
         /* Stats row in hero */
-        .hero-stats { display: flex; gap: 28px; flex-wrap: wrap; }
-        .hero-stat { background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.15); border-radius: 14px; padding: 12px 22px; text-align: center; }
-        .hero-stat .stat-val { font-size: 1.5rem; font-weight: 900; color: var(--secondary-yellow); }
-        .hero-stat .stat-lbl { font-size: 0.7rem; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: .06em; margin-top: 2px; }
+        .hero-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+        .hero-stat { background: rgba(255,255,255,0.10); border: 1px solid rgba(255,255,255,0.15); border-radius: 10px; padding: 6px 14px; text-align: center; }
+        .hero-stat .stat-val { font-size: 1.05rem; font-weight: 900; color: var(--secondary-yellow); }
+        .hero-stat .stat-lbl { font-size: 0.62rem; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: .06em; margin-top: 1px; }
 
         /* ── SEARCH & FILTER BAR ── */
         .filter-bar {
@@ -183,8 +183,7 @@ html, body { overscroll-behavior: none; margin: 0; padding: 0; }
 
         /* ── FOOTER ── */
         .main-content { flex: 1; }
-        .footer-strip { background: var(--primary-gradient); color: rgba(255,255,255,0.7); text-align: center; padding: 20px 0; font-size: 0.83rem; margin-top: auto; }
-        .footer-strip strong { color: white; }
+        .footer-strip { background: var(--primary-gradient); color: white; text-align: center; padding: 18px; font-size: 0.85rem; margin-top: auto; }
 
         /* Scrollbar */
         ::-webkit-scrollbar { width: 6px; }

@@ -53,6 +53,7 @@ class AppointmentController extends Controller
                 'user_name'          => $a->user?->full_name ?? 'N/A',
                 'user_email'         => $a->user?->email ?? '',
                 'date'               => $a->appointment_date->format('M d, Y'),
+                'date_raw'           => $a->appointment_date->format('Y-m-d'),
                 'day'                => $a->appointment_date->format('l'),
                 'time'               => $a->formatted_time,
                 'interview_type'     => $a->interview_label,

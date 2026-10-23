@@ -133,37 +133,73 @@
             border-color: var(--secondary-yellow);
         }
 
-        .page-hero {
-            background: var(--primary-gradient);
-            border-radius: 20px;
-            padding: 32px 36px;
-            margin-bottom: 28px;
-            color: white;
-            position: relative;
-            overflow: hidden;
+        /* ── Top banner (Standardized with Dashboard) ── */
+        .top-banner {
+            background: linear-gradient(135deg, var(--primary-navy, {{ $adminPrimaryColor ?? '#2C3E8F' }}) 0%, #243088 100%) !important;
+            color: #fff;
+            box-shadow: 0 4px 20px rgba(26, 36, 112, 0.15);
         }
-
-        .page-hero h1 {
-            font-size: 1.75rem;
-            font-weight: 800;
-            margin-bottom: 4px;
+        .banner-inner {
+            max-width: 1280px;
+            margin: 0 auto;
+            padding: 18px 32px 20px;
+            box-sizing: border-box;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            flex-wrap: wrap;
         }
-
-        .page-hero p {
-            opacity: 0.82;
-            margin: 0;
-            font-size: 0.92rem;
-        }
-
-        .muni-badge {
-            background: rgba(253, 185, 19, 0.18);
-            border: 1px solid rgba(253, 185, 19, 0.35);
-            color: #FDB913;
-            border-radius: 30px;
-            padding: 7px 20px;
-            font-size: 0.85rem;
-            font-weight: 700;
+        .banner-badge {
             display: inline-block;
+            font-size: 10.5px;
+            font-weight: 700;
+            letter-spacing: .1em;
+            color: var(--accent-gold, #f5b82e);
+            border: 1px solid rgba(245, 184, 46, .5);
+            border-radius: 99px;
+            padding: 3px 10px;
+            text-transform: uppercase;
+        }
+        .banner-title {
+            margin: 6px 0 2px;
+            font-size: 24px;
+            font-weight: 800;
+            color: #fff;
+            letter-spacing: -0.01em;
+            line-height: 1.25;
+        }
+        .banner-sub {
+            margin: 0;
+            font-size: 12.5px;
+            color: #d3d9f5;
+        }
+        .muni-tag {
+            border: 1px solid rgba(245, 184, 46, .45);
+            background: rgba(245, 184, 46, .1);
+            border-radius: 10px;
+            padding: 8px 18px;
+            text-align: center;
+        }
+        .muni-tag-name {
+            font-size: 17px;
+            font-weight: 800;
+            color: var(--accent-gold, #f5b82e);
+            line-height: 1.2;
+        }
+        .muni-tag-label {
+            font-size: 9.5px;
+            letter-spacing: .14em;
+            color: var(--accent-gold, #f5b82e);
+            font-weight: 600;
+            margin-top: 2px;
+            text-transform: uppercase;
+        }
+        @media (max-width: 768px) {
+            .banner-inner {
+                padding-left: 16px;
+                padding-right: 16px;
+            }
         }
 
         .panel-card {
@@ -808,22 +844,25 @@
 
     @include('components.admin-navbar')
 
+    {{-- Top Hero Banner (Standardized with Dashboard) --}}
+    <div class="top-banner">
+        <div class="banner-inner">
+            <div>
+                <span class="banner-badge">APPLICATIONS MANAGEMENT</span>
+                <h1 class="banner-title">Applications Management</h1>
+                <p class="banner-sub">Review, approve, or reject submitted program applications in {{ is_object($municipality) ? $municipality->name : $municipality }}.</p>
+            </div>
+            <div class="muni-tag">
+                <div class="muni-tag-name">{{ is_object($municipality) ? $municipality->name : $municipality }}</div>
+                <div class="muni-tag-label">MUNICIPALITY</div>
+            </div>
+        </div>
+    </div>
+
     <div style="flex:1;">
         <div class="container mt-4">
 
             @include('components.admin-notification')
-
-            <div class="page-hero mb-4">
-                <div class="row align-items-center">
-                    <div class="col-md-8">
-                        <h1>Applications Management</h1>
-                        <p>Review, approve, or reject submitted program applications.</p>
-                    </div>
-                    <div class="col-md-4 text-md-end mt-3 mt-md-0">
-                        <span class="muni-badge">{{ $municipality }}</span>
-                    </div>
-                </div>
-            </div>
 
             <div class="panel-card">
                 <div class="panel-header">
@@ -846,23 +885,22 @@
                             onmouseout="this.style.background='rgba(255,255,255,0.12)'">
                             Archived ({{ $archivedTotalCount }})
                         </button>
-                        <span
+                        <span id="submittedAppsTotalBadge"
                             style="font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.15);padding:4px 12px;border-radius:20px;">
                             {{ $applications->total() }} Total
                         </span>
                     </div>
                 </div>
                 <div class="p-0">
-                    <form method="GET" action="{{ route('admin.requirements') }}"
+                    <form id="appFilterForm" method="GET" action="{{ route('admin.requirements') }}"
                         style="padding:14px 16px;border-bottom:1px solid #e2e8f0;background:#f8faff;">
                         <div
                             style="display:grid;grid-template-columns:2fr 1fr 1fr auto auto;gap:10px;align-items:center;">
-                            <input type="text" name="app_search" value="{{ request('app_search') }}"
+                            <input type="text" name="app_search" id="appSearchInput" value="{{ request('app_search') }}"
                                 placeholder="Search applicant, contact, barangay..." class="form-control"
                                 style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
-                            <select name="app_status" class="form-select"
+                            <select name="app_status" id="appStatusFilter" class="form-select"
                                 style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
-                                <option value="">All status</option>
                                 <option value="pending" {{ request('app_status') === 'pending' ? 'selected' : '' }}>
                                     Pending</option>
                                 <option value="approved" {{ request('app_status') === 'approved' ? 'selected' : '' }}>
@@ -870,9 +908,8 @@
                                 <option value="rejected" {{ request('app_status') === 'rejected' ? 'selected' : '' }}>
                                     Rejected</option>
                             </select>
-                            <select name="app_program" class="form-select"
+                            <select name="app_program" id="appProgramFilter" class="form-select"
                                 style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
-                                <option value="">All programs</option>
                                 <option value="PWD_Assistance" {{ request('app_program') === 'PWD_Assistance' ? 'selected' : '' }}>PWD Assistance</option>
                                 <option value="PWD_New" {{ request('app_program') === 'PWD_New' ? 'selected' : '' }}>PWD
                                     New</option>
@@ -881,11 +918,12 @@
                                 <option value="AICS_Medical" {{ request('app_program') === 'AICS_Medical' ? 'selected' : '' }}>AICS Medical</option>
                                 <option value="AICS_Burial" {{ request('app_program') === 'AICS_Burial' ? 'selected' : '' }}>AICS Burial</option>
                             </select>
-                            <button type="submit" class="btn-action btn-action-primary" style="height:36px;padding:0 16px;">Filter</button>
-                            <a href="{{ route('admin.requirements') }}" class="btn-action btn-action-neutral"
-                                style="height:36px;padding:0 16px;">Reset</a>
+                            <button type="submit" id="appFilterBtn" class="btn-action btn-action-primary" style="height:36px;padding:0 16px;">Filter</button>
+                            <button type="button" id="appResetBtn" class="btn-action btn-action-neutral"
+                                style="height:36px;padding:0 16px;">Reset</button>
                         </div>
                     </form>
+                    <div id="submittedAppsTableWrap">
                     @if($applications->count() > 0 || $pwdRenewalRequests->count() > 0)
                         <div class="table-responsive">
                             <table class="table mb-0">
@@ -1103,7 +1141,14 @@
                             </table>
                         </div>
                         <div class="p-3">{{ $applications->appends(request()->query())->links() }}</div>
+                    @else
+                        <div style="text-align:center;padding:40px 20px;color:#94a3b8;">
+                            <div style="font-size:1.8rem;margin-bottom:6px;">📋</div>
+                            <div style="font-weight:600;font-size:.9rem;">No applications found</div>
+                            <div style="font-size:.8rem;margin-top:2px;">Try adjusting your search or filter criteria.</div>
+                        </div>
                     @endif
+                    </div>
                 </div>
             </div>
 
@@ -1727,8 +1772,10 @@
                 }
 
                 // Wire all .gcm-form elements to custom confirm modal
-                document.addEventListener('DOMContentLoaded', function () {
+                function wireGcmForms() {
                     document.querySelectorAll('.gcm-form').forEach(function (form) {
+                        if (form.dataset.gcmWired === 'true') return;
+                        form.dataset.gcmWired = 'true';
                         form.addEventListener('submit', async function (e) {
                             e.preventDefault();
                             const ok = await uiConfirm({
@@ -1745,7 +1792,8 @@
                             }
                         });
                     });
-                });
+                }
+                document.addEventListener('DOMContentLoaded', wireGcmForms);
             </script>
 
             <div class="panel-card" style="margin-top:28px;">
@@ -1763,12 +1811,11 @@
                     </div>
                 </div>
                 <div
-                    style="padding:14px 16px;border-bottom:1px solid #e2e8f0;background:#f8faff;display:grid;grid-template-columns:2fr 1fr 1fr;gap:10px;">
+                    style="padding:14px 16px;border-bottom:1px solid #e2e8f0;background:#f8faff;display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto;gap:10px;align-items:center;">
                     <input id="apptSearchInput" type="text" placeholder="Search applicant, email, notes..."
                         class="form-control" style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
                     <select id="apptStatusFilter" class="form-select"
                         style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
-                        <option value="">All status</option>
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
                         <option value="validated">Validated</option>
@@ -1777,12 +1824,16 @@
                     </select>
                     <select id="apptProgramFilter" class="form-select"
                         style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
-                        <option value="">All programs</option>
                         <option value="Solo_Parent">Solo Parent</option>
                         <option value="Solo_Parent_Renewal">Solo Parent Renewal</option>
                         <option value="AICS_Medical">AICS Medical</option>
                         <option value="AICS_Burial">AICS Burial</option>
                     </select>
+                    <input id="apptDateFilter" type="date" class="form-control"
+                        title="Appointment Date"
+                        style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
+                    <button type="button" id="apptFilterBtn" onclick="applyAppointmentFilters()" class="btn-action btn-action-primary" style="height:36px;padding:0 16px;">Filter</button>
+                    <button type="button" id="apptResetBtn" onclick="resetAppointmentFilters()" class="btn-action btn-action-neutral" style="height:36px;padding:0 16px;">Reset</button>
                 </div>
                 <div class="p-3" id="apptTableWrap">
                     <div style="text-align:center;padding:30px;color:#94a3b8;font-size:.9rem;">Loading
@@ -1905,10 +1956,37 @@
             return String(v || '').toLowerCase();
         }
 
+        function resetAppointmentFilters() {
+            const sInput = document.getElementById('apptSearchInput');
+            const stSelect = document.getElementById('apptStatusFilter');
+            const prSelect = document.getElementById('apptProgramFilter');
+            const dtInput = document.getElementById('apptDateFilter');
+            if (sInput) sInput.value = '';
+            if (stSelect) stSelect.selectedIndex = 0;
+            if (prSelect) prSelect.selectedIndex = 0;
+            if (dtInput) dtInput.value = '';
+            sessionStorage.removeItem('mswdo_appt_search');
+            sessionStorage.removeItem('mswdo_appt_status');
+            sessionStorage.removeItem('mswdo_appt_program');
+            sessionStorage.removeItem('mswdo_appt_date');
+            applyAppointmentFilters();
+        }
+
         function applyAppointmentFilters() {
-            const term = normalizeText(document.getElementById('apptSearchInput')?.value);
-            const status = normalizeText(document.getElementById('apptStatusFilter')?.value);
-            const program = normalizeText(document.getElementById('apptProgramFilter')?.value);
+            const sInput = document.getElementById('apptSearchInput');
+            const stSelect = document.getElementById('apptStatusFilter');
+            const prSelect = document.getElementById('apptProgramFilter');
+            const dtInput = document.getElementById('apptDateFilter');
+            const term = normalizeText(sInput?.value);
+            const status = normalizeText(stSelect?.value);
+            const program = normalizeText(prSelect?.value);
+            const dateVal = dtInput?.value || '';
+
+            if (sInput) sessionStorage.setItem('mswdo_appt_search', sInput.value);
+            if (stSelect) sessionStorage.setItem('mswdo_appt_status', stSelect.value);
+            if (prSelect) sessionStorage.setItem('mswdo_appt_program', prSelect.value);
+            if (dtInput) sessionStorage.setItem('mswdo_appt_date', dtInput.value);
+
             const filtered = _allAppointments.filter(a => {
                 const hay = [
                     a.user_name,
@@ -1929,6 +2007,7 @@
                         return false;
                     }
                 }
+                if (dateVal && a.date_raw !== dateVal) return false;
                 return true;
             });
             renderAppointments(filtered);
@@ -2401,9 +2480,59 @@
             }
         }
 
+        async function fetchSubmittedApps(url) {
+            const wrap = document.getElementById('submittedAppsTableWrap');
+            if (wrap) wrap.style.opacity = '0.5';
+            try {
+                const res = await fetch(url, {
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const html = await res.text();
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+
+                const newWrap = doc.getElementById('submittedAppsTableWrap');
+                if (newWrap && wrap) {
+                    wrap.innerHTML = newWrap.innerHTML;
+                    wrap.style.opacity = '1';
+                }
+
+                const newBadge = doc.getElementById('submittedAppsTotalBadge');
+                const currentBadge = document.getElementById('submittedAppsTotalBadge');
+                if (newBadge && currentBadge) {
+                    currentBadge.textContent = newBadge.textContent;
+                }
+
+                if (typeof wireGcmForms === 'function') wireGcmForms();
+                window.history.replaceState(null, '', url);
+            } catch (e) {
+                if (wrap) wrap.style.opacity = '1';
+                console.error('Error filtering applications:', e);
+            }
+        }
+
         // Load on page ready
         document.addEventListener('DOMContentLoaded', function () {
+            // Restore Appointments filter values if previously set in session
+            const savedSearch = sessionStorage.getItem('mswdo_appt_search');
+            const savedStatus = sessionStorage.getItem('mswdo_appt_status');
+            const savedProgram = sessionStorage.getItem('mswdo_appt_program');
+            const savedDate = sessionStorage.getItem('mswdo_appt_date');
+            if (savedSearch !== null && document.getElementById('apptSearchInput')) {
+                document.getElementById('apptSearchInput').value = savedSearch;
+            }
+            if (savedStatus !== null && document.getElementById('apptStatusFilter')) {
+                document.getElementById('apptStatusFilter').value = savedStatus;
+            }
+            if (savedProgram !== null && document.getElementById('apptProgramFilter')) {
+                document.getElementById('apptProgramFilter').value = savedProgram;
+            }
+            if (savedDate !== null && document.getElementById('apptDateFilter')) {
+                document.getElementById('apptDateFilter').value = savedDate;
+            }
+
             loadAppointments();
+
             const wireFilter = () => {
                 if (_apptFilterTimer) clearTimeout(_apptFilterTimer);
                 _apptFilterTimer = setTimeout(applyAppointmentFilters, 180);
@@ -2411,6 +2540,42 @@
             document.getElementById('apptSearchInput')?.addEventListener('input', wireFilter);
             document.getElementById('apptStatusFilter')?.addEventListener('change', applyAppointmentFilters);
             document.getElementById('apptProgramFilter')?.addEventListener('change', applyAppointmentFilters);
+            document.getElementById('apptDateFilter')?.addEventListener('change', applyAppointmentFilters);
+
+            // Submitted Applications Filter Form (AJAX submission so Appointments is untouched)
+            document.getElementById('appFilterForm')?.addEventListener('submit', function (e) {
+                e.preventDefault();
+                const form = e.target;
+                const url = new URL(form.action, window.location.origin);
+                const searchVal = form.querySelector('[name="app_search"]')?.value.trim();
+                const statusVal = form.querySelector('[name="app_status"]')?.value;
+                const progVal = form.querySelector('[name="app_program"]')?.value;
+                if (searchVal) url.searchParams.set('app_search', searchVal);
+                if (statusVal) url.searchParams.set('app_status', statusVal);
+                if (progVal) url.searchParams.set('app_program', progVal);
+                fetchSubmittedApps(url.toString());
+            });
+
+            // Submitted Applications Reset (Resets only Submitted Applications and fetches unfiltered applications)
+            document.getElementById('appResetBtn')?.addEventListener('click', function (e) {
+                e.preventDefault();
+                const searchInput = document.getElementById('appSearchInput');
+                const statusSelect = document.getElementById('appStatusFilter');
+                const progSelect = document.getElementById('appProgramFilter');
+                if (searchInput) searchInput.value = '';
+                if (statusSelect) statusSelect.selectedIndex = 0;
+                if (progSelect) progSelect.selectedIndex = 0;
+                fetchSubmittedApps('{{ route("admin.requirements") }}');
+            });
+
+            // Submitted Applications Pagination (Ajax so page reload does not reset Appointments)
+            document.addEventListener('click', function (e) {
+                const pageLink = e.target.closest('#submittedAppsTableWrap .pagination a');
+                if (pageLink && pageLink.href) {
+                    e.preventDefault();
+                    fetchSubmittedApps(pageLink.href);
+                }
+            });
         });
     </script>
 

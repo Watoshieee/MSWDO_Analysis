@@ -625,13 +625,32 @@ html, body {
                 <span class="cx-badge" id="cxHdrBadge" style="display:none;">0</span>
             </button>
 
+            @php
+                try {
+                    $_bellUnread = \DB::table('admin_notifications')
+                        ->where('admin_id', Auth::id())
+                        ->where('is_read', false)
+                        ->count();
+                } catch (\Exception $e) {
+                    $_bellUnread = 0;
+                }
+            @endphp
             <!-- Notification Bell with Count Badge -->
             <button type="button" class="hd-ic" onclick="if(typeof openAdminNotifModal==='function'){openAdminNotifModal();}else{window.location.href='{{ route('admin.requirements') }}';}" aria-label="Application Notifications" title="Application Notifications">
                 <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
-                @if(isset($adminNotifCount) && $adminNotifCount > 0)
-                <span class="hd-bd">{{ $adminNotifCount > 9 ? '9+' : $adminNotifCount }}</span>
-                @endif
+                <span class="hd-bd" id="adminNotifBadge"
+                    style="{{ $_bellUnread > 0 ? 'display:flex;' : 'display:none;' }}">{{ $_bellUnread > 9 ? '9+' : ($_bellUnread ?: '') }}</span>
             </button>
+            <script>
+                (function(){
+                    var c = {{ (int) $_bellUnread }};
+                    if (typeof setAdminBellBadge === 'function') {
+                        setAdminBellBadge(c);
+                    } else {
+                        window._adminNotifInitCount = c;
+                    }
+                })();
+            </script>
 
             <!-- Profile Menu Dropdown (Desktop >=1200px) -->
             <div class="pm hd-pm" id="pm">

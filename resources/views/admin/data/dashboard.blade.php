@@ -82,14 +82,74 @@ h1,h2,h3,p{margin:0}
 .in{max-width:1280px;margin:0 auto;padding:0 32px}
 
 
-/* page band */
-.band{background:linear-gradient(135deg,var(--navy-d),var(--navy-l));color:#fff}
-.band .in{display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;padding-top:22px;padding-bottom:22px}
-.band h1{font-size:24px;font-weight:800;letter-spacing:-.01em}
-.band p{margin-top:6px;color:#d3d9f5;font-size:13.5px;max-width:560px}
-.muni{border:1px solid rgba(245,184,46,.45);background:rgba(245,184,46,.1);border-radius:10px;padding:8px 18px;text-align:center;color:var(--gold)}
-.muni b{display:block;font-size:17px;font-weight:800}
-.muni span{font-size:11px;font-weight:600}
+/* ── Top banner (Standardized with Dashboard) ── */
+.top-banner {
+    background: linear-gradient(135deg, var(--primary-navy, {{ $adminPrimaryColor ?? '#2C3E8F' }}) 0%, #243088 100%) !important;
+    color: #fff;
+    box-shadow: 0 4px 20px rgba(26, 36, 112, 0.15);
+}
+.banner-inner {
+    max-width: 1280px;
+    margin: 0 auto;
+    padding: 18px 32px 20px;
+    box-sizing: border-box;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+.banner-badge {
+    display: inline-block;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    color: var(--accent-gold, #f5b82e);
+    border: 1px solid rgba(245, 184, 46, .5);
+    border-radius: 99px;
+    padding: 3px 10px;
+    text-transform: uppercase;
+}
+.banner-title {
+    margin: 6px 0 2px;
+    font-size: 24px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.01em;
+    line-height: 1.25;
+}
+.banner-sub {
+    margin: 0;
+    font-size: 12.5px;
+    color: #d3d9f5;
+}
+.muni-tag {
+    border: 1px solid rgba(245, 184, 46, .45);
+    background: rgba(245, 184, 46, .1);
+    border-radius: 10px;
+    padding: 8px 18px;
+    text-align: center;
+}
+.muni-tag-name {
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--accent-gold, #f5b82e);
+    line-height: 1.2;
+}
+.muni-tag-label {
+    font-size: 9.5px;
+    letter-spacing: .14em;
+    color: var(--accent-gold, #f5b82e);
+    font-weight: 600;
+    margin-top: 2px;
+    text-transform: uppercase;
+}
+@media (max-width: 768px) {
+    .banner-inner {
+        padding-left: 16px;
+        padding-right: 16px;
+    }
+}
 
 main.in{padding-top:32px;padding-bottom:40px}
 section+section,.cols{margin-top:36px}
@@ -286,19 +346,17 @@ dialog input:focus{outline:0;border-color:var(--navy);background:#fff;box-shadow
 <body>
     @include('components.admin-navbar', ['active' => 'data'])
 
-    <!-- Hero Band -->
-    <div class="band">
-        <div class="in">
+    <!-- Hero Band (Standardized with Dashboard) -->
+    <div class="top-banner">
+        <div class="banner-inner">
             <div>
-                <nav class="crumb" aria-label="Breadcrumb">
-                    <a href="{{ route('admin.dashboard') }}">Dashboard</a> / Data Management
-                </nav>
-                <h1>Data Management</h1>
-                <p>Update municipality profiles, barangay records, and social welfare program data for {{ $municipality->name ?? Auth::user()->municipality ?? 'Majayjay' }}.</p>
+                <span class="banner-badge">DATA MANAGEMENT</span>
+                <h1 class="banner-title">Data Management</h1>
+                <p class="banner-sub">Update municipality profiles, barangay records, and social welfare program data for {{ $municipality->name ?? Auth::user()->municipality ?? 'Majayjay' }}.</p>
             </div>
-            <div class="muni">
-                <b>{{ $municipality->name ?? Auth::user()->municipality ?? 'Majayjay' }}</b>
-                <span>Municipality</span>
+            <div class="muni-tag">
+                <div class="muni-tag-name">{{ $municipality->name ?? Auth::user()->municipality ?? 'Majayjay' }}</div>
+                <div class="muni-tag-label">MUNICIPALITY</div>
             </div>
         </div>
     </div>

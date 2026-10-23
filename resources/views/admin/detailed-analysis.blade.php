@@ -61,96 +61,75 @@ main.in {
   .in { padding: 0 16px; }
 }
 
-/* -- HERO -- */
-.hero {
-  position: relative;
-  overflow: hidden;
-  background: linear-gradient(135deg, #1a2470 0%, #243088 100%);
+/* ── Top banner (Standardized with Dashboard) ── */
+.top-banner {
+  background: linear-gradient(135deg, var(--primary-navy, {{ $adminPrimaryColor ?? '#2C3E8F' }}) 0%, #243088 100%) !important;
   color: #fff;
+  box-shadow: 0 4px 20px rgba(26, 36, 112, 0.15);
 }
-.hero::before, .hero::after {
-  content: "";
-  position: absolute;
-  border-radius: 50%;
-  background: rgba(255, 255, 255, .05);
-  pointer-events: none;
-}
-.hero::before { width: 320px; height: 320px; left: -80px; top: 40px; }
-.hero::after { width: 380px; height: 380px; right: -60px; top: -60px; }
-.hero .in {
-  position: relative;
-  z-index: 1;
+.banner-inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 18px 32px 20px;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 24px;
+  gap: 16px;
   flex-wrap: wrap;
-  padding-top: 52px;
-  padding-bottom: 48px;
 }
-.eyebrow {
+.banner-badge {
   display: inline-block;
-  padding: 7px 20px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: .1em;
+  color: var(--accent-gold, #f5b82e);
+  border: 1px solid rgba(245, 184, 46, .5);
   border-radius: 99px;
-  background: rgba(245, 184, 46, .16);
-  border: 1px solid rgba(245, 184, 46, .45);
-  color: var(--gold);
-  font-size: 13px;
-  font-weight: 800;
-  letter-spacing: .14em;
+  padding: 3px 10px;
   text-transform: uppercase;
 }
-.hero h1 {
-  margin: 14px 0 0;
-  font-size: 40px;
+.banner-title {
+  margin: 6px 0 2px;
+  font-size: 24px;
   font-weight: 800;
-  letter-spacing: -.02em;
-  line-height: 1.15;
+  color: #fff;
+  letter-spacing: -0.01em;
+  line-height: 1.25;
 }
-.hero .bar {
-  display: block;
-  width: 56px;
-  height: 4px;
-  border-radius: 4px;
-  background: var(--gold);
-  margin: 14px 0 16px;
+.banner-sub {
+  margin: 0;
+  font-size: 12.5px;
+  color: #d3d9f5;
 }
-.hero p {
-  font-size: 16px;
-  color: #dbe0f7;
-  max-width: 640px;
-}
-.muni {
+.muni-tag {
   border: 1px solid rgba(245, 184, 46, .45);
-  background: rgba(245, 184, 46, .14);
-  border-radius: 14px;
-  padding: 18px 32px;
+  background: rgba(245, 184, 46, .1);
+  border-radius: 10px;
+  padding: 8px 18px;
   text-align: center;
 }
-.muni b {
-  display: block;
-  font-size: 28px;
+.muni-tag-name {
+  font-size: 17px;
   font-weight: 800;
-  color: var(--gold);
+  color: var(--accent-gold, #f5b82e);
   line-height: 1.2;
 }
-.muni span {
-  display: block;
-  margin-top: 6px;
-  font-size: 13px;
-  font-weight: 700;
-  letter-spacing: .16em;
+.muni-tag-label {
+  font-size: 9.5px;
+  letter-spacing: .14em;
+  color: var(--accent-gold, #f5b82e);
+  font-weight: 600;
+  margin-top: 2px;
   text-transform: uppercase;
-  color: #e3bf63;
 }
-@media (max-width: 700px) {
-  .hero .in { padding-top: 32px; padding-bottom: 30px; }
-  .hero h1 { font-size: 30px; }
-  .hero p { font-size: 14.5px; }
-  .muni { padding: 12px 22px; }
-  .muni b { font-size: 22px; }
-  .muni span { font-size: 11.5px; }
+@media (max-width: 768px) {
+  .banner-inner {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
 }
+
 
 /* -- FILTER BAR -- */
 .fb {
@@ -898,18 +877,17 @@ thead th:first-child { background: var(--bg); }
 
 @include('components.admin-navbar')
 
-{{-- --- HERO --------------------------------------------------------------- --}}
-<div class="hero">
-  <div class="in">
+{{-- ── Top Hero Banner (Standardized with Dashboard) ── --}}
+<div class="top-banner">
+  <div class="banner-inner">
     <div>
-      <span class="eyebrow">Analysis</span>
-      <h1>Detailed Analysis</h1>
-      <span class="bar" aria-hidden="true"></span>
-      <p>Application statistics, program breakdown, and barangay-level data for {{ $municipality->name }}.</p>
+      <span class="banner-badge">DETAILED ANALYSIS</span>
+      <h1 class="banner-title">Detailed Analysis</h1>
+      <p class="banner-sub">Application statistics, program breakdown, and barangay-level data for {{ $municipality->name }}.</p>
     </div>
-    <div class="muni">
-      <b>{{ $municipality->name }}</b>
-      <span>Municipality</span>
+    <div class="muni-tag">
+      <div class="muni-tag-name">{{ $municipality->name }}</div>
+      <div class="muni-tag-label">MUNICIPALITY</div>
     </div>
   </div>
 </div>

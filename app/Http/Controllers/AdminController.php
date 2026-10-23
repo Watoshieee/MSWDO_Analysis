@@ -2577,6 +2577,8 @@ class AdminController extends Controller
         $idFilter = (string) $request->query('id_filter', '');
         if ($idFilter === 'pending') {
             $users = $users->filter(fn($u) => $u->id_verification_status === \App\Models\User::ID_STATUS_PENDING)->values();
+        } elseif ($idFilter === 'approved') {
+            $users = $users->filter(fn($u) => $u->id_verification_status === \App\Models\User::ID_STATUS_APPROVED)->values();
         }
 
         $statusFilter = (string) $request->query('status_filter', '');
@@ -2593,10 +2595,13 @@ class AdminController extends Controller
                     'email' => $u->email,
                     'phone_number' => $u->phone_number,
                     'barangay' => $u->barangay,
+                    'municipality' => $u->municipality,
+                    'valid_id_type' => $u->valid_id_type,
                     'gender' => $u->gender,
                     'status' => $u->status ?? 'pending',
                     'date_of_birth' => $u->date_of_birth,
                     'created_at' => optional($u->created_at)->toDateString(),
+                    'created_at_formatted' => optional($u->created_at)->format('M d, Y'),
                     'email_verified_at' => $u->email_verified_at,
                     'id_verification_status' => $u->id_verification_status,
                     'valid_id_path' => $u->valid_id_path,
