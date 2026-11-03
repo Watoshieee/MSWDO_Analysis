@@ -30,7 +30,7 @@ class AhpRankingService
     ];
 
     /** Hidden from public program analysis tables, charts, totals, and insights. */
-    public const EXCLUDED_PROGRAM_TYPES = ['ECCD', 'Kababaihan'];
+    public const EXCLUDED_PROGRAM_TYPES = ['ECCD', 'Kababaihan', 'ESA', 'SLP'];
 
     /**
      * When all three municipalities have the same valid value for a criterion,

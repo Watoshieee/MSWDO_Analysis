@@ -151,7 +151,7 @@ h1,h2,h3,p{margin:0}
     }
 }
 
-main.in{padding-top:32px;padding-bottom:40px}
+main.in{padding-top:16px;padding-bottom:40px}
 section+section,.cols{margin-top:36px}
 .sh{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:16px}
 .sh h2{font-size:17px;font-weight:800;letter-spacing:-.005em}
@@ -160,7 +160,7 @@ section+section,.cols{margin-top:36px}
 .tools{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
 
 /* buttons */
-.btn{display:inline-flex;align-items:center;gap:6px;height:36px;white-space:nowrap;padding:0 14px;border-radius:9px;border:1px solid var(--navy);background:var(--navy);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s,color .15s,transform .15s,box-shadow .15s}
+.btn{display:inline-flex;align-items:center;gap:6px;height:40px;white-space:nowrap;padding:0 14px;border-radius:9px;border:1px solid var(--navy);background:var(--navy);color:#fff;font-size:12.5px;font-weight:700;cursor:pointer;transition:background .15s,color .15s,transform .15s,box-shadow .15s}
 .btn:hover{background:var(--navy-d);box-shadow:0 3px 10px rgba(30,42,120,.25)}
 .btn:active{transform:translateY(1px)}
 .btn.ghost{background:#fff;color:var(--navy);border-color:#cfd6ec}
@@ -379,7 +379,7 @@ dialog input:focus{outline:0;border-color:var(--navy);background:#fff;box-shadow
                     </div>
                     <!-- Import CSV Button -->
                     <button type="button" data-bs-toggle="modal" data-bs-target="#importModal"
-                        style="background:var(--primary-blue);color:white;border:none;border-radius:8px;padding:7px 15px;font-weight:700;font-size:0.83rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;">
+                        style="background:var(--primary-blue);color:white;border:none;border-radius:8px;padding:7px 15px;height:40px;font-weight:700;font-size:0.83rem;display:inline-flex;align-items:center;gap:6px;cursor:pointer;transition:all 0.2s;">
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
                         Import CSV
                     </button>

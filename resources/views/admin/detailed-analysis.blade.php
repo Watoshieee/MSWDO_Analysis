@@ -47,18 +47,15 @@ h1, h2, h3, p { margin: 0; }
   width: 100%;
 }
 main.in {
-  padding-top: 32px;
-  padding-bottom: 96px;
+  padding-top: 16px;
+  padding-bottom: 40px;
   display: grid;
   gap: 16px;
   flex: 1;
 }
 @media (max-width: 900px) {
-  .in { padding: 0 20px; }
-  main.in { padding-top: 24px; padding-bottom: 96px; }
-}
-@media (max-width: 560px) {
-  .in { padding: 0 16px; }
+  .in { padding-left: var(--admin-gutter, 16px); padding-right: var(--admin-gutter, 16px); }
+  main.in { padding-top: 16px; padding-bottom: 40px; }
 }
 
 /* ── Top banner (Standardized with Dashboard) ── */
@@ -229,7 +226,7 @@ summary.fl::-webkit-details-marker { display: none; }
   color: var(--navy);
   font-weight: 700;
   text-decoration: underline;
-  min-height: 36px;
+  min-height: 40px;
   cursor: pointer;
 }
 .key {

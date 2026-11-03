@@ -130,8 +130,8 @@
         .stat-sub { font-size: 0.75rem; color: #94a3b8; margin-top: 6px; font-weight: 500; }
 
         /* SEARCH + FILTER BAR */
-        .filter-bar { background: white; border-radius: 16px; border: 1px solid var(--border-light); padding: 18px 22px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
-        .search-input { border: 2px solid #e2e8f0; border-radius: 10px; padding: 10px 16px 10px 40px; font-size: 0.88rem; font-family: 'Inter', sans-serif; width: 100%; transition: border-color .2s; background: #f8fafc; }
+        .filter-bar { background: white; border-radius: 16px; border: 1px solid var(--border-light); padding: 16px 18px; box-shadow: 0 2px 10px rgba(0,0,0,0.04); }
+        .search-input { border: 2px solid #e2e8f0; border-radius: 10px; padding: 8px 16px 8px 40px; font-size: 0.88rem; font-family: 'Inter', sans-serif; width: 100%; height: 40px; box-sizing: border-box; transition: border-color .2s; background: #f8fafc; }
         .search-input:focus { outline: none; border-color: var(--primary-blue); background: white; box-shadow: 0 0 0 4px rgba(44,62,143,.08); }
         .search-wrap { position: relative; }
         .search-icon { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); color: #94a3b8; pointer-events: none; }

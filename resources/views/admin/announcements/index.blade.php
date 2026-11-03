@@ -126,6 +126,10 @@
             font-family: 'Inter', sans-serif;
             transition: border-color 0.15s, box-shadow 0.15s;
         }
+        .form-control:not(textarea), .form-select {
+            height: 40px;
+            box-sizing: border-box;
+        }
         .form-control:focus, .form-select:focus {
             border-color: var(--primary-blue); box-shadow: 0 0 0 3px rgba(44,62,143,0.1); outline: none;
         }

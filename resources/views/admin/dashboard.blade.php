@@ -620,8 +620,8 @@
                 grid-template-columns: 1fr 1fr;
             }
             .wrap, .banner-inner {
-                padding-left: 16px;
-                padding-right: 16px;
+                padding-left: var(--admin-gutter, 16px);
+                padding-right: var(--admin-gutter, 16px);
             }
             .card.ov {
                 overflow-x: auto;

@@ -1052,11 +1052,7 @@
                 @endif
                 <a href="#key-insights-analysis" class="nav-pill-link jump-link">
                     <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-                    Key Insights
-                </a>
-                <a href="#recommendations-analysis" class="nav-pill-link jump-link">
-                    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-                    Recommendations
+                    Findings & Recommendations
                 </a>
             </div>
         </div>
@@ -1800,77 +1796,7 @@
                 </div>
             </div>
 
-            <div class="row g-4">
-                <div class="col-lg-6">
-                    <div class="card-base h-100">
-                        <h6 style="font-weight:700;color:var(--blue);">Data Notes &amp; Limitations</h6>
-                        <ul class="rep-list">
-                            @foreach($rep['notes'] as $note)
-                                <li>{{ $note }}</li>
-                            @endforeach
-                        </ul>
-                    </div>
-                </div>
-                <div class="col-lg-6">
-                    <div class="card-base h-100" style="border-top:4px solid #FDB913;">
-                        <h6 style="font-weight:700;color:var(--blue);">AHP-Weighted Comparative Ranking</h6>
-                        <div>
-                            <span class="rep-badge">AHP: {{ $repMcdm['status'] }}</span>
-                        </div>
-                        <p style="font-size:.86rem;color:#334155;line-height:1.6;margin:0;">{{ $repMcdm['score_label'] ?? 'AHP-weighted comparative score based on beneficiary counts' }}</p>
-                        <p style="font-size:.86rem;color:#334155;line-height:1.6;margin:8px 0 0;">{{ $repMcdm['disclaimer'] ?? $repMcdm['reason'] }}</p>
-                        @if(!empty($repMcdm['ranking_rows']))
-                            <div class="table-responsive mt-3">
-                                <table class="table table-sm mb-0" style="background:transparent;">
-                                    <thead>
-                                        <tr>
-                                            <th>Rank</th>
-                                            <th>Municipality</th>
-                                            <th class="text-end">Score</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($repMcdm['ranking_rows'] as $row)
-                                            <tr>
-                                                <td>{{ $row['rank'] }}</td>
-                                                <td>{{ $row['municipality'] }}</td>
-                                                <td class="text-end">{{ number_format($row['score'], 2) }}</td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
-                        @endif
-                        @if(!empty($repMcdm['missing']))
-                            <div class="rep-sub">Required annual values that are N/A</div>
-                            <ul class="rep-list">
-                                @foreach($repMcdm['missing'] as $item)
-                                    <li>{{ $item }}</li>
-                                @endforeach
-                            </ul>
-                        @endif
-                        <div class="rep-sub">Approved criteria weights</div>
-                        <ul class="rep-list">
-                            @foreach(($repMcdm['raw_weights'] ?? []) as $type => $raw)
-                                <li>{{ str_replace('_', ' ', $type) }}: raw {{ $raw }}, effective {{ number_format($repMcdm['weights'][$type] ?? 0, 6) }}</li>
-                            @endforeach
-                        </ul>
-                        <details class="rep-details">
-                            <summary>AHP calculation details</summary>
-                            <div class="rep-sub">Methodology</div>
-                            <ol class="rep-list">
-                                @foreach(($repMcdm['ahp_steps'] ?? []) as $item)
-                                    <li>{{ $item }}</li>
-                                @endforeach
-                            </ol>
-                        </details>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </section>
-
-    {{-- Report modal: the report HTML is the same document as the HTML download --}}
+{{-- Report modal: the report HTML is the same document as the HTML download --}}
     <div class="modal fade rep-modal" id="reportModal" tabindex="-1" aria-labelledby="reportModalTitle" aria-hidden="true">
         <div class="modal-dialog modal-xl modal-dialog-centered modal-fullscreen-lg-down">
             <div class="modal-content">
@@ -1943,49 +1869,52 @@
     </script>
     @endif {{-- end report section --}}
 
-    {{-- SECTION 5: KEY INSIGHTS (max 10) --}}
-    <section class="section-wrap dark" id="key-insights-analysis" style="scroll-margin-top:110px;">
-        <div class="container">
-            <h2 class="sec-title light"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Key Insights</h2>
-            <div class="row g-3">
-                @foreach($insights as $i => $insight)
-                    <div class="col-md-6">
-                        <div class="insight-card">
-                            <div
-                                style="font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#FDB913;margin-bottom:6px;">
-                                Finding {{ $i + 1 }}</div>
-                            <p style="color:rgba(255,255,255,.88);font-size:.88rem;line-height:1.65;margin:0;">
-                                {{ preg_replace('/[\x00-\x1F\x7F]|â€[^\s]*|â€|â€”|â€“/', '', $insight) }}</p>
-                        </div>
-                    </div>
-                @endforeach
-            </div>
-        </div>
-    </section>
-
-    {{-- SECTION 6: RECOMMENDATIONS --}}
-    <section class="section-wrap" id="recommendations-analysis" style="scroll-margin-top:110px;">
-        <div class="container">
-            <h2 class="sec-title"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg> Recommendations</h2>
-            <div class="row g-3">
-                @forelse(($recommendations ?? []) as $i => $rec)
-                    <div class="col-md-6">
-                        <div class="rec-card">
-                            <div style="font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--blue);margin-bottom:6px;">
-                                Recommendation {{ $i + 1 }}</div>
-                            <p style="font-size:.88rem;color:#475569;margin:0;line-height:1.65;">{{ $rec }}</p>
+    {{-- SECTION 5: KEY INSIGHTS AND MATCHED RECOMMENDATIONS (exactly 6 findings with 6 recommendations) --}}
+    <section class="section-wrap dark" id="key-insights-analysis" style="scroll-margin-top:110px; padding-left: 0; padding-right: 0; margin-left: 0; margin-right: 0;">
+        <div class="container" style="padding-left: 0; padding-right: 0; max-width: 100%;">
+            <div style="padding-left: 40px; padding-right: 40px; max-width: 100%;">
+            <h2 class="sec-title light"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Findings & Recommendations</h2>
+            <div class="row g-4">
+                @forelse($insights as $i => $insight)
+                    {{-- Matched Finding-Recommendation Pair --}}
+                    <div class="col-lg-6">
+                        <div style="display: flex; flex-direction: column; gap: 16px; height: 100%;">
+                            {{-- Finding Card --}}
+                            <div class="insight-card" style="flex: 1;">
+                                <div style="font-size:.7rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#FDB913;margin-bottom:6px;">
+                                    Finding {{ $i + 1 }}</div>
+                                <p style="color:rgba(255,255,255,.88);font-size:.88rem;line-height:1.65;margin:0;">
+                                    {{ preg_replace('/[\x00-\x1F\x7F]|â€[^\s]*|â€|â€"|â€"/', '', $insight) }}</p>
+                            </div>
+                            
+                            {{-- Matched Recommendation Card --}}
+                            @if(isset($recommendations[$i]))
+                                <div class="rec-card" style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid var(--yellow);">
+                                    <div style="font-size:.72rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#FDB913;margin-bottom:6px;">
+                                        Recommendation {{ $i + 1 }}</div>
+                                    <p style="font-size:.88rem;color:#475569;margin:0;line-height:1.65;">{{ $recommendations[$i] }}</p>
+                                </div>
+                            @else
+                                <div class="rec-card" style="flex: 1; background: #f8fafc; border: 1px solid #e2e8f0; border-left: 3px solid #cbd5e1;">
+                                    <p style="font-size:.88rem;color:#94a3b8;margin:0;line-height:1.65;font-style:italic;">No matching recommendation available.</p>
+                                </div>
+                            @endif
                         </div>
                     </div>
                 @empty
                     <div class="col-12">
-                        <div class="rec-card">
-                            <p style="font-size:.88rem;color:#475569;margin:0;line-height:1.65;">No recommendations for the selected year.</p>
+                        <div class="insight-card" style="text-align: center;">
+                            <p style="color:rgba(255,255,255,.88);font-size:.88rem;margin:0;">No findings available for the selected filters.</p>
                         </div>
                     </div>
                 @endforelse
             </div>
+            </div>
+        </div>
         </div>
     </section>
+
+    {{-- SECTION 6: RECOMMENDATIONS (now integrated with findings above) --}}
 
     @auth
         @if(Auth::user()->isSuperAdmin())

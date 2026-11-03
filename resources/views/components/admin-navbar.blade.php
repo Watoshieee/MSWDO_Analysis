@@ -855,6 +855,8 @@ html, body {
 })();
 </script>
 
+@include('components.admin-layout')
+
 {{-- Shared Admin Chat Drawer (Available across all admin pages) --}}
 @include('components.admin-chat-drawer')
 

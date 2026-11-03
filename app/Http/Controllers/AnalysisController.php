@@ -753,35 +753,28 @@ class AnalysisController extends Controller
         // Check if any municipality has program data for the selected year
         $anyProgramData = in_array(true, $programDataAvailable, true);
 
-        $insights = [];
-        if ($hasDemogData) {
-            $insights[] = "$highestPop has the highest population (" . number_format($snapshot[$highestPop]['population']) . ") while $lowestPop has the lowest.";
-            if ($fastest !== null) {
-                $insights[] = "$fastest shows the highest average population growth rate among the municipalities.";
-            }
-        } else {
-            $insights[] = "No official census population or household data is available for year $selectedYear. Census records are available for: $censusYearList.";
-            if ($fastest !== null) {
-                $insights[] = "$fastest shows the highest average population growth rate across historical census years ($censusYearRange).";
-            }
-        }
-
-        // Only add beneficiary insight if program data exists for the selected year
-        $highestBenefVal = $highestBenef !== null ? $snapshot[$highestBenef]['beneficiaries'] : null;
-        if ($anyProgramData && $highestBenefVal !== null && $highestBenefVal > 0) {
-            $pctNote = $snapshot[$highestBenef]['benef_pct'] > 0 ? " - " . $snapshot[$highestBenef]['benef_pct'] . "% of its population" : "";
-            $insights[] = "$highestBenef has the most registered beneficiaries (" . number_format($highestBenefVal) . ")$pctNote.";
-        } else {
-            $insights[] = "No usable program beneficiary data is available for year $selectedYear (missing records and stored 0 are N/A). Program beneficiary records cover: $progYearRange.";
-        }
-
-        if ($topProgram !== null) {
-            $insights[] = "The $topProgram program has the highest total beneficiaries (" . number_format($progTotals[$topProgram]) . ") across municipalities with data for $selectedYear.";
-        }
-
-        if ($hasDemogData) {
-            $insights[] = "Average household sizes: " . implode(', ', array_map(fn($n) => "$n: " . ($snapshot[$n]['avg_hh_size'] ?? 'N/A'), $coreNames)) . " persons per household.";
-        }
+        // Generate exactly 6 findings with 6 matched recommendations
+        $findingsRecommendations = $this->buildSixFindingsAndRecommendations(
+            $coreNames,
+            $snapshot,
+            $selectedYear,
+            $hasDemogData,
+            $highestPop,
+            $lowestPop,
+            $fastest,
+            $fastestGrowth,
+            $highestBenef,
+            $anyProgramData,
+            $topProgram,
+            $progTotals,
+            $programLabels,
+            $growthRates,
+            $selectedCategory,
+            $allYears
+        );
+        
+        $insights = $findingsRecommendations['findings'];
+        $recommendations = $findingsRecommendations['recommendations'];
 
         // â”€â”€ Vision / Mission / Goals per municipality â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
         $visionRows = MunicipalityVision::whereIn('municipality_name', $coreNames)->get()->keyBy('municipality_name');
@@ -803,16 +796,8 @@ class AnalysisController extends Controller
             $this->programLookup,
             $this->programDuplicates
         );
-        foreach ($ahpAnalysis['insights'] as $line) {
-            $insights[] = $line;
-        }
-        foreach ($ahpAnalysis['warnings'] as $warning) {
-            if (str_contains($warning, 'cannot be calculated') || str_contains($warning, 'Duplicate annual')) {
-                $insights[] = $warning;
-            }
-        }
-        $insights = $this->selectKeyFindings($insights, 10);
-        $recommendations = $ahpAnalysis['recommendations'];
+        // Note: ahpAnalysis insights are NOT added here to maintain exactly 6 findings/recommendations
+        // The buildSixFindingsAndRecommendations method above provides all needed findings
 
         $programsReport = $this->buildProgramsReport(
             $coreNames,
@@ -824,7 +809,9 @@ class AnalysisController extends Controller
             $summaryYears,
             $selectedYear,
             $selectedCategory,
-            $ahpAnalysis
+            $ahpAnalysis,
+            $insights,
+            $recommendations
         );
         if ($request->query('download') === 'report' && in_array($selectedCategory, ['programs', 'all'], true)) {
             return $this->downloadProgramsReport($programsReport, strtolower((string) $request->query('format', 'html')));
@@ -885,6 +872,161 @@ class AnalysisController extends Controller
 
     /** Distinct program_type values discovered from the data (set in programs()) */
     private array $programTypes = [];
+
+    /**
+     * Generate exactly 6 findings with 6 matched 1:1 recommendations
+     * based on existing system calculations and data
+     */
+    private function buildSixFindingsAndRecommendations(
+        array $coreNames,
+        array $snapshot,
+        int $selectedYear,
+        bool $hasDemogData,
+        ?string $highestPop,
+        ?string $lowestPop,
+        ?string $fastest,
+        ?float $fastestGrowth,
+        ?string $highestBenef,
+        bool $anyProgramData,
+        ?string $topProgram,
+        array $progTotals,
+        array $programLabels,
+        array $growthRates,
+        string $selectedCategory,
+        array $allYears
+    ): array {
+        $findings = [];
+        $recommendations = [];
+
+        // ===== FINDING 1: Population Distribution & Growth =====
+        if ($hasDemogData && $highestPop && $lowestPop) {
+            $highPop = $snapshot[$highestPop]['population'] ?? 0;
+            $lowPop = $snapshot[$lowestPop]['population'] ?? 0;
+            $ratio = $lowPop > 0 ? round($highPop / $lowPop, 2) : 0;
+            
+            $finding1 = "$highestPop has a significantly larger population ($ratio times larger than $lowestPop) with $highestPop at " . number_format($highPop) . " residents and $lowestPop at " . number_format($lowPop) . " residents in $selectedYear.";
+            $findings[] = $finding1;
+            
+            $rec1 = "When comparing program penetration rates across municipalities, account for the $ratio:1 population disparity between $highestPop and $lowestPop. Use per-capita metrics (beneficiaries per 1,000 residents) rather than absolute counts for fair cross-municipality comparison.";
+            $recommendations[] = $rec1;
+        } else {
+            $findings[] = "No population data available for $selectedYear to assess demographic distribution across municipalities.";
+            $recommendations[] = "Ensure census or demographic data is entered for $selectedYear to enable population-based analysis and comparisons.";
+        }
+
+        // ===== FINDING 2: Population Growth Trends =====
+        if ($fastest && $fastestGrowth !== null) {
+            $finding2 = "$fastest demonstrates the highest average population growth rate (" . number_format($fastestGrowth, 2) . "% annually) compared to other municipalities over the available census years.";
+            $findings[] = $finding2;
+            
+            $rec2 = "Monitor $fastest's rapid population growth trajectory and ensure social welfare program capacity scales proportionally. Review current beneficiary enrollment against projected population increases.";
+            $recommendations[] = $rec2;
+        } else {
+            $findings[] = "Insufficient multi-year population data available to assess long-term growth trends across municipalities.";
+            $recommendations[] = "Collect and maintain consistent yearly demographic records to track population growth patterns and inform resource planning.";
+        }
+
+        // ===== FINDING 3: Program Beneficiary Coverage =====
+        if ($anyProgramData && $highestBenef && $snapshot[$highestBenef]['beneficiaries'] !== null) {
+            $benefCount = $snapshot[$highestBenef]['beneficiaries'];
+            $benefPct = $snapshot[$highestBenef]['benef_pct'] ?? 0;
+            
+            $finding3 = "$highestBenef has the highest recorded beneficiary enrollment (" . number_format($benefCount) . " beneficiaries, representing " . number_format($benefPct, 2) . "% of its population) in $selectedYear.";
+            $findings[] = $finding3;
+            
+            $rec3 = "Analyze whether $highestBenef's higher beneficiary enrollment reflects greater social need, more effective program promotion, or more complete data entry. Use this as a baseline for other municipalities' enrollment targets.";
+            $recommendations[] = $rec3;
+        } else {
+            $findings[] = "Program beneficiary data is incomplete or unavailable for $selectedYear across all municipalities.";
+            $recommendations[] = "Complete annual beneficiary counts for all programs and municipalities for $selectedYear to enable meaningful social welfare program analysis.";
+        }
+
+        // ===== FINDING 4: Top Program Type Concentration =====
+        if ($topProgram && !empty($progTotals)) {
+            $topCount = $progTotals[$topProgram] ?? 0;
+            $totalBenef = array_sum($progTotals);
+            $pctOfTotal = $totalBenef > 0 ? round(($topCount / $totalBenef) * 100, 1) : 0;
+            
+            $finding4 = "The $topProgram program represents " . number_format($topCount) . " beneficiaries (" . $pctOfTotal . "% of total recorded beneficiaries) across municipalities with available data in $selectedYear.";
+            $findings[] = $finding4;
+            
+            $rec4 = "Review resource allocation trends for the $topProgram program. If its disproportionately high share is intended, document the policy rationale. If not, consider rebalancing resources to other underserved program types.";
+            $recommendations[] = $rec4;
+        } else {
+            $findings[] = "Program-type distribution cannot be assessed due to missing or incomplete beneficiary data for $selectedYear.";
+            $recommendations[] = "Ensure all program types have complete annual beneficiary counts recorded to enable portfolio-level program analysis.";
+        }
+
+        // ===== FINDING 5: Household Density & Service Targeting =====
+        if ($hasDemogData) {
+            $hhSizes = [];
+            $hhLabels = [];
+            foreach ($coreNames as $name) {
+                $hhSize = $snapshot[$name]['avg_hh_size'] ?? null;
+                if ($hhSize !== null) {
+                    $hhSizes[] = $hhSize;
+                    $hhLabels[] = "$name: " . number_format($hhSize, 2);
+                }
+            }
+            
+            if (count($hhSizes) >= 2) {
+                $maxHh = max($hhSizes);
+                $minHh = min($hhSizes);
+                $hhDiff = round($maxHh - $minHh, 2);
+                $hhRange = implode(', ', $hhLabels);
+                
+                $finding5 = "Household density varies across municipalities (ranging from " . number_format($minHh, 2) . " to " . number_format($maxHh, 2) . " persons per household), with a difference of " . $hhDiff . " persons. Variation: $hhRange.";
+                $findings[] = $finding5;
+                
+                $rec5 = "When comparing per-capita program penetration, normalize by household count in addition to population. Larger average household sizes may depress per-capita percentages while household-level targeting might be equally effective.";
+                $recommendations[] = $rec5;
+            } else {
+                $findings[] = "Insufficient household data available to assess household-level targeting patterns.";
+                $recommendations[] = "Ensure household counts are consistently recorded in demographic data to enable household-normalized service analysis.";
+            }
+        } else {
+            $findings[] = "Household structure data unavailable for $selectedYear; unable to assess household-level targeting efficiency.";
+            $recommendations[] = "Collect complete household structure data to enable household-normalized program analysis beyond population-only metrics.";
+        }
+
+        // ===== FINDING 6: Data Completeness by Category =====
+        $missingMunis = [];
+        foreach ($coreNames as $muni) {
+            $pop = $snapshot[$muni]['population'] ?? null;
+            $benef = $snapshot[$muni]['beneficiaries'] ?? null;
+            
+            if ($selectedCategory === 'demography' && $pop === null) {
+                $missingMunis[] = $muni . ' (demographic data)';
+            } elseif ($selectedCategory === 'programs' && $benef === null) {
+                $missingMunis[] = $muni . ' (program data)';
+            } elseif ($selectedCategory === 'all' && ($pop === null || $benef === null)) {
+                $missing = [];
+                if ($pop === null) $missing[] = 'demographic';
+                if ($benef === null) $missing[] = 'program';
+                $missingMunis[] = $muni . ' (' . implode(' & ', $missing) . ' data)';
+            }
+        }
+        
+        if (!empty($missingMunis)) {
+            $missingList = implode(', ', $missingMunis);
+            $finding6 = "Data completeness issues for $selectedYear: $missingList - missing values prevent full comparative analysis for the selected category filter.";
+            $findings[] = $finding6;
+            
+            $rec6 = "Prioritize data entry for the incomplete municipalities listed above. Use the data import tools or manual entry forms to complete missing records before generating year-end reports or policy recommendations.";
+            $recommendations[] = $rec6;
+        } else {
+            $finding6 = "All municipalities have complete data for the selected category ($selectedCategory) in $selectedYear, enabling reliable comparative analysis.";
+            $findings[] = $finding6;
+            
+            $rec6 = "Maintain this data quality standard by continuing to validate and update records regularly. Document any future data gaps immediately to maintain analysis reliability.";
+            $recommendations[] = $rec6;
+        }
+
+        return [
+            'findings' => $findings,
+            'recommendations' => $recommendations,
+        ];
+    }
 
     /**
      * Existing record value (including 0) => int; no record / null value => null (N/A).
@@ -1017,7 +1159,9 @@ class AnalysisController extends Controller
         array $summaryYears,
         int $selectedYear,
         string $selectedCategory,
-        array $ahpAnalysis
+        array $ahpAnalysis,
+        array $insights = [],
+        array $recommendations = []
     ): array {
         $categoryLabel = $selectedCategory === 'all' ? 'All Data (programs report)' : 'Social Welfare Programs';
 
@@ -1193,6 +1337,8 @@ class AnalysisController extends Controller
             ], $ahpAnalysis['methodology']),
             'mcdm' => $mcdm,
             'recommendations' => $ahpAnalysis['recommendations'],
+            'findings' => $insights,
+            'findings_recommendations' => $recommendations,
         ];
     }
 
@@ -1304,6 +1450,26 @@ class AnalysisController extends Controller
         }
         $o .= '</ul></section>';
 
+        // Findings & Recommendations section
+        if (!empty($r['findings']) || !empty($r['findings_recommendations'])) {
+            $o .= '<section aria-labelledby="s-findings"><h2 id="s-findings">Findings & Recommendations</h2>';
+            if (!empty($r['findings'])) {
+                $o .= '<h3>Findings</h3><ul>';
+                foreach ($r['findings'] as $i => $finding) {
+                    $o .= '<li><strong>Finding ' . ($i + 1) . ':</strong> ' . $h($finding) . '</li>';
+                }
+                $o .= '</ul>';
+            }
+            if (!empty($r['findings_recommendations'])) {
+                $o .= '<h3>Recommendations</h3><ul>';
+                foreach ($r['findings_recommendations'] as $i => $rec) {
+                    $o .= '<li><strong>Recommendation ' . ($i + 1) . ':</strong> ' . $h($rec) . '</li>';
+                }
+                $o .= '</ul>';
+            }
+            $o .= '</section>';
+        }
+
         // Table A: programs x municipalities
         $o .= '<section aria-labelledby="s-programs"><h2 id="s-programs">Beneficiaries by Program, ' . $h($meta['year']) . '</h2>';
         if (empty($r['programs'])) {
@@ -1358,49 +1524,6 @@ class AnalysisController extends Controller
             $o .= '</tbody></table></div>';
         }
         $o .= '</section>';
-
-        // Methodology
-        $o .= '<section aria-labelledby="s-method"><h2 id="s-method">Methodology</h2>';
-        $o .= $list($r['methodology']);
-        $o .= '</section>';
-
-        $o .= '<section aria-labelledby="s-mcdm"><h2 id="s-mcdm">AHP-Weighted Comparative Ranking</h2>';
-        $o .= '<p><span class="badge">AHP: ' . $h($mcdm['status']) . '</span></p>';
-        $o .= '<p>' . $h($mcdm['score_label'] ?? $mcdm['reason']) . '</p>';
-        $o .= '<p>' . $h($mcdm['disclaimer'] ?? $mcdm['reason']) . '</p>';
-        if (!empty($mcdm['ranking_rows'])) {
-            $o .= '<div class="table-wrap"><table><caption>Overall score (0–100) for ' . $h($meta['year']) . '</caption><thead><tr><th>Rank</th><th>Municipality</th><th>Score</th>';
-            foreach (array_keys($mcdm['raw_weights'] ?? []) as $type) {
-                $o .= '<th>' . $h(str_replace('_', ' ', $type)) . ' contribution</th>';
-            }
-            $o .= '</tr></thead><tbody>';
-            foreach ($mcdm['ranking_rows'] as $row) {
-                $o .= '<tr><td>' . $h($row['rank']) . '</td><th scope="row">' . $h($row['municipality']) . '</th><td>' . $h(number_format($row['score'], 2)) . '</td>';
-                foreach (array_keys($mcdm['raw_weights'] ?? []) as $type) {
-                    $o .= '<td>' . $h(number_format(($row['weighted'][$type] ?? 0) * 100, 2)) . '</td>';
-                }
-                $o .= '</tr>';
-            }
-            $o .= '</tbody></table></div>';
-        }
-        if (!empty($mcdm['missing'])) {
-            $o .= '<h3>Required annual values that are N/A</h3>' . $list($mcdm['missing']);
-        }
-        $o .= '<h3>Approved criteria weights (effective)</h3><ul>';
-        foreach (($mcdm['raw_weights'] ?? []) as $type => $raw) {
-            $eff = $mcdm['weights'][$type] ?? 0;
-            $o .= '<li>' . $h(str_replace('_', ' ', $type)) . ': raw ' . $h($raw) . ', effective ' . $h(number_format($eff, 6)) . '</li>';
-        }
-        $o .= '</ul>';
-        $o .= '<h3>Data used</h3>' . $list($mcdm['available']);
-        $o .= '<h3>AHP methodology</h3>' . $list($mcdm['ahp_steps'] ?? [], 'ol');
-        if (!empty($mcdm['recommendations'])) {
-            $o .= '<h3>Recommendations</h3>' . $list($mcdm['recommendations']);
-        }
-        $o .= '</section>';
-
-        // Limitations
-        $o .= '<section aria-labelledby="s-limits"><h2 id="s-limits">Limitations and Missing-Data Notes</h2>' . $list($r['notes']) . '</section>';
 
         $o .= '<footer>Generated ' . $h($meta['generated']) . ' from the MSWDO Statistical Analysis page.</footer>';
         $o .= '</main></body></html>';
@@ -1490,12 +1613,10 @@ class AnalysisController extends Controller
         $put(['Section', 'What it shows']);
         $put(['1. Report details', 'Reporting period, dataset, municipalities covered and date generated']);
         $put(['2. Data summary', 'Headline totals for the selected year']);
-        $put(['3. Beneficiaries by program', 'Recorded beneficiaries for each program and municipality, with totals and share of total']);
-        $put(['4. Municipality summary', 'Population, households and beneficiaries per municipality, with a data-status check']);
-        $put(['5. Yearly beneficiary totals', 'Total recorded beneficiaries for every year that has program records']);
-        $put(['6. Methodology', 'How the figures in this report are calculated']);
-        $put(['7. AHP-weighted comparative ranking', 'Approved weights, ranking when valid, or the N/A explanation when ranking cannot be calculated']);
-        $put(['8. Limitations and missing-data notes', 'Data gaps and cautions that apply to the selected year']);
+        $put(['3. Findings & Recommendations', 'Data-driven findings with matched recommendations']);
+        $put(['4. Beneficiaries by program', 'Recorded beneficiaries for each program and municipality, with totals and share of total']);
+        $put(['5. Municipality summary', 'Population, households and beneficiaries per municipality, with a data-status check']);
+        $put(['6. Yearly beneficiary totals', 'Total recorded beneficiaries for every year that has program records']);
 
         $blank();
         $put(['HOW TO READ THIS FILE']);
@@ -1526,8 +1647,23 @@ class AnalysisController extends Controller
             $put(['Program with the largest recorded count', implode(' / ', $sum['largest_programs']), 'A count of recorded beneficiaries, not a measure of need or effectiveness.']);
         }
 
-        // ---- 3. Beneficiaries by program ----
-        $section(3, 'Beneficiaries by program, ' . $year, 'Recorded beneficiaries (number of persons) for each program and municipality. N/A = no record, not zero.');
+        // ---- 3. Findings & Recommendations ----
+        $section(3, 'Findings & Recommendations', 'Data-driven findings with matched recommendations for improving program delivery and coverage.');
+        if (!empty($r['findings']) && !empty($r['findings_recommendations'])) {
+            foreach ($r['findings'] as $i => $finding) {
+                $recommendation = $r['findings_recommendations'][$i] ?? null;
+                $put(['Finding ' . ($i + 1), $finding]);
+                if ($recommendation) {
+                    $put(['Recommendation ' . ($i + 1), $recommendation]);
+                }
+                $blank();
+            }
+        } else {
+            $put(['No findings available.']);
+        }
+
+        // ---- 4. Beneficiaries by program ----
+        $section(4, 'Beneficiaries by program, ' . $year, 'Recorded beneficiaries (number of persons) for each program and municipality. N/A = no record, not zero.');
         if (empty($r['programs'])) {
             $put(['No program types are recorded.']);
         } else {
@@ -1557,8 +1693,8 @@ class AnalysisController extends Controller
             $put($totalRow);
         }
 
-        // ---- 4. Municipality summary ----
-        $section(4, 'Municipality summary, ' . $year, 'Census population and households next to recorded beneficiaries. N/A = not available for this year.');
+        // ---- 5. Municipality summary ----
+        $section(5, 'Municipality summary, ' . $year, 'Census population and households next to recorded beneficiaries. N/A = not available for this year.');
         $put(['Municipality', 'Population', 'Households', 'Total beneficiaries', 'Beneficiaries as share of population (%)', 'Data status']);
         foreach ($r['municipalities'] as $m) {
             if ($m['beneficiaries'] === null) {
@@ -1574,8 +1710,8 @@ class AnalysisController extends Controller
             $put([$m['name'], $int($m['population']), $int($m['households']), $int($m['beneficiaries']), $dec($m['benef_pct']), $status]);
         }
 
-        // ---- 5. Yearly beneficiary totals ----
-        $section(5, 'Yearly beneficiary totals', 'Total recorded beneficiaries per year, for every year that has program records. N/A = no record, not zero.');
+        // ---- 6. Yearly beneficiary totals ----
+        $section(6, 'Yearly beneficiary totals', 'Total recorded beneficiaries per year, for every year that has program records. N/A = no record, not zero.');
         if (empty($r['trend'])) {
             $put(['No program records are available for any year.']);
         } else {
@@ -1594,49 +1730,6 @@ class AnalysisController extends Controller
                 $row[] = $reporting . ' of ' . count($names);
                 $put($row);
             }
-        }
-
-        // ---- 6. Methodology ----
-        $section(6, 'Methodology', 'How the figures in this report are calculated.');
-        $put(['No.', 'Description']);
-        foreach (array_values($r['methodology']) as $i => $line) {
-            $put([$i + 1, $line]);
-        }
-
-        // ---- 7. AHP ranking ----
-        $section(7, 'AHP-weighted comparative ranking', 'Approved AHP criteria weights and the ranking for reporting year ' . $year . ' when all required annual values are available.');
-        $put(['Item', 'Detail']);
-        $put(['AHP status', $mcdm['status']]);
-        $put(['Score definition', $mcdm['score_label'] ?? 'AHP-weighted comparative score based on beneficiary counts']);
-        $put(['Disclaimer', $mcdm['disclaimer'] ?? $mcdm['reason']]);
-        $blank();
-        $put(['Criterion', 'Raw weight', 'Effective weight']);
-        foreach (($mcdm['raw_weights'] ?? []) as $type => $raw) {
-            $put([str_replace('_', ' ', $type), $raw, $mcdm['weights'][$type] ?? '']);
-        }
-        $blank();
-        if (!empty($mcdm['ranking_rows'])) {
-            $put(['Rank', 'Municipality', 'Score (0-100)']);
-            foreach ($mcdm['ranking_rows'] as $row) {
-                $put([$row['rank'], $row['municipality'], $row['score']]);
-            }
-        } else {
-            $put(['Overall ranking', 'Not calculated']);
-        }
-        $blank();
-        $numbered('7a. Data used', $mcdm['available']);
-        $blank();
-        $numbered('7b. Required values that are N/A', !empty($mcdm['missing']) ? $mcdm['missing'] : ['None — all required annual values are available.']);
-        $blank();
-        $numbered('7c. AHP methodology', $mcdm['ahp_steps'] ?? []);
-        $blank();
-        $numbered('7d. Recommendations', $mcdm['recommendations'] ?? []);
-
-        // ---- 8. Limitations ----
-        $section(8, 'Limitations and missing-data notes', 'Data gaps and cautions that apply to reporting year ' . $year . '.');
-        $put(['No.', 'Note']);
-        foreach (array_values($r['notes']) as $i => $line) {
-            $put([$i + 1, $line]);
         }
 
         // ---- End ----
@@ -1755,6 +1848,19 @@ class AnalysisController extends Controller
             $body .= $bullet('Largest recorded beneficiary count: ' . implode(', ', $sum['largest_programs']) . ' (a count of recorded beneficiaries, not a measure of need or effectiveness)', "\u{2022}");
         }
 
+        $body .= $para($run('Findings & Recommendations'), 'Heading1');
+        if (!empty($r['findings']) && !empty($r['findings_recommendations'])) {
+            foreach ($r['findings'] as $i => $finding) {
+                $recommendation = $r['findings_recommendations'][$i] ?? null;
+                $body .= $para($run('Finding ' . ($i + 1) . ': ' . $finding), 'Heading2');
+                if ($recommendation) {
+                    $body .= $para($run('Recommendation ' . ($i + 1) . ': ' . $recommendation), null, '<w:spacing w:after="120"/>');
+                }
+            }
+        } else {
+            $body .= $para($run('No findings available.'));
+        }
+
         $body .= $para($run('Beneficiaries by Program, ' . $year), 'Heading1');
         if (empty($r['programs'])) {
             $body .= $para($run('No program types are recorded.'));
@@ -1805,51 +1911,6 @@ class AnalysisController extends Controller
             $body .= $table(array_merge(['Year'], $names, ['All municipalities']), $rows);
         }
 
-        $body .= $para($run('Methodology'), 'Heading1');
-        foreach ($r['methodology'] as $line) {
-            $body .= $bullet($line, "\u{2022}");
-        }
-
-        $body .= $para($run('AHP-Weighted Comparative Ranking'), 'Heading1');
-        $body .= $para($run('AHP: ' . $mcdm['status'], true));
-        $body .= $para($run($mcdm['score_label'] ?? ''));
-        $body .= $para($run($mcdm['disclaimer'] ?? $mcdm['reason']));
-        if (!empty($mcdm['ranking_rows'])) {
-            $rankRows = [];
-            foreach ($mcdm['ranking_rows'] as $row) {
-                $rankRows[] = [(string) $row['rank'], $row['municipality'], number_format($row['score'], 2)];
-            }
-            $body .= $table(['Rank', 'Municipality', 'Score (0-100)'], $rankRows);
-        }
-        $body .= $para($run('Approved criteria weights'), 'Heading2');
-        foreach (($mcdm['raw_weights'] ?? []) as $type => $raw) {
-            $body .= $bullet(str_replace('_', ' ', $type) . ': raw ' . $raw . ', effective ' . number_format($mcdm['weights'][$type] ?? 0, 6), "\u{2022}");
-        }
-        $body .= $para($run('Data used'), 'Heading2');
-        foreach ($mcdm['available'] as $line) {
-            $body .= $bullet($line, "\u{2022}");
-        }
-        $body .= $para($run('Required values that are N/A'), 'Heading2');
-        if (!empty($mcdm['missing'])) {
-            foreach ($mcdm['missing'] as $i => $line) {
-                $body .= $bullet($line, ($i + 1) . '.');
-            }
-        } else {
-            $body .= $bullet('None — all required annual values are available.', "\u{2022}");
-        }
-        $body .= $para($run('AHP methodology'), 'Heading2');
-        foreach (($mcdm['ahp_steps'] ?? []) as $i => $line) {
-            $body .= $bullet($line, ($i + 1) . '.');
-        }
-        $body .= $para($run('Recommendations'), 'Heading2');
-        foreach (($mcdm['recommendations'] ?? []) as $line) {
-            $body .= $bullet($line, "\u{2022}");
-        }
-
-        $body .= $para($run('Limitations and Missing-Data Notes'), 'Heading1');
-        foreach ($r['notes'] as $line) {
-            $body .= $bullet($line, "\u{2022}");
-        }
         $body .= $para($run('Generated ' . $meta['generated'] . ' from the MSWDO Statistical Analysis page.', false, '64748B', 18), null, '<w:spacing w:before="240"/>');
 
         $ns = 'xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"';

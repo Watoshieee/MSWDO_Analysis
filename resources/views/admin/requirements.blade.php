@@ -894,8 +894,7 @@
                 <div class="p-0">
                     <form id="appFilterForm" method="GET" action="{{ route('admin.requirements') }}"
                         style="padding:14px 16px;border-bottom:1px solid #e2e8f0;background:#f8faff;">
-                        <div
-                            style="display:grid;grid-template-columns:2fr 1fr 1fr auto auto;gap:10px;align-items:center;">
+                        <div class="admin-filter-grid admin-filter-grid-5">
                             <input type="text" name="app_search" id="appSearchInput" value="{{ request('app_search') }}"
                                 placeholder="Search applicant, contact, barangay..." class="form-control"
                                 style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
@@ -918,9 +917,9 @@
                                 <option value="AICS_Medical" {{ request('app_program') === 'AICS_Medical' ? 'selected' : '' }}>AICS Medical</option>
                                 <option value="AICS_Burial" {{ request('app_program') === 'AICS_Burial' ? 'selected' : '' }}>AICS Burial</option>
                             </select>
-                            <button type="submit" id="appFilterBtn" class="btn-action btn-action-primary" style="height:36px;padding:0 16px;">Filter</button>
+                            <button type="submit" id="appFilterBtn" class="btn-action btn-action-primary" style="padding:0 16px;">Filter</button>
                             <button type="button" id="appResetBtn" class="btn-action btn-action-neutral"
-                                style="height:36px;padding:0 16px;">Reset</button>
+                                style="padding:0 16px;">Reset</button>
                         </div>
                     </form>
                     <div id="submittedAppsTableWrap">
@@ -1810,8 +1809,8 @@
                             style="font-size:0.8rem;font-weight:600;background:rgba(255,255,255,0.15);padding:4px 12px;border-radius:20px;">Loading&hellip;</span>
                     </div>
                 </div>
-                <div
-                    style="padding:14px 16px;border-bottom:1px solid #e2e8f0;background:#f8faff;display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto auto;gap:10px;align-items:center;">
+                <div class="admin-filter-grid admin-filter-grid-6"
+                    style="padding:14px 16px;border-bottom:1px solid #e2e8f0;background:#f8faff;">
                     <input id="apptSearchInput" type="text" placeholder="Search applicant, email, notes..."
                         class="form-control" style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
                     <select id="apptStatusFilter" class="form-select"
@@ -1832,8 +1831,8 @@
                     <input id="apptDateFilter" type="date" class="form-control"
                         title="Appointment Date"
                         style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
-                    <button type="button" id="apptFilterBtn" onclick="applyAppointmentFilters()" class="btn-action btn-action-primary" style="height:36px;padding:0 16px;">Filter</button>
-                    <button type="button" id="apptResetBtn" onclick="resetAppointmentFilters()" class="btn-action btn-action-neutral" style="height:36px;padding:0 16px;">Reset</button>
+                    <button type="button" id="apptFilterBtn" onclick="applyAppointmentFilters()" class="btn-action btn-action-primary" style="padding:0 16px;">Filter</button>
+                    <button type="button" id="apptResetBtn" onclick="resetAppointmentFilters()" class="btn-action btn-action-neutral" style="padding:0 16px;">Reset</button>
                 </div>
                 <div class="p-3" id="apptTableWrap">
                     <div style="text-align:center;padding:30px;color:#94a3b8;font-size:.9rem;">Loading

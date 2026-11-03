@@ -1,8 +1,3 @@
-<!-- Floating Settings Button -->
-<button class="floating-btn floating-btn-settings" onclick="openSettingsModal()" data-tooltip="Customize Colors">
-    ⚙️
-</button>
-
 <!-- Settings Modal -->
 <div id="settingsModal"
     style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:10000;align-items:center;justify-content:center;"
