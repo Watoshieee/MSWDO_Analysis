@@ -938,6 +938,8 @@
                                 </thead>
                                 <tbody>
                                     @foreach($applications as $app)
+                                    @if(get_class($app) === 'App\Models\Application')
+                                    {{-- REGULAR APPLICATION --}}
                                         <tr>
                                             <td>
                                                 <div style="font-weight:700;color:#1e293b;">{{ $app->full_name }}</div>
@@ -1049,11 +1051,10 @@
                                                 </div>
                                             </td>
                                         </tr>
-                                    @endforeach
-
-                                    {{-- PWD Renewal ID Verification rows --}}
-                                    @foreach($pwdRenewalRequests as $rr)
+                                    @else
+                                    {{-- PWD RENEWAL REQUEST --}}
                                     @php
+                                        $rr = $app;
                                         $rrName = $rr->user->full_name ?? 'Applicant';
                                         $rrContact = $rr->user->contact_number ?? $rr->user->phone_number ?? '—';
                                         $rrBarangay = $rr->user->barangay ?? '—';
@@ -1135,11 +1136,18 @@
                                             </div>
                                         </td>
                                     </tr>
-                                    @endforeach
+                                    @endif
+                                @endforeach
                                 </tbody>
                             </table>
                         </div>
-                        <div class="p-3">{{ $applications->appends(request()->query())->links() }}</div>
+                        <div class="p-3">
+                            {{-- Pagination for merged applications + PWD renewals --}}
+                            @if($applications->hasPages())
+                                <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:0.05em;">All Applications & Renewals (Sorted by Pending First)</div>
+                                {{ $applications->appends(request()->query())->links() }}
+                            @endif
+                        </div>
                     @else
                         <div style="text-align:center;padding:40px 20px;color:#94a3b8;">
                             <div style="font-size:1.8rem;margin-bottom:6px;">📋</div>
@@ -2874,6 +2882,13 @@
                             @endforeach
                         </tbody>
                     </table>
+                    {{-- Pagination for archived applications --}}
+                    @if($archivedApplications->hasPages())
+                        <div style="padding:12px 16px;border-top:1px solid #e2e8f0;background:#f8fafc;">
+                            <div style="font-size:0.75rem;color:#64748b;font-weight:600;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Archived Applications Pagination</div>
+                            {{ $archivedApplications->appends(request()->query())->links() }}
+                        </div>
+                    @endif
                 @else
                     <div style="text-align:center;padding:50px 24px;">
                         <p style="color:#94a3b8;margin-top:10px;">No archived applications yet.</p>

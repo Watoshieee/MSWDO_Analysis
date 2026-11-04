@@ -5,9 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Municipality Data &mdash; MSWDO Super Admin</title>
-    <link rel="icon" type="image/jpeg" href="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}">
-    <link rel="shortcut icon" href="{{ asset('favicon.ico') }}">
+    <title>Municipality Data � MSWDO Super Admin</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
@@ -481,8 +479,21 @@
             border-radius: 20px;
             font-size: .75rem;
             font-weight: 700;
+        }
+
+        .muni-Magdalena {
             background: #EFF6FF;
             color: #1D4ED8;
+        }
+
+        .muni-Liliw {
+            background: #F0FDF4;
+            color: #15803D;
+        }
+
+        .muni-Majayjay {
+            background: #FFF7ED;
+            color: #C2410C;
         }
 
         .footer-strip {
@@ -525,46 +536,6 @@
         .section-tab.active {
             display: block;
         }
-
-        /* ── NOTIFICATION ANIMATIONS ── */
-        @keyframes slideInRight {
-            from {
-                transform: translateX(450px);
-                opacity: 0;
-            }
-            to {
-                transform: translateX(0);
-                opacity: 1;
-            }
-        }
-
-        @keyframes slideOutRight {
-            from {
-                transform: translateX(0);
-                opacity: 1;
-            }
-            to {
-                transform: translateX(450px);
-                opacity: 0;
-            }
-        }
-
-        @keyframes timerBar {
-            from {
-                width: 100%;
-            }
-            to {
-                width: 0%;
-            }
-        }
-
-        .notification-toast {
-            animation-fill-mode: both;
-        }
-
-        .notification-toast.fade-out {
-            animation: slideOutRight 0.4s ease-in forwards;
-        }
     </style>
 </head>
 
@@ -572,7 +543,7 @@
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container-fluid px-4">
             <a class="navbar-brand" href="{{ route('superadmin.dashboard') }}">
-                <img src="{{ $mswdoLogoUrl ?? '/images/logo_mswdo.jpg' }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
             </a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -614,16 +585,10 @@
     <div class="main-content">
         <div class="container py-5">
 
-            @php
-                $topNotice = session('success') ?: session('error');
-            @endphp
-            @if($topNotice)
-                <div class="notification-toast" style="position:fixed;top:84px;right:18px;z-index:1080;max-width:420px;background:linear-gradient(135deg,#2C3E8F,#1A2A5C);color:white;border:1px solid rgba(255,255,255,.18);border-radius:12px;padding:16px 16px 12px;box-shadow:0 10px 28px rgba(26,42,92,.35);font-size:.84rem;font-weight:700;animation:slideInRight 0.4s ease-out;overflow:hidden;">
-                    {{ $topNotice }}
-                    <div class="progress-bar-timer" style="position:absolute;bottom:0;left:0;height:3px;background:#FDB913;animation:timerBar 5s linear forwards;"></div>
-                </div>
+            @if(session('success'))
+                <div class="alert-success-custom">? {{ session('success') }}</div>
             @endif
-            @if(isset($errors) && $errors instanceof \Illuminate\Support\ViewErrorBag && $errors->any())
+            @if($errors->any())
                 <div class="alert-danger-custom">
                     <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
                 </div>
@@ -631,8 +596,8 @@
 
             <!-- Tab Pills -->
             <div class="tab-pills">
-                <button class="tab-pill active" onclick="switchTab('records')"> Records</button>
-                <button class="tab-pill" onclick="switchTab('analysis')"> Analysis</button>
+                <button class="tab-pill active" onclick="switchTab('records')">?? Records</button>
+                <button class="tab-pill" onclick="switchTab('analysis')">?? Analysis</button>
             </div>
 
             <!-- ===================== RECORDS TAB ===================== -->
@@ -642,7 +607,201 @@
                     <h6 class="mb-0 fw-bold" style="color:var(--primary-blue);">Yearly Municipality Summary Records</h6>
                     <div class="d-flex gap-2 align-items-center">
                         <button class="btn-archive-view" data-bs-toggle="modal" data-bs-target="#archivedSummaryModal">
-                             Archived (<span id="archivedSummaryCount">...</span>)
+                            ?? Archived (<span id="archivedSummaryCount">...</span>)
+                        </button>
+                        <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Year
+                            Data</button>
+                    </div>
+                </div>
+
+                @foreach($coreNames as $muniName)
+        .form-control,
+        .form-select {
+            border: 1.5px solid var(--border-light);
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: .9rem;
+            transition: border .2s;
+        }
+
+        .form-control:focus,
+        .form-select:focus {
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(44, 62, 143, .1);
+        }
+
+        .btn-modal-submit {
+            background: var(--primary-gradient);
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 10px 28px;
+            font-weight: 700;
+            transition: all .3s;
+        }
+
+        .btn-modal-cancel {
+            background: transparent;
+            color: #64748b;
+            border: 1.5px solid var(--border-light);
+            border-radius: 30px;
+            padding: 10px 28px;
+            font-weight: 600;
+        }
+
+        /* Chart */
+        .chart-card {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, .03);
+            border: 1px solid var(--border-light);
+            padding: 24px;
+            margin-bottom: 28px;
+        }
+
+        .chart-title {
+            font-size: .95rem;
+            font-weight: 800;
+            color: var(--primary-blue);
+            margin-bottom: 16px;
+        }
+
+        /* Muni badge */
+        .muni-pill {
+            display: inline-block;
+            padding: 3px 12px;
+            border-radius: 20px;
+            font-size: .75rem;
+            font-weight: 700;
+        }
+
+        .muni-Magdalena {
+            background: #EFF6FF;
+            color: #1D4ED8;
+        }
+
+        .muni-Liliw {
+            background: #F0FDF4;
+            color: #15803D;
+        }
+
+        .muni-Majayjay {
+            background: #FFF7ED;
+            color: #C2410C;
+        }
+
+        .footer-strip {
+            background: var(--primary-gradient);
+            color: rgba(255, 255, 255, .75);
+            text-align: center;
+            padding: 18px 0;
+            font-size: .85rem;
+            margin-top: auto;
+        }
+
+        .footer-strip strong {
+            color: white;
+        }
+
+        .alert-success-custom {
+            background: var(--primary-blue-light);
+            color: var(--primary-blue);
+            border: none;
+            border-left: 4px solid var(--primary-blue);
+            border-radius: 12px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+        }
+
+        .alert-danger-custom {
+            background: #fef2f2;
+            color: #991b1b;
+            border: none;
+            border-left: 4px solid #C41E24;
+            border-radius: 12px;
+            padding: 12px 18px;
+            margin-bottom: 20px;
+        }
+
+        .section-tab {
+            display: none;
+        }
+
+        .section-tab.active {
+            display: block;
+        }
+    </style>
+</head>
+
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container-fluid px-4">
+            <a class="navbar-brand" href="{{ route('superadmin.dashboard') }}">
+                <img src="{{ asset('images/mswd-logo.png') }}" alt="MSWD" style="width:34px;height:34px;object-fit:contain;"> MSWDO
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav me-auto">
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.dashboard') }}">Dashboard</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link" href="{{ route('superadmin.users') }}">User Management</a>
+                    </li>
+                    <li class="nav-item"><a class="nav-link"
+                            href="{{ route('superadmin.municipalities.index') }}">Municipalities</a></li>
+                    <li class="nav-item"><a class="nav-link active" href="{{ route('superadmin.data.dashboard') }}">Data
+                            Management</a></li>
+                    <li class="nav-item"><a class="nav-link" href="/analysis/programs">Public View</a></li>
+                </ul>
+                <div class="d-flex">
+                    <div class="user-info">
+                        <span>{{ Auth::user()->full_name }}</span>
+                        <form method="POST" action="{{ route('logout') }}" class="d-inline">
+                            @csrf <button type="submit" class="logout-btn">Logout</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <section class="hero-banner">
+        <div class="container" style="position:relative;z-index:2;">
+            <a href="{{ route('superadmin.data.dashboard') }}" class="back-link">&#8592; Back to Data Management</a>
+            <div class="hero-badge">Data Management</div>
+            <h1>Municipality Yearly Data</h1>
+            <div class="hero-divider"></div>
+            <p>Manage and analyze population, household, and program data per municipality per year.</p>
+        </div>
+    </section>
+
+    <div class="main-content">
+        <div class="container py-5">
+
+            @if(session('success'))
+                <div class="alert-success-custom">? {{ session('success') }}</div>
+            @endif
+            @if($errors->any())
+                <div class="alert-danger-custom">
+                    <ul class="mb-0">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
+                </div>
+            @endif
+
+            <!-- Tab Pills -->
+            <div class="tab-pills">
+                <button class="tab-pill active" onclick="switchTab('records')">?? Records</button>
+                <button class="tab-pill" onclick="switchTab('analysis')">?? Analysis</button>
+            </div>
+
+            <!-- ===================== RECORDS TAB ===================== -->
+            <div class="section-tab active" id="tab-records">
+                <!-- Add Button + Panel -->
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h6 class="mb-0 fw-bold" style="color:var(--primary-blue);">Yearly Municipality Summary Records</h6>
+                    <div class="d-flex gap-2 align-items-center">
+                        <button class="btn-archive-view" data-bs-toggle="modal" data-bs-target="#archivedSummaryModal">
+                            ?? Archived (<span id="archivedSummaryCount">...</span>)
                         </button>
                         <button class="btn-add" data-bs-toggle="modal" data-bs-target="#addModal">+ Add Year
                             Data</button>
@@ -669,8 +828,8 @@
                                             <th>Population</th>
                                             <th>Male</th>
                                             <th>Female</th>
-                                            <th style="text-align:center;">Age 0&ndash;19</th>
-                                            <th style="text-align:center;">Age 20&ndash;59</th>
+                                            <th style="text-align:center;">Age 0–19</th>
+                                            <th style="text-align:center;">Age 20–59</th>
                                             <th style="text-align:center;">Age 60+</th>
                                             <th>Households</th>
                                             <th>Actions</th>
@@ -708,7 +867,7 @@
                                                 <div class="modal-dialog modal-lg modal-dialog-centered">
                                                     <div class="modal-content">
                                                         <div class="modal-header">
-                                                            <h5 class="modal-title">Edit {{ $muniName }} &mdash; {{ $row->year }}</h5>
+                                                            <h5 class="modal-title">Edit {{ $muniName }} — {{ $row->year }}</h5>
                                                             <button type="button" class="btn-close"
                                                                 data-bs-dismiss="modal"></button>
                                                         </div>
@@ -718,59 +877,66 @@
                                                             <input type="hidden" name="municipality"
                                                                 value="{{ $row->municipality }}">
                                                             <input type="hidden" name="year" value="{{ $row->year }}">
-                                                            <div class="modal-body p-4">
-                                                                <div class="row g-3">
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label">Total Population</label>
-                                                                        <input type="number" name="total_population"
-                                                                            class="form-control"
-                                                                            value="{{ $row->total_population }}" required min="0">
+                                                            <div class="modal-body p-0">
+                                                                <ul class="nav nav-tabs px-4 pt-3" style="border-bottom:1px solid #e2e8f0;">
+                                                                    <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#demoEdit_1">👥 Demographics</a></li>
+                                                                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#progEdit_1">📋 Programs</a></li>
+                                                                    <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#socioEdit_1">📊 Socioeconomic</a></li>
+                                                                </ul>
+                                                                <div class="tab-content p-4">
+                                                                    {{-- Demographics Tab --}}
+                                                                    <div class="tab-pane fade show active" id="demoEdit_1">
+                                                                        <div class="row g-3">
+                                                                            <div class="col-md-4"><label class="form-label">Total Population</label><input type="number" name="total_population" class="form-control" value="{{ $row->total_population }}" required min="0"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Male Population</label><input type="number" name="male_population" class="form-control" value="{{ $row->male_population ?? 0 }}" min="0"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Female Population</label><input type="number" name="female_population" class="form-control" value="{{ $row->female_population ?? 0 }}" min="0"></div>
+                                                                            <div class="col-md-6"><label class="form-label">Total Households</label><input type="number" name="total_households" class="form-control" value="{{ $row->total_households }}" required min="0"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Age 0–19</label><input type="number" name="population_0_19" class="form-control" value="{{ $row->population_0_19 ?? 0 }}" min="0"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Age 20–59</label><input type="number" name="population_20_59" class="form-control" value="{{ $row->population_20_59 ?? 0 }}" min="0"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Age 60+</label><input type="number" name="population_60_100" class="form-control" value="{{ $row->population_60_100 ?? 0 }}" min="0"></div>
+                                                                        </div>
                                                                     </div>
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label">Male Population</label>
-                                                                        <input type="number" name="male_population"
-                                                                            class="form-control"
-                                                                            value="{{ $row->male_population ?? 0 }}" min="0">
+                                                                    {{-- Programs Tab --}}
+                                                                    <div class="tab-pane fade" id="progEdit_1">
+                                                                        <div class="row g-3">
+                                                                            <div class="col-md-4"><label class="form-label">4Ps Beneficiaries</label><input type="number" name="total_4ps" class="form-control" value="{{ $row->total_4ps ?? 0 }}" min="0"></div>
+                                                                            <div class="col-md-4"><label class="form-label">PWD Beneficiaries</label><input type="number" name="total_pwd" class="form-control" value="{{ $row->total_pwd ?? 0 }}" min="0"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Senior Citizen</label><input type="number" name="total_senior" class="form-control" value="{{ $row->total_senior ?? 0 }}" min="0"></div>
+                                                                            <div class="col-md-4"><label class="form-label">AICS Cases</label><input type="number" name="total_aics" class="form-control" value="{{ $row->total_aics ?? 0 }}" min="0"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Solo Parents</label><input type="number" name="total_solo_parent" class="form-control" value="{{ $row->total_solo_parent ?? 0 }}" min="0"></div>
+                                                                            <div class="col-md-4"><label class="form-label">ESA</label><input type="number" name="total_esa" class="form-control" value="{{ $row->total_esa ?? 0 }}" min="0"></div>
+                                                                            <div class="col-md-4"><label class="form-label">SLP</label><input type="number" name="total_slp" class="form-control" value="{{ $row->total_slp ?? 0 }}" min="0"></div>
+                                                                        </div>
                                                                     </div>
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label">Female Population</label>
-                                                                        <input type="number" name="female_population"
-                                                                            class="form-control"
-                                                                            value="{{ $row->female_population ?? 0 }}" min="0">
+                                                                    {{-- Socioeconomic Tab --}}
+                                                                    <div class="tab-pane fade" id="socioEdit_1">
+                                                                        <p style="font-size:.8rem;color:#64748b;margin-bottom:12px;">Enter rates as percentages. Leave blank if unavailable.</p>
+                                                                        <div class="row g-3">
+                                                                            <div class="col-md-4"><label class="form-label">Poverty Rate (%)</label><input type="number" name="poverty_rate" class="form-control" step="0.01" min="0" max="100" value="{{ $row->poverty_rate }}" placeholder="e.g. 14.20"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Unemployment Rate (%)</label><input type="number" name="unemployment_rate" class="form-control" step="0.01" min="0" max="100" value="{{ $row->unemployment_rate }}" placeholder="e.g. 6.80"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Literacy Rate (%)</label><input type="number" name="literacy_rate" class="form-control" step="0.01" min="0" max="100" value="{{ $row->literacy_rate }}" placeholder="e.g. 95.40"></div>
+                                                                            <div class="col-md-4"><label class="form-label">School Enrollment (%)</label><input type="number" name="school_enrollment_rate" class="form-control" step="0.01" min="0" max="100" value="{{ $row->school_enrollment_rate }}" placeholder="e.g. 88.20"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Labor Force (%)</label><input type="number" name="labor_force_participation_rate" class="form-control" step="0.01" min="0" max="100" value="{{ $row->labor_force_participation_rate }}" placeholder="e.g. 62.50"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Migration Rate (%)</label><input type="number" name="migration_rate" class="form-control" step="0.01" min="-100" max="100" value="{{ $row->migration_rate }}" placeholder="e.g. -1.21"></div>
+                                                                            <div class="col-md-4"><label class="form-label">Marriage Rate (per 1,000)</label><input type="number" name="marriage_rate" class="form-control" step="0.01" min="0" max="100" value="{{ $row->marriage_rate }}" placeholder="e.g. 5.82"></div>
+                                                                            <div class="col-md-4">
+                                                                                <label class="form-label">Income Level (1–5)</label>
+                                                                                <select name="income_level" class="form-select">
+                                                                                    <option value="">— Select —</option>
+                                                                                    @for($li=1;$li<=5;$li++)<option value="{{$li}}" {{ $row->income_level==$li?"selected":"" }}>{{$li}} — {{ ["","Very Low","Low","Moderate","High","Very High"][$li] }}</option>@endfor
+                                                                                </select>
+                                                                            </div>
+                                                                            <div class="col-md-4">
+                                                                                <label class="form-label">Education Level (1–3)</label>
+                                                                                <select name="education_level" class="form-select">
+                                                                                    <option value="">— Select —</option>
+                                                                                    <option value="1" {{ $row->education_level==1?"selected":"" }}>1 — Low</option>
+                                                                                    <option value="2" {{ $row->education_level==2?"selected":"" }}>2 — Moderate</option>
+                                                                                    <option value="3" {{ $row->education_level==3?"selected":"" }}>3 — High</option>
+                                                                                </select>
+                                                                            </div>
+                                                                        </div>
                                                                     </div>
-                                                                    <div class="col-md-6">
-                                                                        <label class="form-label">Total Households</label>
-                                                                        <input type="number" name="total_households"
-                                                                            class="form-control"
-                                                                            value="{{ $row->total_households }}" required min="0">
-                                                                    </div>
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label">Population Age 0&ndash;19</label>
-                                                                        <input type="number" name="population_0_19"
-                                                                            class="form-control"
-                                                                            value="{{ $row->population_0_19 ?? 0 }}" min="0">
-                                                                    </div>
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label">Population Age 20&ndash;59</label>
-                                                                        <input type="number" name="population_20_59"
-                                                                            class="form-control"
-                                                                            value="{{ $row->population_20_59 ?? 0 }}" min="0">
-                                                                    </div>
-                                                                    <div class="col-md-4">
-                                                                        <label class="form-label">Population Age 60+</label>
-                                                                        <input type="number" name="population_60_100"
-                                                                            class="form-control"
-                                                                            value="{{ $row->population_60_100 ?? 0 }}" min="0">
-                                                                    </div>
-                                                                    {{-- Preserve existing values silently --}}
-                                                                    <input type="hidden" name="total_4ps"
-                                                                        value="{{ $row->total_4ps }}">
-                                                                    <input type="hidden" name="total_senior"
-                                                                        value="{{ $row->total_senior }}">
-                                                                    <input type="hidden" name="total_esa"
-                                                                        value="{{ $row->total_esa }}">
-                                                                    <input type="hidden" name="total_slp"
-                                                                        value="{{ $row->total_slp }}">
                                                                 </div>
                                                             </div>
                                                             <div class="modal-footer border-0 px-4 pb-4 gap-2">
@@ -797,7 +963,7 @@
                     @php $cd = $chartData[$muniName]; @endphp
                     @if(!empty($cd['years']))
                         <div class="chart-card">
-                            <div class="chart-title">{{ $muniName }} &mdash; Population &amp; Households per Year</div>
+                            <div class="chart-title">{{ $muniName }} � Population & Households per Year</div>
                             <canvas id="chart-{{ $muniName }}" height="80"></canvas>
                         </div>
                     @endif
@@ -805,7 +971,7 @@
 
                 <!-- Combined comparison chart -->
                 <div class="chart-card">
-                    <div class="chart-title">All Municipalities &mdash; Population Comparison</div>
+                    <div class="chart-title">All Municipalities � Population Comparison</div>
                     <canvas id="chart-comparison" height="90"></canvas>
                 </div>
             </div>
@@ -823,67 +989,82 @@
                 </div>
                 <form method="POST" action="{{ route('superadmin.data.municipalities.summary.save') }}">
                     @csrf
-                    <div class="modal-body p-4">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">Municipality</label>
-                                <select name="municipality" class="form-select" required>
-                                    <option value="">Select Municipality</option>
-                                    @foreach($coreNames as $n)<option value="{{ $n }}">{{ $n }}</option>@endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Year</label>
-                                <select name="year" class="form-select" required>
-                                    <option value="">Select Year</option>
-                                    @foreach($years as $y)<option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>@endforeach
-                                </select>
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Total Population</label>
-                                <input type="number" name="total_population" class="form-control" required min="0"
-                                    placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Male Population</label>
-                                <input type="number" name="male_population" class="form-control" min="0"
-                                    placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Female Population</label>
-                                <input type="number" name="female_population" class="form-control" min="0"
-                                    placeholder="0">
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Total Households</label>
-                                <input type="number" name="total_households" class="form-control" required min="0"
-                                    placeholder="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Population Age 0&ndash;19</label>
-                                <input type="number" name="population_0_19" class="form-control" min="0" placeholder="0"
-                                    value="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Population Age 20&ndash;59</label>
-                                <input type="number" name="population_20_59" class="form-control" min="0"
-                                    placeholder="0" value="0">
-                            </div>
-                            <div class="col-md-4">
-                                <label class="form-label">Population Age 60+</label>
-                                <input type="number" name="population_60_100" class="form-control" min="0"
-                                    placeholder="0" value="0">
-                            </div>
-                            {{-- Hidden defaults for removed fields --}}
-                            <input type="hidden" name="total_4ps" value="0">
-                            <input type="hidden" name="total_senior" value="0">
-                            <input type="hidden" name="total_esa" value="0">
-                            <input type="hidden" name="total_slp" value="0">
-                        </div>
-                        <small class="text-muted mt-2 d-block">&#9432; If a record for this municipality + year already
-                            exists, it will be updated automatically.</small>
-                    </div>
-                    <div class="modal-footer border-0 px-4 pb-4 gap-2">
+                                                <div class="modal-body p-0">
+                                                    <ul class="nav nav-tabs px-4 pt-3" style="border-bottom:1px solid #e2e8f0;">
+                                                        <li class="nav-item"><a class="nav-link active" data-bs-toggle="tab" href="#addDemo">👥 Demographics</a></li>
+                                                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#addProg">📋 Programs</a></li>
+                                                        <li class="nav-item"><a class="nav-link" data-bs-toggle="tab" href="#addSocio">📊 Socioeconomic</a></li>
+                                                    </ul>
+                                                    <div class="tab-content p-4">
+                                                        {{-- Demographics --}}
+                                                        <div class="tab-pane fade show active" id="addDemo">
+                                                            <div class="row g-3">
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label">Municipality</label>
+                                                                    <select name="municipality" class="form-select" required>
+                                                                        <option value="">Select Municipality</option>
+                                                                        @foreach($coreNames as $n)<option value="{{ $n }}">{{ $n }}</option>@endforeach
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <label class="form-label">Year</label>
+                                                                    <select name="year" class="form-select" required>
+                                                                        <option value="">Select Year</option>
+                                                                        @foreach($years as $y)<option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>@endforeach
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-4"><label class="form-label">Total Population</label><input type="number" name="total_population" class="form-control" required min="0" placeholder="0"></div>
+                                                                <div class="col-md-4"><label class="form-label">Male Population</label><input type="number" name="male_population" class="form-control" min="0" placeholder="0"></div>
+                                                                <div class="col-md-4"><label class="form-label">Female Population</label><input type="number" name="female_population" class="form-control" min="0" placeholder="0"></div>
+                                                                <div class="col-md-6"><label class="form-label">Total Households</label><input type="number" name="total_households" class="form-control" required min="0" placeholder="0"></div>
+                                                                <div class="col-md-4"><label class="form-label">Age 0–19</label><input type="number" name="population_0_19" class="form-control" min="0" placeholder="0" value="0"></div>
+                                                                <div class="col-md-4"><label class="form-label">Age 20–59</label><input type="number" name="population_20_59" class="form-control" min="0" placeholder="0" value="0"></div>
+                                                                <div class="col-md-4"><label class="form-label">Age 60+</label><input type="number" name="population_60_100" class="form-control" min="0" placeholder="0" value="0"></div>
+                                                            </div>
+                                                        </div>
+                                                        {{-- Programs --}}
+                                                        <div class="tab-pane fade" id="addProg">
+                                                            <div class="row g-3">
+                                                                <div class="col-md-4"><label class="form-label">4Ps Beneficiaries</label><input type="number" name="total_4ps" class="form-control" min="0" value="0"></div>
+                                                                <div class="col-md-4"><label class="form-label">PWD Beneficiaries</label><input type="number" name="total_pwd" class="form-control" min="0" value="0"></div>
+                                                                <div class="col-md-4"><label class="form-label">Senior Citizen</label><input type="number" name="total_senior" class="form-control" min="0" value="0"></div>
+                                                                <div class="col-md-4"><label class="form-label">AICS Cases</label><input type="number" name="total_aics" class="form-control" min="0" value="0"></div>
+                                                                <div class="col-md-4"><label class="form-label">Solo Parents</label><input type="number" name="total_solo_parent" class="form-control" min="0" value="0"></div>
+                                                                <div class="col-md-4"><label class="form-label">ESA</label><input type="number" name="total_esa" class="form-control" min="0" value="0"></div>
+                                                                <div class="col-md-4"><label class="form-label">SLP</label><input type="number" name="total_slp" class="form-control" min="0" value="0"></div>
+                                                            </div>
+                                                        </div>
+                                                        {{-- Socioeconomic --}}
+                                                        <div class="tab-pane fade" id="addSocio">
+                                                            <p style="font-size:.8rem;color:#64748b;margin-bottom:12px;">Enter rates as percentages (e.g. 14.2 = 14.2%). Leave blank if unavailable.</p>
+                                                            <div class="row g-3">
+                                                                <div class="col-md-4"><label class="form-label">Poverty Rate (%)</label><input type="number" name="poverty_rate" class="form-control" step="0.01" min="0" max="100" placeholder="e.g. 14.20"></div>
+                                                                <div class="col-md-4"><label class="form-label">Unemployment Rate (%)</label><input type="number" name="unemployment_rate" class="form-control" step="0.01" min="0" max="100" placeholder="e.g. 6.80"></div>
+                                                                <div class="col-md-4"><label class="form-label">Literacy Rate (%)</label><input type="number" name="literacy_rate" class="form-control" step="0.01" min="0" max="100" placeholder="e.g. 95.40"></div>
+                                                                <div class="col-md-4"><label class="form-label">School Enrollment (%)</label><input type="number" name="school_enrollment_rate" class="form-control" step="0.01" min="0" max="100" placeholder="e.g. 88.20"></div>
+                                                                <div class="col-md-4"><label class="form-label">Labor Force Partic. (%)</label><input type="number" name="labor_force_participation_rate" class="form-control" step="0.01" min="0" max="100" placeholder="e.g. 62.50"></div>
+                                                                <div class="col-md-4"><label class="form-label">Migration Rate (%)</label><input type="number" name="migration_rate" class="form-control" step="0.01" min="-100" max="100" placeholder="e.g. -1.21"></div>
+                                                                <div class="col-md-4"><label class="form-label">Marriage Rate (per 1,000)</label><input type="number" name="marriage_rate" class="form-control" step="0.01" min="0" max="100" placeholder="e.g. 5.82"></div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label">Income Level (1–5)</label>
+                                                                    <select name="income_level" class="form-select">
+                                                                        <option value="">— Select —</option>
+                                                                        <option value="1">1 — Very Low</option><option value="2">2 — Low</option><option value="3" selected>3 — Moderate</option><option value="4">4 — High</option><option value="5">5 — Very High</option>
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <label class="form-label">Education Level (1–3)</label>
+                                                                    <select name="education_level" class="form-select">
+                                                                        <option value="">— Select —</option>
+                                                                        <option value="1">1 — Low</option><option value="2" selected>2 — Moderate</option><option value="3">3 — High</option>
+                                                                    </select>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <small class="text-muted mx-4 mb-3 d-block">ℹ️ If a record for this municipality + year already exists, it will be updated automatically.</small>
+                                                </div>
+                                                <div class="modal-footer border-0 px-4 pb-4 gap-2">
                         <button type="button" class="btn-modal-cancel" data-bs-dismiss="modal">Cancel</button>
                         <button type="submit" class="btn-modal-submit">Save Data</button>
                     </div>
@@ -897,7 +1078,7 @@
         <div class="modal-dialog modal-dialog-centered modal-lg">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h5 class="modal-title"> Archived Yearly Records</h5>
+                    <h5 class="modal-title">?? Archived Yearly Records</h5>
                     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                 </div>
                 <div class="modal-body p-0">
@@ -928,108 +1109,8 @@
         </div>
     </div>
 
-    <!-- Navy blue confirm modal (same pattern as superadmin users) -->
-    <div class="modal fade" id="uiConfirmModal" tabindex="-1" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered modal-md">
-            <div class="modal-content" style="border-radius:24px; overflow:hidden; box-shadow:0 30px 50px rgba(44,62,143,0.35);">
-                <div class="modal-header" style="background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%); color:white; border-bottom: none; padding: 24px 28px 16px;">
-                    <div style="display:flex; align-items:center; gap:12px;">
-                        <div style="background:rgba(253,185,19,0.2); width:48px; height:48px; border-radius:50%; display:flex; align-items:center; justify-content:center;">
-                            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" fill="#FDB913"/>
-                            </svg>
-                        </div>
-                        <h5 class="modal-title" id="uiConfirmTitle" style="font-weight:800; font-size:1.35rem; letter-spacing:-0.3px; margin:0;">Confirm Action</h5>
-                    </div>
-                    <button type="button" class="btn-close btn-close-white" id="uiConfirmCloseBtn" aria-label="Close"></button>
-                </div>
-                <div class="modal-body" style="padding:32px 28px 24px; background:#FFFFFF; min-height:140px;">
-                    <div id="uiConfirmMessage" style="color:#1E293B; font-weight:500; font-size:1rem; line-height:1.6; text-align:center; white-space:pre-line;">
-                        Are you sure you want to proceed?
-                    </div>
-                </div>
-                <div class="modal-footer" style="border-top:1px solid #E2E8F0; background:#F8FAFC; padding:20px 28px 28px; gap:16px; justify-content:center;">
-                    <button type="button" id="uiConfirmCancelBtn" class="btn-modal-cancel" style="background:white; border:2px solid #CBD5E1; color:#64748B; border-radius:50px; padding:10px 32px; font-weight:700; font-size:0.9rem; transition:all 0.2s; min-width:120px;">Cancel</button>
-                    <button type="button" id="uiConfirmOkBtn" class="btn-modal-submit" style="background: linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%); color:white; border-radius:50px; padding:10px 32px; font-weight:700; font-size:0.9rem; border:none; transition:all 0.2s; min-width:120px;">OK</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
         const CSRF = document.querySelector('meta[name="csrf-token"]').getAttribute('content');
-
-        function uiConfirm(title, message, okText, cancelText) {
-            return new Promise((resolve) => {
-                const modalEl = document.getElementById('uiConfirmModal');
-                if (!modalEl) {
-                    resolve(false);
-                    return;
-                }
-                const titleEl = document.getElementById('uiConfirmTitle');
-                const messageEl = document.getElementById('uiConfirmMessage');
-                let okBtn = document.getElementById('uiConfirmOkBtn');
-                let cancelBtn = document.getElementById('uiConfirmCancelBtn');
-                const closeBtn = document.getElementById('uiConfirmCloseBtn');
-
-                if (!okBtn || !cancelBtn) {
-                    resolve(false);
-                    return;
-                }
-
-                if (titleEl) titleEl.textContent = title || 'Confirm Action';
-                if (messageEl) messageEl.textContent = message || 'Are you sure you want to proceed?';
-                if (okBtn) okBtn.textContent = okText || 'OK';
-                if (cancelBtn) cancelBtn.textContent = cancelText || 'Cancel';
-
-                let resolved = false;
-                const done = (val) => {
-                    if (resolved) return;
-                    resolved = true;
-                    resolve(val);
-                };
-
-                const hideModal = () => {
-                    const bsModal = bootstrap.Modal.getInstance(modalEl);
-                    if (bsModal) bsModal.hide();
-                };
-
-                const newOkBtn = okBtn.cloneNode(true);
-                const newCancelBtn = cancelBtn.cloneNode(true);
-                okBtn.parentNode.replaceChild(newOkBtn, okBtn);
-                cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
-                okBtn = newOkBtn;
-                cancelBtn = newCancelBtn;
-
-                okBtn.onclick = () => {
-                    hideModal();
-                    setTimeout(() => done(true), 150);
-                };
-                cancelBtn.onclick = () => {
-                    hideModal();
-                    setTimeout(() => done(false), 150);
-                };
-
-                if (closeBtn) {
-                    const newCloseBtn = closeBtn.cloneNode(true);
-                    closeBtn.parentNode.replaceChild(newCloseBtn, closeBtn);
-                    newCloseBtn.onclick = () => {
-                        hideModal();
-                        setTimeout(() => done(false), 150);
-                    };
-                }
-
-                modalEl.style.zIndex = '9999';
-                const bsModal = new bootstrap.Modal(modalEl, { backdrop: 'static', keyboard: false });
-                bsModal.show();
-
-                modalEl.addEventListener('hidden.bs.modal', function onHidden() {
-                    modalEl.removeEventListener('hidden.bs.modal', onHidden);
-                    if (!resolved) done(false);
-                }, { once: true });
-            });
-        }
 
         // Tab switching
         function switchTab(name) {
@@ -1041,14 +1122,8 @@
         }
 
         // Archive summary (AJAX)
-        async function archiveSummary(id, label) {
-            const ok = await uiConfirm(
-                'Archive record?',
-                `Archive "${label}"?\n\nThis record will be hidden but can be restored later.`,
-                'Archive',
-                'Cancel'
-            );
-            if (!ok) return;
+        function archiveSummary(id, label) {
+            if (!confirm(`Archive "${label}"?\n\nThis record will be hidden but can be restored later.`)) return;
             fetch('/superadmin/data/municipalities/summary/' + id + '/archive', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
@@ -1067,7 +1142,7 @@
                 .then(data => {
                     document.getElementById('archivedSummaryCount').textContent = data.length;
                     if (!data.length) {
-                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><div style="font-size:2rem;opacity:.3;"></div><p class="mt-2 mb-0">No archived records.</p></td></tr>';
+                        tbody.innerHTML = '<tr><td colspan="5" class="text-center py-5 text-muted"><div style="font-size:2rem;opacity:.3;">??</div><p class="mt-2 mb-0">No archived records.</p></td></tr>';
                         return;
                     }
                     tbody.innerHTML = data.map(r => {
@@ -1087,14 +1162,8 @@
                 .catch(() => { tbody.innerHTML = '<tr><td colspan="5" class="text-center py-4 text-danger">Failed to load.</td></tr>'; });
         }
 
-        async function restoreSummary(id) {
-            const ok = await uiConfirm(
-                'Restore record?',
-                'Restore this record? It will appear in the active list again.',
-                'Restore',
-                'Cancel'
-            );
-            if (!ok) return;
+        function restoreSummary(id) {
+            if (!confirm('Restore this record? It will appear in the active list again.')) return;
             fetch('/superadmin/data/municipalities/summary/' + id + '/restore', {
                 method: 'POST',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
@@ -1104,14 +1173,8 @@
                 .catch(() => alert('Network error.'));
         }
 
-        async function permDeleteSummary(id) {
-            const ok = await uiConfirm(
-                'Permanent delete',
-                'PERMANENTLY DELETE this record?\n\nThis CANNOT be undone!',
-                'Delete forever',
-                'Cancel'
-            );
-            if (!ok) return;
+        function permDeleteSummary(id) {
+            if (!confirm('?? PERMANENTLY DELETE this record?\n\nThis CANNOT be undone!')) return;
             fetch('/superadmin/data/municipalities/summary/' + id + '/force-delete', {
                 method: 'DELETE',
                 headers: { 'X-CSRF-TOKEN': CSRF, 'Accept': 'application/json', 'Content-Type': 'application/json' }
@@ -1208,14 +1271,8 @@
             }
         }
 
-        async function deleteSummary(id) {
-            const ok = await uiConfirm(
-                'Delete year record?',
-                'Delete this year record? This cannot be undone.',
-                'Delete',
-                'Cancel'
-            );
-            if (!ok) return;
+        function deleteSummary(id) {
+            if (!confirm('Delete this year record? This cannot be undone.')) return;
             const form = document.createElement('form');
             form.method = 'POST';
             form.action = '/superadmin/data/municipalities/summary/' + id;
@@ -1225,20 +1282,23 @@
             document.body.appendChild(form); form.submit();
         }
 
-        // --- END SCRIPT ---
-    </script>
+        // --- MONTHLY DATA ---------------------------------------------------
+                }
+            });
+        }
 
-    <script>
-        // Auto-hide notification after timer completes
-        document.addEventListener('DOMContentLoaded', () => {
-            const notification = document.querySelector('.notification-toast');
-            if (notification) {
-                setTimeout(() => {
-                    notification.classList.add('fade-out');
-                    setTimeout(() => notification.remove(), 400);
-                }, 5000);
-            }
-        });
-    </script>
+        // Open Edit Monthly modal
+
+        // Save edit via AJAX
+
+        // Archive monthly record
+
+        // Load archived monthly records modal
+
+
+
+        // Auto-load archived monthly count on modal open
+
 </body>
+
 </html>

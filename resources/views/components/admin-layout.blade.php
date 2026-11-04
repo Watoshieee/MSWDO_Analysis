@@ -1,11 +1,20 @@
-{{-- Shared Admin layout shell: same 1280px / 32px bounds as the navbar. --}}
+{{-- Shared Admin layout shell: responsive max-width from 1280px to 1536px. --}}
 <style>
 :root {
-    --admin-shell-max: 1280px;
-    --admin-gutter: 32px;
+    --admin-shell-max: 1536px;
+    --admin-gutter: 40px;
     --admin-control-h: 40px;
 }
+@media (max-width: 1399px) {
+    :root {
+        --admin-shell-max: 1280px;
+        --admin-gutter: 32px;
+    }
+}
 @media (max-width: 1199px) {
+    :root { --admin-gutter: 24px; }
+}
+@media (max-width: 900px) {
     :root { --admin-gutter: 16px; }
 }
 

@@ -286,7 +286,8 @@ class AdminController extends Controller
         $admin = Auth::user();
         $municipality = $admin->municipality;
 
-        $applicationsQuery = Application::where('municipality', $municipality);
+        $applicationsQuery = Application::where('municipality', $municipality)
+            ->whereNull('deleted_at');
 
         if ($request->filled('app_search')) {
             $search = trim((string) $request->input('app_search'));
@@ -305,30 +306,18 @@ class AdminController extends Controller
             $applicationsQuery->where('program_type', $request->input('app_program'));
         }
 
-        $applications = $applicationsQuery
+        // Get all applications without pagination yet
+        $allApplications = $applicationsQuery
             ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
             ->orderBy('application_date', 'desc')
-            ->paginate(20);
-
-        // Archived (soft-deleted) applications
-        $archivedApplications = Application::onlyTrashed()
-            ->where('municipality', $municipality)
-            ->orderBy('deleted_at', 'desc')
-            ->get();
-
-        // Archived PWD renewal ID-verification requests
-        $archivedRenewals = \App\Models\RenewalRequest::onlyTrashed()
-            ->with('user')
-            ->where('municipality', $municipality)
-            ->where('program_type', 'PWD')
-            ->orderBy('deleted_at', 'desc')
             ->get();
 
         // PWD Renewal ID Verification requests (no appointment — pending admin ID review)
         $pwdRenewalsQuery = \App\Models\RenewalRequest::with('user')
             ->where('municipality', $municipality)
             ->where('program_type', 'PWD')
-            ->whereNull('appointment_id');
+            ->whereNull('appointment_id')
+            ->whereNull('deleted_at');
 
         if ($request->filled('app_program')) {
             $progFilter = $request->input('app_program');
@@ -351,10 +340,66 @@ class AdminController extends Controller
             });
         }
 
-        $pwdRenewalRequests = $pwdRenewalsQuery
+        // Get all PWD renewals without pagination yet
+        $allPwdRenewals = $pwdRenewalsQuery
             ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
             ->orderBy('created_at', 'desc')
             ->get();
+
+        // Merge and sort all applications + PWD renewals together
+        $mergedApplications = collect($allApplications)
+            ->concat($allPwdRenewals)
+            ->sortBy(function ($item) {
+                // Primary: status priority (pending=1, approved=2, rejected=3)
+                $statusPriority = [
+                    'pending' => 1,
+                    'approved' => 2,
+                    'rejected' => 3
+                ];
+                $statusValue = $statusPriority[$item->status] ?? 999;
+                
+                // Secondary: date descending (newer first)
+                $dateValue = $item->application_date ?? $item->created_at;
+                
+                return [$statusValue, $dateValue ? -strtotime($dateValue) : 0];
+            })
+            ->values();
+
+        // Manually paginate the merged collection
+        $page = $request->input('page', 1);
+        $perPage = 20;
+        $total = $mergedApplications->count();
+        $items = $mergedApplications->slice(($page - 1) * $perPage, $perPage)->values();
+        
+        $applications = new \Illuminate\Pagination\LengthAwarePaginator(
+            $items,
+            $total,
+            $perPage,
+            $page,
+            [
+                'path' => $request->url(),
+                'query' => $request->query(),
+            ]
+        );
+
+        // Archived (soft-deleted) applications — NOW PAGINATED
+        $archivedApplicationsQuery = Application::onlyTrashed()
+            ->where('municipality', $municipality);
+
+        $archivedApplications = $archivedApplicationsQuery
+            ->orderBy('deleted_at', 'desc')
+            ->paginate(20);
+
+        // Archived PWD renewal ID-verification requests
+        $archivedRenewals = \App\Models\RenewalRequest::onlyTrashed()
+            ->with('user')
+            ->where('municipality', $municipality)
+            ->where('program_type', 'PWD')
+            ->orderBy('deleted_at', 'desc')
+            ->get();
+
+        // For backward compatibility with view that expects pwdRenewalRequests variable
+        $pwdRenewalRequests = collect([]);
 
         extract($this->adminNotifData($admin));
 

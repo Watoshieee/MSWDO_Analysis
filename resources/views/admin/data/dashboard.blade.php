@@ -296,6 +296,9 @@ dialog input:focus{outline:0;border-color:var(--navy);background:#fff;box-shadow
 .toast.on{opacity:1;transform:translate(-50%,0)}
 
 /* tablet + mobile */
+@media (max-width:1400px){
+.stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin:0 0 28px}
+}
 @media (max-width:1000px){
 .stats{grid-template-columns:1fr 1fr}
 .stat:nth-child(3){border-left:0}

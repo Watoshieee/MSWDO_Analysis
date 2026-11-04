@@ -87,15 +87,31 @@ html, body {
     box-shadow: 0 6px 18px rgba(20, 27, 77, 0.28);
 }
 .hd-in {
-    max-width: 1280px;
+    max-width: 1536px;
     margin: 0 auto;
-    padding: 0 32px;
+    padding: 0 40px;
     height: 60px;
     box-sizing: border-box;
     display: flex;
     align-items: center;
     gap: 8px;
     position: relative;
+}
+@media (max-width: 1399px) {
+    .hd-in {
+        max-width: 1280px;
+        padding: 0 32px;
+    }
+}
+@media (max-width: 1199px) {
+    .hd-in {
+        padding: 0 24px;
+    }
+}
+@media (max-width: 900px) {
+    .hd-in {
+        padding: 0 16px;
+    }
 }
 .hd a:focus-visible, .hd button:focus-visible {
     outline: 2px solid var(--hd-gold);

@@ -104,12 +104,9 @@
 
         /* Content wrap & grid */
         .wrap {
-            max-width: 1280px;
-            margin: 0 auto;
-            padding: 16px 32px 28px;
+            width: 100%;
             box-sizing: border-box;
             flex: 1;
-            width: 100%;
         }
         .grid {
             display: grid;
