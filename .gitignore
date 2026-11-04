@@ -7,6 +7,7 @@
 !.env.example
 
 # Laravel generated files
+/bootstrap/cache/*.php
 /storage/framework/sessions/*
 /storage/framework/cache/*
 /storage/framework/views/*
