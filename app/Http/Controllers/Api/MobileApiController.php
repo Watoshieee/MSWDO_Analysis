@@ -369,6 +369,53 @@ class MobileApiController extends Controller
         ]);
     }
 
+    public function googleLogin(Request $request, \App\Services\GoogleAuthService $googleAuth): JsonResponse
+    {
+        $request->validate([
+            'id_token' => 'required|string',
+        ]);
+
+        try {
+            $user = $googleAuth->authenticateBeneficiary($request->id_token);
+        } catch (\Illuminate\Auth\AuthenticationException $e) {
+            $msg = $e->getMessage();
+            $status = match ($msg) {
+                'No registered MSWDO beneficiary account found with this Google email. Please register first.' => 404,
+                'Invalid or expired Google authentication token.',
+                'Google ID token is required.',
+                'Invalid Google token issuer.',
+                'Google token was not issued for this application.',
+                'Google token has expired. Please sign in again.' => 401,
+                default => 403,
+            };
+            return response()->json(['success' => false, 'message' => $msg], $status);
+        } catch (\Exception $e) {
+            Log::error('Mobile Google login unexpected error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'An unexpected error occurred during Google Sign-In. Please try again.',
+            ], 500);
+        }
+
+        $token = $this->auth->createToken($user);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Login successful',
+            'token'   => $token,
+            'must_change_password' => (bool) $user->must_change_password,
+            'user'    => [
+                'id'           => $user->id,
+                'full_name'    => $user->full_name,
+                'email'        => $user->email,
+                'username'     => $user->username,
+                'role'         => $user->role,
+                'municipality' => $user->municipality,
+                'barangay'     => $user->barangay,
+            ],
+        ]);
+    }
+
     // ── POST /change-password (authenticated — first-login forced reset) ───
     public function changePassword(Request $request): JsonResponse
     {

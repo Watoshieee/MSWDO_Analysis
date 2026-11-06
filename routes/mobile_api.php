@@ -17,6 +17,7 @@ Route::get('/municipalities', [MobileApiController::class, 'municipalities']);
 // Auth endpoints — rate-limited to prevent abuse
 Route::middleware('throttle:3,1')->post('/register', [MobileApiController::class, 'register']);
 Route::middleware('throttle:10,1')->post('/login', [MobileApiController::class, 'login']);
+Route::middleware('throttle:10,1')->post('/google-login', [MobileApiController::class, 'googleLogin']);
 
 // OTP and verification endpoints — strict rate limiting (5 per minute per IP)
 Route::middleware('throttle:5,1')->group(function () {

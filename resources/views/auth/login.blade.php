@@ -9,6 +9,9 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.8.1/font/bootstrap-icons.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    @if(config('services.google.client_id'))
+        <script src="https://accounts.google.com/gsi/client" async defer></script>
+    @endif
     <style>
         * { box-sizing: border-box; }
 
@@ -339,6 +342,39 @@
             </button>
         </form>
 
+        @if(config('services.google.client_id'))
+            <div class="divider" style="display:flex;align-items:center;gap:10px;color:#CBD5E1;margin:18px 0;font-size:0.8rem;">
+                <span style="flex:1;height:1px;background:#E2E8F0;"></span>
+                <span style="color:#64748b;font-size:0.82rem;font-weight:500;">or continue with</span>
+                <span style="flex:1;height:1px;background:#E2E8F0;"></span>
+            </div>
+
+            <div id="g_id_onload"
+                 data-client_id="{{ config('services.google.client_id') }}"
+                 data-context="signin"
+                 data-ux_mode="popup"
+                 data-callback="handleGoogleCredentialResponse"
+                 data-auto_prompt="false">
+            </div>
+
+            <div class="d-flex justify-content-center mb-2" style="width:100%;">
+                <div class="g_id_signin"
+                     data-type="standard"
+                     data-shape="rectangular"
+                     data-theme="outline"
+                     data-text="signin_with"
+                     data-size="large"
+                     data-logo_alignment="left"
+                     data-width="360">
+                </div>
+            </div>
+
+            <form id="googleLoginForm" method="POST" action="{{ route('login.google') }}" style="display:none;">
+                @csrf
+                <input type="hidden" name="id_token" id="googleIdTokenInput">
+            </form>
+        @endif
+
         <div class="form-footer">
             <div class="divider">or</div>
             Don't have an account?
@@ -358,6 +394,18 @@ function togglePassword() {
     } else {
         input.type = 'password';
         icon.innerHTML = '<path d="M16 8s-3-5.5-8-5.5S0 8 0 8s3 5.5 8 5.5S16 8 16 8zM1.173 8a13.133 13.133 0 0 1 1.66-2.043C4.12 4.668 5.88 3.5 8 3.5c2.12 0 3.879 1.168 5.168 2.457A13.133 13.133 0 0 1 14.828 8c-.058.087-.122.183-.195.288-.335.48-.83 1.12-1.465 1.755C11.879 11.332 10.119 12.5 8 12.5c-2.12 0-3.879-1.168-5.168-2.457A13.134 13.134 0 0 1 1.172 8z"/><path d="M8 5.5a2.5 2.5 0 1 0 0 5 2.5 2.5 0 0 0 0-5zM4.5 8a3.5 3.5 0 1 1 7 0 3.5 3.5 0 0 1-7 0z"/>';
+    }
+}
+
+function handleGoogleCredentialResponse(response) {
+    if (!response || !response.credential) {
+        return;
+    }
+    const tokenInput = document.getElementById('googleIdTokenInput');
+    const form = document.getElementById('googleLoginForm');
+    if (tokenInput && form) {
+        tokenInput.value = response.credential;
+        form.submit();
     }
 }
 </script>

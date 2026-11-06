@@ -141,4 +141,60 @@ class LoginController extends Controller
         
         return redirect('/analysis')->with('success', 'You have been logged out successfully.');
     }
+
+    /**
+     * Handle incoming Google Sign-In for regular beneficiary accounts.
+     */
+    public function loginWithGoogle(Request $request, \App\Services\GoogleAuthService $googleAuth)
+    {
+        $request->validate([
+            'id_token' => 'required|string',
+        ]);
+
+        try {
+            $user = $googleAuth->authenticateBeneficiary($request->id_token);
+        } catch (\Illuminate\Auth\AuthenticationException $e) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $e->getMessage(),
+                ], 422);
+            }
+            return back()->withErrors([
+                'login' => $e->getMessage(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Google web login unexpected error: ' . $e->getMessage());
+            $fallbackMsg = 'An error occurred during Google Sign-In. Please try again.';
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => $fallbackMsg,
+                ], 500);
+            }
+            return back()->withErrors([
+                'login' => $fallbackMsg,
+            ]);
+        }
+
+        Auth::login($user, $request->filled('remember'));
+        $request->session()->regenerate();
+
+        Log::info('Beneficiary logged in via Google:', [
+            'id'       => $user->id,
+            'username' => $user->username,
+            'role'     => $user->role,
+            'time'     => now(),
+        ]);
+
+        if ($request->expectsJson() || $request->ajax()) {
+            return response()->json([
+                'success'  => true,
+                'redirect' => url('/dashboard'),
+            ]);
+        }
+
+        return redirect('/dashboard')
+            ->with('success', 'Welcome back, ' . $user->full_name . '!');
+    }
 }

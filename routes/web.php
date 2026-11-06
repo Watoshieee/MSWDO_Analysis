@@ -69,6 +69,7 @@ Route::post('/chatbot/message', [App\Http\Controllers\ChatbotController::class, 
 Route::middleware('guest')->group(function () {
     Route::get('/login', [LoginController::class, 'showLoginForm'])->name('login');
     Route::post('/login', [LoginController::class, 'login']);
+    Route::post('/auth/google', [LoginController::class, 'loginWithGoogle'])->name('login.google');
 
     Route::get('/register', [RegisterController::class, 'showRegistrationForm'])->name('register');
     Route::post('/register', [RegisterController::class, 'register']);

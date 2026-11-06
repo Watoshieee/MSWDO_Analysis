@@ -51,4 +51,9 @@ return [
         'private_key' => env('VAPID_PRIVATE_KEY', ''),
         'subject'     => env('VAPID_SUBJECT', 'mailto:admin@mswdo.gov.ph'),
     ],
+
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID', ''),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET', ''),
+    ],
 ];
