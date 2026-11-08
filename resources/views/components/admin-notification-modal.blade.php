@@ -97,13 +97,7 @@
 <style>
 .admin-notif-card { transition: box-shadow .2s, transform .2s; }
 .admin-notif-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); transform: translateY(-2px); }
-.admin-bell-item { border-left: 4px solid #6366f1 !important; }
-.admin-bell-item.type-new_user_registration { border-left-color: #8b5cf6 !important; }
-.admin-bell-item.type-new_application,
-.admin-bell-item.type-new_aics_application { border-left-color: #f59e0b !important; }
-.admin-bell-item.type-new_appointment { border-left-color: #3b82f6 !important; }
-.admin-bell-item.type-new_renewal     { border-left-color: #10b981 !important; }
-.admin-bell-item.type-document_upload { border-left-color: #dc2626 !important; }
+.admin-bell-item { border-left: 4px solid #2C3E8F !important; }
 
 .an-tab { transition: color .15s, border-color .15s; }
 .an-tab:hover { color: #2C3E8F !important; background: rgba(44,62,143,.05) !important; }
@@ -216,10 +210,10 @@ function renderAdminNotifList() {
         html += '<div class="admin-notif-card admin-bell-item type-' + n.type + '" ';
         if (!isBlade) {
             html += 'id="admin-notif-' + n.id + '" ';
-            html += 'style="background:' + cardBg + ';border-radius:14px;padding:14px 18px;margin-bottom:10px;border:1px solid ' + cardBdr + ';border-left:4px solid #8b5cf6;cursor:pointer;" ';
+            html += 'style="background:' + cardBg + ';border-radius:14px;padding:14px 18px;margin-bottom:10px;border:1px solid ' + cardBdr + ';border-left:4px solid #2C3E8F;cursor:pointer;" ';
             html += 'onclick="handleAdminNotifClick(' + n.id + ', \'' + escHtml(n.action_url) + '\')">';
         } else {
-            html += 'style="background:' + cardBg + ';border-radius:14px;padding:14px 18px;margin-bottom:10px;border:1px solid ' + cardBdr + ';border-left:4px solid #8b5cf6;">';
+            html += 'style="background:' + cardBg + ';border-radius:14px;padding:14px 18px;margin-bottom:10px;border:1px solid ' + cardBdr + ';border-left:4px solid #2C3E8F;">';
         }
 
         html += '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;">';
@@ -384,6 +378,12 @@ function loadAdminBellNotifications() {
 function handleAdminNotifClick(notifId, actionUrl) {
     var n = _allNotifs.find(function(x){ return x.id === notifId; });
 
+    // Force New Renewal Request notifications to /admin/requirements
+    // (handles both new and existing records that may have stored /admin/renewals)
+    if (n && n.type === 'new_renewal') {
+        actionUrl = '{{ route('admin.requirements') }}';
+    }
+
     if (!n || n.is_read) {
         // Already read — navigate immediately
         window.location.href = actionUrl;
@@ -432,16 +432,16 @@ function adminNotifMarkAll() {
 // ── Icon helper ───────────────────────────────────────────────
 function getAdminNotifIcon(type) {
     var icons = {
-        'new_user_registration':  '<span style="background:#ede9fe;color:#7c3aed;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">👤 New User Registration</span>',
-        'new_application':        '<span style="background:#fef3c7;color:#92400e;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">📋 New Application</span>',
-        'new_aics_application':   '<span style="background:#fef3c7;color:#92400e;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">🏥 New AICS Application</span>',
-        'new_renewal':            '<span style="background:#d1fae5;color:#065f46;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">🔄 New Renewal Request</span>',
-        'new_appointment':        '<span style="background:#dbeafe;color:#1e40af;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">📅 New Appointment</span>',
-        'reschedule_request':     '<span style="background:#fce7f3;color:#9d174d;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">📆 Reschedule Request</span>',
-        'requirements_submitted': '<span style="background:#ecfdf5;color:#065f46;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">📁 Requirements Submitted</span>',
-        'document_upload':        '<span style="background:#fee2e2;color:#991b1b;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">📁 Documents Uploaded</span>',
+        'new_user_registration':  '<span style="background:#3B82F6;color:#fff;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">👤 New User Registration</span>',
+        'new_application':        '<span style="background:#3B82F6;color:#fff;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">📋 New Application</span>',
+        'new_aics_application':   '<span style="background:#3B82F6;color:#fff;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">🏥 New AICS Application</span>',
+        'new_renewal':            '<span style="background:#3B82F6;color:#fff;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">🔄 New Renewal Request</span>',
+        'new_appointment':        '<span style="background:#3B82F6;color:#fff;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">📅 New Appointment</span>',
+        'reschedule_request':     '<span style="background:#3B82F6;color:#fff;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">📆 Reschedule Request</span>',
+        'requirements_submitted': '<span style="background:#3B82F6;color:#fff;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">📁 Requirements Submitted</span>',
+        'document_upload':        '<span style="background:#3B82F6;color:#fff;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">📁 Documents Uploaded</span>',
     };
-    return icons[type] || '<span style="background:#f1f5f9;color:#475569;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">🔔 Notification</span>';
+    return icons[type] || '<span style="background:#3B82F6;color:#fff;border-radius:20px;padding:3px 10px;font-size:.72rem;font-weight:700;">🔔 Notification</span>';
 }
 
 function escHtml(str) {

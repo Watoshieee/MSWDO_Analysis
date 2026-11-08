@@ -98,6 +98,8 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Admin notification bell
     Route::post('/mark-notifications-viewed', [App\Http\Controllers\AdminController::class, 'markNotificationsViewed'])->name('mark-notifications-viewed');
+    Route::post('/notifications/applications/read', [App\Http\Controllers\AdminController::class, 'markApplicationsRead'])->name('notifications.applications.read');
+    Route::post('/notifications/users/read', [App\Http\Controllers\AdminController::class, 'markUsersRead'])->name('notifications.users.read');
 
     // Vision / Mission / Goals
     Route::post('/vision-mission/save', [App\Http\Controllers\AdminController::class, 'saveVisionMission'])->name('vision-mission.save');

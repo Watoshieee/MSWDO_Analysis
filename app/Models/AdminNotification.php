@@ -84,7 +84,7 @@ class AdminNotification extends Model
         }
         return match ($this->type) {
             self::TYPE_NEW_APPOINTMENT, self::TYPE_RESCHEDULE_REQUEST => route('admin.admin.appointments.index'),
-            self::TYPE_NEW_RENEWAL => route('admin.renewals.index'),
+            self::TYPE_NEW_RENEWAL => route('admin.requirements'),
             self::TYPE_NEW_USER_REGISTRATION => route('admin.users'),
             default => route('admin.requirements'),
         };

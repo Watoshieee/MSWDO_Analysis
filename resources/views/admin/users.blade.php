@@ -629,6 +629,47 @@
                 transform: rotate(360deg);
             }
         }
+
+        /* Pagination */
+        .page-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            height: 32px;
+            padding: 0 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #64748b;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .page-btn:hover:not(:disabled) {
+            background: #f8fafc;
+            border-color: #cbd5e1;
+            color: #2c3e8f;
+        }
+        .page-btn.active {
+            background: var(--primary-blue, #2c3e8f);
+            border-color: var(--primary-blue, #2c3e8f);
+            color: #fff;
+        }
+        .page-btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .page-ellipsis {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 32px;
+            height: 32px;
+            font-size: 0.85rem;
+            color: #94a3b8;
+        }
     </style>
 </head>
 <body>
@@ -701,6 +742,7 @@
                 </div>
                 <div class="col-md-2">
                     <select id="statusFilter" class="search-input" style="padding-left:14px;cursor:pointer;" onchange="filterUsers()">
+                        <option value="all">All Account Status</option>
                         <option value="pending">Pending approval</option>
                         <option value="active">Active</option>
                         <option value="inactive">Inactive</option>
@@ -708,18 +750,20 @@
                 </div>
                 <div class="col-md-2">
                     <select id="appFilter" class="search-input" style="padding-left:14px;cursor:pointer;" onchange="filterUsers()">
+                        <option value="all">All Application Status</option>
                         <option value="with">With applications</option>
                         <option value="without">No applications yet</option>
                     </select>
                 </div>
                 <div class="col-md-2">
                     <select id="idFilter" class="search-input" style="padding-left:14px;cursor:pointer;" onchange="filterUsers()">
+                        <option value="all">All ID Verification Status</option>
                         <option value="approved">Approved ID</option>
                         <option value="pending">Pending ID review</option>
                     </select>
                 </div>
                 <div class="col-md-2 text-end">
-                    <span id="userCount" style="font-size:.82rem;font-weight:700;color:#64748b;">{{ $users->count() }} users</span>
+                    <span id="userCount" style="font-size:.82rem;font-weight:700;color:#64748b;">{{ $total ?? $users->count() }} users</span>
                 </div>
             </div>
         </div>
@@ -875,6 +919,38 @@
                     <p style="font-size:.85rem;margin:0;">No residents have registered in the {{ $municipality->name }} MSWDO portal yet.</p>
                 </div>
                 @endif
+                <div id="userPagination" style="margin-top:10px;">
+                    @php
+                        $initialCurrent = $currentPage ?? 1;
+                        $initialLast = $lastPage ?? 1;
+                        $initialTotal = $total ?? $users->count();
+                    @endphp
+                    @if($initialTotal > 0 && $initialLast > 1)
+                        <div style="display:flex;justify-content:center;align-items:center;gap:6px;">
+                            <button class="page-btn{{ $initialCurrent === 1 ? ' disabled' : '' }}" onclick="goToPage({{ $initialCurrent - 1 }})">Previous</button>
+                            @php
+                                $start = max(1, $initialCurrent - 2);
+                                $end = min($initialLast, $initialCurrent + 2);
+                            @endphp
+                            @if($start > 1)
+                                <button class="page-btn" onclick="goToPage(1)">1</button>
+                                @if($start > 2)
+                                    <span class="page-ellipsis">...</span>
+                                @endif
+                            @endif
+                            @for($i = $start; $i <= $end; $i++)
+                                <button class="page-btn{{ $i === $initialCurrent ? ' active' : '' }}" onclick="goToPage({{ $i }})">{{ $i }}</button>
+                            @endfor
+                            @if($end < $initialLast)
+                                @if($end < $initialLast - 1)
+                                    <span class="page-ellipsis">...</span>
+                                @endif
+                                <button class="page-btn" onclick="goToPage({{ $initialLast }})">{{ $initialLast }}</button>
+                            @endif
+                            <button class="page-btn{{ $initialCurrent === $initialLast ? ' disabled' : '' }}" onclick="goToPage({{ $initialCurrent + 1 }})">Next</button>
+                        </div>
+                    @endif
+                </div>
             </div>
         </div>
 
@@ -1320,13 +1396,16 @@
     }
 
     function closeIdModal() {
+        // Always restore page scrolling first, even if an ID action is processing.
+        // This prevents the body from being stuck with overflow: hidden after the modal closes.
+        document.body.style.removeProperty('overflow');
+
         if (_isProcessingIdAction) return;
         const backdrop = document.getElementById('idModalBackdrop');
         if (backdrop) {
             backdrop.classList.remove('show');
             backdrop.setAttribute('aria-hidden', 'true');
         }
-        document.body.style.overflow = 'auto';
         const container = document.getElementById('idPreviewContainer');
         if (container) container.innerHTML = '';
         currentIdUserId = null;
@@ -1856,7 +1935,10 @@
         }
     });
 
+    let currentPage = 1;
+
     function filterUsers() {
+        currentPage = 1;
         clearTimeout(_searchDebounce);
         _searchDebounce = setTimeout(fetchUsersAjax, 220);
     }
@@ -1867,12 +1949,18 @@
         const idFilter = document.getElementById('idFilter').value;
         const statusFilter = document.getElementById('statusFilter') ? document.getElementById('statusFilter').value : '';
         const tbody = document.getElementById('usersTableBody');
+        const noResults = document.getElementById('noResults');
+
+        // Show loading indicator
+        tbody.innerHTML = '<tr><td colspan="11" style="text-align:center;padding:40px;color:#64748b;"><div style="display:inline-block;width:28px;height:28px;border:3px solid #e2e8f0;border-top:3px solid #2563eb;border-radius:50%;animation:uiSpin 0.8s linear infinite;margin-bottom:10px;"></div><div style="font-size:.9rem;">Loading users...</div></td></tr>';
+        noResults.style.display = 'none';
 
         const params = new URLSearchParams();
         if (q) params.set('q', q);
-        if (appFilter) params.set('app_filter', appFilter);
-        if (idFilter) params.set('id_filter', idFilter);
-        if (statusFilter) params.set('status_filter', statusFilter);
+        if (appFilter && appFilter !== 'all') params.set('app_filter', appFilter);
+        if (idFilter && idFilter !== 'all') params.set('id_filter', idFilter);
+        if (statusFilter && statusFilter !== 'all') params.set('status_filter', statusFilter);
+        params.set('page', currentPage);
 
         try {
             const res = await fetch(`{{ route('admin.users.search') }}?${params.toString()}`, {
@@ -1883,10 +1971,12 @@
 
             if (!users.length) {
                 tbody.innerHTML = '';
-                document.getElementById('noResults').style.display = 'block';
+                noResults.style.display = 'block';
+                document.getElementById('userPagination').innerHTML = '';
             } else {
                 tbody.innerHTML = users.map(buildUserRow).join('');
-                document.getElementById('noResults').style.display = 'none';
+                noResults.style.display = 'none';
+                renderPagination(data);
             }
 
             const count = data.count || 0;
@@ -1894,6 +1984,49 @@
         } catch (e) {
             // keep current table if request fails
         }
+    }
+
+    function renderPagination(data) {
+        const current = data.current_page || 1;
+        const last = data.last_page || 1;
+        const total = data.count || 0;
+        const wrap = document.getElementById('userPagination');
+
+        if (total === 0 || last <= 1) {
+            wrap.innerHTML = '';
+            return;
+        }
+
+        let html = '<div style="display:flex;justify-content:center;align-items:center;gap:6px;margin-top:12px;">';
+
+        // Previous
+        html += '<button class="page-btn' + (current === 1 ? ' disabled' : '') + '" onclick="goToPage(' + (current - 1) + ')">Previous</button>';
+
+        // Page numbers
+        let start = Math.max(1, current - 2);
+        let end = Math.min(last, current + 2);
+        if (start > 1) {
+            html += '<button class="page-btn" onclick="goToPage(1)">1</button>';
+            if (start > 2) html += '<span class="page-ellipsis">...</span>';
+        }
+        for (let i = start; i <= end; i++) {
+            html += '<button class="page-btn' + (i === current ? ' active' : '') + '" onclick="goToPage(' + i + ')">' + i + '</button>';
+        }
+        if (end < last) {
+            if (end < last - 1) html += '<span class="page-ellipsis">...</span>';
+            html += '<button class="page-btn" onclick="goToPage(' + last + ')">' + last + '</button>';
+        }
+
+        // Next
+        html += '<button class="page-btn' + (current === last ? ' disabled' : '') + '" onclick="goToPage(' + (current + 1) + ')">Next</button>';
+
+        html += '</div>';
+        wrap.innerHTML = html;
+    }
+
+    function goToPage(page) {
+        currentPage = page;
+        fetchUsersAjax();
     }
     </script>
 </body>
