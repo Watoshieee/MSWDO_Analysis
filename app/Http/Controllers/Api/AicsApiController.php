@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Application;
 use App\Models\Appointment;
+use App\Models\FileMonitoring;
+use App\Models\FileUpload;
 use App\Models\User;
 use App\Models\ProgramRequirement;
 use App\Mail\NewAppointmentAdminMail;
@@ -16,6 +18,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Storage;
 
 class AicsApiController extends Controller
 {
@@ -204,9 +207,10 @@ class AicsApiController extends Controller
     {
         $user = Auth::user();
 
+        // Prioritize active statuses (pending, confirmed, validated) over terminal ones
         $appointment = Appointment::where('user_id', $user->id)
             ->where('program_type', $programType)
-            ->orderByRaw("FIELD(status,'pending','confirmed','rejected','cancelled')")
+            ->orderByRaw("FIELD(status,'pending','confirmed','validated','rejected','cancelled')")
             ->orderBy('appointment_date', 'desc')
             ->first();
 
@@ -251,7 +255,93 @@ class AicsApiController extends Controller
     }
 
     /**
-     * Cancel appointment (pending/confirmed only).
+     * Request cancellation with reason (matches Solo Parent flow).
+     * POST /mobile-api/aics/{type}/appointments/{id}/cancel
+     */
+    public function requestMedicalCancellation(Request $request, int $id): JsonResponse
+    {
+        return $this->requestCancellation($request, 'AICS_Medical', $id);
+    }
+
+    public function requestBurialCancellation(Request $request, int $id): JsonResponse
+    {
+        return $this->requestCancellation($request, 'AICS_Burial', $id);
+    }
+
+    private function requestCancellation(Request $request, string $programType, int $id): JsonResponse
+    {
+        $user = Auth::user();
+        $appt = Appointment::where('id', $id)
+            ->where('user_id', $user->id)
+            ->where('program_type', $programType)
+            ->first();
+
+        if (!$appt) {
+            return response()->json(['success' => false, 'message' => 'Appointment not found.'], 404);
+        }
+
+        if (!in_array($appt->status, ['pending', 'confirmed'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'This appointment cannot be cancelled.',
+            ], 422);
+        }
+
+        $request->validate(['cancel_reason' => 'required|string|max:500']);
+
+        $appt->update([
+            'cancel_reason'             => $request->cancel_reason,
+            'cancellation_status'       => 'pending',
+            'cancellation_requested_at' => now(),
+        ]);
+
+        // Notify admins of user's municipality
+        $admins = User::where('role', 'admin')
+            ->where('municipality', $user->municipality)
+            ->get();
+
+        foreach ($admins as $admin) {
+            try {
+                \DB::table('notifications')->insert([
+                    'user_id'    => $admin->id,
+                    'type'       => 'aics',
+                    'title'      => '🚫 Cancellation Request',
+                    'body'       => $user->full_name . ' has requested to cancel their ' .
+                                   str_replace('_', ' ', $appt->program_type) . ' appointment.',
+                    'is_read'    => false,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } catch (\Exception $e) {
+                Log::error('Admin AICS cancellation notification failed: ' . $e->getMessage());
+            }
+        }
+
+        // Notify user
+        try {
+            \DB::table('notifications')->insert([
+                'user_id'    => $user->id,
+                'type'       => 'aics',
+                'title'      => 'Cancellation Request Submitted',
+                'body'       => 'Your cancellation request for your ' .
+                               str_replace('_', ' ', $appt->program_type) .
+                               ' appointment has been submitted. Awaiting admin approval.',
+                'is_read'    => false,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } catch (\Exception $e) {
+            Log::error('User AICS cancellation notification failed: ' . $e->getMessage());
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Cancellation request submitted. Awaiting admin approval.',
+        ]);
+    }
+
+    /**
+     * Cancel appointment immediately (legacy/fallback).
      * DELETE /mobile-api/aics/{type}/appointments/{id}
      */
     private function cancelAppointment(string $programType, int $id): JsonResponse
@@ -333,6 +423,23 @@ class AicsApiController extends Controller
             ->latest('id')
             ->first();
 
+        // If interview was validated before the fix was deployed and no
+        // Application record exists, log the gap so it can be repaired
+        // by an admin.  GET endpoints must remain read-only.
+        if (!$application) {
+            $hasValidated = Appointment::where('user_id', $user->id)
+                ->where('program_type', $programType)
+                ->where('status', 'validated')
+                ->exists();
+
+            if ($hasValidated) {
+                Log::warning('AICS: Validated appointment exists without Application record — requires admin repair.', [
+                    'user_id'      => $user->id,
+                    'program_type' => $programType,
+                ]);
+            }
+        }
+
         $requiredDocs = ProgramRequirement::where('program_type', $programType)
             ->pluck('requirement_name')
             ->toArray();
@@ -383,6 +490,167 @@ class AicsApiController extends Controller
                 'admin_remarks' => $application->admin_remarks,
             ] : null,
             'requirements' => $requirements,
+        ]);
+    }
+
+    // ── Upload & Re-upload Requirements ──────────────────────────────────────
+
+    public function uploadMedicalRequirement(Request $request): JsonResponse
+    {
+        return $this->uploadRequirement($request, 'AICS_Medical');
+    }
+
+    public function uploadBurialRequirement(Request $request): JsonResponse
+    {
+        return $this->uploadRequirement($request, 'AICS_Burial');
+    }
+
+    public function reuploadMedicalRequirement(Request $request, int $fileId): JsonResponse
+    {
+        return $this->reuploadRequirement($request, 'AICS_Medical', $fileId);
+    }
+
+    public function reuploadBurialRequirement(Request $request, int $fileId): JsonResponse
+    {
+        return $this->reuploadRequirement($request, 'AICS_Burial', $fileId);
+    }
+
+    private function uploadRequirement(Request $request, string $programType): JsonResponse
+    {
+        $user = Auth::user();
+
+        $request->validate([
+            'application_id'   => 'required|exists:applications,id',
+            'requirement_name' => 'required|string',
+            'file'             => 'required|file|mimes:pdf,jpg,jpeg,png|max:25600',
+        ]);
+
+        $application = Application::find($request->application_id);
+        if (!$application || $application->user_id !== $user->id || $application->program_type !== $programType) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized'], 403);
+        }
+
+        // Strictly enforce interview validation before allowing requirements upload
+        $hasValidatedAppointment = Appointment::where('user_id', $user->id)
+            ->where('program_type', $programType)
+            ->where('status', 'validated')
+            ->exists();
+
+        if (!$hasValidatedAppointment) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Interview validation is required before uploading documents.',
+            ], 403);
+        }
+
+        $file = $request->file('file');
+        $ext = strtolower($file->getClientOriginalExtension());
+        $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $request->requirement_name) . '.' . $ext;
+        $path = $file->storeAs('aics_documents', $filename, 'public');
+
+        $fileMonitoring = $application->fileMonitoring;
+        if (!$fileMonitoring) {
+            $fileMonitoring = FileMonitoring::create([
+                'application_id' => $application->id,
+                'user_id'        => $user->id,
+                'municipality'   => $application->municipality ?? $user->municipality,
+                'priority'       => 'medium',
+                'overall_status' => 'pending',
+            ]);
+        }
+
+        $fileMonitoring->fileUploads()->updateOrCreate(
+            ['requirement_name' => $request->requirement_name],
+            [
+                'user_id'       => $user->id,
+                'municipality'  => $application->municipality ?? $user->municipality,
+                'file_name'     => $file->getClientOriginalName(),
+                'file_path'     => $path,
+                'status'        => 'pending',
+                'admin_remarks' => null,
+                'uploaded_at'   => now(),
+            ]
+        );
+
+        $hasRemainingRejected = $fileMonitoring->fileUploads()->where('status', 'rejected')->exists();
+        $fileMonitoring->update([
+            'overall_status' => $hasRemainingRejected ? 'rejected' : 'in_review',
+        ]);
+
+        if (!$hasRemainingRejected && $application->status === 'rejected') {
+            $application->update(['status' => 'pending']);
+        }
+
+        Log::info('AICS document uploaded', [
+            'user_id'        => $user->id,
+            'application_id' => $application->id,
+            'program_type'   => $programType,
+            'requirement'    => $request->requirement_name,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Document uploaded successfully.',
+        ]);
+    }
+
+    private function reuploadRequirement(Request $request, string $programType, int $fileId): JsonResponse
+    {
+        $user = Auth::user();
+
+        $fileUpload = FileUpload::with(['fileMonitoring.application'])
+            ->where('id', $fileId)
+            ->where('user_id', $user->id)
+            ->first();
+
+        if (!$fileUpload) {
+            return response()->json(['success' => false, 'message' => 'File not found.'], 404);
+        }
+
+        if ($fileUpload->fileMonitoring?->application?->program_type !== $programType) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+        }
+
+        if ($fileUpload->status !== 'rejected') {
+            return response()->json(['success' => false, 'message' => 'Only rejected files can be re-uploaded.'], 400);
+        }
+
+        $request->validate([
+            'file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:25600',
+        ]);
+
+        $file = $request->file('file');
+        $ext = strtolower($file->getClientOriginalExtension());
+        $filename = time() . '_' . preg_replace('/[^a-zA-Z0-9._-]/', '', $fileUpload->requirement_name) . '.' . $ext;
+        $path = $file->storeAs('aics_documents', $filename, 'public');
+
+        if ($fileUpload->file_path && Storage::disk('public')->exists($fileUpload->file_path)) {
+            Storage::disk('public')->delete($fileUpload->file_path);
+        }
+
+        $fileUpload->update([
+            'file_name'     => $file->getClientOriginalName(),
+            'file_path'     => $path,
+            'status'        => 'pending',
+            'admin_remarks' => null,
+            'uploaded_at'   => now(),
+        ]);
+
+        $fm = $fileUpload->fileMonitoring;
+        if ($fm) {
+            $hasRemainingRejected = $fm->fileUploads()->where('status', 'rejected')->exists();
+            $fm->update([
+                'overall_status' => $hasRemainingRejected ? 'rejected' : 'in_review',
+            ]);
+
+            if (!$hasRemainingRejected && $fm->application?->status === 'rejected') {
+                $fm->application->update(['status' => 'pending']);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Document re-uploaded successfully.',
         ]);
     }
 }

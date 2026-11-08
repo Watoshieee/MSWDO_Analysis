@@ -83,13 +83,16 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/renewal/reupload', [SoloParentApiController::class, 'reuploadRenewalId']);
     });
 
-    // AICS appointment booking (Medical & Burial)
+    // AICS appointment booking & requirements (Medical & Burial)
     Route::prefix('aics')->group(function () {
         Route::prefix('medical')->group(function () {
             Route::get('/slots', [AicsApiController::class, 'getAvailableSlots']);
             Route::post('/appointments', [AicsApiController::class, 'bookMedicalAppointment']);
             Route::get('/appointment', [AicsApiController::class, 'getMedicalAppointment']);
             Route::delete('/appointments/{id}', [AicsApiController::class, 'cancelMedicalAppointment']);
+            Route::post('/appointments/{id}/cancel', [AicsApiController::class, 'requestMedicalCancellation']);
+            Route::post('/requirements/upload', [AicsApiController::class, 'uploadMedicalRequirement']);
+            Route::post('/requirements/{fileId}/reupload', [AicsApiController::class, 'reuploadMedicalRequirement']);
         });
 
         Route::prefix('burial')->group(function () {
@@ -97,6 +100,9 @@ Route::middleware('auth:sanctum')->group(function () {
             Route::post('/appointments', [AicsApiController::class, 'bookBurialAppointment']);
             Route::get('/appointment', [AicsApiController::class, 'getBurialAppointment']);
             Route::delete('/appointments/{id}', [AicsApiController::class, 'cancelBurialAppointment']);
+            Route::post('/appointments/{id}/cancel', [AicsApiController::class, 'requestBurialCancellation']);
+            Route::post('/requirements/upload', [AicsApiController::class, 'uploadBurialRequirement']);
+            Route::post('/requirements/{fileId}/reupload', [AicsApiController::class, 'reuploadBurialRequirement']);
         });
     });
 

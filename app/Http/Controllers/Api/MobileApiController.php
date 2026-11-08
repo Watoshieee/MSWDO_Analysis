@@ -898,8 +898,10 @@ class MobileApiController extends Controller
     public function applications(Request $request): JsonResponse
     {
         $status = $request->query('status', 'all');
+        $userId = $request->user()->id;
+
         $query = Application::with(['fileMonitoring.fileUploads'])
-            ->where('user_id', $request->user()->id);
+            ->where('user_id', $userId);
 
         if ($status !== 'all') {
             $query->where('status', $status);

@@ -200,7 +200,7 @@ class AppointmentController extends Controller
             ->where('id', $id)
             ->where('municipality', $admin->municipality)
             ->whereIn('program_type', ['Solo_Parent', 'AICS_Medical', 'AICS_Burial', 'Solo_Parent_Renewal', 'PWD_Renewal'])
-            ->where('status', 'confirmed')
+            ->whereIn('status', ['confirmed', 'approved'])
             ->firstOrFail();
 
         /** @var Appointment $appt */
@@ -318,7 +318,36 @@ class AppointmentController extends Controller
             ]);
         }
 
-        // ── AICS: mark validated ──────────────────────────────────────────────
+        // ── AICS: mark validated & initialize requirements workflow ─────────
+        $genderRaw = strtolower(trim($appt->user->gender ?? ''));
+        $gender = $genderRaw === 'female' ? 'Female' : 'Male';
+
+        $application = Application::firstOrCreate(
+            ['user_id' => $appt->user_id, 'program_type' => $appt->program_type],
+            [
+                'municipality'     => $appt->municipality,
+                'barangay'         => $appt->user->barangay ?? '',
+                'full_name'        => $appt->user->full_name ?? $appt->user->name ?? '',
+                'age'              => is_numeric($appt->user->age ?? null) ? (int) $appt->user->age : 0,
+                'gender'           => $gender,
+                'contact_number'   => $appt->user->mobile_number ?? $appt->user->contact_number ?? '',
+                'status'           => 'pending',
+                'application_date' => now(),
+                'year'             => now()->year,
+                'stage'            => 'documents_upload',
+            ]
+        );
+
+        \App\Models\FileMonitoring::firstOrCreate(
+            ['application_id' => $application->id],
+            [
+                'overall_status' => 'pending',
+                'municipality'   => $appt->municipality,
+                'user_id'        => $appt->user_id,
+                'priority'       => 'medium',
+            ]
+        );
+
         $appt->update([
             'status'       => 'validated',
             'validated_at' => now(),
@@ -329,13 +358,9 @@ class AppointmentController extends Controller
 
         // Email user
         try {
-            $application = Application::where('user_id', $appt->user_id)
-                ->where('program_type', $appt->program_type)
-                ->latest('id')
-                ->first();
             if ($appt->user && $appt->user->email) {
                 Mail::to($appt->user->email)->send(new \App\Mail\AicsStatusMail(
-                    $application ?? new Application(['program_type' => $appt->program_type, 'municipality' => $appt->municipality, 'full_name' => $appt->user->full_name]),
+                    $application,
                     $appt->user,
                     'validated'
                 ));

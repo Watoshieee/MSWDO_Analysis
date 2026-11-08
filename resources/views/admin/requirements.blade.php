@@ -2119,12 +2119,12 @@
                             `;
                         }
                     } else if (a.status === 'confirmed' || a.status === 'approved') {
-                        if ((isSoloParent || isRenewal) && a.status === 'confirmed') {
+                        if (isSoloParent || isRenewal) {
                             actions = `
                                     <button onclick="validateAppt(${a.id})" class="btn-action btn-action-primary">Mark Eligible</button>
                                     <button onclick="openRejectModal(${a.id})" class="btn-action btn-decline">Reject Appointment</button>
                                 `;
-                        } else if (isAics && a.status === 'confirmed') {
+                        } else if (isAics) {
                             actions = `
                                     <button onclick="validateAppt(${a.id})" class="btn-action btn-action-primary">Validate Interview</button>
                                     <button onclick="openRejectModal(${a.id})" class="btn-action btn-decline">Reject Appointment</button>
