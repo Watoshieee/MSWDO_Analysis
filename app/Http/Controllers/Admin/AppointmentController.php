@@ -25,8 +25,9 @@ class AppointmentController extends Controller
 
         $appointments = Appointment::with(['user', 'renewalRequest'])
             ->where('municipality', $admin->municipality)
-            ->orderByRaw("FIELD(status, 'pending', 'confirmed', 'validated', 'rejected', 'cancelled')")
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
+            ->orderByRaw("FIELD(status, 'pending', 'confirmed', 'validated', 'rejected', 'cancelled')")
             ->get();
 
         return response()->json($appointments->map(function ($a) {

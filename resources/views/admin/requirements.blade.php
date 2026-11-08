@@ -896,10 +896,11 @@
                         style="padding:14px 16px;border-bottom:1px solid #e2e8f0;background:#f8faff;">
                         <div class="admin-filter-grid admin-filter-grid-5">
                             <input type="text" name="app_search" id="appSearchInput" value="{{ request('app_search') }}"
-                                placeholder="Search applicant, contact, barangay..." class="form-control"
+                                placeholder="Search applicant, program, barangay..." class="form-control"
                                 style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
                             <select name="app_status" id="appStatusFilter" class="form-select"
-                                style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
+                                style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;" data-auto-submit="1">
+                                <option value="all" {{ request('app_status') === 'all' || !request('app_status') ? 'selected' : '' }}>All Status</option>
                                 <option value="pending" {{ request('app_status') === 'pending' ? 'selected' : '' }}>
                                     Pending</option>
                                 <option value="approved" {{ request('app_status') === 'approved' ? 'selected' : '' }}>
@@ -908,18 +909,12 @@
                                     Rejected</option>
                             </select>
                             <select name="app_program" id="appProgramFilter" class="form-select"
-                                style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
-                                <option value="PWD_Assistance" {{ request('app_program') === 'PWD_Assistance' ? 'selected' : '' }}>PWD Assistance</option>
-                                <option value="PWD_New" {{ request('app_program') === 'PWD_New' ? 'selected' : '' }}>PWD
-                                    New</option>
-                                <option value="PWD_Renewal" {{ request('app_program') === 'PWD_Renewal' ? 'selected' : '' }}>PWD Renewal</option>
-                                <option value="Solo_Parent" {{ request('app_program') === 'Solo_Parent' ? 'selected' : '' }}>Solo Parent</option>
-                                <option value="AICS_Medical" {{ request('app_program') === 'AICS_Medical' ? 'selected' : '' }}>AICS Medical</option>
-                                <option value="AICS_Burial" {{ request('app_program') === 'AICS_Burial' ? 'selected' : '' }}>AICS Burial</option>
+                                style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;" data-auto-submit="1">
+                                <option value="all" {{ request('app_program') === 'all' || !request('app_program') ? 'selected' : '' }}>All Programs</option>
+                                @foreach($availablePrograms as $prog)
+                                    <option value="{{ $prog }}" {{ request('app_program') === $prog ? 'selected' : '' }}>{{ ucfirst(str_replace('_', ' ', $prog)) }}</option>
+                                @endforeach
                             </select>
-                            <button type="submit" id="appFilterBtn" class="btn-action btn-action-primary" style="padding:0 16px;">Filter</button>
-                            <button type="button" id="appResetBtn" class="btn-action btn-action-neutral"
-                                style="padding:0 16px;">Reset</button>
                         </div>
                     </form>
                     <div id="submittedAppsTableWrap">
@@ -1062,7 +1057,7 @@
                                         $rrFullDate = $rr->created_at->format('M j, Y h:i A');
                                         $rrFileUrl = route('admin.renewals.id-file', $rr->id);
                                     @endphp
-                                    <tr id="pwd-renewal-row-{{ $rr->id }}" style="background:{{ $rr->status === 'pending' ? '#fffbeb' : '#fff' }};">
+                                    <tr id="pwd-renewal-row-{{ $rr->id }}" data-program-type="{{ $rr->program_type }}" style="background:{{ $rr->status === 'pending' ? '#fffbeb' : '#fff' }};">
                                         <td>
                                             <div style="font-weight:700;color:#1e293b;">{{ $rrName }}</div>
                                             <div style="font-size:.72rem;color:#94a3b8;">{{ $rrContact }}</div>
@@ -1264,7 +1259,7 @@
             {{-- PWD Renewal: Approve Confirmation Modal --}}
             <div id="pwdApproveConfirmModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:100001;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px;">
                 <div style="background:#ffffff;border-radius:18px;max-width:480px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.3);overflow:hidden;border:1px solid #e2e8f0;">
-                    <div style="background:linear-gradient(135deg, #15803d 0%, #166534 100%);color:white;padding:18px 24px;display:flex;align-items:center;gap:12px;">
+                    <div style="background:linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);color:white;padding:18px 24px;display:flex;align-items:center;gap:12px;">
                         <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1.25rem;">
                             ✓
                         </div>
@@ -1274,11 +1269,11 @@
                         </div>
                     </div>
                     <div style="padding:22px 24px;">
-                        <div style="background:#f0fdf4;border:1.5px solid #bbf7d0;border-radius:12px;padding:12px 16px;margin-bottom:16px;">
-                            <div style="font-size:0.88rem;color:#166534;">
-                                Approve renewal ID for: <strong id="pwdApproveApplicantName" style="color:#14532d;font-size:0.95rem;"></strong>
+                        <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:12px 16px;margin-bottom:16px;">
+                            <div style="font-size:0.88rem;color:#1e3a8a;">
+                                Approve renewal ID for: <strong id="pwdApproveApplicantName" style="color:#1e3a8a;font-size:0.95rem;"></strong>
                             </div>
-                            <div style="font-size:0.78rem;color:#15803d;margin-top:4px;line-height:1.45;">
+                            <div style="font-size:0.78rem;color:#2563eb;margin-top:4px;line-height:1.45;">
                                 The applicant will receive an in-app notification and email confirmation, authorizing them to submit renewal requirements.
                             </div>
                         </div>
@@ -1293,7 +1288,7 @@
                         <button type="button" onclick="closePwdApproveConfirmModal()" class="btn-action btn-action-neutral" style="height:40px;padding:0 20px;font-size:0.86rem;">
                             Cancel
                         </button>
-                        <button type="button" id="pwdApproveConfirmBtn" onclick="executePwdApproval()" style="background:linear-gradient(135deg, #16a34a, #15803d);color:white;border:none;border-radius:10px;padding:0 24px;font-weight:700;font-size:0.88rem;cursor:pointer;height:40px;display:flex;align-items:center;gap:6px;box-shadow:0 3px 12px rgba(22,163,74,0.3);transition:transform .15s;">
+                        <button type="button" id="pwdApproveConfirmBtn" onclick="executePwdApproval()" style="background:linear-gradient(135deg, #2C3E8F, #1A2A5C);color:white;border:none;border-radius:10px;padding:0 24px;font-weight:700;font-size:0.88rem;cursor:pointer;height:40px;display:flex;align-items:center;gap:6px;box-shadow:0 3px 12px rgba(44,62,143,0.3);transition:transform .15s;">
                             <span>✓</span> Confirm Approval
                         </button>
                     </div>
@@ -1303,9 +1298,9 @@
             {{-- PWD Renewal: Decline / Reject Modal --}}
             <div id="pwdDeclineModal" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.65);z-index:100001;align-items:center;justify-content:center;backdrop-filter:blur(3px);padding:16px;">
                 <div style="background:#ffffff;border-radius:18px;max-width:520px;width:100%;box-shadow:0 20px 50px rgba(0,0,0,0.3);overflow:hidden;border:1px solid #e2e8f0;">
-                    <div style="background:linear-gradient(135deg, #dc2626 0%, #991b1b 100%);color:white;padding:18px 24px;display:flex;align-items:center;gap:12px;">
+                    <div style="background:linear-gradient(135deg, #2C3E8F 0%, #1A2A5C 100%);color:white;padding:18px 24px;display:flex;align-items:center;gap:12px;">
                         <div style="width:38px;height:38px;border-radius:10px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:1.25rem;">
-                            ⚠️
+                            ✕
                         </div>
                         <div>
                             <h5 style="margin:0;font-weight:800;font-size:1.05rem;">Decline PWD Renewal ID</h5>
@@ -1314,11 +1309,11 @@
                     </div>
 
                     <div style="padding:22px 24px;">
-                        <div style="background:#fef2f2;border:1.5px solid #fecaca;border-radius:12px;padding:12px 16px;margin-bottom:18px;">
-                            <div style="font-size:0.88rem;color:#991b1b;">
-                                Applicant: <strong id="pwdDeclineApplicantName" style="color:#7f1d1d;font-size:0.95rem;"></strong>
+                        <div style="background:#eff6ff;border:1.5px solid #bfdbfe;border-radius:12px;padding:12px 16px;margin-bottom:18px;">
+                            <div style="font-size:0.88rem;color:#1e3a8a;">
+                                Applicant: <strong id="pwdDeclineApplicantName" style="color:#1e3a8a;font-size:0.95rem;"></strong>
                             </div>
-                            <div style="font-size:0.78rem;color:#b91c1c;margin-top:4px;line-height:1.45;">
+                            <div style="font-size:0.78rem;color:#2563eb;margin-top:4px;line-height:1.45;">
                                 The applicant will receive a notification with the rejection reason below so they can re-upload a clear and valid PWD ID.
                             </div>
                         </div>
@@ -1358,7 +1353,7 @@
                         <button type="button" onclick="closePwdDeclineModal()" class="btn-action btn-action-neutral" style="height:40px;padding:0 20px;font-size:0.86rem;">
                             Cancel
                         </button>
-                        <button type="button" id="pwdDeclineSubmitBtn" onclick="executePwdDecline()" style="background:linear-gradient(135deg, #dc2626, #b91c1c);color:white;border:none;border-radius:10px;padding:0 24px;font-weight:700;font-size:0.88rem;cursor:pointer;height:40px;display:flex;align-items:center;gap:6px;box-shadow:0 3px 12px rgba(220,38,38,0.3);transition:transform .15s;">
+                        <button type="button" id="pwdDeclineSubmitBtn" onclick="executePwdDecline()" style="background:linear-gradient(135deg, #2C3E8F, #1A2A5C);color:white;border:none;border-radius:10px;padding:0 24px;font-weight:700;font-size:0.88rem;cursor:pointer;height:40px;display:flex;align-items:center;gap:6px;box-shadow:0 3px 12px rgba(44,62,143,0.3);transition:transform .15s;">
                             <span>✕</span> Confirm Decline
                         </button>
                     </div>
@@ -1559,12 +1554,13 @@
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
+                            const pwdId = _currentPwdId;
                             closePwdApproveConfirmModal();
                             closePwdIdModal();
                             if (typeof uiToast === 'function') {
                                 uiToast(data.message || 'PWD Renewal ID approved successfully!', 'MSWDO Admin');
                             }
-                            updatePwdRowInTable(_currentPwdId, 'approved', remarks);
+                            updatePwdRowInTable(pwdId, 'approved', remarks);
                         } else {
                             errEl.textContent = data.message || 'Failed to approve renewal ID.';
                             errEl.style.display = 'block';
@@ -1674,12 +1670,13 @@
                     .then(r => r.json())
                     .then(data => {
                         if (data.success) {
+                            const pwdId = _currentPwdId;
                             closePwdDeclineModal();
                             closePwdIdModal();
                             if (typeof uiToast === 'function') {
                                 uiToast(data.message || 'PWD Renewal ID declined. Applicant has been notified.', 'MSWDO Admin');
                             }
-                            updatePwdRowInTable(_currentPwdId, 'rejected', remarks);
+                            updatePwdRowInTable(pwdId, 'rejected', remarks);
                         } else {
                             errEl.textContent = data.message || 'Failed to decline renewal ID.';
                             errEl.style.display = 'block';
@@ -1699,8 +1696,32 @@
                 // In-place dynamic table updater for zero-refresh feedback
                 function updatePwdRowInTable(id, status, remarks) {
                     const row = document.getElementById('pwd-renewal-row-' + id);
+
+                    // Row not on current page (pagination) — reload to reflect changes
+                    if (!row) {
+                        window.location.reload();
+                        return;
+                    }
+
                     const statusCell = document.getElementById('pwd-renewal-status-cell-' + id);
                     const actionsCell = document.getElementById('pwd-renewal-actions-' + id);
+
+                    // Remove row if current status filter excludes the new status
+                    const appStatusFilter = document.getElementById('appStatusFilter');
+                    const appProgramFilter = document.getElementById('appProgramFilter');
+                    const filterStatus = appStatusFilter ? appStatusFilter.value : 'all';
+                    const filterProgram = appProgramFilter ? appProgramFilter.value : 'all';
+
+                    if (filterStatus !== 'all' && filterStatus !== status) {
+                        row.remove();
+                        return;
+                    }
+
+                    const rowProgramType = row.getAttribute('data-program-type') || '';
+                    if (filterProgram !== 'all' && filterProgram !== rowProgramType) {
+                        row.remove();
+                        return;
+                    }
 
                     if (row) {
                         row.style.background = '#ffffff';
@@ -1823,6 +1844,7 @@
                         class="form-control" style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
                     <select id="apptStatusFilter" class="form-select"
                         style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
+                        <option value="all">All Status</option>
                         <option value="pending">Pending</option>
                         <option value="confirmed">Confirmed</option>
                         <option value="validated">Validated</option>
@@ -1831,6 +1853,7 @@
                     </select>
                     <select id="apptProgramFilter" class="form-select"
                         style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
+                        <option value="all">All Program</option>
                         <option value="Solo_Parent">Solo Parent</option>
                         <option value="Solo_Parent_Renewal">Solo Parent Renewal</option>
                         <option value="AICS_Medical">AICS Medical</option>
@@ -1839,8 +1862,7 @@
                     <input id="apptDateFilter" type="date" class="form-control"
                         title="Appointment Date"
                         style="font-size:.84rem;border-radius:10px;border:1px solid #c7d6f5;">
-                    <button type="button" id="apptFilterBtn" onclick="applyAppointmentFilters()" class="btn-action btn-action-primary" style="padding:0 16px;">Filter</button>
-                    <button type="button" id="apptResetBtn" onclick="resetAppointmentFilters()" class="btn-action btn-action-neutral" style="padding:0 16px;">Reset</button>
+
                 </div>
                 <div class="p-3" id="apptTableWrap">
                     <div style="text-align:center;padding:30px;color:#94a3b8;font-size:.9rem;">Loading
@@ -2005,8 +2027,8 @@
                     a.time,
                 ].map(normalizeText).join(' ');
                 if (term && !hay.includes(term)) return false;
-                if (status && normalizeText(a.status) !== status) return false;
-                if (program) {
+                if (status && status !== 'all' && normalizeText(a.status) !== status) return false;
+                if (program && program !== 'all') {
                     if (program === 'solo_parent_renewal') {
                         const isRen = normalizeText(a.program_type) === 'solo_parent_renewal' || !!a.renewal;
                         if (!isRen) return false;
@@ -2487,13 +2509,31 @@
             }
         }
 
+        // Request cancellation: only the latest AJAX result is applied.
+        // Prevents older responses from overwriting newer search results when typing rapidly.
+        let _submittedAppsController = null;
+
         async function fetchSubmittedApps(url) {
+            // Cancel any in-flight request
+            if (_submittedAppsController) {
+                _submittedAppsController.abort();
+            }
+            _submittedAppsController = new AbortController();
+
             const wrap = document.getElementById('submittedAppsTableWrap');
-            if (wrap) wrap.style.opacity = '0.5';
+            // Show loading indicator
+            if (wrap) {
+                wrap.innerHTML = '<div style=\"text-align:center;padding:40px;color:#64748b;\"><div style=\"display:inline-block;width:24px;height:24px;border:3px solid #e2e8f0;border-top:3px solid #2563eb;border-radius:50%;animation:uiSpin 0.8s linear infinite;margin-bottom:10px;\"></div><div style=\"font-size:.9rem;\">Loading applications...</div></div>';
+                wrap.style.opacity = '1';
+            }
             try {
                 const res = await fetch(url, {
-                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' },
+                    signal: _submittedAppsController.signal
                 });
+                if (!res.ok) {
+                    throw new Error('Server error: ' + res.status);
+                }
                 const html = await res.text();
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(html, 'text/html');
@@ -2513,7 +2553,11 @@
                 if (typeof wireGcmForms === 'function') wireGcmForms();
                 window.history.replaceState(null, '', url);
             } catch (e) {
-                if (wrap) wrap.style.opacity = '1';
+                // Ignore AbortError — this request was superseded by a newer one
+                if (e.name === 'AbortError') return;
+                if (wrap) {
+                    wrap.innerHTML = '<div style=\"text-align:center;padding:40px;color:#dc3545;font-weight:600;\">Failed to load applications: ' + (e.message || 'Server error') + '</div>';
+                }
                 console.error('Error filtering applications:', e);
             }
         }
@@ -2549,31 +2593,48 @@
             document.getElementById('apptProgramFilter')?.addEventListener('change', applyAppointmentFilters);
             document.getElementById('apptDateFilter')?.addEventListener('change', applyAppointmentFilters);
 
-            // Submitted Applications Filter Form (AJAX submission so Appointments is untouched)
-            document.getElementById('appFilterForm')?.addEventListener('submit', function (e) {
-                e.preventDefault();
-                const form = e.target;
-                const url = new URL(form.action, window.location.origin);
-                const searchVal = form.querySelector('[name="app_search"]')?.value.trim();
-                const statusVal = form.querySelector('[name="app_status"]')?.value;
-                const progVal = form.querySelector('[name="app_program"]')?.value;
-                if (searchVal) url.searchParams.set('app_search', searchVal);
-                if (statusVal) url.searchParams.set('app_status', statusVal);
-                if (progVal) url.searchParams.set('app_program', progVal);
-                fetchSubmittedApps(url.toString());
-            });
+            // Submitted Applications: Debounced auto-search on input
+            let _appSearchTimer = null;
+            const appSearchInput = document.getElementById('appSearchInput');
+            const appStatusFilter = document.getElementById('appStatusFilter');
+            const appProgramFilter = document.getElementById('appProgramFilter');
 
-            // Submitted Applications Reset (Resets only Submitted Applications and fetches unfiltered applications)
-            document.getElementById('appResetBtn')?.addEventListener('click', function (e) {
-                e.preventDefault();
-                const searchInput = document.getElementById('appSearchInput');
-                const statusSelect = document.getElementById('appStatusFilter');
-                const progSelect = document.getElementById('appProgramFilter');
-                if (searchInput) searchInput.value = '';
-                if (statusSelect) statusSelect.selectedIndex = 0;
-                if (progSelect) progSelect.selectedIndex = 0;
-                fetchSubmittedApps('{{ route("admin.requirements") }}');
-            });
+            const fetchAppsWithFilters = () => {
+                const baseUrl = '{{ route("admin.requirements") }}';
+                const url = new URL(baseUrl, window.location.origin);
+                const searchVal = appSearchInput?.value.trim();
+                const statusVal = appStatusFilter?.value;
+                const progVal = appProgramFilter?.value;
+                // Always reset to page 1 when filters change
+                url.searchParams.set('page', '1');
+                if (searchVal) url.searchParams.set('app_search', searchVal);
+                else url.searchParams.delete('app_search');
+                if (statusVal && statusVal !== 'all') url.searchParams.set('app_status', statusVal);
+                else url.searchParams.delete('app_status');
+                if (progVal && progVal !== 'all') url.searchParams.set('app_program', progVal);
+                else url.searchParams.delete('app_program');
+                fetchSubmittedApps(url.toString());
+            };
+
+            if (appSearchInput) {
+                appSearchInput.addEventListener('input', function () {
+                    if (_appSearchTimer) clearTimeout(_appSearchTimer);
+                    _appSearchTimer = setTimeout(fetchAppsWithFilters, 300);
+                });
+            }
+            if (appStatusFilter) {
+                appStatusFilter.addEventListener('change', fetchAppsWithFilters);
+            }
+            if (appProgramFilter) {
+                appProgramFilter.addEventListener('change', fetchAppsWithFilters);
+            }
+
+            // Prevent Enter key in search from submitting the form (full page reload)
+            if (appSearchInput) {
+                appSearchInput.addEventListener('keydown', function (e) {
+                    if (e.key === 'Enter') e.preventDefault();
+                });
+            }
 
             // Submitted Applications Pagination (Ajax so page reload does not reset Appointments)
             document.addEventListener('click', function (e) {

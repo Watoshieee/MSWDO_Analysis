@@ -116,8 +116,45 @@ class AdminController extends Controller
     public function markNotificationsViewed()
     {
         $user = Auth::user();
+        // Mark all admin notifications as read (single source of truth for navbar badges)
+        \App\Models\AdminNotification::where('admin_id', $user->id)
+            ->where('is_read', false)
+            ->update(['is_read' => true, 'read_at' => now()]);
+        // Also update last_viewed_at for consistent counting in adminNotifData()
         \App\Models\NotificationView::updateOrCreate(
             ['user_id' => $user->id],
+            ['last_viewed_at' => now()]
+        );
+        return response()->json(['success' => true]);
+    }
+
+    public function markApplicationsRead(Request $request)
+    {
+        $admin = Auth::user();
+        // Mark application notifications as read
+        \App\Models\AdminNotification::where('admin_id', $admin->id)
+            ->where('type', \App\Models\AdminNotification::TYPE_NEW_APPLICATION)
+            ->where('is_read', false)
+            ->update(['is_read' => true, 'read_at' => now()]);
+        // Update last_viewed_at so adminNotifData() counting stays consistent
+        \App\Models\NotificationView::updateOrCreate(
+            ['user_id' => $admin->id],
+            ['last_viewed_at' => now()]
+        );
+        return response()->json(['success' => true]);
+    }
+
+    public function markUsersRead(Request $request)
+    {
+        $admin = Auth::user();
+        // Mark user registration notifications as read
+        \App\Models\AdminNotification::where('admin_id', $admin->id)
+            ->where('type', \App\Models\AdminNotification::TYPE_NEW_USER_REGISTRATION)
+            ->where('is_read', false)
+            ->update(['is_read' => true, 'read_at' => now()]);
+        // Update last_viewed_at so adminNotifData() counting stays consistent
+        \App\Models\NotificationView::updateOrCreate(
+            ['user_id' => $admin->id],
             ['last_viewed_at' => now()]
         );
         return response()->json(['success' => true]);
@@ -293,23 +330,26 @@ class AdminController extends Controller
             $search = trim((string) $request->input('app_search'));
             $applicationsQuery->where(function ($q) use ($search) {
                 $q->where('full_name', 'like', '%' . $search . '%')
-                    ->orWhere('contact_number', 'like', '%' . $search . '%')
+                    ->orWhere('program_type', 'like', '%' . $search . '%')
                     ->orWhere('barangay', 'like', '%' . $search . '%');
             });
         }
 
-        if ($request->filled('app_status')) {
-            $applicationsQuery->where('status', $request->input('app_status'));
+        $appStatus = $request->input('app_status');
+        if ($request->filled('app_status') && $appStatus !== 'all') {
+            $applicationsQuery->where('status', $appStatus);
         }
 
-        if ($request->filled('app_program')) {
-            $applicationsQuery->where('program_type', $request->input('app_program'));
+        $appProgram = $request->input('app_program');
+        if ($request->filled('app_program') && $appProgram !== 'all') {
+            $applicationsQuery->where('program_type', $appProgram);
         }
 
-        // Get all applications without pagination yet
+        // Get all applications without pagination yet — date (newest first) as primary sort
         $allApplications = $applicationsQuery
-            ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
             ->orderBy('application_date', 'desc')
+            ->orderBy('id', 'desc')
+            ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
             ->get();
 
         // PWD Renewal ID Verification requests (no appointment — pending admin ID review)
@@ -319,38 +359,40 @@ class AdminController extends Controller
             ->whereNull('appointment_id')
             ->whereNull('deleted_at');
 
-        if ($request->filled('app_program')) {
-            $progFilter = $request->input('app_program');
+        if ($request->filled('app_program') && $appProgram !== 'all') {
+            $progFilter = $appProgram;
             if ($progFilter !== 'PWD_Renewal') {
                 $pwdRenewalsQuery->whereRaw('1 = 0');
             }
         }
 
-        if ($request->filled('app_status')) {
-            $pwdRenewalsQuery->where('status', $request->input('app_status'));
+        if ($request->filled('app_status') && $appStatus !== 'all') {
+            $pwdRenewalsQuery->where('status', $appStatus);
         }
 
         if ($request->filled('app_search')) {
             $search = trim((string) $request->input('app_search'));
             $pwdRenewalsQuery->whereHas('user', function ($q) use ($search) {
                 $q->where('full_name', 'like', '%' . $search . '%')
-                    ->orWhere('contact_number', 'like', '%' . $search . '%')
                     ->orWhere('phone_number', 'like', '%' . $search . '%')
                     ->orWhere('barangay', 'like', '%' . $search . '%');
             });
         }
 
-        // Get all PWD renewals without pagination yet
+        // Get all PWD renewals without pagination yet — date (newest first) as primary sort
         $allPwdRenewals = $pwdRenewalsQuery
-            ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
             ->orderBy('created_at', 'desc')
+            ->orderBy('id', 'desc')
+            ->orderByRaw("FIELD(status, 'pending', 'approved', 'rejected')")
             ->get();
 
-        // Merge and sort all applications + PWD renewals together
+        // Merge and sort all applications + PWD renewals together — date (newest first) as primary sort
         $mergedApplications = collect($allApplications)
             ->concat($allPwdRenewals)
             ->sortBy(function ($item) {
-                // Primary: status priority (pending=1, approved=2, rejected=3)
+                // Primary: date descending (newer first)
+                $dateValue = $item->application_date ?? $item->created_at;
+                // Secondary: status priority (pending=1, approved=2, rejected=3)
                 $statusPriority = [
                     'pending' => 1,
                     'approved' => 2,
@@ -358,10 +400,7 @@ class AdminController extends Controller
                 ];
                 $statusValue = $statusPriority[$item->status] ?? 999;
                 
-                // Secondary: date descending (newer first)
-                $dateValue = $item->application_date ?? $item->created_at;
-                
-                return [$statusValue, $dateValue ? -strtotime($dateValue) : 0];
+                return [$dateValue ? -strtotime($dateValue) : 0, $statusValue];
             })
             ->values();
 
@@ -403,6 +442,17 @@ class AdminController extends Controller
 
         extract($this->adminNotifData($admin));
 
+        // Available programs for the filter dropdown (from existing system data)
+        // Exclude Kababaihan, Senior, and 4Ps from the program filter dropdown
+        $availablePrograms = SocialWelfareProgram::where('municipality', $municipality)
+            ->whereNull('deleted_at')
+            ->whereNotIn('program_type', ['Kababaihan', 'Senior', '4Ps'])
+            ->distinct()
+            ->pluck('program_type')
+            ->sort()
+            ->values()
+            ->all();
+
         return view('admin.requirements', compact(
             'applications',
             'municipality',
@@ -412,7 +462,8 @@ class AdminController extends Controller
             'adminNotifCount',
             'archivedApplications',
             'archivedRenewals',
-            'pwdRenewalRequests'
+            'pwdRenewalRequests',
+            'availablePrograms'
         ));
     }
 
@@ -2555,13 +2606,13 @@ class AdminController extends Controller
     }
 
     // ── Admin User Management — view users in this municipality ───────────────
-    public function users()
+    public function users(Request $request)
     {
         $admin = Auth::user();
         $municipality = Municipality::where('name', $admin->municipality)->first();
 
         // All regular users in this municipality
-        $users = \App\Models\User::where('municipality', $admin->municipality)
+        $allUsers = \App\Models\User::where('municipality', $admin->municipality)
             ->where('role', 'user')
             ->orderBy('created_at', 'desc')
             ->get()
@@ -2574,6 +2625,16 @@ class AdminController extends Controller
                 return $user;
             });
 
+        // Initial server-side pagination: 10 users per page
+        $perPage = 10;
+        $page = max(1, (int) $request->query('page', 1));
+        $total = $allUsers->count();
+        $lastPage = (int) ceil($total / $perPage);
+        $page = min($page, $lastPage === 0 ? 1 : $lastPage);
+        $offset = ($page - 1) * $perPage;
+        $users = $allUsers->slice($offset, $perPage)->values();
+        $currentPage = $page;
+
         extract($this->adminNotifData($admin));
 
         return view('admin.users', compact(
@@ -2582,7 +2643,11 @@ class AdminController extends Controller
             'adminNewApplications',
             'adminNewAppointments',
             'adminNewUploads',
-            'adminNotifCount'
+            'adminNotifCount',
+            'total',
+            'lastPage',
+            'currentPage',
+            'perPage'
         ));
     }
 
@@ -2627,13 +2692,27 @@ class AdminController extends Controller
         }
 
         $statusFilter = (string) $request->query('status_filter', '');
-        if ($statusFilter !== '') {
+        if ($statusFilter !== '' && $statusFilter !== 'all') {
             $users = $users->filter(fn($u) => $u->status === $statusFilter)->values();
         }
 
+        // Pagination: 10 users per page
+        $page = max(1, (int) $request->query('page', 1));
+        $perPage = 10;
+        $total = $users->count();
+        $lastPage = (int) ceil($total / $perPage);
+        $page = min($page, $lastPage === 0 ? 1 : $lastPage);
+        $offset = ($page - 1) * $perPage;
+        $pagedUsers = $users->slice($offset, $perPage)->values();
+
         return response()->json([
-            'count' => $users->count(),
-            'users' => $users->map(function ($u) {
+            'count' => $total,
+            'current_page' => $page,
+            'last_page' => $lastPage,
+            'per_page' => $perPage,
+            'from' => $total > 0 ? $offset + 1 : 0,
+            'to' => min($offset + $perPage, $total),
+            'users' => $pagedUsers->map(function ($u) {
                 return [
                     'id' => $u->id,
                     'full_name' => $u->full_name,

@@ -309,7 +309,7 @@ class AdminNotificationService
 
         $programLabel = self::programLabel($renewal->program_type);
         $payload      = self::buildPayload(AdminNotification::TYPE_NEW_RENEWAL, ['program_label' => $programLabel]);
-        $actionUrl    = route('admin.renewals.index');
+        $actionUrl    = route('admin.requirements');
 
         foreach ($admins as $admin) {
             $alreadyExists = AdminNotification::where('admin_id', $admin->id)

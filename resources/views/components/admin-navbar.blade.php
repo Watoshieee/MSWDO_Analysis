@@ -567,24 +567,43 @@ html, body {
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('admin.requirements') }}" class="{{ $currentActive === 'applications' ? 'active' : '' }}" {!! $currentActive === 'applications' ? 'aria-current="page"' : '' !!}>
+                    <a href="{{ route('admin.requirements') }}" class="{{ $currentActive === 'applications' ? 'active' : '' }}" {!! $currentActive === 'applications' ? 'aria-current="page"' : '' !!} onclick="event.preventDefault(); markAdminNavbarAppsRead('{{ route('admin.requirements') }}')">
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="16" y2="17"/></svg>
                         <span>Applications</span>
                         @php
                             $newAppsCount = 0;
-                            if (isset($adminNewApplications)) {
-                                $newAppsCount = is_countable($adminNewApplications) ? count($adminNewApplications) : (int)$adminNewApplications;
+                            try {
+                                $newAppsCount = \App\Models\AdminNotification::where('admin_id', Auth::id())
+                                    ->where('type', \App\Models\AdminNotification::TYPE_NEW_APPLICATION)
+                                    ->where('is_read', false)
+                                    ->count();
+                            } catch (\Exception $e) {
+                                $newAppsCount = 0;
                             }
                         @endphp
                         @if($newAppsCount > 0)
-                        <span class="nv-count" aria-label="{{ $newAppsCount }} pending">{{ $newAppsCount }}</span>
+                        <span class="nv-count" id="adminNavbarAppBadge" aria-label="{{ $newAppsCount }} new">{{ $newAppsCount }}</span>
                         @endif
                     </a>
                 </li>
                 <li>
-                    <a href="{{ route('admin.users') }}" class="{{ $currentActive === 'users' ? 'active' : '' }}" {!! $currentActive === 'users' ? 'aria-current="page"' : '' !!}>
+                    <a href="{{ route('admin.users') }}" class="{{ $currentActive === 'users' ? 'active' : '' }}" {!! $currentActive === 'users' ? 'aria-current="page"' : '' !!} onclick="event.preventDefault(); markAdminNavbarUsersRead('{{ route('admin.users') }}')">
                         <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                         <span>Users</span>
+                        @php
+                            $newUsersCount = 0;
+                            try {
+                                $newUsersCount = \App\Models\AdminNotification::where('admin_id', Auth::id())
+                                    ->where('type', \App\Models\AdminNotification::TYPE_NEW_USER_REGISTRATION)
+                                    ->where('is_read', false)
+                                    ->count();
+                            } catch (\Exception $e) {
+                                $newUsersCount = 0;
+                            }
+                        @endphp
+                        @if($newUsersCount > 0)
+                        <span class="nv-count" id="adminNavbarUserBadge" aria-label="{{ $newUsersCount }} new">{{ $newUsersCount }}</span>
+                        @endif
                     </a>
                 </li>
                 <li>
@@ -868,6 +887,44 @@ html, body {
         updateChatBadge();
     }
     setInterval(updateChatBadge, 10000);
+
+    // ── Admin Navbar Badges: Applications & Users ──
+    // Attached to window so inline onclick handlers can access them.
+    window.markAdminNavbarAppsRead = async function(targetUrl) {
+        try {
+            const res = await fetch("{{ route('admin.notifications.applications.read') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            if (res.ok) {
+                var badge = document.getElementById('adminNavbarAppBadge');
+                if (badge) badge.style.display = 'none';
+            }
+        } catch (e) { /* ignore errors — still navigate below */ }
+        window.location.href = targetUrl;
+    };
+
+    window.markAdminNavbarUsersRead = async function(targetUrl) {
+        try {
+            const res = await fetch("{{ route('admin.notifications.users.read') }}", {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            if (res.ok) {
+                var badge = document.getElementById('adminNavbarUserBadge');
+                if (badge) badge.style.display = 'none';
+            }
+        } catch (e) { /* ignore errors — still navigate below */ }
+        window.location.href = targetUrl;
+    };
 })();
 </script>
 
